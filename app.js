@@ -1,111 +1,86 @@
+'use strict';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const K='unvrsl-fit-v2', DAYCODE={1:'A1',2:'B',4:'C',5:'A2',6:'D'};
+const KEY='unvrsl-fit-v3', OLDKEY='unvrsl-fit-v2';
+const DAYCODE={1:'A1',2:'B',4:'C',5:'A2',6:'D'};
 const RPE={1:7,2:8,3:8.5,4:6.5,5:8.5,6:6.5,7:9,8:9};
-const BASE={1:150,2:150,3:120,4:75,5:150,6:75,7:210,8:300}, ISO={1:75,2:75,3:60,4:45,5:75,6:45,7:105,8:105};
+const BASE={1:150,2:150,3:120,4:75,5:150,6:75,7:210,8:300};
+const ISO={1:75,2:75,3:60,4:45,5:75,6:45,7:105,8:105};
 const BASEWORDS=['присед','жим лёжа','тяга штанги','румын','армей','жим ногами','подтяг','т-грифа','ягодичный мост'];
 const ROUTINES=window.UNVRSL_ROUTINES||[];
-const map=new Map(ROUTINES.map(r=>[`${r.w}-${r.c}`,r]));
-let st; try{st=JSON.parse(localStorage.getItem(K))}catch(e){}
-if(!st) st={bw:[{d:'2026-08-25',w:97.5}],sessions:[],current:null,week:1};
-const save=()=>localStorage.setItem(K,JSON.stringify(st));
-const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const iso=d=>{d=d||new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
-const fmt=d=>new Intl.DateTimeFormat('ru-RU',{weekday:'long',day:'numeric',month:'long'}).format(d);
-const isBase=n=>BASEWORDS.some(x=>n.toLowerCase().includes(x));
-function rest(r,e,i){
-  if(/DS/.test(e.n)) return e.g&&r.e[i+1]?.g===e.g?0:ISO[r.w];
-  if(/SLDR/.test(e.n)) return e.g&&r.e[i+1]?.g===e.g?15:(isBase(e.n)?BASE[r.w]:ISO[r.w]);
-  if(/UNVRSL/.test(e.n)) return e.g&&r.e[i+1]?.g===e.g?30:(isBase(e.n)?BASE[r.w]:ISO[r.w]);
-  if(/FST-7/.test(e.n)) return 30;
-  return isBase(e.n)?BASE[r.w]:ISO[r.w];
-}
-function plannedForDate(d){
-  const start=new Date('2026-08-31T12:00:00'), x=new Date(d); x.setHours(12,0,0,0);
-  const diff=Math.floor((x-start)/86400000); if(diff<0)return null;
-  const w=Math.floor(diff/7)+1; if(w<1||w>8)return null;
-  const c=DAYCODE[x.getDay()]; return c?map.get(`${w}-${c}`):null;
-}
-function nextPlan(){
-  let d=new Date(); for(let i=0;i<80;i++){let x=new Date(d);x.setDate(d.getDate()+i);let r=plannedForDate(x);if(r)return {d:x,r};}return null;
-}
-const latestW=()=>st.bw.length?st.bw[st.bw.length-1].w:null;
-const done=s=>s?.ex.reduce((a,e)=>a+e.set.filter(x=>x.ok).length,0)||0;
-const total=s=>s?.ex.reduce((a,e)=>a+e.set.length,0)||0;
-function session(r){
- return {id:'s'+Date.now(),date:iso(),w:r.w,c:r.c,name:r.t,target:RPE[r.w],started:Date.now(),ended:null,
-  ex:r.e.map((e,i)=>({n:e.n,d:e.d||'',rest:rest(r,e,i),set:Array.from({length:e.s||1},(_,j)=>({n:j+1,w:e.w||0,r:e.r||0,rpe:'',ok:false}))}))};
-}
+const rmap=new Map(ROUTINES.map(r=>[`${r.w}-${r.c}`,r]));
+const CYCLE_START='2026-08-31';
+const COLORS=['#30d158','#0a84ff','#ff9f0a','#bf5af2','#ff375f','#ff453a','#64d2ff','#ffd60a'];
+let viewDate=new Date();
+let timerId=null,timerEnd=0;
+function loadState(){let x=null;try{x=JSON.parse(localStorage.getItem(KEY))}catch(e){}if(x)return x;try{x=JSON.parse(localStorage.getItem(OLDKEY))}catch(e){}if(x){localStorage.setItem(KEY,JSON.stringify(x));return x}return {bw:[{d:'2026-08-25',w:97.5}],goal:null,sessions:[],current:null,week:1,accent:'#30d158',body:'male',theme:'dark',created:Date.now()}}
+let st=loadState();
+if(!Array.isArray(st.bw))st.bw=[];if(!Array.isArray(st.sessions))st.sessions=[];if(!st.week)st.week=1;
+applyAccent();save();
+function save(){localStorage.setItem(KEY,JSON.stringify(st))}
+function applyAccent(){document.documentElement.style.setProperty('--green',st.accent||'#30d158')}
+function esc(x){return String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function iso(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function parseDate(s){return new Date(`${s}T12:00:00`)}
+function fmt(d){return new Intl.DateTimeFormat('ru-RU',{weekday:'long',day:'numeric',month:'long'}).format(d)}
+function monthLabel(d){return new Intl.DateTimeFormat('ru-RU',{month:'long',year:'numeric'}).format(d)}
+function latestW(){return st.bw.length?st.bw[st.bw.length-1].w:null}
+function isBase(n){const s=(n||'').toLowerCase();return BASEWORDS.some(x=>s.includes(x))}
+function done(s){return s?.ex?.reduce((a,e)=>a+e.set.filter(x=>x.ok).length,0)||0}
+function total(s){return s?.ex?.reduce((a,e)=>a+e.set.length,0)||0}
+function rest(r,e,i){const n=e.n||'';if(/DS/.test(n))return e.g&&r.e[i+1]?.g===e.g?0:ISO[r.w];if(/SLDR/.test(n))return e.g&&r.e[i+1]?.g===e.g?15:(isBase(n)?BASE[r.w]:ISO[r.w]);if(/UNVRSL/.test(n))return e.g&&r.e[i+1]?.g===e.g?30:(isBase(n)?BASE[r.w]:ISO[r.w]);if(/FST-7/.test(n))return 30;return isBase(n)?BASE[r.w]:ISO[r.w]}
+function plannedForDate(d){const start=parseDate(CYCLE_START),x=new Date(d);x.setHours(12,0,0,0);const diff=Math.floor((x-start)/86400000);if(diff<0)return null;const w=Math.floor(diff/7)+1;if(w<1||w>8)return null;const c=DAYCODE[x.getDay()];return c?rmap.get(`${w}-${c}`)||null:null}
+function nextPlan(){let d=new Date();for(let i=0;i<100;i++){let x=new Date(d);x.setDate(d.getDate()+i);let r=plannedForDate(x);if(r)return {d:x,r}}return null}
+function session(r){return {id:'s'+Date.now(),date:iso(),w:r.w,c:r.c,name:r.t,target:RPE[r.w],started:Date.now(),ended:null,ex:r.e.map((e,i)=>({n:e.n,d:e.d||'',rest:rest(r,e,i),g:e.g||null,set:Array.from({length:e.s||1},(_,j)=>({n:j+1,w:Number(e.w||0),r:Number(e.r||0),rpe:'',ok:false}))}))}}
 function nav(p){$$('.page').forEach(x=>x.classList.toggle('active',x.id===p));$$('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.p===p));render()}
-$$('.nav button').forEach(b=>b.onclick=()=>nav(b.dataset.p));
-function render(){
- $('#date').textContent=fmt(new Date()); home(); planPage(); startPage(); stats(); settings();
-}
-function home(){
- const r=plannedForDate(new Date()), nx=nextPlan(), w=latestW();
- $('#home').innerHTML=`
- <div class="card hero"><div class="eyebrow">${r?'СЕГОДНЯ':'БЛИЖАЙШАЯ ТРЕНИРОВКА'}</div><h2>${esc(r?r.t:(nx?nx.r.t:'Цикл завершён'))}</h2>
- ${!r&&nx?`<div class=muted>${fmt(nx.d)} · W${nx.r.w}</div>`:''}
- <div class=actions>${r?`<button class="primary" onclick="begin('${r.w}','${r.c}')">Начать</button>`:nx?`<button onclick="preview('${nx.r.w}','${nx.r.c}')">Посмотреть</button>`:''}<button onclick="quick()">Выбрать</button></div></div>
- <div class=twocol><div class=metric><span>Вес тела</span><b>${w??'—'}${w?' кг':''}</b><button onclick=weight()>+ Записать</button></div><div class=metric><span>Тренировки</span><b>${st.sessions.length}</b><small>${st.sessions.filter(s=>daysAgo(s.date)<7).length} за 7 дней</small></div></div>
- <div class=card><div class="row between"><div><h3>Экспорт для ChatGPT</h3><div class=muted>Подходы, RPE, вес и история</div></div><button class=primary onclick=exportChat()>Экспорт</button></div></div>`;
-}
-function daysAgo(ds){return Math.floor((Date.now()-new Date(ds+'T12:00:00'))/86400000)}
-function planPage(){
- let w=st.week||1, list=ROUTINES.filter(r=>r.w===w);
- $('#plan').innerHTML=`<div class=weekbar>${[1,2,3,4,5,6,7,8].map(x=>`<button class="${x===w?'on':''}" onclick="st.week=${x};save();planPage()">W${x}</button>`).join('')}</div>
- <div class=card><div class="row between"><div><h3>Неделя ${w}</h3><div class=muted>${w===4||w===6?'разгрузка / памп':w===8?'тест':w===7?'сила':'прогрессия'}</div></div><span class=chip>RPE ${RPE[w]}</span></div></div>
- ${list.map(r=>`<div class="card routine" onclick="preview('${r.w}','${r.c}')"><h3>${esc(r.c)} · ${esc(r.t)}</h3><div class=muted>${esc(r.p)}</div><div class=meta><span class=chip>${r.e.length} блоков</span><span class=chip>RPE ${RPE[w]}</span></div></div>`).join('')}`;
-}
-function begin(w,c){
- const r=map.get(`${w}-${c}`);if(!r)return;
- if(st.current&&done(st.current)>0&&!confirm('Текущая тренировка не завершена. Начать новую?'))return;
- st.current=session(r);save();closeModal();nav('start');
-}
-function startPage(){
- const s=st.current;if(!s){$('#start').innerHTML=`<div class=card><h2>Нет активной тренировки</h2><div class=muted>Выбери тренировку из плана.</div><button class=primary onclick=quick()>Выбрать</button></div>`;return}
- let pct=total(s)?Math.round(done(s)/total(s)*100):0;
- $('#start').innerHTML=`<div class=card><div class="row between"><div><h2>${esc(s.c)} · ${esc(s.name)}</h2><div class=muted>W${s.w} · цель RPE ${s.target}</div></div><span class=chip>${pct}%</span></div><div class=bar><i style="width:${pct}%"></i></div></div>
- ${s.ex.map((e,ei)=>exercise(e,ei)).join('')}
- <div class=card><button class="primary full" onclick=finish()>Завершить тренировку</button></div>`;
-}
-function exercise(e,ei){
- const meth=/UNVRSL|SLDR|DS|FST-7/.test(e.n);
- return `<div class="exercise ${meth?'method':''}"><div class="row between"><div><h3>${esc(e.n)}</h3>${e.d?`<div class=muted>${esc(e.d)}</div>`:''}<small>Отдых: ${e.rest} сек</small></div><button onclick="timer(${e.rest})">⏱</button></div>
- <div class=sethead><span>#</span><span>кг</span><span>повт.</span><span>RPE</span><span></span></div>
- ${e.set.map((x,si)=>`<div class=setrow><span>${si+1}</span><input inputmode=decimal value="${x.w||''}" onchange="edit(${ei},${si},'w',this.value)"><input inputmode=numeric value="${x.r||''}" onchange="edit(${ei},${si},'r',this.value)"><input inputmode=decimal placeholder="${s.target}" value="${x.rpe||''}" onchange="edit(${ei},${si},'rpe',this.value)"><button class="${x.ok?'done':''}" onclick="toggle(${ei},${si})">${x.ok?'✓':'○'}</button></div>`).join('')}</div>`;
-}
-function edit(ei,si,k,v){let x=st.current.ex[ei].set[si];x[k]=v===''?'':Number(String(v).replace(',','.'));save()}
-function toggle(ei,si){let e=st.current.ex[ei],x=e.set[si];x.ok=!x.ok;save();if(x.ok)timer(e.rest);startPage()}
-function finish(){
- const s=st.current;if(!s)return;if(!done(s)&&!confirm('Нет отмеченных подходов. Завершить?'))return;
- s.ended=Date.now();s.suggest=s.ex.map(e=>{let a=e.set.filter(x=>x.ok&&x.rpe);if(!a.length)return null;let av=a.reduce((q,x)=>q+Number(x.rpe),0)/a.length;return {n:e.n,r:+av.toFixed(1),a:av<=s.target-1?'+2.5–5%':av>=s.target+1?'−2.5–5%':'оставить'}}).filter(Boolean);
- st.sessions.push(s);st.current=null;save();stopTimer();summary(s);
-}
-function summary(s){modal(`<h2>Тренировка завершена</h2><div class=muted>${done(s)} выполненных подходов</div><h3 class=sect>Авторегуляция</h3>${s.suggest.length?s.suggest.map(x=>`<div class="line row between"><div><b>${esc(x.n)}</b><div class=muted>ср. RPE ${x.r}</div></div><span class="chip ${x.a[0]=='+'?'green':x.a[0]=='−'?'orange':''}">${x.a}</span></div>`).join(''):'<div class=muted>Заполняй RPE — появятся рекомендации.</div>'}<button class="primary full" onclick="closeModal();nav('stats')">Готово</button>`)}
-function preview(w,c){let r=map.get(`${w}-${c}`);modal(`<div class="row between"><div><h2>${esc(r.c)} · ${esc(r.t)}</h2><div class=muted>W${r.w} · RPE ${RPE[r.w]}</div></div><button onclick=closeModal()>✕</button></div>${r.e.map((e,i)=>`<div class=line><b>${esc(e.n)}</b><div class=muted>${e.s||1}×${e.r||e.m||'—'}${e.w?` · ${e.w} кг`:''} · отдых ${rest(r,e,i)}с</div></div>`).join('')}<button class="primary full" onclick="begin('${r.w}','${r.c}')">Начать</button>`)}
-function quick(){modal(`<h2>Выбрать тренировку</h2><div class=weekbar>${[1,2,3,4,5,6,7,8].map(w=>`<button onclick=qweek(${w})>W${w}</button>`).join('')}</div><div id=ql></div>`);qweek(st.week||1)}
-function qweek(w){$('#ql').innerHTML=ROUTINES.filter(r=>r.w===w).map(r=>`<div class="line row between"><div><b>${r.c} · ${esc(r.t)}</b><div class=muted>RPE ${RPE[w]}</div></div><button class=primary onclick="begin('${r.w}','${r.c}')">Старт</button></div>`).join('')}
-function stats(){
- let vol=0,rpes=[];st.sessions.forEach(s=>s.ex.forEach(e=>e.set.filter(x=>x.ok).forEach(x=>{vol+=(+x.w||0)*(+x.r||0);if(x.rpe)rpes.push(+x.rpe)})));
- let av=rpes.length?(rpes.reduce((a,b)=>a+b,0)/rpes.length).toFixed(1):'—';
- $('#stats').innerHTML=`<div class=twocol><div class=metric><span>Тренировки</span><b>${st.sessions.length}</b></div><div class=metric><span>Средний RPE</span><b>${av}</b></div></div><div class=card><span class=muted>Объём</span><h2>${Math.round(vol).toLocaleString('ru-RU')} кг</h2></div><div class=card><h3>Вес тела</h3>${chart()}</div><h3 class=sect>История</h3>${st.sessions.slice().reverse().slice(0,10).map(s=>`<div class=card><div class="row between"><div><b>${s.c} · ${esc(s.name)}</b><div class=muted>${s.date} · ${done(s)} подходов</div></div><span class=chip>W${s.w}</span></div></div>`).join('')||'<div class=card><div class=muted>История пока пустая.</div></div>'}`;
-}
-function chart(){let a=st.bw.slice(-20);if(a.length<2)return '<div class=muted>Добавь минимум две записи.</div>';let vals=a.map(x=>+x.w),mn=Math.min(...vals),mx=Math.max(...vals),rg=Math.max(.5,mx-mn),pts=a.map((x,i)=>`${14+i*292/(a.length-1)},${128-(x.w-mn)*105/rg}`).join(' ');return `<svg viewBox="0 0 320 140"><polyline points="${pts}" fill=none stroke="#32d45b" stroke-width=4 stroke-linecap=round stroke-linejoin=round /></svg><div class="row between muted"><span>${mn.toFixed(1)}</span><b>${vals.at(-1).toFixed(1)} кг</b><span>${mx.toFixed(1)}</span></div>`}
-function settings(){
- $('#settings').innerHTML=`<div class=card><div class="line row between"><div><b>Вес тела</b><div class=muted>${latestW()??'—'} кг</div></div><button onclick=weight()>Записать</button></div><div class="line row between"><div><b>Резервная копия</b><div class=muted>Локальные данные</div></div><button onclick=backup()>Экспорт</button></div><div class="line row between"><div><b>Импорт</b><div class=muted>Резервная копия UNVRSL FIT</div></div><label class=button for=imp>Выбрать</label><input id=imp hidden type=file accept=.json onchange="importBackup(this.files[0])"></div></div><div class=card><div class=muted>Все записи тренировок хранятся локально на этом устройстве. GitHub содержит только код приложения и стартовый план.</div></div>`;
-}
-function weight(){modal(`<h2>Вес тела</h2><input class=biginput id=wi inputmode=decimal value="${latestW()??''}"><button class="primary full" onclick=saveW()>Сохранить</button>`)}
-function saveW(){let v=parseFloat(String($('#wi').value).replace(',','.'));if(!v)return;st.bw.push({d:iso(),w:v});save();closeModal();render();toast('Вес сохранён')}
-function modal(x){$('#sheet').innerHTML=x;$('#modal').classList.add('show')}
+$$('.nav button').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.p)));
+$('#gear').addEventListener('click',settingsSheet);
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
+function render(){$('#date').textContent=fmt(new Date());home();planPage();startPage();statsPage();exercisesPage()}
+function home(){const today=new Date(),r=plannedForDate(today),nx=nextPlan(),w=latestW();const monday=getMonday(viewDate),cells=[];for(let i=0;i<7;i++){let d=new Date(monday);d.setDate(monday.getDate()+i);cells.push(d)}const weekDone=st.sessions.filter(s=>{let d=parseDate(s.date);return d>=monday&&d<new Date(monday.getFullYear(),monday.getMonth(),monday.getDate()+7)}).length;$('#home').innerHTML=`<div class="card calendar-card"><div class="calendar-head"><button class="arrow" onclick="moveWeek(-1)">‹</button><b>${sameWeek(viewDate,today)?'Эта неделя':monthLabel(viewDate)}</b><button class="arrow" onclick="moveWeek(1)">›</button></div><div class="weekdays">${['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'].map(x=>`<div>${x}</div>`).join('')}</div><div class="dates">${cells.map(d=>`<div class="datecell ${iso(d)===iso(today)?'today':''}"><div class="num">${d.getDate()}</div>${plannedForDate(d)||st.sessions.some(s=>s.date===iso(d))?'<span class="dot"></span>':''}</div>`).join('')}</div><div class="today-card"><div class="today-icon">${r?'🏋︎':'☾'}</div><div class="today-main"><small>Сегодня</small><b>${esc(r?`${r.c} · ${r.t}`:'День отдыха')}</b></div>${r?`<button class="plus" onclick="begin(${r.w},'${r.c}')">＋</button>`:`<button class="plus" onclick="quick()">＋</button>`}</div></div><div class="card"><div class="weight-top"><div><div class="muted">Вес тела</div><div class="big">${w??'—'}${w?' <span class="muted" style="font-size:20px">кг</span>':''}</div></div><div class="weight-actions"><button onclick="goalWeight()">◎ Цель</button><button onclick="weight()">＋ Записать</button></div></div>${weightChart(true)}</div><div class="card streak"><div class="fire">🔥</div><div class="grow"><b>серия: ${streakWeeks()} нед.</b><div class="streak-meta">${weekDone} / ${plannedCountThisWeek()} на этой неделе · всего тренировок: ${st.sessions.length}</div></div><button onclick="nav('plan')" style="font-size:28px">▣</button></div>${!r&&nx?`<div class="card"><div class="muted">Ближайшая тренировка</div><div class="title" style="margin-top:6px">${esc(nx.r.c)} · ${esc(nx.r.t)}</div><div class="muted">${fmt(nx.d)}</div><button class="btn primary" style="margin-top:14px" onclick="preview(${nx.r.w},'${nx.r.c}')">Посмотреть</button></div>`:''}`}
+function getMonday(d){let x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x}
+function sameWeek(a,b){return iso(getMonday(a))===iso(getMonday(b))}
+function moveWeek(n){viewDate.setDate(viewDate.getDate()+n*7);home()}
+function plannedCountThisWeek(){let m=getMonday(new Date()),n=0;for(let i=0;i<7;i++){let d=new Date(m);d.setDate(m.getDate()+i);if(plannedForDate(d))n++}return n}
+function streakWeeks(){if(!st.sessions.length)return 0;let count=0,m=getMonday(new Date());for(let k=0;k<52;k++){let from=new Date(m);from.setDate(m.getDate()-7*k);let to=new Date(from);to.setDate(from.getDate()+7);let has=st.sessions.some(s=>{let d=parseDate(s.date);return d>=from&&d<to});if(has)count++;else if(k>0)break}return count}
+function planPage(){const w=st.week||1,list=ROUTINES.filter(r=>r.w===w);$('#plan').innerHTML=`<div class="section">ТРЕНИРОВОЧНЫЙ ЦИКЛ</div><div class="weekbar">${[1,2,3,4,5,6,7,8].map(x=>`<button class="weekbtn ${x===w?'on':''}" onclick="st.week=${x};save();planPage()">W${x}</button>`).join('')}</div><div class="card"><div class="row between"><div><div class="title">Неделя ${w}</div><div class="muted">${weekType(w)}</div></div><span class="chip green">RPE ${RPE[w]}</span></div></div>${list.map(r=>`<div class="card routine" onclick="preview(${r.w},'${r.c}')"><h3>${esc(r.c)} · ${esc(r.t)}</h3><div class="muted">${esc(r.p||'')}</div><div class="chips"><span class="chip">${r.e.length} блоков</span><span class="chip">RPE ${RPE[w]}</span></div></div>`).join('')}`}
+function weekType(w){return w===4||w===6?'Разгрузка / памп':w===8?'Тестовая неделя':w===7?'Силовая неделя':'Прогрессия'}
+function begin(w,c){const r=rmap.get(`${w}-${c}`);if(!r){toast('Тренировка не найдена');return}if(st.current&&done(st.current)>0&&!confirm('Текущая тренировка не завершена. Начать новую?'))return;st.current=session(r);save();closeModal();nav('start')}
+function startPage(){const s=st.current;if(!s){$('#start').innerHTML=`<div class="card"><div class="title">Нет активной тренировки</div><div class="muted" style="margin-top:6px">Выбери тренировку из плана или быстрым стартом.</div><button class="btn primary full" onclick="quick()">Выбрать тренировку</button></div>`;return}const pct=total(s)?Math.round(done(s)/total(s)*100):0;$('#start').innerHTML=`<div class="card workout-head"><div class="row between"><div><div class="title">${esc(s.c)} · ${esc(s.name)}</div><div class="muted">W${s.w} · целевой RPE ${s.target}</div></div><span class="chip green">${pct}%</span></div><div class="progress"><i style="width:${pct}%"></i></div></div>${s.ex.map((e,ei)=>exerciseCard(s,e,ei)).join('')}<div class="card"><button class="btn primary full" onclick="finish()">Завершить тренировку</button><button class="btn danger full" onclick="cancelWorkout()">Отменить тренировку</button></div>`}
+function exerciseCard(s,e,ei){const method=/UNVRSL|SLDR|DS|FST-7/.test(e.n);return `<div class="exercise ${method?'method':''}"><div class="row between"><div class="grow"><div class="exname">${esc(e.n)}</div>${e.d?`<div class="exnote">${esc(e.d)}</div>`:''}<div class="rest-label">Отдых ${e.rest} сек</div></div><button class="btn tiny" onclick="timer(${e.rest})">⏱</button></div>${method?'<div class="method-strip"></div>':''}<div class="sethead"><span>#</span><span>кг</span><span>повт.</span><span>RPE</span><span></span></div>${e.set.map((x,si)=>`<div class="setrow"><span class="setnum">${si+1}</span><input inputmode="decimal" value="${x.w||''}" placeholder="0" onchange="editSet(${ei},${si},'w',this.value)"><input inputmode="numeric" value="${x.r||''}" placeholder="0" onchange="editSet(${ei},${si},'r',this.value)"><input inputmode="decimal" value="${x.rpe||''}" placeholder="${s.target}" onchange="editSet(${ei},${si},'rpe',this.value)"><button class="check ${x.ok?'done':''}" onclick="toggleSet(${ei},${si})">${x.ok?'✓':'○'}</button></div>`).join('')}</div>`}
+function editSet(ei,si,k,v){if(!st.current)return;let x=st.current.ex[ei].set[si];x[k]=v===''?'':Number(String(v).replace(',','.'));save()}
+function toggleSet(ei,si){if(!st.current)return;let e=st.current.ex[ei],x=e.set[si];x.ok=!x.ok;save();if(x.ok&&e.rest>0)timer(e.rest);startPage()}
+function cancelWorkout(){if(!st.current)return;if(confirm('Удалить текущую тренировку?')){st.current=null;save();stopTimer();startPage()}}
+function finish(){const s=st.current;if(!s)return;if(!done(s)&&!confirm('Ни один подход не отмечен. Завершить тренировку?'))return;s.ended=Date.now();s.suggest=s.ex.map(e=>{const a=e.set.filter(x=>x.ok&&x.rpe!==''&&Number.isFinite(+x.rpe));if(!a.length)return null;const av=a.reduce((q,x)=>q+Number(x.rpe),0)/a.length;return {n:e.n,r:+av.toFixed(1),a:av<=s.target-1?'+2.5–5%':av>=s.target+1?'−2.5–5%':'оставить'}}).filter(Boolean);st.sessions.push(s);st.current=null;save();stopTimer();summary(s)}
+function summary(s){modal(`<div class="row between"><div><h2>Тренировка завершена</h2><div class="muted">${done(s)} выполненных подходов</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="section">АВТОРЕГУЛЯЦИЯ</div>${s.suggest.length?s.suggest.map(x=>`<div class="listline row between"><div><b>${esc(x.n)}</b><div class="muted small">ср. RPE ${x.r}</div></div><span class="chip ${x.a[0]=='+'?'green':x.a[0]=='−'?'orange':''}">${x.a}</span></div>`).join(''):'<div class="muted">Заполняй RPE — появятся рекомендации.</div>'}<button class="btn primary full" onclick="closeModal();nav('stats')">Готово</button>`)}
+function preview(w,c){const r=rmap.get(`${w}-${c}`);if(!r)return toast('Тренировка не найдена');modal(`<div class="row between"><div><h2>${esc(r.c)} · ${esc(r.t)}</h2><div class="muted">W${r.w} · RPE ${RPE[r.w]}</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div>${r.e.map((e,i)=>`<div class="listline"><b>${esc(e.n)}</b><div class="muted small">${e.s||1}×${e.r||e.m||'—'}${e.w?` · ${e.w} кг`:''} · отдых ${rest(r,e,i)} сек</div>${e.d?`<div class="exnote">${esc(e.d)}</div>`:''}</div>`).join('')}<button class="btn primary full" onclick="begin(${r.w},'${r.c}')">Начать</button>`)}
+function quick(){modal(`<div class="row between"><h2>Выбрать тренировку</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="weekbar">${[1,2,3,4,5,6,7,8].map(w=>`<button class="weekbtn ${w===st.week?'on':''}" onclick="quickWeek(${w})">W${w}</button>`).join('')}</div><div id="quickList"></div>`);quickWeek(st.week||1)}
+function quickWeek(w){const el=$('#quickList');if(!el)return;el.innerHTML=ROUTINES.filter(r=>r.w===w).map(r=>`<div class="listline row between"><div><b>${esc(r.c)} · ${esc(r.t)}</b><div class="muted small">RPE ${RPE[w]} · ${r.e.length} блоков</div></div><button class="btn tiny primary" onclick="begin(${r.w},'${r.c}')">Старт</button></div>`).join('')}
+function statsPage(){let vol=0,rpes=[];st.sessions.forEach(s=>s.ex.forEach(e=>e.set.filter(x=>x.ok).forEach(x=>{vol+=(+x.w||0)*(+x.r||0);if(x.rpe!=='')rpes.push(+x.rpe)})));const av=rpes.length?(rpes.reduce((a,b)=>a+b,0)/rpes.length).toFixed(1):'—';$('#stats').innerHTML=`<div class="metrics"><div class="metric"><span>Тренировки</span><b>${st.sessions.length}</b></div><div class="metric"><span>Средний RPE</span><b>${av}</b></div></div><div class="card"><div class="muted">Тренировочный объём</div><div class="big" style="font-size:34px;margin-top:7px">${Math.round(vol).toLocaleString('ru-RU')} <span class="muted" style="font-size:16px">кг</span></div></div><div class="card"><div class="title">Вес тела</div>${weightChart(false)}</div><div class="section">ИСТОРИЯ</div>${st.sessions.slice().reverse().slice(0,14).map(s=>`<div class="card"><div class="row between"><div><b>${esc(s.c)} · ${esc(s.name)}</b><div class="muted small">${s.date} · ${done(s)} подходов</div></div><button class="btn tiny" onclick="openSession('${s.id}')">Открыть</button></div></div>`).join('')||'<div class="card muted">История пока пустая.</div>'}`}
+function openSession(id){const s=st.sessions.find(x=>x.id===id);if(!s)return;modal(`<div class="row between"><div><h2>${esc(s.c)} · ${esc(s.name)}</h2><div class="muted">${s.date} · W${s.w}</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div>${s.ex.map(e=>`<div class="listline"><b>${esc(e.n)}</b>${e.set.filter(x=>x.ok).map(x=>`<div class="muted small">${x.w||0} кг × ${x.r||0}${x.rpe!==''?` @RPE ${x.rpe}`:''}</div>`).join('')||'<div class="muted small">Нет выполненных подходов</div>'}</div>`).join('')}`)}
+function weightChart(homeMode){const a=st.bw.slice(-20);if(a.length<2)return `<div class="muted" style="margin-top:14px">${homeMode?'Добавь ещё одну запись, чтобы появился график.':'Добавь минимум две записи.'}</div>`;const vals=a.map(x=>+x.w),mn=Math.min(...vals),mx=Math.max(...vals),rg=Math.max(.5,mx-mn),pts=a.map((x,i)=>`${16+i*304/(a.length-1)},${130-(x.w-mn)*98/rg}`).join(' ');return `<svg class="spark" viewBox="0 0 336 150" preserveAspectRatio="none"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--green)" stop-opacity=".25"/><stop offset="1" stop-color="var(--green)" stop-opacity="0"/></linearGradient></defs><polyline points="${pts}" fill="none" stroke="var(--green)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><polygon points="${pts} 320,140 16,140" fill="url(#g)"/></svg>`}
+function exercisesPage(){const names=[];ROUTINES.forEach(r=>r.e.forEach(e=>{const base=(e.n||'').replace(/\s+—\s+(UNVRSL|SLDR|DS|FST-7).*/,'').trim();if(base&&!names.includes(base))names.push(base)}));names.sort((a,b)=>a.localeCompare(b,'ru'));$('#exercises').innerHTML=`<input id="exSearch" class="search" placeholder="Поиск упражнения" oninput="filterExercises(this.value)"><div id="exList">${names.map(n=>exerciseLibRow(n)).join('')}</div>`}
+function exerciseLibRow(n){const rec=recordsFor(n);return `<div class="card exlib" data-name="${esc(n.toLowerCase())}"><div class="row between"><div><b>${esc(n)}</b><div class="muscle">${rec.count} записей</div></div>${rec.best?`<span class="chip green">${rec.best} кг</span>`:''}</div></div>`}
+function recordsFor(n){let count=0,best=0;st.sessions.forEach(s=>s.ex.filter(e=>e.n.startsWith(n)).forEach(e=>e.set.filter(x=>x.ok).forEach(x=>{count++;best=Math.max(best,+x.w||0)})));return {count,best}}
+function filterExercises(q){q=(q||'').toLowerCase();$$('#exList .exlib').forEach(x=>x.classList.toggle('hidden',!x.dataset.name.includes(q)))}
+function weight(){modal(`<h2>Вес тела</h2><div class="field"><label>Вес, кг</label><input id="weightInput" inputmode="decimal" value="${latestW()??''}"></div><button class="btn primary full" onclick="saveWeight()">Сохранить</button>`);setTimeout(()=>$('#weightInput')?.focus(),100)}
+function saveWeight(){const el=$('#weightInput'),v=Number(String(el.value).replace(',','.'));if(!v||v<20||v>400)return toast('Проверь вес');st.bw.push({d:iso(),w:v,t:Date.now()});save();closeModal();render();toast('Вес сохранён')}
+function goalWeight(){modal(`<h2>Цель по весу</h2><div class="field"><label>Цель, кг</label><input id="goalInput" inputmode="decimal" value="${st.goal??''}"></div><button class="btn primary full" onclick="saveGoal()">Сохранить</button>`)}
+function saveGoal(){const v=Number(String($('#goalInput').value).replace(',','.'));st.goal=v||null;save();closeModal();render();toast('Цель сохранена')}
+function settingsSheet(){modal(`<div class="row between"><h2>Настройки</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="section">ВНЕШНИЙ ВИД</div><div class="settings-card"><div class="setting"><div>Тема</div><div class="seg"><button class="on">☾ Тёмная</button><button disabled>☀ Светлая</button></div></div><div class="setting"><div>Схема тела</div><div class="seg"><button class="${st.body==='male'?'on':''}" onclick="st.body='male';save();settingsSheet()">Мужской</button><button class="${st.body==='female'?'on':''}" onclick="st.body='female';save();settingsSheet()">Женский</button></div></div><div class="setting" style="display:block"><div>Акцентный цвет</div><div class="colors">${COLORS.map(c=>`<button class="color ${st.accent===c?'on':''}" style="background:${c}" onclick="setAccent('${c}')"></button>`).join('')}</div></div></div><div class="section">ДАННЫЕ</div><div class="settings-card"><div class="setting"><div><b>Импорт из openGym</b><div class="muted small">JSON резервной копии</div></div><label class="btn tiny" for="ogImport">Импорт</label><input id="ogImport" type="file" accept=".json,application/json" hidden onchange="importOpenGym(this.files[0])"></div><div class="setting"><div><b>Экспорт для ChatGPT</b><div class="muted small">Тренировки, RPE и вес</div></div><button class="btn tiny" onclick="exportChat()">Экспорт</button></div><div class="setting"><div><b>Экспорт резервной копии</b><div class="muted small">Все локальные данные</div></div><button class="btn tiny" onclick="backup()">JSON</button></div><div class="setting"><div><b>Импорт резервной копии</b></div><label class="btn tiny" for="bkImport">Импорт</label><input id="bkImport" type="file" accept=".json,application/json" hidden onchange="restoreBackup(this.files[0])"></div><div class="setting"><button class="btn danger full" onclick="resetAll()">Сбросить всё</button></div></div>`)}
+function setAccent(c){st.accent=c;applyAccent();save();settingsSheet();render()}
+function download(name,obj){const b=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),500)}
+function exportChat(){download(`unvrsl-fit-chatgpt-${iso()}.json`,{format:'unvrsl-fit-chatgpt-v2',exportedAt:new Date().toISOString(),bodyweight:st.bw,goal:st.goal,sessions:st.sessions,current:st.current,cycleStart:CYCLE_START})}
+function backup(){download(`unvrsl-fit-backup-${iso()}.json`,{format:'unvrsl-fit-backup-v3',state:st})}
+async function restoreBackup(file){if(!file)return;try{const d=JSON.parse(await file.text());if(!d.state)throw new Error('Нет state');st=d.state;applyAccent();save();closeModal();render();toast('Копия восстановлена')}catch(e){alert('Не удалось импортировать: '+e.message)}}
+async function importOpenGym(file){if(!file)return;try{const d=JSON.parse(await file.text());let imported=0;if(Array.isArray(d.bodyweight)&&d.bodyweight.length){st.bw=d.bodyweight.map(x=>({d:x.d,w:Number(x.w),t:x.t||Date.now()})).filter(x=>x.d&&x.w);imported+=st.bw.length}if(Array.isArray(d.workouts)&&d.workouts.length){const conv=d.workouts.map(convertOpenGymWorkout).filter(Boolean);st.sessions.push(...conv);imported+=conv.length}save();closeModal();render();toast(`Импортировано: ${imported}`)}catch(e){alert('Не удалось прочитать openGym JSON: '+e.message)}}
+function convertOpenGymWorkout(w){try{return {id:'og'+(w.id||Date.now()+Math.random()),date:w.d||w.date||iso(),w:0,c:'OG',name:w.name||w.n||'openGym',target:8,started:w.t||Date.now(),ended:w.t||Date.now(),ex:(w.ex||w.exercises||[]).map(e=>({n:e.n||e.name||e.id||'Упражнение',d:'Импортировано из openGym',rest:90,set:(e.set||e.sets||[]).map((s,i)=>({n:i+1,w:+(s.w??s.weight??0),r:+(s.r??s.reps??0),rpe:s.rpe??'',ok:true}))}))}}catch(e){return null}}
+function resetAll(){if(confirm('Удалить все локальные тренировки, вес и настройки?')){localStorage.removeItem(KEY);localStorage.removeItem(OLDKEY);location.reload()}}
+function modal(html){$('#sheet').innerHTML=html;$('#modal').classList.add('show')}
 function closeModal(){$('#modal').classList.remove('show')}
-function dl(n,o){let b=new Blob([JSON.stringify(o,null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(u),500)}
-function exportChat(){dl(`unvrsl-chatgpt-${iso()}.json`,{format:'unvrsl-fit-chatgpt-v1',exportedAt:new Date().toISOString(),bodyweight:st.bw,sessions:st.sessions,current:st.current})}
-function backup(){dl(`unvrsl-fit-backup-${iso()}.json`,{format:'unvrsl-fit-backup-v1',state:st})}
-async function importBackup(f){if(!f)return;try{let x=JSON.parse(await f.text());if(x.format==='unvrsl-fit-backup-v1'&&x.state){st=x.state;save();render();toast('Импортировано')}else alert('Неверный формат')}catch(e){alert('Не удалось прочитать файл')}}
-let ti=null,end=0;
-function timer(sec){if(!sec)return;stopTimer();end=Date.now()+sec*1000;$('#timer').classList.add('show');tick();ti=setInterval(tick,250)}
-function tick(){let s=Math.max(0,Math.ceil((end-Date.now())/1000));$('#tt').textContent=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;if(!s){stopTimer();toast('Отдых закончен');try{navigator.vibrate?.(150)}catch(e){}}}
-function add30(){end+=30000;tick()}
-function stopTimer(){$('#timer').classList.remove('show');if(ti)clearInterval(ti);ti=null}
-function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),1600)}
-save();render();
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1800)}
+function timer(sec){if(!sec||sec<=0)return;stopTimer();timerEnd=Date.now()+sec*1000;$('#timer').classList.add('show');tick();timerId=setInterval(tick,250)}
+function tick(){const s=Math.max(0,Math.ceil((timerEnd-Date.now())/1000)),m=Math.floor(s/60),r=s%60;$('#tt').textContent=`${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;if(s<=0){stopTimer();beep();toast('Отдых закончен')}}
+function add30(){timerEnd+=30000;tick()}
+function stopTimer(){if(timerId)clearInterval(timerId);timerId=null;$('#timer')?.classList.remove('show')}
+function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=760;g.gain.value=.07;o.start();setTimeout(()=>{o.stop();c.close()},160)}catch(e){}}
+render();
