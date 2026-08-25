@@ -1,1 +1,5 @@
-const C='unvrsl-fit-v2';const A=['./','./index.html','./manifest.webmanifest','./icon.svg','./app.js','./plan-w1.js','./plan-w2.js','./plan-w3.js','./plan-w4.js','./plan-w5.js','./plan-w6.js','./plan-w7.js','./plan-w8.js'];self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(A))));self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
+const CACHE='unvrsl-fit-v4';
+const ASSETS=['./','./index.html','./app.js','./manifest.webmanifest','./icon.svg','./plan-w1.js','./plan-w2.js','./plan-w3.js','./plan-w4.js','./plan-w5.js','./plan-w6.js','./plan-w7.js','./plan-w8.js'];
+self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});
+self.addEventListener('activate',e=>e.waitUntil(Promise.all([self.clients.claim(),caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))])));
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('./index.html'))))});
