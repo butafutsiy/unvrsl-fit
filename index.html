@@ -34,11 +34,30 @@ button,input,select{font:inherit}button{border:0;color:inherit;background:none;c
 <body>
 <div class="app">
 <header class="topbar"><div><div class="brand">UNVRSL FIT</div><div id="date" class="date"></div></div><button id="gear" class="gear" aria-label="Настройки">⚙︎</button></header>
-<main><section id="home" class="page active"></section><section id="plan" class="page"></section><section id="start" class="page"></section><section id="stats" class="page"></section><section id="exercises" class="page"></section></main>
+<main>
+<section id="home" class="page active"></section>
+<section id="plan" class="page"></section>
+<section id="start" class="page"></section>
+<section id="stats" class="page"></section>
+<section id="exercises" class="page"></section>
+</main>
 </div>
-<nav class="nav"><button data-p="home" class="active"><span class="ico">⌂</span>Главная</button><button data-p="plan"><span class="ico">▣</span>План</button><button data-p="start" class="start"><span class="ico">🏋︎</span>Старт</button><button data-p="stats"><span class="ico">▥</span>Статистика</button><button data-p="exercises"><span class="ico">☷</span>Упражнения</button></nav>
+<nav class="nav">
+<button data-p="home" class="active"><span class="ico">⌂</span>Главная</button>
+<button data-p="plan"><span class="ico">▣</span>План</button>
+<button data-p="start" class="start"><span class="ico">🏋︎</span>Старт</button>
+<button data-p="stats"><span class="ico">▥</span>Статистика</button>
+<button data-p="exercises"><span class="ico">☷</span>Упражнения</button>
+</nav>
 <div id="timer" class="timer"><div><div class="muted small">Отдых</div><b id="tt">01:30</b></div><div class="row"><button class="btn tiny" onclick="add30()">+30</button><button class="btn tiny danger" onclick="stopTimer()">Стоп</button></div></div>
-<div id="modal" class="modal"><div id="sheet" class="sheet"></div></div><div id="toast" class="toast"></div>
-<script src="plan-w1.js"></script><script src="plan-w2.js"></script><script src="plan-w3.js"></script><script src="plan-w4.js"></script><script src="plan-w5.js"></script><script src="plan-w6.js"></script><script src="plan-w7.js"></script><script src="plan-w8.js"></script><script src="app.js"></script>
+<div id="modal" class="modal"><div id="sheet" class="sheet"></div></div>
+<div id="toast" class="toast"></div>
+<script src="plan-w1.js"></script><script src="plan-w2.js"></script><script src="plan-w3.js"></script><script src="plan-w4.js"></script><script src="plan-w5.js"></script><script src="plan-w6.js"></script><script src="plan-w7.js"></script><script src="plan-w8.js"></script>
+<script src="app.js"></script>
+<script src="og-style.js"></script>
+<script src="og-core.js"></script>
+<script src="og-db.js"></script>
+<script src="og-detail.js"></script>
+<script src="og-settings.js"></script>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));</script>
 </body></html>
