@@ -14,4 +14,4 @@ async function loadCloudModules(){
   cloudModulesLoaded=true;
  }catch(e){console.warn('UNVRSL cloud modules',e)}finally{cloudModulesLoading=false}
 }
-setTimeout(()=>{renderBodyFilters();renderExerciseResults();loadExternalScript('popular-programs.js').catch(e=>console.warn('popular programs',e));loadExternalScript('wake-lock.js').catch(e=>console.warn('wake lock',e));loadCloudModules()},0);
+setTimeout(()=>{renderBodyFilters();renderExerciseResults();loadExternalScript('popular-programs.js').catch(e=>console.warn('popular programs',e));loadExternalScript('wake-lock.js').catch(e=>console.warn('wake lock',e));loadExternalScript('workout-duration.js').catch(e=>console.warn('workout duration',e));loadCloudModules()},0);
