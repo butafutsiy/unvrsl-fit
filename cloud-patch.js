@@ -11,3 +11,5 @@ if(typeof _cloudSyncSessionPatched==='function')window.cloudSyncSession=async fu
 
 const _cloudFinishPatched=window.finish;
 if(typeof _cloudFinishPatched==='function')window.finish=function(){const currentId=st.current?.id||null;_cloudFinishPatched();if(currentId){const saved=[...(st.sessions||[])].reverse().find(x=>x.id===currentId);if(saved)setTimeout(()=>cloudSyncSession(saved),0)}};
+
+setTimeout(()=>{if(typeof dynamicScript==='function')dynamicScript('./cloud-programs.js')},0);
