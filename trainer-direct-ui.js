@@ -5,9 +5,11 @@
   const css=document.createElement('style');
   css.textContent=`
     #trainerInlineDetail{margin-top:12px}.trainer-direct-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+    .trainer-direct-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 8px 8px}.trainer-direct-section-head .section{margin:0}.trainer-direct-assign{display:flex;align-items:center;gap:7px;background:var(--blue,#0a84ff)!important;color:#fff!important;border-radius:14px!important;padding:9px 12px!important;font-weight:760!important;white-space:nowrap}.trainer-direct-assign .plus-mark{font-size:20px;line-height:1;font-weight:500}
     .trainer-direct-plan{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid #303034}.trainer-direct-plan:last-child{border-bottom:0}
     .trainer-direct-plan .danger{background:#3a1a1a!important;color:#ff6b63!important}.trainer-direct-measures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.trainer-direct-measures .metric{min-width:0;padding:13px}.trainer-direct-measures .metric b{font-size:20px}
-    @media(max-width:390px){.trainer-direct-plan{grid-template-columns:1fr}.trainer-direct-plan .btn{width:100%}.trainer-direct-measures{grid-template-columns:1fr 1fr}}
+    .nav button[data-p="start"] .ico.play-start-icon svg{width:24px!important;height:24px!important;display:block;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linejoin:round;stroke-linecap:round}
+    @media(max-width:390px){.trainer-direct-plan{grid-template-columns:1fr}.trainer-direct-plan .btn{width:100%}.trainer-direct-measures{grid-template-columns:1fr 1fr}.trainer-direct-section-head{align-items:center}.trainer-direct-assign{padding:8px 10px!important;font-size:13px!important}}
   `;
   document.head.appendChild(css);
 
@@ -22,6 +24,16 @@
   }
   function fmt(v,unit=''){const n=Number(v);return Number.isFinite(n)&&n>0?`${n.toFixed(1).replace('.0','')}${unit}`:'—'}
   function latestMeasure(checkins,key){for(let i=checkins.length-1;i>=0;i--){const n=Number(checkins[i]?.measurements?.[key]);if(Number.isFinite(n)&&n>0)return n}return null}
+
+  function patchStartIcon(){
+    const ico=document.querySelector('.nav button[data-p="start"] .ico');if(!ico)return;
+    if(ico.classList.contains('play-start-icon'))return;
+    ico.classList.add('play-start-icon');
+    ico.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5 18.5 12 8 18.5Z"/></svg>';
+  }
+  patchStartIcon();
+  const navEl=document.querySelector('.nav');if(navEl)new MutationObserver(()=>patchStartIcon()).observe(navEl,{subtree:true,childList:true});
+  [80,350,1000,2200].forEach(t=>setTimeout(patchStartIcon,t));
 
   async function loadClient(id){
     const c=window.cloud;if(!c?.client||!c?.user)return null;
@@ -44,7 +56,7 @@
     const mm=[['Грудь','chest'],['Талия','waist'],['Живот','abdomen'],['Ягодицы','hips'],['Бедро','thigh'],['Рука','arm'],['Икра','calf']];
     const measures=[lastW?`<div class="metric"><span>Вес</span><b>${fmt(lastW,' кг')}</b></div>`:'',...mm.map(([l,k])=>{const v=latestMeasure(d.checkins,k);return v?`<div class="metric"><span>${l}</span><b>${fmt(v,' см')}</b></div>`:''})].filter(Boolean).join('');
     const plans=d.plans.length?d.plans.map(p=>`<div class="trainer-direct-plan"><div><b>${esc(p.plans?.title||'Программа')} · v${p.version||1}</b><div class="muted small">Назначена клиенту</div></div><button type="button" class="btn tiny danger" data-remove-plan="${p.plan_id}" data-client="${id}">Удалить</button></div>`).join(''):'<div class="muted">Активных программ нет.</div>';
-    host.innerHTML=`<div class="card"><div class="trainer-direct-head"><div><div class="title">${esc(d.profile?.display_name||'Клиент')}</div><div class="muted small">Тренировок: ${d.workouts.length} · средний RPE ${avg}</div></div><button class="btn tiny" type="button" data-close-client>Закрыть</button></div><div class="section">ПРОГРАММЫ</div><div class="card" style="margin:0">${plans}</div><div class="section">ЗАМЕРЫ</div>${measures?`<div class="trainer-direct-measures">${measures}</div>`:'<div class="muted">Пока нет замеров.</div>'}</div>`;
+    host.innerHTML=`<div class="card"><div class="trainer-direct-head"><div><div class="title">${esc(d.profile?.display_name||'Клиент')}</div><div class="muted small">Тренировок: ${d.workouts.length} · средний RPE ${avg}</div></div><button class="btn tiny" type="button" data-close-client>Закрыть</button></div><div class="trainer-direct-section-head"><div class="section">ПРОГРАММЫ</div><button type="button" class="btn tiny trainer-direct-assign" data-assign-client="${id}"><span class="plus-mark">＋</span><span>Программа</span></button></div><div class="card" style="margin:0">${plans}</div><div class="section">ЗАМЕРЫ</div>${measures?`<div class="trainer-direct-measures">${measures}</div>`:'<div class="muted">Пока нет замеров.</div>'}</div>`;
     host.scrollIntoView({behavior:'smooth',block:'start'});
   }
 
@@ -70,6 +82,7 @@
   document.addEventListener('click',e=>{
     const root=e.target.closest?.('#clients');if(!root)return;
     const del=e.target.closest?.('[data-remove-plan]');if(del){e.preventDefault();e.stopImmediatePropagation();removeClientPlan(del.dataset.client,del.dataset.removePlan);return}
+    const assign=e.target.closest?.('[data-assign-client]');if(assign){e.preventDefault();e.stopImmediatePropagation();if(typeof window.trainerAssignProgramSheet==='function')window.trainerAssignProgramSheet(assign.dataset.assignClient);else if(typeof trainerAssignProgramSheet==='function')trainerAssignProgramSheet(assign.dataset.assignClient);else toast('Открой раздел «Программы» и создай программу');return}
     const close=e.target.closest?.('[data-close-client]');if(close){e.preventDefault();e.stopImmediatePropagation();document.getElementById('trainerInlineDetail')?.remove();return}
     const link=e.target.closest?.('[data-new-link]');if(link){e.preventDefault();e.stopImmediatePropagation();if(typeof window.trainerNewInvite==='function')window.trainerNewInvite(link.dataset.newLink,link.dataset.title);return}
   },true);
