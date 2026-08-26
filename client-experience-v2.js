@@ -101,5 +101,6 @@
     wrapped.__clientV2=true;window.trainerClientDetail=wrapped;try{trainerClientDetail=wrapped}catch(e){}
   }
 
-  [0,250,900,1800].forEach(t=>setTimeout(()=>{document.body?.classList.toggle('unvrsl-client',isClient());if(isClient()&&document.getElementById('home')?.classList.contains('active'))clientHomeV2()},t));
+  document.body?.classList.toggle('unvrsl-client',isClient());
+  if(isClient()&&typeof window.home==='function')setTimeout(()=>{try{window.home()}catch(e){}},120);
 })();
