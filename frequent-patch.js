@@ -14,4 +14,4 @@ async function loadCloudModules(){
   cloudModulesLoaded=true;
  }catch(e){console.warn('UNVRSL cloud modules',e)}finally{cloudModulesLoading=false}
 }
-setTimeout(()=>{renderBodyFilters();renderExerciseResults();loadExternalScript('popular-programs.js').catch(e=>console.warn('popular programs',e));loadExternalScript('wake-lock.js').catch(e=>console.warn('wake lock',e));loadExternalScript('workout-duration.js').catch(e=>console.warn('workout duration',e));loadExternalScript('advanced-training.js').then(()=>loadExternalScript('advanced-start-patch.js')).catch(e=>console.warn('advanced training',e));loadCloudModules()},0);
+setTimeout(()=>{renderBodyFilters();renderExerciseResults();loadExternalScript('popular-programs.js').catch(e=>console.warn('popular programs',e));loadExternalScript('wake-lock.js').catch(e=>console.warn('wake lock',e));loadExternalScript('workout-duration.js').catch(e=>console.warn('workout duration',e));loadExternalScript('advanced-training.js').then(()=>loadExternalScript('advanced-start-patch.js')).then(()=>loadExternalScript('profile-stats.js')).catch(e=>console.warn('advanced training',e));loadCloudModules()},0);
