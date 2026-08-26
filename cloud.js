@@ -1,6 +1,7 @@
 'use strict';
 const CLOUD_KEY='unvrsl-fit-cloud-config-v1';
 const cloud={client:null,user:null,profile:null,ready:false,invite:null};
+window.cloud=cloud;
 function cloudConfig(){let local={};try{local=JSON.parse(localStorage.getItem(CLOUD_KEY)||'{}')}catch(e){}const base=window.UNVRSL_CLOUD||{};return{url:local.url||base.url||'',anonKey:local.anonKey||base.anonKey||''}}
 function cloudConfigured(){const c=cloudConfig();return /^https:\/\//.test(c.url)&&c.anonKey.length>20}
 async function cloudInit(){
