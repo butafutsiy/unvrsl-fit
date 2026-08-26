@@ -15,25 +15,10 @@ function ogName(id){const x=ogLibrary.find(e=>e.id===String(id));return x?ruExer
 function convertOpenGymWorkout(w){
   try{const entries=w.entries||w.ex||w.exercises||[];return{id:'og'+(w.id||Date.now()+Math.random()),date:w.d||w.date||iso(),w:0,c:'OG',name:w.name||w.n||'Импортированная тренировка',target:8,tempo:'',started:w.start||w.t||Date.now(),ended:w.end||w.t||Date.now(),ex:entries.map(e=>{const sets=e.sets||e.set||[];return{n:e.n||e.name||ogName(e.id),d:'Импортировано из базы упражнений',rest:90,sourceId:e.id||null,mode:'reps',set:sets.map((x,i)=>({n:i+1,w:+(x.w??x.weight??0),r:+(x.r??x.reps??0),rpe:x.rpe??'',ok:x.done!==false}))}})}}catch(e){return null}
 }
-
 const _ruExercisesPage=exercisesPage;
-exercisesPage=function(){
-  _ruExercisesPage();
-  const search=document.getElementById('exSearch');
-  if(search)search.placeholder='Поиск упражнений';
-  const chip=document.querySelector('#exercises .catalog-head .chip');
-  if(chip)chip.textContent='Русский · анимации';
-};
+exercisesPage=function(){_ruExercisesPage();const search=document.getElementById('exSearch');if(search)search.placeholder='Поиск упражнений';const chip=document.querySelector('#exercises .catalog-head .chip');if(chip)chip.textContent='Русский · анимации'};
 const _ruRenderExerciseDetail=renderExerciseDetail;
-renderExerciseDetail=function(ex){
-  _ruRenderExerciseDetail(ex);
-  document.querySelectorAll('.detail-en').forEach(el=>el.remove());
-};
-
+renderExerciseDetail=function(ex){_ruRenderExerciseDetail(ex);document.querySelectorAll('.detail-en').forEach(el=>el.remove())};
 function dynamicScript(src){return new Promise(resolve=>{if(document.querySelector(`script[data-dyn="${src}"]`))return resolve();const s=document.createElement('script');s.src=src;s.dataset.dyn=src;s.onload=resolve;s.onerror=resolve;document.body.appendChild(s)})}
-async function loadCloudModules(){
-  await dynamicScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-  for(const src of ['./cloud-config.js','./cloud.js','./trainer-style.js','./trainer.js','./progression.js','./cloud-patch.js'])await dynamicScript(src)
-}
-
-save();render();loadExerciseDB();loadCloudModules();
+async function loadCloudModules(){await dynamicScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');for(const src of ['./cloud-config.js','./cloud.js','./trainer-style.js','./trainer.js','./progression.js','./cloud-patch.js'])await dynamicScript(src)}
+save();render();loadExerciseDB();
