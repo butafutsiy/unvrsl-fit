@@ -8,7 +8,10 @@
     .nav button[data-p="start"] .ico{font-size:0!important}
     .nav button[data-p="start"] .ico>*{display:none!important}
     .nav button[data-p="start"] .ico::before{content:"";display:block;width:0;height:0;border-top:9px solid transparent;border-bottom:9px solid transparent;border-left:15px solid currentColor;margin-left:3px}
-    #trainerInlineDetail .trainer-assign-inline{margin:10px 0 4px;width:100%}
+    #trainerInlineDetail{overflow:hidden}
+    #trainerInlineDetail .trainer-direct-section-head{display:block!important;margin:18px 8px 10px!important}
+    #trainerInlineDetail .trainer-direct-section-head .section{margin:0 0 10px!important}
+    #trainerInlineDetail .trainer-direct-assign,#trainerInlineDetail .trainer-assign-inline{display:flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;width:100%!important;max-width:100%!important;min-height:52px!important;margin:0!important;white-space:normal!important;text-align:center!important}
   `;
   document.head.appendChild(style);
 
@@ -106,10 +109,23 @@
   }
 
   function ensureAssignButton(clientId){
-    const host=document.getElementById('trainerInlineDetail');if(!host||host.querySelector('.trainer-assign-inline'))return;
+    const host=document.getElementById('trainerInlineDetail');if(!host)return;
     const section=[...host.querySelectorAll('.section')].find(x=>/ПРОГРАММЫ/i.test(x.textContent||''));
     if(!section)return;
-    const btn=document.createElement('button');btn.type='button';btn.className='btn primary trainer-assign-inline';btn.textContent='＋ Назначить программу';
+
+    let btn=host.querySelector('[data-assign-client]');
+    const legacy=[...host.querySelectorAll('.trainer-assign-inline')];
+    if(btn){
+      legacy.forEach(x=>{if(x!==btn)x.remove()});
+      btn.classList.add('trainer-assign-inline');
+      btn.innerHTML='<span class="plus-mark">＋</span><span>Назначить программу</span>';
+      btn.dataset.assignClient=clientId;
+      return;
+    }
+
+    btn=legacy[0]||document.createElement('button');
+    legacy.slice(1).forEach(x=>x.remove());
+    btn.type='button';btn.className='btn primary trainer-assign-inline';btn.textContent='＋ Назначить программу';
     btn.onclick=()=>{if(typeof window.trainerAssignProgramSheet==='function')window.trainerAssignProgramSheet(clientId)};
     section.after(btn)
   }
@@ -118,7 +134,11 @@
     const cur=window.trainerClientDetail;
     if(typeof cur==='function'&&!cur.__assignHotfix){
       const base=cur;
-      const wrapped=async function(id){const r=await base.apply(this,arguments);setTimeout(()=>ensureAssignButton(id),0);return r};
+      const wrapped=async function(id){
+        const r=await base.apply(this,arguments);
+        [0,60,220].forEach(t=>setTimeout(()=>ensureAssignButton(id),t));
+        return r
+      };
       wrapped.__assignHotfix=true;window.trainerClientDetail=wrapped;
       try{trainerClientDetail=wrapped}catch(e){}
     }
