@@ -9,7 +9,7 @@ window.cloudPasswordLoginSheet=function(){
  modal(`<div class="sheet-grabber"></div><h2>Вход в UNVRSL FIT</h2><div class="muted">Войди по логину и паролю. Письмо не требуется.</div><div class="field"><label>Логин</label><input id="authLogin" type="email" inputmode="email" autocomplete="username" value="${esc(saved)}" placeholder="name@example.com"></div><div class="field"><label>Пароль</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="Пароль" onkeydown="if(event.key==='Enter')cloudSignInPassword()"></div><button class="btn primary full" onclick="cloudSignInPassword()">Войти</button><button class="btn full" style="margin-top:10px" onclick="cloudMagicFallbackSheet()">Войти по ссылке из письма</button>`)
 };
 window.cloudMagicFallbackSheet=function(){
- modal(`<div class="sheet-grabber"></div><h2>Вход по почте</h2><div class="muted">Резервный способ. На почту придёт одноразовая ссылка.</div><div class="field"><label>Электронная почта</label><input id="cloudEmail" type="email" inputmode="email" value="${esc(authSavedLogin())}" placeholder="name@example.com"></div><button class="btn primary full" onclick="cloudSendMagic()">Получить ссылку</button><button class="btn full" style="margin-top:10px" onclick="cloudPasswordLoginSheet()">Назад к паролю</button>`)
+ modal(`<div class="sheet-grabber"></div><h2>Первичная настройка входа</h2><div class="muted">Если пароль ещё не был установлен, один раз войди по ссылке из письма. После подтверждения приложение сразу предложит создать пароль, и дальше письма не понадобятся.</div><div class="field"><label>Электронная почта</label><input id="cloudEmail" type="email" inputmode="email" value="${esc(authSavedLogin())}" placeholder="name@example.com"></div><button class="btn primary full" onclick="cloudSendMagic()">Получить ссылку</button><button class="btn full" style="margin-top:10px" onclick="cloudPasswordLoginSheet()">Назад к паролю</button>`)
 };
 window.cloudSignInPassword=async function(){
  if(!cloud?.client)return toast('Облако ещё загружается');
@@ -18,7 +18,7 @@ window.cloudSignInPassword=async function(){
  const btn=$('#sheet button.btn.primary');if(btn){btn.disabled=true;btn.textContent='Вхожу…';btn.style.opacity='.65'}
  try{
   const {data,error}=await cloud.client.auth.signInWithPassword({email,password});
-  if(error){if(btn){btn.disabled=false;btn.textContent='Войти';btn.style.opacity=''}return toast(authErrorRu(error))}
+  if(error){if(btn){btn.disabled=false;btn.textContent='Войти';btn.style.opacity=''}const m=String(error?.message||'').toLowerCase();if(m.includes('invalid login credentials'))return modal(`<div class="sheet-grabber"></div><h2>Пароль не подошёл</h2><div class="muted">Если ты ещё ни разу не сохранял этот пароль в аккаунте, он пока не активен. Войди один раз по ссылке из письма — после подтверждения сразу появится экран создания пароля.</div><button class="btn primary full" style="margin-top:18px" onclick="cloudMagicFallbackSheet()">Настроить пароль</button><button class="btn full" style="margin-top:10px" onclick="cloudPasswordLoginSheet()">Назад</button>`);return toast(authErrorRu(error))}
   authRememberLogin(email);cloud.user=data?.user||data?.session?.user||null;cloud.profile=null;if(cloud.user)await cloudEnsureProfile();closeModal();renderCloudAffordances();render();toast('Вход выполнен');
  }catch(e){if(btn){btn.disabled=false;btn.textContent='Войти';btn.style.opacity=''}toast('Нет связи с сервером')}
 };
