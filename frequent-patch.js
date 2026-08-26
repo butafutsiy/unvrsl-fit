@@ -10,7 +10,7 @@ async function loadCloudModules(){
  if(cloudModulesLoaded||cloudModulesLoading)return;cloudModulesLoading=true;
  try{
   if(!window.supabase)await loadExternalScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-  for(const src of ['cloud-config.js','cloud.js','trainer-style.js','trainer.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js'])await loadExternalScript(src);
+  for(const src of ['cloud-config.js','cloud.js','auth-ux.js','trainer-style.js','trainer.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js'])await loadExternalScript(src);
   cloudModulesLoaded=true;
  }catch(e){console.warn('UNVRSL cloud modules',e)}finally{cloudModulesLoading=false}
 }
