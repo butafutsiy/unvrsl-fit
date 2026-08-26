@@ -1,4 +1,4 @@
-const CACHE='unvrsl-fit-v19';
+const CACHE='unvrsl-fit-v20';
 const ASSETS=['./','./index.html','./app.js','./manifest.webmanifest','./icon.svg','./plan-w1.js','./plan-w2.js','./plan-w3.js','./plan-w4.js','./plan-w5.js','./plan-w6.js','./plan-w7.js','./plan-w8.js','./og-style.js','./og-core.js','./og-db.js','./og-detail.js','./og-settings.js','./coach-style.js','./coach-programs.js','./smart-training.js','./frequent-patch.js','./popular-programs.js','./cloud-config.js','./cloud.js','./auth-ux.js','./auth-handoff.js','./trainer-style.js','./trainer.js','./trainer-nav-patch.js','./progression.js','./cloud-patch.js','./cloud-programs.js','./app-mode.js','./client-link.js','./auth-password.js'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});
 self.addEventListener('activate',e=>e.waitUntil(Promise.all([self.clients.claim(),caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))])));
