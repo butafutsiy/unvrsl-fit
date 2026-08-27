@@ -101,6 +101,7 @@ exercisesPage=function(){
 
 Promise.resolve()
  .then(()=>loadExternalScript('exercise-library-ru-v2.js'))
+ .then(()=>loadExternalScript('exercise-library-quality.js'))
  .then(()=>loadExternalScript('cardio-metric-fixes.js'))
  .then(()=>loadExternalScript('preview-mobile-fix.js'))
  .catch(e=>console.warn('expanded RU exercise/cardio/preview fixes',e));
