@@ -9,7 +9,6 @@
 
   const clone=x=>{try{return JSON.parse(JSON.stringify(x))}catch(e){return null}};
   const parse=x=>{try{return x?JSON.parse(x):null}catch(e){return null}};
-  const nowIso=()=>new Date().toISOString();
   function deviceId(){
     let id=localStorage.getItem(DEVICE_KEY);
     if(!id){id='d_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10);localStorage.setItem(DEVICE_KEY,id)}
@@ -21,28 +20,29 @@
   function arr(x){return Array.isArray(x)?x:[]}
   function doneCount(session){return arr(session?.ex).reduce((sum,e)=>sum+arr(e?.set).filter(x=>x?.ok).length,0)}
   function sessionScore(s){return Number(s?.ended||s?.started||0)+doneCount(s)*10}
-  function mergeByKey(a,b,keyFn,scoreFn){
+  function mergeByKey(first,second,keyFn,scoreFn){
     const map=new Map();
-    for(const item of [...arr(a),...arr(b)]){
+    for(const item of [...arr(first),...arr(second)]){
       if(!item)continue;const key=keyFn(item);if(!key)continue;
-      const old=map.get(key);if(!old||scoreFn(item)>=scoreFn(old))map.set(key,clone(item));
+      const old=map.get(key);if(!old||scoreFn(item)>scoreFn(old))map.set(key,clone(item));
     }
     return [...map.values()]
   }
   function mergeStates(local,remote,remoteStamp=0){
     local=clone(local)||{};remote=clone(remote)||{};
     const lm=Number(meta().localModifiedAt||0),preferRemote=remoteStamp>lm;
+    const first=preferRemote?remote:local,second=preferRemote?local:remote;
     const base=preferRemote?{...local,...remote}:{...remote,...local};
-    base.sessions=mergeByKey(local.sessions,remote.sessions,x=>String(x.id||''),sessionScore).sort((a,b)=>(a.started||0)-(b.started||0));
-    base.bw=mergeByKey(local.bw,remote.bw,x=>String(x.d||''),x=>Number(x.updatedAt||x.ts||0)+(preferRemote?1:0)).sort((a,b)=>String(a.d||'').localeCompare(String(b.d||'')));
-    base.programs=mergeByKey(local.programs,remote.programs,x=>String(x.id||x.title||x.name||''),x=>Number(x.updatedAt||x.createdAt||0));
-    base.remotePlans=mergeByKey(local.remotePlans,remote.remotePlans,x=>String(x.id||''),x=>Number(x.version||x.updatedAt||0));
-    base.customExercises=mergeByKey(local.customExercises,remote.customExercises,x=>String(x.id||x.n||x.name||''),x=>Number(x.updatedAt||x.createdAt||0));
+    base.sessions=mergeByKey(first.sessions,second.sessions,x=>String(x.id||''),sessionScore).sort((a,b)=>(a.started||0)-(b.started||0));
+    base.bw=mergeByKey(first.bw,second.bw,x=>String(x.d||''),x=>Number(x.updatedAt||x.ts||0)).sort((a,b)=>String(a.d||'').localeCompare(String(b.d||'')));
+    base.programs=mergeByKey(first.programs,second.programs,x=>String(x.id||x.title||x.name||''),x=>Number(x.updatedAt||x.createdAt||0));
+    base.remotePlans=mergeByKey(first.remotePlans,second.remotePlans,x=>String(x.id||''),x=>Number(x.version||x.updatedAt||0));
+    base.customExercises=mergeByKey(first.customExercises,second.customExercises,x=>String(x.id||x.n||x.name||''),x=>Number(x.updatedAt||x.createdAt||0));
     base.favorites=[...new Set([...arr(remote.favorites),...arr(local.favorites)])];
     base.hiddenExercises=[...new Set([...arr(remote.hiddenExercises),...arr(local.hiddenExercises)])];
     base.aliases=preferRemote?{...(local.aliases||{}),...(remote.aliases||{})}:{...(remote.aliases||{}),...(local.aliases||{})};
     const lc=local.current,rc=remote.current;
-    if(lc&&rc)base.current=sessionScore(lc)>=sessionScore(rc)?lc:rc;else base.current=lc||rc||null;
+    if(lc&&rc){const ls=sessionScore(lc),rs=sessionScore(rc);base.current=ls===rs?(preferRemote?rc:lc):(ls>rs?lc:rc)}else base.current=lc||rc||null;
     return base;
   }
   async function waitCloud(){
