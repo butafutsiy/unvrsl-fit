@@ -50,9 +50,9 @@
     return neutralize(b);
   }
 
-  function hideOldOfflineAdd(){
+  function removeOldOfflineAdd(){
     document.querySelectorAll('#offlineClientsPane button').forEach(b=>{
-      if(/добавить\s+офлайн[-‑ ]клиента/i.test((b.textContent||'').trim()))b.style.display='none';
+      if(/добавить\s+офлайн[-‑ ]клиента/i.test((b.textContent||'').trim()))b.remove();
     });
   }
 
@@ -61,7 +61,7 @@
     try{
       const root=document.getElementById('clients');if(!root)return;
       const slot=ensureSlot();
-      if(!slot){headerActions();return}
+      if(!slot){headerActions();removeOldOfflineAdd();return}
       let online=slot.querySelector('[data-client-add-online]');
       const source=headerActions();
       if(source&&source!==online){
@@ -71,7 +71,7 @@
       const offline=ensureOfflineButton(slot),tab=activeTab();
       if(online)online.hidden=tab!=='online';
       offline.hidden=tab!=='offline';
-      hideOldOfflineAdd();
+      removeOldOfflineAdd();
     }finally{busy=false}
   }
 
@@ -92,7 +92,7 @@
   }
 
   const root=document.getElementById('clients');
-  if(root)new MutationObserver(()=>setTimeout(apply,0)).observe(root,{childList:true,subtree:true});
+  if(root)new MutationObserver(()=>{removeOldOfflineAdd();setTimeout(apply,0)}).observe(root,{childList:true,subtree:true});
   function install(){patchTabSwitch();patchClientsPage();apply()}
   [0,100,350,900,1800,3200].forEach(t=>setTimeout(install,t));
 })();
