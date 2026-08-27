@@ -4,6 +4,7 @@
   window.__unvrslPersistenceSafety=true;
 
   const PRIMARY='unvrsl-fit-v3';
+  const LEGACY='unvrsl-fit-v2';
   const BACKUP='unvrsl-fit-v3-backup';
   const BACKUP_PREV='unvrsl-fit-v3-backup-prev';
   const JOURNAL='unvrsl-fit-session-journal-v1';
@@ -48,20 +49,35 @@
     writeJournal(list);
   }
 
+  function mergeSessions(list){
+    if(!Array.isArray(list)||!list.length)return 0;
+    st.sessions=Array.isArray(st.sessions)?st.sessions:[];
+    const ids=new Set(st.sessions.map(x=>String(x.id)));
+    let added=0;
+    for(const s of list){
+      if(s?.id&&!ids.has(String(s.id))){st.sessions.push(clone(s));ids.add(String(s.id));added++}
+    }
+    if(added)st.sessions.sort((a,b)=>(a.started||0)-(b.started||0));
+    return added;
+  }
+
   function recoverJournal(){
     try{
-      st.sessions=Array.isArray(st.sessions)?st.sessions:[];
-      const ids=new Set(st.sessions.map(x=>String(x.id)));
-      let changed=false;
-      for(const s of journal()){
-        if(s?.id&&!ids.has(String(s.id))){st.sessions.push(s);ids.add(String(s.id));changed=true}
-      }
-      if(changed){
-        st.sessions.sort((a,b)=>(a.started||0)-(b.started||0));
-        if(typeof save==='function')save();
-      }
-      return changed;
-    }catch(e){return false}
+      const added=mergeSessions(journal());
+      if(added&&typeof save==='function')save();
+      return added;
+    }catch(e){return 0}
+  }
+
+  function recoverLegacy(){
+    try{
+      const legacy=parse(localStorage.getItem(LEGACY));
+      if(!legacy||typeof legacy!=='object')return 0;
+      let added=mergeSessions(legacy.sessions);
+      if(!st.current&&legacy.current&&currentDone(legacy)>0&&Date.now()-(legacy.current.started||0)<7*24*3600*1000){st.current=clone(legacy.current);added++}
+      if(added&&typeof save==='function')save();
+      return added;
+    }catch(e){return 0}
   }
 
   function recoverActive(){
@@ -101,7 +117,8 @@
     try{finish=window.finish}catch(e){}
   }
 
-  recoverJournal();
+  const legacyRecovered=recoverLegacy();
+  const journalRecovered=recoverJournal();
   const activeRecovered=recoverActive();
   writeSnapshot();
 
@@ -111,4 +128,5 @@
   setInterval(()=>{try{if(st.current)writeSnapshot()}catch(e){}},5000);
 
   if(activeRecovered)setTimeout(()=>{try{toast('Активная тренировка восстановлена')}catch(e){}},600);
+  else if(legacyRecovered||journalRecovered)setTimeout(()=>{try{toast('История тренировок восстановлена')}catch(e){}},600);
 })();
