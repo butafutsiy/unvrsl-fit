@@ -9,7 +9,7 @@
   "lang": "ru",
   "icons": [
     {
-      "src": "icon.svg",
+      "src": "icon.svg?v=99",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
