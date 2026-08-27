@@ -3,7 +3,7 @@
   if(window.__unvrslStartProgramPicker)return;
   window.__unvrslStartProgramPicker=true;
   const BUILTIN='__builtin_cycle__';
-  const BUILTIN_NAME='Встроенный цикл · 8 недель';
+  const builtInName=()=>typeof window.unvrslBuiltInProgramName==='function'?window.unvrslBuiltInProgramName():(st.builtinProgramName||'Встроенный цикл · 8 недель');
   const routineList=()=>typeof ROUTINES!=='undefined'?ROUTINES:(window.UNVRSL_ROUTINES||[]);
   if(!st.startProgramWeeks||typeof st.startProgramWeeks!=='object')st.startProgramWeeks={};
   if(!st.startProgramId)st.startProgramId=BUILTIN;
@@ -26,7 +26,7 @@
   document.head.appendChild(style);
 
   function programs(){
-    const list=[{id:BUILTIN,name:BUILTIN_NAME,weeks:8,days:routineList().length,builtin:true,kind:'Встроенная'}];
+    const list=[{id:BUILTIN,name:builtInName(),weeks:8,days:routineList().length,builtin:true,kind:'Встроенная'}];
     const seen=new Set([BUILTIN]);
     (Array.isArray(st.programs)?st.programs:[]).forEach(p=>{
       if(!p||p.archived||!Array.isArray(p.weeks)||!p.weeks.length)return;
@@ -64,7 +64,7 @@
 
   window.selectStartProgram=function(token){ui.pid=decodeURIComponent(token);ui.week=null;st.startProgramId=ui.pid;save();renderPicker()};
   window.selectStartWeek=function(w){const p=selected();ui.week=Math.max(1,Math.min(p.weeks,+w||1));st.startProgramWeeks[p.id]=ui.week;if(p.builtin)st.week=ui.week;save();renderPicker()};
-  window.startPickedBuiltin=function(w,token){const c=decodeURIComponent(token);st.startProgramId=BUILTIN;st.startProgramWeeks[BUILTIN]=w;st.week=w;window.__pendingStartProgramMeta={id:BUILTIN,name:BUILTIN_NAME};save();begin(w,c)};
+  window.startPickedBuiltin=function(w,token){const c=decodeURIComponent(token);st.startProgramId=BUILTIN;st.startProgramWeeks[BUILTIN]=w;st.week=w;window.__pendingStartProgramMeta={id:BUILTIN,name:builtInName()};save();begin(w,c)};
   window.startPickedProgram=function(token,wi,di){const pid=decodeURIComponent(token);st.startProgramId=pid;st.startProgramWeeks[pid]=wi+1;save();beginProgramDay(pid,wi,di)};
   window.openStartProgramPicker=function(){ui.pid=defaultProgram();ui.week=null;renderPicker()};
 
