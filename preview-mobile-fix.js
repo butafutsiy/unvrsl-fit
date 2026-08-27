@@ -52,6 +52,11 @@
     return `${sets}×${reps||'—'}${weight>0?` · ${Number.isInteger(weight)?weight:weight.toFixed(1)} кг`:''}`
   };
 
+  window.startRoutineFromPreview=function(w,token){
+    const c=decodeURIComponent(String(token||''));
+    if(typeof begin==='function')return begin(Number(w),c)
+  };
+
   function previewV81(w,c){
     const routine=(typeof rmap!=='undefined'&&rmap?.get)?rmap.get(`${w}-${c}`):(typeof ROUTINES!=='undefined'?ROUTINES.find(x=>Number(x.w)===Number(w)&&String(x.c)===String(c)):null);
     if(!routine){if(typeof toast==='function')toast('Тренировка не найдена');return}
@@ -60,7 +65,7 @@
       const rr=restFor(routine,e,i),note=String(e?.d||'').trim();
       return `<div class="routine-preview-item"><div class="routine-preview-name">${esc(cleanName(e.n))}</div><div class="routine-preview-prescription">${esc(prescription(e))}</div><div class="routine-preview-rule">RPE ${esc(target)} · темп ${esc(tempo)}${rr?` · ${rr}с отдых`:''}</div>${note?`<div class="routine-preview-note">${esc(note)}</div>`:''}</div>`
     }).join('');
-    modal(`<div class="routine-preview-root"><div class="sheet-grabber"></div><div class="routine-preview-head"><div><div class="routine-preview-title">${esc(routine.c)} · ${esc(routine.t)}</div><div class="routine-preview-meta">W${routine.w} · RPE ${esc(target)} · темп ${esc(tempo)}</div></div><button class="btn routine-preview-close" onclick="closeModal()" aria-label="Закрыть">×</button></div><div class="routine-preview-list">${rows}</div><button class="btn primary routine-preview-start" onclick="begin(${routine.w},'${encodeURIComponent(routine.c)}'.includes('%')?decodeURIComponent('${encodeURIComponent(routine.c)}'):'${routine.c}')">Начать</button></div>`)
+    modal(`<div class="routine-preview-root"><div class="sheet-grabber"></div><div class="routine-preview-head"><div><div class="routine-preview-title">${esc(routine.c)} · ${esc(routine.t)}</div><div class="routine-preview-meta">W${routine.w} · RPE ${esc(target)} · темп ${esc(tempo)}</div></div><button class="btn routine-preview-close" onclick="closeModal()" aria-label="Закрыть">×</button></div><div class="routine-preview-list">${rows}</div><button class="btn primary routine-preview-start" onclick="startRoutineFromPreview(${routine.w},'${encodeURIComponent(routine.c)}')">Начать</button></div>`)
   }
   previewV81.__routinePreviewV81=true;
 
