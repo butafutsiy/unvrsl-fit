@@ -7,7 +7,8 @@
   style.id='unvrsl-clients-action-layout';
   style.textContent=`
     #clients .clients-add-action{margin:10px 0 12px}
-    #clients .clients-add-action .btn{width:100%!important;min-height:48px!important;display:flex!important;align-items:center!important;justify-content:center!important;font-size:16px!important;font-weight:780!important}
+    #clients .clients-add-action .btn{width:100%!important;min-height:48px!important;display:flex!important;align-items:center!important;justify-content:center!important;font-size:16px!important;font-weight:780!important;background:#2c2c2f!important;color:#f5f5f7!important;border:1px solid #3a3a3f!important;box-shadow:none!important}
+    #clients .clients-add-action .btn:active{background:#38383d!important}
     #clients .clients-add-action .btn[hidden]{display:none!important}
     #clients>.card:first-child>.row.between{display:block!important}
     #clients>.card:first-child>.row.between>div:first-child{width:100%!important}
@@ -29,6 +30,8 @@
     return buttons.find(b=>/^\s*[＋+]?\s*клиент\s*$/i.test((b.textContent||'').trim()))||null;
   }
 
+  function neutralize(b){if(!b)return;b.classList.remove('primary');b.classList.add('full');b.style.removeProperty('background');b.style.removeProperty('color');return b}
+
   function ensureSlot(){
     const root=document.getElementById('clients'),tabs=root?.querySelector('.client-tabs');
     if(!root||!tabs)return null;
@@ -40,11 +43,11 @@
   function ensureOfflineButton(slot){
     let b=slot.querySelector('[data-client-add-offline]');
     if(!b){
-      b=document.createElement('button');b.type='button';b.className='btn primary full';b.dataset.clientAddOffline='1';b.textContent='＋ Клиент';
+      b=document.createElement('button');b.type='button';b.className='btn full';b.dataset.clientAddOffline='1';b.textContent='＋ Клиент';
       b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();if(typeof window.offlineNewClientSheet==='function')window.offlineNewClientSheet();else if(typeof offlineNewClientSheet==='function')offlineNewClientSheet();else if(typeof toast==='function')toast('Форма клиента ещё загружается')});
       slot.appendChild(b);
     }
-    return b;
+    return neutralize(b);
   }
 
   function hideOldOfflineAdd(){
@@ -62,8 +65,9 @@
       let online=slot.querySelector('[data-client-add-online]');
       const source=headerActions();
       if(source&&source!==online){
-        source.dataset.clientAddOnline='1';source.classList.add('full');source.textContent='＋ Клиент';slot.prepend(source);online=source;
+        source.dataset.clientAddOnline='1';neutralize(source);source.textContent='＋ Клиент';slot.prepend(source);online=source;
       }
+      neutralize(online);
       const offline=ensureOfflineButton(slot),tab=activeTab();
       if(online)online.hidden=tab!=='online';
       offline.hidden=tab!=='offline';
