@@ -98,3 +98,5 @@ exercisesPage=function(){
  window.migrateMyProgramTimedCardio=function(){const a=migratePrograms(),b=migrateCurrent();return a||b};
  migratePrograms();migrateCurrent();setTimeout(()=>{migratePrograms();migrateCurrent()},1200);
 })();
+
+Promise.resolve().then(()=>loadExternalScript('exercise-library-ru-v2.js')).then(()=>loadExternalScript('cardio-metric-fixes.js')).catch(e=>console.warn('expanded RU exercise/cardio metric fixes',e));
