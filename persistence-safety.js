@@ -130,3 +130,12 @@
   if(activeRecovered)setTimeout(()=>{try{toast('Активная тренировка восстановлена')}catch(e){}},600);
   else if(legacyRecovered||journalRecovered)setTimeout(()=>{try{toast('История тренировок восстановлена')}catch(e){}},600);
 })();
+
+// Account cloud bootstrap: local storage remains primary for offline use, Supabase stores a durable per-user copy.
+Promise.resolve()
+ .then(()=>window.UNVRSL_CLOUD?null:loadExternalScript('cloud-config.js'))
+ .then(()=>loadExternalScript('supabase-loader.js'))
+ .then(()=>window.UNVRSL_SUPABASE_READY)
+ .then(()=>window.cloud?.client?null:loadExternalScript('cloud.js'))
+ .then(()=>loadExternalScript('account-sync.js'))
+ .catch(e=>console.warn('UNVRSL account bootstrap',e));
