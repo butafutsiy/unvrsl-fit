@@ -82,4 +82,11 @@
   }
 
   schedulePatch();
+
+  // Late integrity patch: fixes finished-session stats, weekly muscle load and settings duplication.
+  setTimeout(()=>{
+    if(window.__unvrslStatsIntegrityV104)return;
+    if(typeof window.loadExternalScript==='function')window.loadExternalScript('stats-integrity-v104.js').catch(e=>console.warn('stats integrity',e));
+    else{const s=document.createElement('script');s.src='./stats-integrity-v104.js';document.head.appendChild(s)}
+  },0);
 })();
