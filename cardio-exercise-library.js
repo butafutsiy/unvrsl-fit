@@ -18,9 +18,47 @@
   try{if(typeof EQ_RU==='object')EQ_RU.cardio='Кардиотренажёр'}catch(e){}
   const byId=id=>CARDIO.find(x=>x.id===String(id||''))||null;
   const byName=n=>CARDIO.find(x=>x.n.toLowerCase()===String(n||'').trim().toLowerCase())||null;
-  const isCardio=e=>e?.kind==='cardio'||e?.workMode==='timer'||!!byName(e?.n);
+  const cleanLegacyName=n=>String(n||'').trim().replace(/^\s*(?:разминка|кардио)\s*·\s*/i,'').replace(/^\s*\d+[A-Za-zА-Яа-я]?\s*·\s*/,'').trim().toLowerCase();
+  const legacyPresetForName=n=>{
+    const q=cleanLegacyName(n);
+    if(/аэро\s*байк|аэробайк|air\s*bike/.test(q))return byId('cardio:airbike');
+    if(/лыжн.*тренаж|ski\s*erg/.test(q))return byId('cardio:skierg');
+    if(/гребн.*тренаж|гребля|rower/.test(q))return byId('cardio:rower');
+    if(/велотренаж|велосипед|bike/.test(q))return byId('cardio:bike');
+    if(/ходьб.*наклон/.test(q))return byId('cardio:incline-walk');
+    if(/бегов.*дорож|treadmill/.test(q))return byId('cardio:treadmill');
+    if(/эллип|ellipt/.test(q))return byId('cardio:elliptical');
+    if(/лестниц|stairmaster|stair master/.test(q))return byId('cardio:stairmaster');
+    if(/степпер|stepper/.test(q))return byId('cardio:stepper');
+    if(/скакал|jump rope/.test(q))return byId('cardio:rope');
+    return null
+  };
+  const legacyDurationSeconds=e=>{
+    const explicit=Number(e?.durationSec||e?.workSeconds||0);if(explicit>0)return Math.round(explicit);
+    const label=String(e?.repLabel||'').trim().toLowerCase();if(!label)return 0;
+    let m=label.match(/(\d+(?:[.,]\d+)?)\s*(?:сек|секунд)/i);if(m)return Math.max(1,Math.round(Number(m[1].replace(',','.'))));
+    m=label.match(/(\d+(?:[.,]\d+)?)\s*(?:мин|минут)/i);if(m)return Math.max(1,Math.round(Number(m[1].replace(',','.'))*60));
+    return 0
+  };
+  const isLegacyTimedCardio=e=>legacyDurationSeconds(e)>0&&!!legacyPresetForName(e?.n);
+  const isCardio=e=>e?.kind==='cardio'||e?.workMode==='timer'||!!byName(e?.n)||isLegacyTimedCardio(e);
   const fmtTime=sec=>{sec=Math.max(1,Math.round(Number(sec)||0));if(sec%60===0)return `${sec/60} мин`;if(sec>=60)return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;return `${sec} сек`};
   const formValue=sec=>sec>=120&&sec%60===0?{v:sec/60,u:'min'}:{v:sec,u:'sec'};
+
+  function normalizeLegacyTimedCardioPrograms(){
+    let changed=false;
+    (Array.isArray(st?.programs)?st.programs:[]).forEach(p=>(p?.weeks||[]).forEach(w=>(w?.days||[]).forEach(d=>(d?.ex||[]).forEach(e=>{
+      const sec=legacyDurationSeconds(e),preset=legacyPresetForName(e?.n);if(!(sec>0)||!preset)return;
+      if(e.kind!=='cardio'||e.workMode!=='timer'||Number(e.durationSec)!==sec||Number(e.workSeconds)!==sec)changed=true;
+      e.kind='cardio';e.workMode='timer';e.durationSec=sec;e.workSeconds=sec;e.sourceId=e.sourceId||preset.id;e.bp='cardio';e.tg='cardiovascular system';e.eq='cardio';
+      if(!e.displayPrescription){const count=e.sets?.length||1;e.displayPrescription=`${count>1?`${count}×`:''}${fmtTime(sec)} · RPE ${e.rpe||6}`}
+      (e.sets||[]).forEach(x=>{x.workSeconds=sec;x.w=0;x.r=0})
+    }))));
+    if(changed)try{save()}catch(e){}
+    return changed
+  }
+  window.normalizeLegacyTimedCardioPrograms=normalizeLegacyTimedCardioPrograms;
+  normalizeLegacyTimedCardioPrograms();
 
   const baseCatalog=window.catalogRecords;
   if(typeof baseCatalog==='function'){
@@ -33,8 +71,8 @@
   }
 
   function cardioForm(x){
-    const p=typeof programById==='function'?programById(x.pid):null,d=p?.weeks?.[x.wi]?.days?.[x.di],old=x.existingIndex!=null?d?.ex?.[x.existingIndex]:null,preset=byId(x.cardioId)||byName(x.n)||CARDIO[0];
-    const sec=Number(old?.durationSec||old?.workSeconds||preset.seconds)||40,f=formValue(sec),sets=old?.sets?.length||preset.sets||1,rpe=Number(old?.rpe||preset.rpe||6),rest=Number(old?.rest??preset.rest??60),note=old?.note||preset.note||'';
+    const p=typeof programById==='function'?programById(x.pid):null,d=p?.weeks?.[x.wi]?.days?.[x.di],old=x.existingIndex!=null?d?.ex?.[x.existingIndex]:null,preset=byId(x.cardioId)||byName(x.n)||legacyPresetForName(x.n)||CARDIO[0];
+    const sec=Number(old?.durationSec||old?.workSeconds||legacyDurationSeconds(old)||preset.seconds)||40,f=formValue(sec),sets=old?.sets?.length||preset.sets||1,rpe=Number(old?.rpe||preset.rpe||6),rest=Number(old?.rest??preset.rest??60),note=old?.note||preset.note||'';
     modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${esc(x.n)}</h2><div class="muted">Кардио · время + RPE</div></div><button class="btn tiny" onclick="openProgramEditor('${x.pid}',${x.wi},${x.di})">←</button></div><div class="method-builder-grid"><div class="field"><label>Подходов / интервалов</label><input id="cardioSets" type="number" min="1" max="20" value="${sets}"></div><div class="field"><label>Длительность</label><input id="cardioDuration" type="number" min="1" step="1" value="${f.v}"></div><div class="field"><label>Единица</label><select id="cardioUnit"><option value="sec" ${f.u==='sec'?'selected':''}>сек</option><option value="min" ${f.u==='min'?'selected':''}>мин</option></select></div><div class="field"><label>RPE</label><input id="cardioRpe" type="number" min="1" max="10" step="0.5" value="${rpe}"></div><div class="field"><label>Отдых, сек</label><input id="cardioRest" type="number" min="0" max="600" step="5" value="${rest}"></div></div><div class="field"><label>Комментарий</label><input id="cardioNote" value="${esc(note)}"></div><div class="card" style="margin:12px 0"><div class="muted small">На тренировке вместо кг и повторений будет время, кнопка таймера, RPE и отметка выполнения.</div></div><button class="btn primary full" onclick="saveCardioProgramExercise('${x.pid}',${x.wi},${x.di},'${encodeURIComponent(x.cardioId||preset.id)}',${x.existingIndex==null?'null':x.existingIndex})">Сохранить</button>`)
   }
   window.cardioProgramExerciseForm=cardioForm;
@@ -55,25 +93,33 @@
 
   const baseEdit=window.editProgramExercise;
   if(typeof baseEdit==='function'){
-    const wrapped=function(pid,wi,dayId,ei){const p=typeof programById==='function'?programById(pid):null,w=p?.weeks?.[wi],d=w?.days?.find(x=>x.id===dayId),e=d?.ex?.[ei];if(e&&isCardio(e)){programUi.day=w.days.indexOf(d);const preset=byId(e.sourceId)||byName(e.n)||CARDIO[0];return cardioForm({pid,wi,di:programUi.day,n:e.n,cardioId:preset.id,existingIndex:ei})}return baseEdit.apply(this,arguments)};
+    const wrapped=function(pid,wi,dayId,ei){const p=typeof programById==='function'?programById(pid):null,w=p?.weeks?.[wi],d=w?.days?.find(x=>x.id===dayId),e=d?.ex?.[ei];if(e&&isCardio(e)){programUi.day=w.days.indexOf(d);const preset=byId(e.sourceId)||byName(e.n)||legacyPresetForName(e.n)||CARDIO[0];return cardioForm({pid,wi,di:programUi.day,n:e.n,cardioId:preset.id,existingIndex:ei})}return baseEdit.apply(this,arguments)};
     window.editProgramExercise=wrapped;try{editProgramExercise=wrapped}catch(e){}
   }
 
   const basePrescription=window.prescriptionText;
   if(typeof basePrescription==='function'){
-    const wrapped=function(e){if(isCardio(e)){const sec=Number(e.durationSec||e.workSeconds||e.sets?.[0]?.workSeconds||0),count=e.sets?.length||1;return `${count>1?`${count}×`:''}${fmtTime(sec)} · RPE ${e.rpe||6}${e.rest?` · отдых ${e.rest} сек`:''}`}return basePrescription.apply(this,arguments)};
+    const wrapped=function(e){if(isCardio(e)){const sec=Number(e.durationSec||e.workSeconds||legacyDurationSeconds(e)||e.sets?.[0]?.workSeconds||0),count=e.sets?.length||1;return `${count>1?`${count}×`:''}${fmtTime(sec)} · RPE ${e.rpe||6}${e.rest?` · отдых ${e.rest} сек`:''}`}return basePrescription.apply(this,arguments)};
     window.prescriptionText=wrapped;try{prescriptionText=wrapped}catch(e){}
   }
 
   function convertCurrent(pid,wi,di){
     const p=typeof programById==='function'?programById(pid):null,d=p?.weeks?.[wi]?.days?.[di],cur=st?.current;if(!p||!d||!cur||String(cur.programId||'')!==String(p.id))return false;
-    let changed=false;(d.ex||[]).forEach((src,i)=>{if(!isCardio(src)||!cur.ex?.[i])return;const dst=cur.ex[i],seconds=Number(src.durationSec||src.workSeconds||src.sets?.[0]?.workSeconds||60);dst.n=src.n;dst.d=src.note||'';dst.rest=Number(src.rest||0);dst.target=Number(src.rpe||cur.target||6);dst.tempo=src.tempo||'равномерный';dst.mode='timer';dst.kind='cardio';dst.workSeconds=seconds;dst.timedSeconds=seconds;dst.sourceId=src.sourceId||null;dst.set=Array.from({length:src.sets?.length||1},(_,si)=>({n:si+1,workSeconds:seconds,rpe:'',ok:false}));changed=true});
+    let changed=false;(d.ex||[]).forEach((src,i)=>{if(!isCardio(src)||!cur.ex?.[i])return;const dst=cur.ex[i],seconds=Number(src.durationSec||src.workSeconds||legacyDurationSeconds(src)||src.sets?.[0]?.workSeconds||60);dst.n=src.n;dst.d=src.note||'';dst.rest=Number(src.rest||0);dst.target=Number(src.rpe||cur.target||6);dst.tempo=src.tempo||'равномерный';dst.mode='timer';dst.kind='cardio';dst.workSeconds=seconds;dst.timedSeconds=seconds;dst.sourceId=src.sourceId||legacyPresetForName(src.n)?.id||null;dst.set=Array.from({length:src.sets?.length||1},(_,si)=>({n:si+1,workSeconds:seconds,rpe:'',ok:false}));changed=true});
     if(changed){save();try{startPage()}catch(e){}}return changed
+  }
+
+  function restoreActiveTimedCardio(){
+    const cur=st?.current;if(!cur?.programId)return false;
+    const p=typeof programById==='function'?programById(cur.programId):null;if(!p)return false;
+    const wi=Math.max(0,Number(cur.w||1)-1),w=p.weeks?.[wi];if(!w)return false;
+    let di=(w.days||[]).findIndex(d=>String(d?.name||'')===String(cur.c||''));if(di<0)di=0;
+    return convertCurrent(p.id,wi,di)
   }
 
   const baseBegin=window.beginProgramDay;
   if(typeof baseBegin==='function'){
-    const wrapped=function(pid,wi,di){const p=typeof programById==='function'?programById(pid):null,d=p?.weeks?.[wi]?.days?.[di],has=(d?.ex||[]).some(isCardio),r=baseBegin.apply(this,arguments);if(has)convertCurrent(pid,wi,di);return r};
+    const wrapped=function(pid,wi,di){normalizeLegacyTimedCardioPrograms();const p=typeof programById==='function'?programById(pid):null,d=p?.weeks?.[wi]?.days?.[di],has=(d?.ex||[]).some(isCardio),r=baseBegin.apply(this,arguments);if(has)convertCurrent(pid,wi,di);return r};
     wrapped.__cardioLibrary=true;window.beginProgramDay=wrapped;try{beginProgramDay=wrapped}catch(e){}
   }
 
@@ -93,5 +139,6 @@
     .cardio-program-ex{border-color:rgba(10,132,255,.35)!important}.cardio-program-ex .anton-set-head,.cardio-program-ex .anton-time-set{display:grid;grid-template-columns:34px minmax(68px,.8fr) minmax(92px,1fr) minmax(70px,.8fr) 42px;gap:8px;align-items:center}.cardio-program-ex .anton-set-head{color:#777;font-size:11px;text-align:center;margin:13px 0 2px}.cardio-program-ex .anton-time-set{margin-top:8px}.cardio-program-ex .anton-time-set>b{text-align:center;font-variant-numeric:tabular-nums}.cardio-program-ex .anton-time-set input{width:100%;background:#111113;border:1px solid #343438;border-radius:13px;color:#fff;padding:11px 7px;text-align:center}.cardio-program-ex .anton-work-timer{min-height:42px}@media(max-width:390px){.cardio-program-ex .anton-set-head,.cardio-program-ex .anton-time-set{grid-template-columns:28px 62px minmax(82px,1fr) 62px 40px;gap:5px}.cardio-program-ex .anton-work-timer{padding:8px 6px!important;font-size:11px!important}}
   `;document.head.appendChild(style);
 
+  restoreActiveTimedCardio();
   try{renderBodyFilters();renderExerciseResults()}catch(e){}
 })();
