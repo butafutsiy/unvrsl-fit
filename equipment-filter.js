@@ -100,8 +100,8 @@ exercisesPage=function(){
 })();
 
 Promise.resolve()
- .then(()=>loadExternalScript('exercise-library-ru-v2.js'))
  .then(()=>loadExternalScript('exercise-library-quality.js'))
+ .then(()=>loadExternalScript('exercise-library-curated.js'))
  .then(()=>loadExternalScript('cardio-metric-fixes.js'))
  .then(()=>loadExternalScript('preview-mobile-fix.js'))
- .catch(e=>console.warn('expanded RU exercise/cardio/preview fixes',e));
+ .catch(e=>console.warn('curated exercise/cardio/preview fixes',e));
