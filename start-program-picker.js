@@ -3,6 +3,7 @@
   if(window.__unvrslStartProgramPicker)return;
   window.__unvrslStartProgramPicker=true;
   const BUILTIN='__builtin_cycle__';
+  const routineList=()=>typeof ROUTINES!=='undefined'?ROUTINES:(window.UNVRSL_ROUTINES||[]);
   if(!st.startProgramWeeks||typeof st.startProgramWeeks!=='object')st.startProgramWeeks={};
   if(!st.startProgramId)st.startProgramId=BUILTIN;
   let ui={pid:st.startProgramId,week:null};
@@ -11,7 +12,7 @@
   style.textContent=`
     .start-program-strip{display:flex;gap:10px;overflow-x:auto;padding:2px 1px 10px;scrollbar-width:none}.start-program-strip::-webkit-scrollbar{display:none}
     .start-program-choice{min-width:210px;text-align:left;background:#1f1f22;border:1px solid #35353a;border-radius:20px;padding:14px 15px;flex:0 0 auto}
-    .start-program-choice.on{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset;background:color-mix(in srgb,var(--green) 10%,#1f1f22)}
+    .start-program-choice.on{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset;background:#20272a}
     .start-program-choice b{display:block;font-size:16px;line-height:1.2}.start-program-choice span{display:block;color:#8e8e93;font-size:12px;margin-top:5px}
     #startPickerWeeks .weekbtn.on{background:var(--green)!important;color:#061108!important;border-color:var(--green)!important;box-shadow:0 0 0 1px var(--green) inset!important}
     .start-picker-current{margin:8px 0 4px;color:#8e8e93;font-size:13px}.start-picker-day{padding:14px 0;border-bottom:1px solid #2d2d31}.start-picker-day:last-child{border-bottom:0}
@@ -19,7 +20,7 @@
   document.head.appendChild(style);
 
   function programs(){
-    const list=[{id:BUILTIN,name:'Мой план · 8 недель',weeks:8,days:(window.ROUTINES||[]).length,builtin:true}];
+    const list=[{id:BUILTIN,name:'Мой план · 8 недель',weeks:8,days:routineList().length,builtin:true}];
     (Array.isArray(st.programs)?st.programs:[]).forEach(p=>{
       if(!p||p.archived||!Array.isArray(p.weeks)||!p.weeks.length)return;
       list.push({id:String(p.id),name:p.name||'Программа',weeks:p.weeks.length,days:p.weeks.reduce((a,w)=>a+(w?.days?.length||0),0),p,builtin:false});
@@ -40,7 +41,7 @@
     const weeks=Array.from({length:p.weeks},(_,i)=>i+1).map(n=>`<button class="weekbtn ${n===w?'on':''}" aria-pressed="${n===w}" onclick="selectStartWeek(${n})">W${n}</button>`).join('');
     let days='';
     if(p.builtin){
-      const rows=(window.ROUTINES||[]).filter(r=>r.w===w);
+      const rows=routineList().filter(r=>r.w===w);
       days=rows.map(r=>`<div class="start-picker-day row between"><div class="grow"><b>${esc(r.c)} · ${esc(r.t)}</b><div class="muted small">RPE ${RPE[w]} · ${r.e.length} упражнений</div></div><button class="btn tiny primary" onclick="startPickedBuiltin(${w},'${escId(r.c)}')">Старт</button></div>`).join('');
     }else{
       const week=p.p?.weeks?.[w-1],rows=week?.days||[];
@@ -51,25 +52,15 @@
     if(document.getElementById('modal')?.classList.contains('show')&&sh)sh.innerHTML=html;else modal(html);
   }
 
-  window.selectStartProgram=function(token){
-    ui.pid=decodeURIComponent(token);ui.week=null;st.startProgramId=ui.pid;save();renderPicker();
-  };
-  window.selectStartWeek=function(w){
-    const p=selected();ui.week=Math.max(1,Math.min(p.weeks,+w||1));st.startProgramWeeks[p.id]=ui.week;if(p.builtin)st.week=ui.week;save();renderPicker();
-  };
-  window.startPickedBuiltin=function(w,token){
-    const c=decodeURIComponent(token);st.startProgramId=BUILTIN;st.startProgramWeeks[BUILTIN]=w;st.week=w;window.__pendingStartProgramMeta={id:BUILTIN,name:'Мой план · 8 недель'};save();begin(w,c);
-  };
-  window.startPickedProgram=function(token,wi,di){
-    const pid=decodeURIComponent(token);st.startProgramId=pid;st.startProgramWeeks[pid]=wi+1;save();beginProgramDay(pid,wi,di);
-  };
+  window.selectStartProgram=function(token){ui.pid=decodeURIComponent(token);ui.week=null;st.startProgramId=ui.pid;save();renderPicker()};
+  window.selectStartWeek=function(w){const p=selected();ui.week=Math.max(1,Math.min(p.weeks,+w||1));st.startProgramWeeks[p.id]=ui.week;if(p.builtin)st.week=ui.week;save();renderPicker()};
+  window.startPickedBuiltin=function(w,token){const c=decodeURIComponent(token);st.startProgramId=BUILTIN;st.startProgramWeeks[BUILTIN]=w;st.week=w;window.__pendingStartProgramMeta={id:BUILTIN,name:'Мой план · 8 недель'};save();begin(w,c)};
+  window.startPickedProgram=function(token,wi,di){const pid=decodeURIComponent(token);st.startProgramId=pid;st.startProgramWeeks[pid]=wi+1;save();beginProgramDay(pid,wi,di)};
   window.openStartProgramPicker=function(){ui.pid=st.startProgramId||BUILTIN;ui.week=null;renderPicker()};
 
   const replacement=function(){return window.openStartProgramPicker()};
-  window.quick=replacement;
-  try{quick=replacement}catch(e){}
-  window.quickWeek=function(w){return window.selectStartWeek(w)};
-  try{quickWeek=window.quickWeek}catch(e){}
+  window.quick=replacement;try{quick=replacement}catch(e){}
+  window.quickWeek=function(w){return window.selectStartWeek(w)};try{quickWeek=window.quickWeek}catch(e){}
 
   const oldStart=window.startPage;
   if(typeof oldStart==='function'){
