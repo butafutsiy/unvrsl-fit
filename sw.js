@@ -8,10 +8,12 @@ self.addEventListener('install',event=>{
 });
 
 self.addEventListener('activate',event=>{
-  event.waitUntil(Promise.all([
-    self.clients.claim(),
-    caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith(CACHE_PREFIX)&&key!==CACHE).map(key=>caches.delete(key))))
-  ]));
+  event.waitUntil((async()=>{
+    await caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith(CACHE_PREFIX)&&key!==CACHE).map(key=>caches.delete(key))));
+    await self.clients.claim();
+    const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    await Promise.all(windows.map(client=>client.navigate(client.url).catch(()=>null)));
+  })());
 });
 
 self.addEventListener('message',event=>{
