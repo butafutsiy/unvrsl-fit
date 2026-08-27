@@ -20,6 +20,7 @@
     #stats.stats-v2 .stats-muscle-week{margin-top:8px}
     #stats.stats-v2 .stats-muscle-week .section{margin-top:20px}
     #stats.stats-v2 .stats-muscle-week-card{overflow:hidden}
+    #stats .card.stats-last-session-v104{display:none!important}
   `;
   document.head.appendChild(style);
 
