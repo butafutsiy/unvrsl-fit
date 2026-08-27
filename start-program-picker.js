@@ -7,7 +7,9 @@
   const routineList=()=>typeof ROUTINES!=='undefined'?ROUTINES:(window.UNVRSL_ROUTINES||[]);
   if(!st.startProgramWeeks||typeof st.startProgramWeeks!=='object')st.startProgramWeeks={};
   if(!st.startProgramId)st.startProgramId=BUILTIN;
-  let ui={pid:st.startProgramId,week:null};
+  if(!st.primaryProgramId)st.primaryProgramId=BUILTIN;
+  const defaultProgram=()=>st.primaryProgramId||st.startProgramId||BUILTIN;
+  let ui={pid:defaultProgram(),week:null};
 
   const style=document.createElement('style');
   style.textContent=`
@@ -17,6 +19,7 @@
     .start-program-choice b{display:block;font-size:16px;line-height:1.2}.start-program-choice span{display:block;color:#8e8e93;font-size:12px;margin-top:5px}
     .start-program-choice .start-program-kind{display:inline-flex;width:auto;padding:4px 8px;border-radius:999px;background:#2c2c30;color:#a8a8ad;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin:0 0 7px}
     .start-program-choice.on .start-program-kind{background:rgba(10,132,255,.18);color:#64b5ff}
+    .start-program-choice .start-program-kind.primary-kind{background:rgba(48,209,88,.14);color:#30d158}
     #startPickerWeeks .weekbtn.on{background:var(--green)!important;color:#061108!important;border-color:var(--green)!important;box-shadow:0 0 0 1px var(--green) inset!important}
     .start-picker-current{margin:8px 0 4px;color:#8e8e93;font-size:13px}.start-picker-day{padding:14px 0;border-bottom:1px solid #2d2d31}.start-picker-day:last-child{border-bottom:0}
   `;
@@ -34,7 +37,7 @@
     });
     return list;
   }
-  function selected(){const a=programs();return a.find(x=>x.id===ui.pid)||a[0]}
+  function selected(){const a=programs();return a.find(x=>x.id===ui.pid)||a.find(x=>x.id===st.primaryProgramId)||a[0]}
   function weekFor(p){
     const saved=Number(st.startProgramWeeks?.[p.id]);
     const fallback=p.builtin?Number(st.week||1):1;
@@ -44,7 +47,7 @@
   function renderPicker(){
     const p=selected(),w=weekFor(p);ui.pid=p.id;ui.week=w;
     const ps=programs();
-    const programHtml=ps.map(x=>`<button class="start-program-choice ${x.id===p.id?'on':''}" onclick="selectStartProgram('${escId(x.id)}')"><span class="start-program-kind">${esc(x.kind)}</span><b>${esc(x.name)}</b><span>${x.weeks} нед. · ${x.days} тренировок</span></button>`).join('');
+    const programHtml=ps.map(x=>{const primary=String(x.id)===String(st.primaryProgramId);return `<button class="start-program-choice ${x.id===p.id?'on':''}" onclick="selectStartProgram('${escId(x.id)}')"><span class="start-program-kind ${primary?'primary-kind':''}">${esc(primary?'Основная':x.kind)}</span><b>${esc(x.name)}</b><span>${x.weeks} нед. · ${x.days} тренировок</span></button>`}).join('');
     const weeks=Array.from({length:p.weeks},(_,i)=>i+1).map(n=>`<button class="weekbtn ${n===w?'on':''}" aria-pressed="${n===w}" onclick="selectStartWeek(${n})">W${n}</button>`).join('');
     let days='';
     if(p.builtin){
@@ -63,7 +66,7 @@
   window.selectStartWeek=function(w){const p=selected();ui.week=Math.max(1,Math.min(p.weeks,+w||1));st.startProgramWeeks[p.id]=ui.week;if(p.builtin)st.week=ui.week;save();renderPicker()};
   window.startPickedBuiltin=function(w,token){const c=decodeURIComponent(token);st.startProgramId=BUILTIN;st.startProgramWeeks[BUILTIN]=w;st.week=w;window.__pendingStartProgramMeta={id:BUILTIN,name:BUILTIN_NAME};save();begin(w,c)};
   window.startPickedProgram=function(token,wi,di){const pid=decodeURIComponent(token);st.startProgramId=pid;st.startProgramWeeks[pid]=wi+1;save();beginProgramDay(pid,wi,di)};
-  window.openStartProgramPicker=function(){ui.pid=st.startProgramId||BUILTIN;ui.week=null;renderPicker()};
+  window.openStartProgramPicker=function(){ui.pid=defaultProgram();ui.week=null;renderPicker()};
 
   const replacement=function(){return window.openStartProgramPicker()};
   window.quick=replacement;try{quick=replacement}catch(e){}
