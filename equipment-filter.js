@@ -105,4 +105,6 @@ Promise.resolve()
  .then(()=>loadExternalScript('exercise-library-strict.js'))
  .then(()=>loadExternalScript('cardio-metric-fixes.js'))
  .then(()=>loadExternalScript('preview-mobile-fix.js'))
- .catch(e=>console.warn('curated exercise/cardio/preview fixes',e));
+ .then(()=>loadExternalScript('template-programs-v3.js'))
+ .then(()=>loadExternalScript('template-tempo-wave.js'))
+ .catch(e=>console.warn('curated exercise/cardio/preview/template fixes',e));
