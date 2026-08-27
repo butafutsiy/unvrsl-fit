@@ -1,6 +1,11 @@
 'use strict';
+function cloudSettingsLabel(){
+  if(window.cloud?.user)return window.cloud.profile?.display_name||window.cloud.user.email||'Аккаунт подключён';
+  return 'Вход и облачное сохранение данных';
+}
 function settingsSheet(){
   modal(`<div class="row between"><h2>Настройки</h2><button class="btn tiny" onclick="closeModal()">✕</button></div>
+  <div class="section">АККАУНТ</div><div class="settings-card"><div class="setting"><div><b>UNVRSL Cloud</b><div class="muted small">${esc(cloudSettingsLabel())}</div></div><button class="btn tiny" onclick="openCloudAccount()">${window.cloud?.user?'Открыть':'Войти'}</button></div>${window.cloud?.user?`<div class="setting"><div><b>Облачная копия</b><div class="muted small">Тренировки, прогресс, вес, программы и настройки</div></div><button class="btn tiny" onclick="accountSyncNow?.()">Синхр.</button></div>`:''}</div>
   <div class="section">ВНЕШНИЙ ВИД</div><div class="settings-card"><div class="setting"><div>Тема</div><div class="seg"><button class="on">☾ Тёмная</button><button disabled>☀ Светлая</button></div></div><div class="setting"><div>Схема тела</div><div class="seg"><button class="${st.body==='male'?'on':''}" onclick="st.body='male';save();settingsSheet()">Мужской</button><button class="${st.body==='female'?'on':''}" onclick="st.body='female';save();settingsSheet()">Женский</button></div></div><div class="setting" style="display:block"><div>Акцентный цвет</div><div class="colors">${COLORS.map(c=>`<button class="color ${st.accent===c?'on':''}" style="background:${c}" onclick="setAccent('${c}')"></button>`).join('')}</div></div></div>
   <div class="section">РЕЗЕРВНАЯ КОПИЯ</div><div class="settings-card"><div class="setting"><div><b>Экспорт резервной копии</b><div class="muted small">Все локальные данные</div></div><button class="btn tiny" onclick="backup()">Файл</button></div><div class="setting"><div><b>Импорт резервной копии</b></div><label class="btn tiny" for="bkImport">Импорт</label><input id="bkImport" type="file" accept=".json,application/json" hidden onchange="restoreBackup(this.files[0])"></div></div>`)
 }
@@ -20,5 +25,12 @@ exercisesPage=function(){_ruExercisesPage();const search=document.getElementById
 const _ruRenderExerciseDetail=renderExerciseDetail;
 renderExerciseDetail=function(ex){_ruRenderExerciseDetail(ex);document.querySelectorAll('.detail-en').forEach(el=>el.remove())};
 function dynamicScript(src){return new Promise(resolve=>{if(document.querySelector(`script[data-dyn="${src}"]`))return resolve();const s=document.createElement('script');s.src=src;s.dataset.dyn=src;s.onload=resolve;s.onerror=resolve;document.body.appendChild(s)})}
-async function loadCloudModules(){await dynamicScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');for(const src of ['./cloud-config.js','./cloud.js','./trainer-style.js','./trainer.js','./progression.js','./cloud-patch.js'])await dynamicScript(src)}
+async function loadCloudModules(){
+  if(!window.UNVRSL_CLOUD)await dynamicScript('./cloud-config.js');
+  if(!window.supabase?.createClient){await dynamicScript('./supabase-loader.js');if(window.UNVRSL_SUPABASE_READY)try{await window.UNVRSL_SUPABASE_READY}catch(e){}}
+  if(!window.cloud)await dynamicScript('./cloud.js');
+  if(!window.__unvrslAccountSync)await dynamicScript('./account-sync.js');
+  for(const src of ['./trainer-style.js','./trainer.js','./progression.js','./cloud-patch.js'])await dynamicScript(src)
+}
+async function openCloudAccount(){await loadCloudModules();if(typeof cloudAccountSheet==='function')cloudAccountSheet();else toast('Облако пока недоступно')}
 save();render();loadExerciseDB();
