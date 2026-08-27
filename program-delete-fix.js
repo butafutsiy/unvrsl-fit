@@ -117,6 +117,40 @@
     window.planPage=wrapped;try{planPage=wrapped}catch(e){}
   }
 
+  let picker={pid:null,week:null};
+  function pickerPrograms(){
+    const out=[];
+    if(!st.builtinProgramHidden)out.push({id:BUILTIN,name:typeof window.unvrslBuiltInProgramName==='function'?window.unvrslBuiltInProgramName():(st.builtinProgramName||'Встроенный цикл · 8 недель'),weeks:8,builtin:true});
+    visiblePrograms().forEach(p=>out.push({id:String(p.id),name:p.name||'Программа',weeks:p.weeks?.length||1,builtin:false,p}));
+    return out;
+  }
+  function pickerDefault(){const ps=pickerPrograms();return ps.find(x=>String(x.id)===String(st.primaryProgramId))||ps.find(x=>String(x.id)===String(st.startProgramId))||ps[0]||null}
+  function pickerWeek(p){const saved=Number(st.startProgramWeeks?.[p.id]);return Math.max(1,Math.min(p.weeks,picker.week||saved||(p.builtin?Number(st.week||1):1)))}
+  function renderPicker(){
+    applyTombstones(false);const ps=pickerPrograms();
+    if(!ps.length)return modal('<div class="row between"><h2>Выбрать тренировку</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="card muted" style="margin-top:16px">Нет программ. Добавь программу из шаблонов или создай новую.</div>');
+    let p=ps.find(x=>String(x.id)===String(picker.pid))||pickerDefault();picker.pid=p.id;const w=pickerWeek(p);picker.week=w;
+    const programHtml=ps.map(x=>`<button class="start-program-choice ${String(x.id)===String(p.id)?'on':''}" onclick="selectStartProgram('${encodeURIComponent(x.id)}')"><span class="start-program-kind ${String(x.id)===String(st.primaryProgramId)?'primary-kind':''}">${String(x.id)===String(st.primaryProgramId)?'Основная':x.builtin?'Встроенная':'Моя программа'}</span><b>${esc(x.name)}</b><span>${x.weeks} нед.</span></button>`).join('');
+    const weeks=Array.from({length:p.weeks},(_,i)=>i+1).map(n=>`<button class="weekbtn ${n===w?'on':''}" onclick="selectStartWeek(${n})">W${n}</button>`).join('');
+    let days='';
+    if(p.builtin){
+      const rows=(typeof ROUTINES!=='undefined'?ROUTINES:[]).filter(r=>r.w===w);
+      days=rows.map(r=>`<div class="start-picker-day row between"><div class="grow"><b>${esc(r.c)} · ${esc(r.t)}</b><div class="muted small">RPE ${typeof RPE!=='undefined'?RPE[w]:'—'} · ${r.e?.length||0} упражнений</div></div><button class="btn tiny primary" onclick="startPickedBuiltin(${w},'${encodeURIComponent(r.c)}')">Старт</button></div>`).join('');
+    }else{
+      const week=p.p?.weeks?.[w-1],rows=week?.days||[];
+      days=rows.map((d,di)=>`<div class="start-picker-day row between"><div class="grow"><b>${esc(d.name||`День ${di+1}`)}</b><div class="muted small">RPE ${d?.ex?.[0]?.rpe??8} · ${d.ex?.length||0} упражнений</div></div><button class="btn tiny primary" onclick="startPickedProgram('${encodeURIComponent(p.id)}',${w-1},${di})">Старт</button></div>`).join('');
+    }
+    const html=`<div class="row between"><h2>Выбрать тренировку</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="section" style="margin-top:16px">ПРОГРАММА</div><div class="start-program-strip">${programHtml}</div><div class="start-picker-current">Выбрано: <b style="color:var(--text)">${esc(p.name)}</b></div><div id="startPickerWeeks" class="weekbar">${weeks}</div><div id="startPickerDays">${days||'<div class="card muted">В этой неделе тренировок нет.</div>'}</div>`;
+    const sh=document.getElementById('sheet');if(document.getElementById('modal')?.classList.contains('show')&&sh)sh.innerHTML=html;else modal(html);
+  }
+  window.selectStartProgram=function(token){picker.pid=decodeURIComponent(token);picker.week=null;st.startProgramId=picker.pid;st.startProgramWeeks=st.startProgramWeeks&&typeof st.startProgramWeeks==='object'?st.startProgramWeeks:{};save();renderPicker()};
+  window.selectStartWeek=function(w){const p=pickerPrograms().find(x=>String(x.id)===String(picker.pid))||pickerDefault();if(!p)return;picker.week=Math.max(1,Math.min(p.weeks,+w||1));st.startProgramWeeks=st.startProgramWeeks&&typeof st.startProgramWeeks==='object'?st.startProgramWeeks:{};st.startProgramWeeks[p.id]=picker.week;if(p.builtin)st.week=picker.week;save();renderPicker()};
+  window.startPickedBuiltin=function(w,token){if(st.builtinProgramHidden)return;const c=decodeURIComponent(token);st.startProgramId=BUILTIN;st.week=w;save();begin(w,c)};
+  window.startPickedProgram=function(token,wi,di){const pid=decodeURIComponent(token);st.startProgramId=pid;save();beginProgramDay(pid,wi,di)};
+  window.openStartProgramPicker=function(){picker.pid=(pickerDefault()||{}).id||null;picker.week=null;renderPicker()};
+  window.quick=window.openStartProgramPicker;try{quick=window.quick}catch(e){}
+  window.quickWeek=function(w){picker.week=w;renderPicker()};try{quickWeek=window.quickWeek}catch(e){}
+
   applyTombstones(true);
   [0,250,900,1800].forEach(t=>setTimeout(()=>{applyTombstones(false);try{if(typeof trainerProgramsPage==='function'&&document.querySelector('#programs.active'))trainerProgramsPage()}catch(e){}},t));
 })();
