@@ -83,4 +83,8 @@
 
   installGroupWrapper();installMetricGuards();
   let tries=0;const id=setInterval(()=>{installGroupWrapper();installMetricGuards();if(++tries>60)clearInterval(id)},500);
+
+  if(!document.querySelector('script[data-unvrsl-active-workout-compact]')){
+    const s=document.createElement('script');s.src='active-workout-compact.js';s.async=false;s.dataset.unvrslActiveWorkoutCompact='1';s.onerror=()=>console.warn('active workout compact failed to load');document.body.appendChild(s);
+  }
 })();
