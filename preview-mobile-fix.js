@@ -75,3 +75,5 @@
   }
   install();let n=0;const id=setInterval(()=>{install();if(++n>40)clearInterval(id)},500);
 })();
+
+setTimeout(()=>{try{if(typeof loadExternalScript==='function')loadExternalScript('template-programs-v3.js').catch(e=>console.warn('template programs v3',e))}catch(e){}},0);
