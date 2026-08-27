@@ -34,7 +34,7 @@
     const first=preferRemote?remote:local,second=preferRemote?local:remote;
     const base=preferRemote?{...local,...remote}:{...remote,...local};
     base.sessions=mergeByKey(first.sessions,second.sessions,x=>String(x.id||''),sessionScore).sort((a,b)=>(a.started||0)-(b.started||0));
-    base.bw=mergeByKey(first.bw,second.bw,x=>String(x.d||''),x=>Number(x.updatedAt||x.ts||0)).sort((a,b)=>String(a.d||'').localeCompare(String(b.d||'')));
+    base.bw=mergeByKey(first.bw,second.bw,x=>String(x.d||''),x=>Number(x.updatedAt||x.t||x.ts||0)).sort((a,b)=>String(a.d||'').localeCompare(String(b.d||'')));
     base.programs=mergeByKey(first.programs,second.programs,x=>String(x.id||x.title||x.name||''),x=>Number(x.updatedAt||x.createdAt||0));
     base.remotePlans=mergeByKey(first.remotePlans,second.remotePlans,x=>String(x.id||''),x=>Number(x.version||x.updatedAt||0));
     base.customExercises=mergeByKey(first.customExercises,second.customExercises,x=>String(x.id||x.n||x.name||''),x=>Number(x.updatedAt||x.createdAt||0));
@@ -53,6 +53,24 @@
     }
     return window.cloud||null;
   }
+  async function fetchStructuredCloud(c,user){
+    const out={sessions:[],bw:[],stamp:0};
+    try{
+      const [wr,br]=await Promise.all([
+        c.client.from('workouts').select('payload,updated_at').eq('user_id',user.id),
+        c.client.from('bodyweights').select('measure_date,weight_kg,created_at').eq('user_id',user.id)
+      ]);
+      if(!wr.error){
+        out.sessions=arr(wr.data).map(x=>x?.payload).filter(x=>x&&typeof x==='object');
+        for(const row of arr(wr.data))out.stamp=Math.max(out.stamp,Date.parse(row?.updated_at||0)||0);
+      }
+      if(!br.error){
+        out.bw=arr(br.data).filter(x=>x?.measure_date&&x?.weight_kg!=null).map(x=>({d:x.measure_date,w:Number(x.weight_kg),t:Date.parse(x.created_at||0)||0}));
+        for(const row of arr(br.data))out.stamp=Math.max(out.stamp,Date.parse(row?.created_at||0)||0);
+      }
+    }catch(e){console.warn('UNVRSL legacy cloud hydrate',e)}
+    return out;
+  }
   async function reconcile({quiet=false}={}){
     const c=await waitCloud();
     const user=c?.user;
@@ -60,12 +78,18 @@
     if(inflight)return inflight;
     inflight=(async()=>{
       try{
-        const {data,error}=await c.client.from('user_app_state').select('state,client_updated_at,updated_at,device_id').eq('user_id',user.id).maybeSingle();
-        if(error)throw error;
-        const remote=data?.state&&typeof data.state==='object'?data.state:null;
-        const remoteStamp=data?.client_updated_at?Date.parse(data.client_updated_at):0;
+        const [stateRes,structured]=await Promise.all([
+          c.client.from('user_app_state').select('state,client_updated_at,updated_at,device_id').eq('user_id',user.id).maybeSingle(),
+          fetchStructuredCloud(c,user)
+        ]);
+        if(stateRes.error)throw stateRes.error;
+        const appState=stateRes.data?.state&&typeof stateRes.data.state==='object'?clone(stateRes.data.state):{};
+        appState.sessions=mergeByKey(appState.sessions,structured.sessions,x=>String(x.id||''),sessionScore);
+        appState.bw=mergeByKey(appState.bw,structured.bw,x=>String(x.d||''),x=>Number(x.t||x.updatedAt||0));
+        const remoteExists=!!stateRes.data||appState.sessions.length>0||appState.bw.length>0;
+        const remoteStamp=Math.max(stateRes.data?.client_updated_at?Date.parse(stateRes.data.client_updated_at):0,structured.stamp||0);
         let merged=clone(st)||{};
-        if(remote)merged=mergeStates(st,remote,remoteStamp);
+        if(remoteExists)merged=mergeStates(st,appState,remoteStamp);
         suppress=true;
         try{st=merged;if(typeof save==='function')save()}finally{suppress=false}
         const stamp=Math.max(Date.now(),Number(meta().localModifiedAt||0),remoteStamp||0);
@@ -76,7 +100,7 @@
         if(typeof cloudSyncSession==='function')for(const s of arr(st.sessions))await cloudSyncSession(s);
         if(typeof cloudSyncBodyweights==='function')await cloudSyncBodyweights();
         setMeta({lastSyncedAt:Date.now(),lastUserId:user.id});
-        if(!quiet)try{toast(remote?'Данные аккаунта синхронизированы':'Облачная копия создана')}catch(e){}
+        if(!quiet)try{toast(remoteExists?'Данные аккаунта синхронизированы':'Облачная копия создана')}catch(e){}
         try{render()}catch(e){}
         return true;
       }catch(e){console.warn('UNVRSL account sync',e);if(!quiet)try{toast('Не удалось синхронизировать аккаунт')}catch(_){}return false}
