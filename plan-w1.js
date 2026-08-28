@@ -2,6 +2,15 @@
   if(window.__unvrslBootScreen)return;
   window.__unvrslBootScreen=true;
   const started=performance.now();
+  let bootAccent='#30d158';
+  try{
+    for(const key of ['unvrsl-fit-v3','unvrsl-fit-v2']){
+      const raw=localStorage.getItem(key);if(!raw)continue;
+      const saved=JSON.parse(raw),accent=String(saved?.accent||'').trim();
+      if(/^#[0-9a-f]{6}$/i.test(accent)){bootAccent=accent;break}
+    }
+  }catch(e){}
+  document.documentElement.style.setProperty('--boot-accent',bootAccent);
   const style=document.createElement('style');
   style.id='unvrsl-boot-style';
   style.textContent=`
@@ -11,7 +20,7 @@
     #unvrslBoot.out{opacity:0;pointer-events:none}
     #unvrslBoot .boot-inner{display:flex;flex-direction:column;align-items:center;gap:14px;transform:translateY(-2vh)}
     #unvrslBoot .boot-brand{font:850 34px/1 -apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,sans-serif;letter-spacing:-1.3px;color:#f5f5f7}
-    #unvrslBoot .boot-dot{width:7px;height:7px;border-radius:50%;background:#30d158;box-shadow:0 0 18px rgba(48,209,88,.7);animation:unvrslBootPulse 1s ease-in-out infinite alternate}
+    #unvrslBoot .boot-dot{width:7px;height:7px;border-radius:50%;color:var(--boot-accent,#30d158);background:currentColor;box-shadow:0 0 18px currentColor;animation:unvrslBootPulse 1s ease-in-out infinite alternate}
     @keyframes unvrslBootPulse{from{opacity:.35;transform:scale(.8)}to{opacity:1;transform:scale(1.15)}}
   `;
   document.head.appendChild(style);
