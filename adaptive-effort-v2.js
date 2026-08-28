@@ -10,6 +10,9 @@
     #start .setrow.effort-row input{min-width:0!important;padding-left:4px!important;padding-right:4px!important;text-align:center}
     #start .cardio-work-timer{white-space:nowrap;background:rgba(10,132,255,.16)!important;color:#58a9ff!important;border-color:rgba(10,132,255,.42)!important}
     #start .adaptive-load-chip{background:rgba(48,209,88,.12)!important;color:#30d158!important;border-color:rgba(48,209,88,.34)!important}
+    #start .adaptive-choice-btn{white-space:nowrap}
+    .adaptive-preview-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid #303034}
+    .adaptive-preview-row:last-child{border-bottom:0}.adaptive-preview-row small{display:block;color:#8e8e93;margin-top:3px}.adaptive-preview-row b:last-child{white-space:nowrap}
     .rir-help{color:#8e8e93;font-size:11px;line-height:1.35;margin:6px 2px 0}
     @media(max-width:390px){
       #start .sethead.effort-head,#start .setrow.effort-row{grid-template-columns:24px minmax(0,1fr) minmax(0,1fr) minmax(0,.78fr) minmax(0,.78fr) 36px!important;gap:4px!important}
@@ -62,8 +65,7 @@
       const rir=num(x.rir)??rirFromRpe(x.rpe)??2;
       return x.w*(1+(x.r+rir)/30);
     }).filter(v=>Number.isFinite(v)&&v>0);
-    const e1rm=median(estimates);
-    if(!e1rm)return null;
+    const e1rm=median(estimates);if(!e1rm)return null;
     const rpes=(rows||[]).map(x=>num(x.rpe)).filter(v=>v!=null);
     return {e1rm,avgRpe:rpes.length?round1(rpes.reduce((a,b)=>a+b,0)/rpes.length):null,rows};
   }
@@ -71,8 +73,7 @@
   function targetWeight(e1rm,reps,targetRpe,step){
     reps=Math.max(1,Number(reps)||1);
     const targetRir=rirFromRpe(targetRpe)??2;
-    const raw=e1rm/(1+(reps+targetRir)/30);
-    return roundLoadLocal(Math.max(0,raw),step||2.5);
+    return roundLoadLocal(Math.max(0,e1rm/(1+(reps+targetRir)/30)),step||2.5);
   }
 
   function groupCurrentEntries(s){
@@ -80,49 +81,60 @@
     return (s?.ex||[]).map((e,i)=>({indices:[i],entries:[e],base:baseName(e.n)}));
   }
 
-  function applyAdaptiveLoads(){
+  function adaptivePreview(s=window.st?.current){
+    const out=[];if(!s||!Array.isArray(s.ex))return out;
+    groupCurrentEntries(s).forEach(group=>{
+      const entries=group.entries||[];if(!entries.length||entries.every(e=>e.mode==='cardio'))return;
+      const first=entries[0],base=group.base||baseName(first.n),sourceId=first.sourceId||null;
+      const hist=latestExerciseRows(base,sourceId),cap=capacityFromRows(hist);if(!cap)return;
+      const target=num(first.target)??num(s.target)??8,step=stepFor(base,sourceId);
+      const sets=[];entries.forEach(e=>(e.set||[]).forEach(x=>sets.push({e,x})));
+      const ref=sets.find(z=>Number(z.x?.r)>0);if(!ref)return;
+      const planned=Number(ref.x.w)||0,wanted=targetWeight(cap.e1rm,ref.x.r,target,step);
+      out.push({base,planned,wanted,avgRpe:cap.avgRpe,date:hist[0]?.date||'',e1rm:round1(cap.e1rm)});
+    });
+    return out;
+  }
+
+  function applyAdaptiveLoads(force=false){
     const s=window.st?.current;
     if(!s||s.adaptiveEffortV2Applied||!Array.isArray(s.ex))return 0;
+    if(!force&&s.adaptiveDecision!=='previous')return 0;
     let changed=0;
     groupCurrentEntries(s).forEach(group=>{
       const entries=group.entries||[];
       if(!entries.length||entries.every(e=>e.mode==='cardio'))return;
       const first=entries[0],base=group.base||baseName(first.n),sourceId=first.sourceId||null;
-      const hist=latestExerciseRows(base,sourceId),cap=capacityFromRows(hist);
-      if(!cap)return;
+      const hist=latestExerciseRows(base,sourceId),cap=capacityFromRows(hist);if(!cap)return;
       const target=num(first.target)??num(s.target)??8,targetRir=rirFromRpe(target),step=stepFor(base,sourceId);
-      const sets=[];
-      entries.forEach(e=>(e.set||[]).forEach(x=>sets.push({e,x})));
-      const ref=sets.find(z=>Number(z.x?.w)>0&&Number(z.x?.r)>0);
+      const sets=[];entries.forEach(e=>(e.set||[]).forEach(x=>sets.push({e,x})));
+      const ref=sets.find(z=>!z.x?.manualOverride&&Number(z.x?.w)>0&&Number(z.x?.r)>0)||sets.find(z=>!z.x?.manualOverride&&Number(z.x?.r)>0);
       let ratio=null;
-      if(ref){
-        const wanted=targetWeight(cap.e1rm,ref.x.r,target,step),planned=Number(ref.x.w)||0;
-        if(planned>0&&wanted>0)ratio=clamp(wanted/planned,.80,1.20);
-      }
+      if(ref&&Number(ref.x.w)>0){const wanted=targetWeight(cap.e1rm,ref.x.r,target,step),planned=Number(ref.x.w)||0;if(planned>0&&wanted>0)ratio=clamp(wanted/planned,.80,1.20)}
       let groupChanged=false;
       sets.forEach(({e,x})=>{
-        if(!x||!(Number(x.r)>0))return;
-        const planned=Number(x.w)||0;
-        if(x.plannedW==null)x.plannedW=planned;
+        if(!x||x.manualOverride||!(Number(x.r)>0))return;
+        const planned=Number(x.w)||0;if(x.plannedW==null)x.plannedW=planned;
         let next=planned;
         if(planned>0&&ratio!=null)next=roundLoadLocal(planned*ratio,step);
         else if(planned<=0)next=targetWeight(cap.e1rm,x.r,num(e.target)??target,step);
-        if(next>0&&Math.abs(next-planned)>=Math.max(.1,step*.45)){
-          x.w=next;groupChanged=true;changed++;
-        }
+        if(next>0&&Math.abs(next-planned)>=Math.max(.1,step*.45)){x.w=next;groupChanged=true;changed++}
         if(x.rir==null||x.rir==='')x.targetRir=rirFromRpe(num(e.target)??target);
       });
-      if(groupChanged){
-        entries.forEach(e=>e.adaptiveEffort={e1rm:round1(cap.e1rm),avgRpe:cap.avgRpe,targetRpe:target,targetRir,ratio:ratio==null?null:round1(ratio),sourceDate:hist[0]?.date||'',mode:'actual-capacity'});
-      }
+      if(groupChanged)entries.forEach(e=>e.adaptiveEffort={e1rm:round1(cap.e1rm),avgRpe:cap.avgRpe,targetRpe:target,targetRir,ratio:ratio==null?null:round1(ratio),sourceDate:hist[0]?.date||'',mode:'actual-capacity'});
     });
     s.adaptiveEffortV2Applied=true;s.adaptiveEffortV2At=new Date().toISOString();
-    try{save()}catch(e){}
-    return changed;
+    try{save()}catch(e){}return changed;
   }
   window.applyAdaptiveLoads=applyAdaptiveLoads;
 
-  // Новая рекомендация учитывает фактический вес, повторы и RPE/RIR последней выполненной тренировки.
+  function restorePlannedLoads(){
+    const s=window.st?.current;if(!s)return;
+    (s.ex||[]).forEach(e=>{(e.set||[]).forEach(x=>{if(!x?.manualOverride&&x?.plannedW!=null)x.w=x.plannedW});delete e.adaptiveEffort});
+    s.adaptiveEffortV2Applied=true;s.adaptiveDecision='plan';
+    try{save()}catch(e){}
+  }
+
   const oldSuggestion=window.suggestionFor;
   window.suggestionFor=function(base,sourceId=null,target=8){
     const rows=latestExerciseRows(base,sourceId),cap=capacityFromRows(rows);
@@ -133,124 +145,115 @@
   };
   try{suggestionFor=window.suggestionFor}catch(e){}
 
+  window.adaptiveChoiceSheet=function(){
+    const s=window.st?.current;if(!s)return;
+    const items=adaptivePreview(s);if(!items.length)return typeof toast==='function'?toast('Пока нет прошлых результатов для адаптации'):undefined;
+    const rows=items.slice(0,8).map(x=>`<div class="adaptive-preview-row"><div><b>${typeof esc==='function'?esc(x.base):x.base}</b><small>${x.date?`Прошлая: ${x.date}`:''}${x.avgRpe!=null?` · RPE ${x.avgRpe}`:''}</small></div><b>${x.planned>0?`${x.planned} → `:''}${x.wanted} кг</b></div>`).join('');
+    modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>Адаптация тренировки</h2><div class="muted">Выбери, как выставить рабочие веса.</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="card" style="margin-top:14px">${rows}</div><button class="btn primary full" style="margin-top:12px" onclick="chooseAdaptiveMode('previous')">По прошлому результату</button><button class="btn full" style="margin-top:8px" onclick="chooseAdaptiveMode('plan')">Оставить плановые веса</button><div class="muted small" style="margin-top:10px">Ручные изменения веса, повторов и RPE всегда имеют приоритет и не будут перезаписываться.</div>`);
+  };
+
+  window.chooseAdaptiveMode=function(mode){
+    const s=window.st?.current;if(!s)return;
+    if(mode==='previous'){
+      s.adaptiveDecision='previous';s.adaptiveEffortV2Applied=false;
+      const n=applyAdaptiveLoads(true);try{save()}catch(e){};closeModal();try{startPage()}catch(e){};if(typeof toast==='function')toast(n?`Вес подстроен · ${n} подходов`:'План уже соответствует прошлому результату');
+    }else{
+      restorePlannedLoads();closeModal();try{startPage()}catch(e){};if(typeof toast==='function')toast('Оставлены плановые веса');
+    }
+  };
+
+  function markManual(ei,si,kind){
+    const x=window.st?.current?.ex?.[ei]?.set?.[si];if(!x)return;
+    x.manualOverride=true;x.manualAt=Date.now();x.manualFields={...(x.manualFields||{}),[kind]:true};
+    const e=window.st?.current?.ex?.[ei];if(e)e.manualOverride=true;
+  }
+
   window.editEffort=function(ei,si,kind,value){
     const x=window.st?.current?.ex?.[ei]?.set?.[si];if(!x)return;
     const raw=String(value??'').trim().replace(',','.');
     if(raw===''){x.rpe='';x.rir=''}
-    else if(kind==='rir'){
-      const rir=clamp(Number(raw)||0,0,10);x.rir=round1(rir);x.rpe=rpeFromRir(rir);
-    }else{
-      const rpe=clamp(Number(raw)||0,0,10);x.rpe=round1(rpe);x.rir=rirFromRpe(rpe);
-    }
-    try{save()}catch(e){}
-    document.querySelectorAll(`[data-effort-ei="${ei}"][data-effort-si="${si}"]`).forEach(el=>{
-      el.value=el.dataset.effortKind==='rir'?(x.rir??''):(x.rpe??'');
-    });
+    else if(kind==='rir'){const rir=clamp(Number(raw)||0,0,10);x.rir=round1(rir);x.rpe=rpeFromRir(rir)}
+    else{const rpe=clamp(Number(raw)||0,0,10);x.rpe=round1(rpe);x.rir=rirFromRpe(rpe)}
+    markManual(ei,si,kind);try{save()}catch(e){}
+    document.querySelectorAll(`[data-effort-ei="${ei}"][data-effort-si="${si}"]`).forEach(el=>{el.value=el.dataset.effortKind==='rir'?(x.rir??''):(x.rpe??'')});
   };
+
+  function installManualEditSet(){
+    const base=window.editSet||(()=>{try{return editSet}catch(e){return null}})();
+    if(typeof base!=='function'||base.__manualPriorityV108)return;
+    const wrapped=function(ei,si,k,v){const r=base.apply(this,arguments);markManual(Number(ei),Number(si),String(k||'value'));try{save()}catch(e){};return r};
+    wrapped.__manualPriorityV108=true;window.editSet=wrapped;try{editSet=wrapped}catch(e){}
+  }
 
   window.startCardioWorkTimer=function(ei,si,min){
     const m=Math.max(0,Number(min)||0);if(!m)return typeof toast==='function'?toast('Укажи время'):undefined;
-    const s=window.st?.current,x=s?.ex?.[ei]?.set?.[si];
-    if(x){x.workTimerStartedAt=Date.now();x.workTimerSec=Math.round(m*60);try{save()}catch(e){}}
+    const s=window.st?.current,x=s?.ex?.[ei]?.set?.[si];if(x){x.workTimerStartedAt=Date.now();x.workTimerSec=Math.round(m*60);try{save()}catch(e){}}
     if(typeof timer==='function')timer(Math.round(m*60));
   };
 
-  function parseSetIndex(input){
-    const raw=input?.getAttribute('onchange')||'';
-    const m=raw.match(/editSet\((\d+)\s*,\s*(\d+)\s*,\s*['\"]rpe['\"]/);
-    return m?{ei:Number(m[1]),si:Number(m[2])}:null;
-  }
+  function parseSetIndex(input){const raw=input?.getAttribute('onchange')||'',m=raw.match(/editSet\((\d+)\s*,\s*(\d+)\s*,\s*['\"]rpe['\"]/);return m?{ei:Number(m[1]),si:Number(m[2])}:null}
 
   function addRirToCard(card,group){
     if(!card||!group||group.entries?.every(e=>e.mode==='cardio'))return;
     const target=num(group.entries?.[0]?.target)??num(window.st?.current?.target)??8,targetRir=rirFromRpe(target);
     const head=card.querySelector('.sethead:not(.cardiohead)');
-    if(head&&!head.classList.contains('effort-head')){
-      head.classList.add('effort-head');
-      const spans=[...head.children],last=spans.at(-1),rir=document.createElement('span');rir.textContent='RIR';rir.className='rir-head';
-      if(last)head.insertBefore(rir,last);else head.appendChild(rir);
-    }
+    if(head&&!head.classList.contains('effort-head')){head.classList.add('effort-head');const spans=[...head.children],last=spans.at(-1),rir=document.createElement('span');rir.textContent='RIR';rir.className='rir-head';if(last)head.insertBefore(rir,last);else head.appendChild(rir)}
     card.querySelectorAll('.setrow:not(.cardiorow)').forEach(row=>{
       const inputs=[...row.querySelectorAll('input')],rpeInput=inputs.find(i=>(i.getAttribute('onchange')||'').includes("'rpe'"))||inputs[2];
-      const idx=parseSetIndex(rpeInput);if(!idx)return;
-      const x=window.st?.current?.ex?.[idx.ei]?.set?.[idx.si];if(!x)return;
-      row.classList.add('effort-row');
-      rpeInput.dataset.effortEi=idx.ei;rpeInput.dataset.effortSi=idx.si;rpeInput.dataset.effortKind='rpe';
-      rpeInput.setAttribute('onchange',`editEffort(${idx.ei},${idx.si},'rpe',this.value)`);
-      if(!row.querySelector('input[data-effort-kind="rir"]')){
-        const rir=document.createElement('input');rir.inputMode='decimal';rir.placeholder=String(targetRir??'');rir.value=x.rir??'';
-        rir.dataset.effortEi=idx.ei;rir.dataset.effortSi=idx.si;rir.dataset.effortKind='rir';
-        rir.setAttribute('onchange',`editEffort(${idx.ei},${idx.si},'rir',this.value)`);
-        const check=row.querySelector('.check');if(check)row.insertBefore(rir,check);else row.appendChild(rir);
-      }
+      const idx=parseSetIndex(rpeInput);if(!idx)return;const x=window.st?.current?.ex?.[idx.ei]?.set?.[idx.si];if(!x)return;
+      row.classList.add('effort-row');rpeInput.dataset.effortEi=idx.ei;rpeInput.dataset.effortSi=idx.si;rpeInput.dataset.effortKind='rpe';rpeInput.setAttribute('onchange',`editEffort(${idx.ei},${idx.si},'rpe',this.value)`);
+      if(!row.querySelector('input[data-effort-kind="rir"]')){const rir=document.createElement('input');rir.inputMode='decimal';rir.placeholder=String(targetRir??'');rir.value=x.rir??'';rir.dataset.effortEi=idx.ei;rir.dataset.effortSi=idx.si;rir.dataset.effortKind='rir';rir.setAttribute('onchange',`editEffort(${idx.ei},${idx.si},'rir',this.value)`);const check=row.querySelector('.check');if(check)row.insertBefore(rir,check);else row.appendChild(rir)}
     });
     const chips=card.querySelector('.chips.compact');
-    if(chips&&!chips.querySelector('.rir-target-chip')){
-      const chip=document.createElement('span');chip.className='chip rir-target-chip';chip.textContent=`RIR ${targetRir}`;chips.insertBefore(chip,chips.children[1]||null);
-    }
+    if(chips&&!chips.querySelector('.rir-target-chip')){const chip=document.createElement('span');chip.className='chip rir-target-chip';chip.textContent=`RIR ${targetRir}`;chips.insertBefore(chip,chips.children[1]||null)}
     const meta=group.entries?.find(e=>e?.adaptiveEffort)?.adaptiveEffort;
-    if(meta&&chips&&!chips.querySelector('.adaptive-load-chip')){
-      const chip=document.createElement('span');chip.className='chip adaptive-load-chip';
-      chip.textContent=`Авто · e1RM ${meta.e1rm} кг${meta.sourceDate?` · ${meta.sourceDate}`:''}`;chips.appendChild(chip);
-    }
+    if(meta&&chips&&!chips.querySelector('.adaptive-load-chip')){const chip=document.createElement('span');chip.className='chip adaptive-load-chip';chip.textContent=`По прошлому · e1RM ${meta.e1rm} кг${meta.sourceDate?` · ${meta.sourceDate}`:''}`;chips.appendChild(chip)}
   }
 
   function addCardioTimer(card,group){
     if(!card||!group||!group.entries?.length||!group.entries.every(e=>e.mode==='cardio'))return;
     const first=group.entries[0],x=first?.set?.[0],min=Number(x?.min)||0;if(!min)return;
-    let actions=card.querySelector('.head-actions');
-    if(!actions){actions=document.createElement('div');actions.className='head-actions';card.querySelector('.row.between')?.appendChild(actions)}
-    if(actions&&!actions.querySelector('.cardio-work-timer')){
-      const b=document.createElement('button');b.type='button';b.className='btn tiny cardio-work-timer';b.textContent=`▶ ${min}:00`;
-      const ei=group.indices?.[0]??0;b.setAttribute('onclick',`startCardioWorkTimer(${ei},0,${min})`);actions.prepend(b);
-    }
+    let actions=card.querySelector('.head-actions');if(!actions){actions=document.createElement('div');actions.className='head-actions';card.querySelector('.row.between')?.appendChild(actions)}
+    if(actions&&!actions.querySelector('.cardio-work-timer')){const b=document.createElement('button');b.type='button';b.className='btn tiny cardio-work-timer';b.textContent=`▶ ${min}:00`;const ei=group.indices?.[0]??0;b.setAttribute('onclick',`startCardioWorkTimer(${ei},0,${min})`);actions.prepend(b)}
   }
 
   function enhanceProgramRir(){
-    const rpe=document.getElementById('pmRpe');if(!rpe||document.getElementById('pmRir'))return;
-    const field=rpe.closest('.field');if(!field)return;
-    const box=document.createElement('div');box.className='field';box.innerHTML=`<label>RIR</label><input id="pmRir" type="number" min="0" max="10" step="0.5" inputmode="decimal" value="${rirFromRpe(rpe.value??8)??2}"><div class="rir-help">RPE и RIR связаны: RPE 8 = RIR 2.</div>`;
-    field.after(box);
-    const rir=box.querySelector('#pmRir');
-    const syncFromRpe=()=>{const v=num(rpe.value);if(v!=null)rir.value=rirFromRpe(v)};
-    const syncFromRir=()=>{const v=num(rir.value);if(v!=null)rpe.value=rpeFromRir(v)};
-    rpe.addEventListener('input',syncFromRpe);rir.addEventListener('input',syncFromRir);
+    const rpe=document.getElementById('pmRpe');if(!rpe||document.getElementById('pmRir'))return;const field=rpe.closest('.field');if(!field)return;
+    const box=document.createElement('div');box.className='field';box.innerHTML=`<label>RIR</label><input id="pmRir" type="number" min="0" max="10" step="0.5" inputmode="decimal" value="${rirFromRpe(rpe.value??8)??2}"><div class="rir-help">RPE и RIR связаны: RPE 8 = RIR 2.</div>`;field.after(box);
+    const rir=box.querySelector('#pmRir');rpe.addEventListener('input',()=>{const v=num(rpe.value);if(v!=null)rir.value=rirFromRpe(v)});rir.addEventListener('input',()=>{const v=num(rir.value);if(v!=null)rpe.value=rpeFromRir(v)});
   }
 
   function addRirChips(root=document){
-    root.querySelectorAll?.('.chip').forEach(ch=>{
-      if(ch.classList.contains('rir-target-chip')||ch.dataset.rirPatched)return;
-      const m=(ch.textContent||'').trim().match(/^RPE\s*([0-9]+(?:[.,][0-9]+)?)$/i);if(!m)return;
-      const parent=ch.parentElement;if(!parent||parent.querySelector('.rir-auto-label'))return;
-      const rpe=Number(m[1].replace(',','.')),rir=rirFromRpe(rpe),x=document.createElement('span');x.className='chip rir-auto-label';x.textContent=`RIR ${rir}`;ch.after(x);ch.dataset.rirPatched='1';
-    });
+    root.querySelectorAll?.('.chip').forEach(ch=>{if(ch.classList.contains('rir-target-chip')||ch.dataset.rirPatched)return;const m=(ch.textContent||'').trim().match(/^RPE\s*([0-9]+(?:[.,][0-9]+)?)$/i);if(!m)return;const parent=ch.parentElement;if(!parent||parent.querySelector('.rir-auto-label'))return;const rpe=Number(m[1].replace(',','.')),rir=rirFromRpe(rpe),x=document.createElement('span');x.className='chip rir-auto-label';x.textContent=`RIR ${rir}`;ch.after(x);ch.dataset.rirPatched='1'});
+  }
+
+  function addAdaptiveButton(root,s){
+    const row=root?.querySelector('.workout-head .row.between');if(!row||row.querySelector('.adaptive-choice-btn'))return;
+    const b=document.createElement('button');b.type='button';b.className='btn tiny adaptive-choice-btn';b.textContent=s.adaptiveDecision==='previous'?'По прошлому':s.adaptiveDecision==='plan'?'План':'Адаптация';b.onclick=window.adaptiveChoiceSheet;
+    const pct=row.querySelector('.chip');if(pct)pct.before(b);else row.appendChild(b);
+  }
+
+  function maybePromptAdaptive(s){
+    if(!s||s.adaptiveDecision||s.adaptivePrompted||!adaptivePreview(s).length)return;
+    s.adaptivePrompted=true;try{save()}catch(e){};setTimeout(()=>{if(window.st?.current?.id===s.id)window.adaptiveChoiceSheet()},180);
   }
 
   function enhanceWorkout(){
-    const s=window.st?.current;if(!s)return;
-    applyAdaptiveLoads();
+    const s=window.st?.current;if(!s)return;applyAdaptiveLoads();
     const root=document.getElementById('start');if(!root)return;
-    const groups=groupCurrentEntries(s),cards=[...root.querySelectorAll('.exercise')];
-    cards.forEach((card,i)=>{const g=groups[i];if(!g)return;addRirToCard(card,g);addCardioTimer(card,g)});
-    const muted=root.querySelector('.workout-head .muted');
-    if(muted&&/RPE\s*[0-9]/i.test(muted.textContent||'')&&!/RIR/i.test(muted.textContent||''))muted.textContent+=(muted.textContent.trim()?' · ':'')+`RIR ${rirFromRpe(s.target??8)}`;
-    addRirChips(root);
+    const groups=groupCurrentEntries(s),cards=[...root.querySelectorAll('.exercise')];cards.forEach((card,i)=>{const g=groups[i];if(!g)return;addRirToCard(card,g);addCardioTimer(card,g)});
+    const muted=root.querySelector('.workout-head .muted');if(muted&&/RPE\s*[0-9]/i.test(muted.textContent||'')&&!/RIR/i.test(muted.textContent||''))muted.textContent+=(muted.textContent.trim()?' · ':'')+`RIR ${rirFromRpe(s.target??8)}`;
+    addAdaptiveButton(root,s);addRirChips(root);maybePromptAdaptive(s);
   }
   window.enhanceAdaptiveWorkout=enhanceWorkout;
 
   const baseStartPage=window.startPage;
-  if(typeof baseStartPage==='function'&&!baseStartPage.__adaptiveEffortV2){
-    const wrapped=function(){applyAdaptiveLoads();const r=baseStartPage.apply(this,arguments);requestAnimationFrame(enhanceWorkout);return r};
-    wrapped.__adaptiveEffortV2=true;window.startPage=wrapped;try{startPage=wrapped}catch(e){}
-  }
-
+  if(typeof baseStartPage==='function'&&!baseStartPage.__adaptiveEffortV2){const wrapped=function(){applyAdaptiveLoads();const r=baseStartPage.apply(this,arguments);requestAnimationFrame(enhanceWorkout);return r};wrapped.__adaptiveEffortV2=true;window.startPage=wrapped;try{startPage=wrapped}catch(e){}}
   const basePlanPage=window.planPage;
-  if(typeof basePlanPage==='function'&&!basePlanPage.__rirLabels){
-    const wrapped=function(){const r=basePlanPage.apply(this,arguments);requestAnimationFrame(()=>addRirChips(document.getElementById('plan')||document));return r};
-    wrapped.__rirLabels=true;window.planPage=wrapped;try{planPage=wrapped}catch(e){}
-  }
+  if(typeof basePlanPage==='function'&&!basePlanPage.__rirLabels){const wrapped=function(){const r=basePlanPage.apply(this,arguments);requestAnimationFrame(()=>addRirChips(document.getElementById('plan')||document));return r};wrapped.__rirLabels=true;window.planPage=wrapped;try{planPage=wrapped}catch(e){}}
 
-  const observer=new MutationObserver(()=>{enhanceProgramRir();if(document.getElementById('start')?.classList.contains('active'))requestAnimationFrame(enhanceWorkout);addRirChips(document)});
+  installManualEditSet();
+  const observer=new MutationObserver(()=>{installManualEditSet();enhanceProgramRir();if(document.getElementById('start')?.classList.contains('active'))requestAnimationFrame(enhanceWorkout);addRirChips(document)});
   observer.observe(document.body,{subtree:true,childList:true});
-  [0,120,400,900,1800].forEach(t=>setTimeout(()=>{enhanceProgramRir();enhanceWorkout();addRirChips(document)},t));
+  [0,120,400,900,1800].forEach(t=>setTimeout(()=>{installManualEditSet();enhanceProgramRir();enhanceWorkout();addRirChips(document)},t));
 })();
