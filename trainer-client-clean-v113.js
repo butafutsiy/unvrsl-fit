@@ -1,10 +1,10 @@
 'use strict';
 (()=>{
-  if(window.__trainerClientCanonicalGuardV118)return;
-  window.__trainerClientCanonicalGuardV118=true;
+  if(window.__trainerClientCanonicalGuardV119)return;
+  window.__trainerClientCanonicalGuardV119=true;
 
   const style=document.createElement('style');
-  style.id='trainer-client-canonical-v118-style';
+  style.id='trainer-client-canonical-v119-style';
   style.textContent=`
     .trainer-self-profile-v111>.card>.row.between>.btn{display:none!important}
     .tcv3-add.primary{background:var(--accent,#30d158)!important;color:#07110a!important;border-color:transparent!important}
@@ -24,11 +24,9 @@
   function captureCanonical(){
     const f=window.trainerClientDetail;
     if(!window.__unvrslTrainerDirectUIV3||typeof f!=='function')return null;
-    // profile-stats.js and older client patches wrap trainerClientDetail later.
-    // Capture the clean trainer-direct-ui implementation before those wrappers.
     if(f.__profileStats||f.__clientV2||f.__cleanV113)return null;
     canonicalDetail=f;
-    window.__trainerClientDetailCanonicalV118=f;
+    window.__trainerClientDetailCanonicalV119=f;
     return f;
   }
 
@@ -46,31 +44,44 @@
     const sh=document.getElementById('sheet');
     const tabs=sh?.querySelector('.tcv3-tabs');
     const metrics=sh?.querySelector('.metrics');
-    if(!sh||!tabs||!metrics)return;
+    if(!sh||!tabs||!metrics)return false;
 
-    // Nothing from legacy client-detail patches is allowed between the
-    // canonical metrics and the canonical Workouts / Measurements tabs.
+    let changed=false;
     let n=tabs.previousElementSibling;
     while(n&&n!==metrics){
       const prev=n.previousElementSibling;
       n.remove();
+      changed=true;
       n=prev;
     }
 
-    sh.querySelectorAll('.trainer-live-programs,.trainer-remove-programs-block,.trainer-program-control-v2,.online-client-body-progress,.trainer-client-profile-card,.trainer-profile-card').forEach(x=>x.remove());
+    sh.querySelectorAll('.trainer-live-programs,.trainer-remove-programs-block,.trainer-program-control-v2,.online-client-body-progress,.trainer-client-profile-card,.trainer-profile-card').forEach(x=>{x.remove();changed=true});
 
     const add=sh.querySelector('.tcv3-add');
-    if(add){add.textContent='＋ Отправить программу';add.classList.add('primary');}
+    if(add){
+      if(add.textContent!=='＋ Отправить программу'){add.textContent='＋ Отправить программу';changed=true}
+      if(!add.classList.contains('primary')){add.classList.add('primary');changed=true}
+    }
+    return changed;
   }
 
-  const observer=new MutationObserver(()=>queueMicrotask(normalizeClientSheet));
-  observer.observe(document.documentElement,{childList:true,subtree:true});
+  // Late legacy patches may still try to append old cards. Observe only the sheet,
+  // and never write to it unless something actually changed. This avoids the v118
+  // self-triggering MutationObserver loop that froze the UI on "Загружаю клиента…".
+  const sheet=document.getElementById('sheet');
+  if(sheet){
+    let queued=false;
+    new MutationObserver(()=>{
+      if(queued)return;
+      queued=true;
+      requestAnimationFrame(()=>{queued=false;normalizeClientSheet()});
+    }).observe(sheet,{childList:true,subtree:true});
+  }
 
   async function openCanonical(id){
     if(!id||opening)return;
     opening=true;
     try{
-      if(typeof window.toast==='function')window.toast('Открываю клиента…');
       const fn=await waitForCanonical();
       if(!fn){
         if(typeof window.toast==='function')window.toast('Карточка клиента ещё загружается');
@@ -78,13 +89,15 @@
       }
       await fn(id);
       normalizeClientSheet();
-      [30,80,160,300,600,1200,2200,4000].forEach(t=>setTimeout(normalizeClientSheet,t));
+      [30,100,300,800,1800,3200].forEach(t=>setTimeout(normalizeClientSheet,t));
+    }catch(e){
+      console.warn('trainer client open',e);
+      if(typeof window.modal==='function')window.modal('<div class="sheet-grabber"></div><div class="card muted">Не удалось загрузить клиента. Попробуй открыть ещё раз.</div>');
     }finally{
       opening=false;
     }
   }
 
-  // The client card has one entry point. Legacy onclick handlers never run.
   document.addEventListener('click',e=>{
     const card=e.target.closest?.('#clients .client-card');
     if(!card)return;
@@ -95,9 +108,8 @@
     openCanonical(id);
   },true);
 
-  // Start capturing as soon as trainer-direct-ui finishes loading.
   const captureTimer=setInterval(()=>{if(captureCanonical())clearInterval(captureTimer)},25);
   setTimeout(()=>clearInterval(captureTimer),12000);
 
-  window.openTrainerClientCanonicalV118=openCanonical;
+  window.openTrainerClientCanonicalV119=openCanonical;
 })();
