@@ -41,8 +41,21 @@
     base.favorites=[...new Set([...arr(remote.favorites),...arr(local.favorites)])];
     base.hiddenExercises=[...new Set([...arr(remote.hiddenExercises),...arr(local.hiddenExercises)])];
     base.aliases=preferRemote?{...(local.aliases||{}),...(remote.aliases||{})}:{...(remote.aliases||{}),...(local.aliases||{})};
-    const lc=local.current,rc=remote.current;
-    if(lc&&rc){const ls=sessionScore(lc),rs=sessionScore(rc);base.current=ls===rs?(preferRemote?rc:lc):(ls>rs?lc:rc)}else base.current=lc||rc||null;
+
+    // A session that is already present in history with `ended` can never be active again.
+    // Also treat a fresh local `current: null` as an explicit completion/cancel state instead
+    // of reviving an older remote current session during the next cloud reconcile.
+    const completedIds=new Set(base.sessions.filter(x=>x?.ended&&x?.id).map(x=>String(x.id)));
+    const validCurrent=x=>x&&(!x.id||!completedIds.has(String(x.id)))?x:null;
+    const lc=validCurrent(local.current),rc=validCurrent(remote.current);
+    if(lc&&rc){
+      const ls=sessionScore(lc),rs=sessionScore(rc);
+      base.current=ls===rs?(preferRemote?rc:lc):(ls>rs?lc:rc);
+    }else if(lc){
+      base.current=lc;
+    }else if(rc){
+      base.current=(!local.current&&!preferRemote)?null:rc;
+    }else base.current=null;
     return base;
   }
   async function waitCloud(){
