@@ -3,6 +3,13 @@
   if(window.__trainerClientCleanV113)return;
   window.__trainerClientCleanV113=true;
 
+  const selfStyle=document.createElement('style');
+  selfStyle.id='trainer-self-profile-clean-v115';
+  selfStyle.textContent=`
+    .trainer-self-profile-v111>.card>.row.between>.btn{display:none!important}
+  `;
+  document.head.appendChild(selfStyle);
+
   let observer=null;
   let activeClient=null;
 
@@ -17,18 +24,14 @@
     const tabs=sh.querySelector('.tcv3-tabs');
     if(!tabs)return;
 
-    // Удаляем старые добавки, которые прежние тренерские патчи
-    // продолжают подмешивать в новый экран клиента.
     sh.querySelectorAll('.trainer-live-programs,.trainer-remove-programs-block,.trainer-client-profile-card,.trainer-profile-card').forEach(x=>x.remove());
 
-    // Старые карточки «Профиль / Рост · возраст / Не указан».
     [...sh.querySelectorAll('.card,.rule-card,.listline')].forEach(x=>{
       if(x.closest('.tcv3-program-head')||x.closest('#trainerClientTabBodyV3'))return;
       const t=(x.textContent||'').replace(/\s+/g,' ').trim();
       if(/^Профиль\b/i.test(t)&&/Рост\s*·\s*возраст/i.test(t))x.remove();
     });
 
-    // Должен остаться только один блок программ — тот, что ниже вкладок.
     const sections=[...sh.querySelectorAll('.section')].filter(x=>/^ПРОГРАММЫ$/i.test((x.textContent||'').trim()));
     sections.forEach(sec=>{
       if(sec.closest('.tcv3-program-head'))return;
