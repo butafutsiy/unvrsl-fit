@@ -85,10 +85,13 @@
     if(!isTrainer())return;
     const root=document.getElementById('plan');if(!root)return;
     await load(force);
-    let h=root.querySelector('.trainer-self-plan-v110');
-    if(!h){h=document.createElement('div');h.className='cj107 trainer-self-plan-v110';root.appendChild(h)}
+    let profile=root.querySelector('.trainer-self-profile-v111');
+    if(!profile){profile=document.createElement('div');profile.className='cj107 trainer-self-profile-v111';root.prepend(profile)}
+    let history=root.querySelector('.trainer-self-plan-v110');
+    if(!history){history=document.createElement('div');history.className='cj107 trainer-self-plan-v110';root.appendChild(history)}
     const p=C.p||{},w=lw(),a=age(p.birth_date);
-    h.innerHTML=`<div class="section">ПРОВЕДЁННЫЕ ТРЕНИРОВКИ</div><div class="card cj107-list">${C.rows.length?C.rows.slice(0,20).map(row).join(''):'<div class="muted" style="padding:15px">После завершения тренировки она появится здесь.</div>'}</div><div class="section">ПРОФИЛЬ И ЗАМЕРЫ</div><div class="card"><div class="row between"><div><div class="title">${E(p.display_name||'Мой профиль')}</div><div class="muted small">${[p.height_cm?F(p.height_cm)+' см':null,a!=null?a+' лет':null,w?F(w)+' кг':null].filter(Boolean).join(' · ')||'Профиль спортсмена'}</div></div><button class="btn" onclick="trainerSelfProfile110()">Открыть</button></div>${measures()}<div class="cj107-actions"><button class="btn primary" onclick="trainerSelfMeasure110()">＋ Записать замеры</button><button class="btn" onclick="trainerSelfProfile110()">Профиль</button></div></div>`;
+    profile.innerHTML=`<div class="section">ПРОФИЛЬ И ЗАМЕРЫ</div><div class="card"><div class="row between"><div><div class="title">${E(p.display_name||'Мой профиль')}</div><div class="muted small">${[p.height_cm?F(p.height_cm)+' см':null,a!=null?a+' лет':null,w?F(w)+' кг':null].filter(Boolean).join(' · ')||'Профиль спортсмена'}</div></div><button class="btn" onclick="trainerSelfProfile110()">Открыть</button></div>${measures()}<div class="cj107-actions"><button class="btn primary" onclick="trainerSelfMeasure110()">＋ Записать замеры</button><button class="btn" onclick="trainerSelfProfile110()">Профиль</button></div></div>`;
+    history.innerHTML=`<div class="section">ПРОВЕДЁННЫЕ ТРЕНИРОВКИ</div><div class="card cj107-list">${C.rows.length?C.rows.slice(0,20).map(row).join(''):'<div class="muted" style="padding:15px">После завершения тренировки она появится здесь.</div>'}</div>`;
   }
   window.trainerSelfPlanRender110=renderSelf;
   const find=t=>C.rows.find(r=>key(r)===decodeURIComponent(t||''));
