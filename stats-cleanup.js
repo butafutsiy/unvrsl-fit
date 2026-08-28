@@ -40,54 +40,41 @@
 
   function decorateMetrics(root){
     const metrics=[...root.querySelectorAll('.sd2-grid .sd2-metric')];
-    const defs=[
-      ['workout','stats-icon-workout'],
-      ['month','stats-icon-month'],
-      ['streak','stats-icon-streak'],
-      ['weight','stats-icon-weight']
-    ];
+    const defs=[['workout','stats-icon-workout'],['month','stats-icon-month'],['streak','stats-icon-streak'],['weight','stats-icon-weight']];
     metrics.forEach((card,i)=>{
       const label=card.querySelector('.sd2-metric-label');if(!label)return;
       const first=label.firstElementChild;if(!first)return;
-      const [key,cls]=defs[i]||defs[0];
-      first.className=`stats-metric-icon ${cls}`;
-      first.innerHTML=icons[key];
+      const [key,cls]=defs[i]||defs[0];first.className=`stats-metric-icon ${cls}`;first.innerHTML=icons[key];
     });
   }
 
   function ensureMuscleMap(root){
     if(root.querySelector('.stats-muscle-week')||typeof window.advMuscleMapHtml!=='function')return;
-    const wrap=document.createElement('div');
-    wrap.className='stats-muscle-week';
+    const wrap=document.createElement('div');wrap.className='stats-muscle-week';
     wrap.innerHTML=`<div class="section">НАГРУЗКА ЗА 7 ДНЕЙ</div><div class="card stats-muscle-week-card">${window.advMuscleMapHtml()}</div>`;
-    const grid=root.querySelector('.sd2-grid');
-    if(grid)grid.insertAdjacentElement('afterend',wrap);else root.appendChild(wrap);
+    const grid=root.querySelector('.sd2-grid');if(grid)grid.insertAdjacentElement('afterend',wrap);else root.appendChild(wrap);
   }
 
   function patchStats(){
     const root=document.getElementById('stats');if(!root||!root.classList.contains('stats-v2'))return;
-    root.querySelectorAll('.sd2-history').forEach(x=>x.remove());
-    removeMovedCards(root);
-    decorateMetrics(root);
-    ensureMuscleMap(root);
+    root.querySelectorAll('.sd2-history').forEach(x=>x.remove());removeMovedCards(root);decorateMetrics(root);ensureMuscleMap(root);
   }
-
   function schedulePatch(){[0,80,260,700,1400].forEach(t=>setTimeout(patchStats,t));}
 
   const base=window.statsPage;
   if(typeof base==='function'&&!base.__statsCleanup){
-    const wrapped=function(){const r=base.apply(this,arguments);schedulePatch();return r};
-    wrapped.__statsCleanup=true;
-    window.statsPage=wrapped;
-    try{statsPage=wrapped}catch(e){}
+    const wrapped=function(){const r=base.apply(this,arguments);schedulePatch();return r};wrapped.__statsCleanup=true;window.statsPage=wrapped;try{statsPage=wrapped}catch(e){}
   }
-
   schedulePatch();
 
-  // Late integrity patch: fixes finished-session stats, weekly muscle load and settings duplication.
   setTimeout(()=>{
-    if(window.__unvrslStatsIntegrityV104)return;
-    if(typeof window.loadExternalScript==='function')window.loadExternalScript('stats-integrity-v104.js').catch(e=>console.warn('stats integrity',e));
-    else{const s=document.createElement('script');s.src='./stats-integrity-v104.js';document.head.appendChild(s)}
+    if(!window.__unvrslStatsIntegrityV104){
+      if(typeof window.loadExternalScript==='function')window.loadExternalScript('stats-integrity-v104.js').catch(e=>console.warn('stats integrity',e));
+      else{const s=document.createElement('script');s.src='./stats-integrity-v104.js';document.head.appendChild(s)}
+    }
+    if(!window.__clientJournal107){
+      if(typeof window.loadExternalScript==='function')window.loadExternalScript('client-journal-profile-v107.js').catch(e=>console.warn('client journal/profile',e));
+      else{const s=document.createElement('script');s.src='./client-journal-profile-v107.js';document.head.appendChild(s)}
+    }
   },0);
 })();
