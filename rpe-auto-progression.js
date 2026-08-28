@@ -10,11 +10,11 @@
 
   function rpeAutoFillCurrent(){
     const s=window.st?.current;
-    if(!s||!Array.isArray(s.ex)||typeof suggestionFor!=='function')return 0;
+    if(!s||s.adaptiveDecision!=='previous'||!Array.isArray(s.ex)||typeof suggestionFor!=='function')return 0;
     let changed=0;
     s.ex.forEach(e=>{
       if(rpeAutoSpecial(e)||!Array.isArray(e.set)||!e.set.length)return;
-      const empty=e.set.filter(x=>x&&x.mode!=='cardio'&&(!Number(x.w)||Number(x.w)===0));
+      const empty=e.set.filter(x=>x&&!x.manualOverride&&x.mode!=='cardio'&&(!Number(x.w)||Number(x.w)===0));
       if(!empty.length)return;
       const base=typeof baseExerciseName==='function'?baseExerciseName(e.n):String(e.n||'');
       const target=Number(e.target||s.target||8);
@@ -40,43 +40,25 @@
   function wrapStart(name){
     const base=window[name];
     if(typeof base!=='function'||base.__rpeAutoWrapped)return;
-    const wrapped=function(){
-      const r=base.apply(this,arguments);
-      setTimeout(()=>rpeAutoRefresh(rpeAutoFillCurrent()),0);
-      return r;
-    };
+    const wrapped=function(){const r=base.apply(this,arguments);setTimeout(()=>rpeAutoRefresh(rpeAutoFillCurrent()),0);return r};
     wrapped.__rpeAutoWrapped=true;
     window[name]=wrapped;
     try{if(name==='begin')begin=wrapped;if(name==='beginProgramDay')beginProgramDay=wrapped;if(name==='beginRemotePlan')beginRemotePlan=wrapped}catch(e){}
   }
 
-  wrapStart('begin');
-  wrapStart('beginProgramDay');
-  wrapStart('beginRemotePlan');
-
-  // Облачные модули могут объявить/обернуть старт позже — подхватываем их без дублей.
+  wrapStart('begin');wrapStart('beginProgramDay');wrapStart('beginRemotePlan');
   let tries=0;
-  const timer=setInterval(()=>{
-    wrapStart('beginProgramDay');
-    wrapStart('beginRemotePlan');
-    if(++tries>20)clearInterval(timer);
-  },700);
+  const timer=setInterval(()=>{wrapStart('beginProgramDay');wrapStart('beginRemotePlan');if(++tries>20)clearInterval(timer)},700);
 
-  // Показываем, откуда взялся автоматически рассчитанный вес.
   const baseCard=window.exerciseGroupCard;
   if(typeof baseCard==='function'&&!baseCard.__rpeAutoUi){
     const wrapped=function(s,group){
       let html=baseCard.apply(this,arguments);
       const info=group?.entries?.find(e=>e?.rpeAuto)?.rpeAuto;
-      if(info){
-        const chip=`<span class="chip green">Авто по RPE · ${info.weight} кг</span>`;
-        html=html.replace('<div class="chips compact">','<div class="chips compact">'+chip);
-      }
+      if(info){const chip=`<span class="chip green">По прошлому RPE · ${info.weight} кг</span>`;html=html.replace('<div class="chips compact">','<div class="chips compact">'+chip)}
       return html;
     };
-    wrapped.__rpeAutoUi=true;
-    window.exerciseGroupCard=wrapped;
-    try{exerciseGroupCard=wrapped}catch(e){}
+    wrapped.__rpeAutoUi=true;window.exerciseGroupCard=wrapped;try{exerciseGroupCard=wrapped}catch(e){}
   }
 })();
 
@@ -98,26 +80,16 @@
     const heavy=list[0],light=list[1],finish=list[2]||light;
     let fullRest=0;
     try{const idx=r.e.indexOf(finish);if(typeof rest==='function'&&idx>=0)fullRest=Number(rest(r,finish,idx)||0)}catch(e){}
-    return{
-      heavy:{w:Number(heavy.w||0),r:Number(heavy.r||0)},
-      light:{w:Number(light.w||0),r:Number(light.r||0)},
-      finish:{w:Number(finish.w||light.w||0),r:clampTopReps(finish.r)},
-      fullRest:fullRest||120
-    }
+    return{heavy:{w:Number(heavy.w||0),r:Number(heavy.r||0)},light:{w:Number(light.w||0),r:Number(light.r||0)},finish:{w:Number(finish.w||light.w||0),r:clampTopReps(finish.r)},fullRest:fullRest||120}
   }
 
-  function routineFor(week,code){
-    try{return (ROUTINES||[]).find(r=>Number(r.w)===Number(week)&&String(r.c)===String(code))||null}catch(e){return null}
-  }
-
-  function formatScheme(p){
-    return `3 круга (${p.heavy.w}×${p.heavy.r} + 30с + ${p.light.w}×${p.light.r}), затем 2×3–5 · ${p.finish.w} кг`
-  }
+  function routineFor(week,code){try{return (ROUTINES||[]).find(r=>Number(r.w)===Number(week)&&String(r.c)===String(code))||null}catch(e){return null}}
+  function formatScheme(p){return `3 круга (${p.heavy.w}×${p.heavy.r} + 30с + ${p.light.w}×${p.light.r}), затем 2×3–5 · ${p.finish.w} кг`}
 
   function makeSessionItem(src,base,preset,index,restSec,note){
     const e=clone(src||{});
-    e.n=`${base} — UNVRSL ${index}/8`;
-    e.s=1;e.rest=Number(restSec||0);e.d=note;
+    e.n=`${base} — UNVRSL ${index}/8`;e.s=1;e.rest=Number(restSec||0);e.d=note;
+    e.unvrslRoundWave='3rounds+2topoff';e.unvrslRoundIndex=index;
     e.set=[{n:1,w:Number(preset.w||0),r:Number(preset.r||0),rpe:'',ok:false}];
     return e
   }
@@ -129,9 +101,10 @@
     for(let i=0;i<s.ex.length;){
       const e=s.ex[i];
       if(!isUnvrsl(e?.n)){out.push(e);i++;continue}
-      const key=e?.g||baseName(e.n),group=[];let j=i;
+      const group=[];let j=i;
       while(j<s.ex.length&&isUnvrsl(s.ex[j]?.n)&&((e?.g&&s.ex[j]?.g===e.g)||(!e?.g&&baseName(s.ex[j].n)===baseName(e.n)))){group.push(s.ex[j]);j++}
-      if(group.some(x=>(x.set||[]).some(y=>y.ok))){out.push(...group);i=j;continue}
+      if(group.length===8&&group.every(x=>x?.unvrslRoundWave==='3rounds+2topoff')){out.push(...group);i=j;continue}
+      if(group.some(x=>x?.manualOverride||(x.set||[]).some(y=>y.ok||y.manualOverride))){out.push(...group);i=j;continue}
       const p=patternFromRoutine(r,e.n,e.g);if(!p){out.push(...group);i=j;continue}
       const b=baseName(e.n),full=p.fullRest||Math.max(0,...group.map(x=>Number(x.rest)||0))||120;
       const seq=[
@@ -145,48 +118,35 @@
         [p.finish,full,'Финал 2/2 · 3–5 повторов.']
       ];
       seq.forEach((x,k)=>out.push(makeSessionItem(group[Math.min(k,group.length-1)]||e,b,x[0],k+1,x[1],`UNVRSL · ${x[2]}`)));
-      changed=true;i=j
+      changed=true;i=j;
     }
     if(changed)s.ex=out;
-    return changed
+    return changed;
   }
 
   function correctProgramExercise(e,p){
     if(!e||e.method!=='UNVRSL'||!p)return false;
     const old=Array.isArray(e.sets)?e.sets:[],tpl=i=>clone(old[i]||old[0]||{}),full=p.fullRest||Number(e.rest)||120;
-    const specs=[
-      [p.heavy,30],[p.light,full],[p.heavy,30],[p.light,full],
-      [p.heavy,30],[p.light,full],[p.finish,full],[p.finish,full]
-    ];
+    const specs=[[p.heavy,30],[p.light,full],[p.heavy,30],[p.light,full],[p.heavy,30],[p.light,full],[p.finish,full],[p.finish,full]];
     e.sets=specs.map((sp,i)=>({...tpl(i),label:`${i+1}/8`,w:sp[0].w,r:sp[0].r,rest:sp[1]}));
     e.waveScheme='3rounds+2topoff';
     const clean=String(e.note||'').replace(/\s*·?\s*UNVRSL:.*$/i,'').trim();
-    e.note=[clean,`UNVRSL: ${formatScheme(p)}.`].filter(Boolean).join(' · ');
-    e.displayPrescription=formatScheme(p);
-    return true
+    e.note=[clean,`UNVRSL: ${formatScheme(p)}.`].filter(Boolean).join(' · ');e.displayPrescription=formatScheme(p);
+    return true;
   }
 
-  function codeFromDay(d){
-    const raw=String(d?.c||d?.code||d?.name||'').trim();
-    return raw.split('·')[0].trim().split(/\s+/)[0]
-  }
-
+  function codeFromDay(d){const raw=String(d?.c||d?.code||d?.name||'').trim();return raw.split('·')[0].trim().split(/\s+/)[0]}
   function migratePrograms(){
-    let changed=false;
-    const all=[...(st?.programs||[]),...(st?.programTemplates||[])];
-    all.forEach(p=>(p.weeks||[]).forEach((w,wi)=>(w.days||[]).forEach(d=>{
-      const r=routineFor(w?.n||wi+1,codeFromDay(d));if(!r)return;
-      (d.ex||[]).forEach(e=>{if(e?.method==='UNVRSL'){const pat=patternFromRoutine(r,e.n);if(pat&&correctProgramExercise(e,pat))changed=true}})
-    })));
-    if(changed)try{save()}catch(e){}
-    return changed
+    let changed=false;const all=[...(st?.programs||[]),...(st?.programTemplates||[])];
+    all.forEach(p=>(p.weeks||[]).forEach((w,wi)=>(w.days||[]).forEach(d=>{const r=routineFor(w?.n||wi+1,codeFromDay(d));if(!r)return;(d.ex||[]).forEach(e=>{if(e?.method==='UNVRSL'){const pat=patternFromRoutine(r,e.n);if(pat&&correctProgramExercise(e,pat))changed=true}})})));
+    if(changed)try{save()}catch(e){};return changed;
   }
 
   function patchSession(){
     const current=window.session||(()=>{try{return session}catch(e){return null}})();
     if(typeof current!=='function'||current.__unvrslRoundWaveFix)return false;
     const wrapped=function(){const s=current.apply(this,arguments);correctSession(s);return s};
-    wrapped.__unvrslRoundWaveFix=true;window.session=wrapped;try{session=wrapped}catch(e){};return true
+    wrapped.__unvrslRoundWaveFix=true;window.session=wrapped;try{session=wrapped}catch(e){};return true;
   }
 
   function patchBuiltInCopy(){
@@ -196,38 +156,21 @@
       const e=current.apply(this,arguments);
       if(e?.method==='UNVRSL'){
         let p=null;
-        if(r&&g?.entries?.length){
-          const heavy=g.entries[0],light=g.entries[1],finish=g.entries[2]||light;
-          let full=0;try{const idx=(r.e||[]).indexOf(finish);if(typeof rest==='function'&&idx>=0)full=Number(rest(r,finish,idx)||0)}catch(err){}
-          p={heavy:{w:Number(heavy?.w||0),r:Number(heavy?.r||0)},light:{w:Number(light?.w||0),r:Number(light?.r||0)},finish:{w:Number(finish?.w||light?.w||0),r:clampTopReps(finish?.r)},fullRest:full||120}
-        }
-        if(!p&&r)p=patternFromRoutine(r,e.n,g?.g||g?.entries?.[0]?.g);
-        if(p)correctProgramExercise(e,p)
+        if(r&&g?.entries?.length){const heavy=g.entries[0],light=g.entries[1],finish=g.entries[2]||light;let full=0;try{const idx=(r.e||[]).indexOf(finish);if(typeof rest==='function'&&idx>=0)full=Number(rest(r,finish,idx)||0)}catch(err){}p={heavy:{w:Number(heavy?.w||0),r:Number(heavy?.r||0)},light:{w:Number(light?.w||0),r:Number(light?.r||0)},finish:{w:Number(finish?.w||light?.w||0),r:clampTopReps(finish?.r)},fullRest:full||120}}
+        if(!p&&r)p=patternFromRoutine(r,e.n,g?.g||g?.entries?.[0]?.g);if(p)correctProgramExercise(e,p);
       }
-      return e
+      return e;
     };
-    wrapped.__unvrslRoundWaveFix=true;window.builtInGroupToProgramExercise=wrapped;try{builtInGroupToProgramExercise=wrapped}catch(e){};return true
+    wrapped.__unvrslRoundWaveFix=true;window.builtInGroupToProgramExercise=wrapped;try{builtInGroupToProgramExercise=wrapped}catch(e){};return true;
   }
 
-  function correctCurrent(){
-    const cur=st?.current;if(!cur)return false;
-    const changed=correctSession(cur);
-    if(changed){try{save()}catch(e){};try{startPage()}catch(e){}}
-    return changed
-  }
-
+  function correctCurrent(){const cur=st?.current;if(!cur)return false;const changed=correctSession(cur);if(changed){try{save()}catch(e){};try{startPage()}catch(e){}}return changed}
   function wrapStartFix(name){
     const current=window[name];if(typeof current!=='function'||current.__unvrslRoundStartFix)return false;
     const wrapped=function(){const r=current.apply(this,arguments);setTimeout(()=>{migratePrograms();correctCurrent()},0);return r};
-    wrapped.__unvrslRoundStartFix=true;window[name]=wrapped;
-    try{if(name==='begin')begin=wrapped;if(name==='beginProgramDay')beginProgramDay=wrapped;if(name==='beginRemotePlan')beginRemotePlan=wrapped}catch(e){}
-    return true
+    wrapped.__unvrslRoundStartFix=true;window[name]=wrapped;try{if(name==='begin')begin=wrapped;if(name==='beginProgramDay')beginProgramDay=wrapped;if(name==='beginRemotePlan')beginRemotePlan=wrapped}catch(e){};return true;
   }
 
-  migratePrograms();correctCurrent();patchSession();patchBuiltInCopy();
-  wrapStartFix('begin');wrapStartFix('beginProgramDay');wrapStartFix('beginRemotePlan');
-  let tries=0;const timer=setInterval(()=>{
-    patchSession();patchBuiltInCopy();wrapStartFix('beginProgramDay');wrapStartFix('beginRemotePlan');migratePrograms();correctCurrent();
-    if(++tries>45)clearInterval(timer)
-  },300);
+  migratePrograms();correctCurrent();patchSession();patchBuiltInCopy();wrapStartFix('begin');wrapStartFix('beginProgramDay');wrapStartFix('beginRemotePlan');
+  let tries=0;const timer=setInterval(()=>{patchSession();patchBuiltInCopy();wrapStartFix('beginProgramDay');wrapStartFix('beginRemotePlan');correctCurrent();if(++tries>45)clearInterval(timer)},300);
 })();
