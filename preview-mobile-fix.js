@@ -77,3 +77,4 @@
 })();
 
 setTimeout(()=>{try{if(typeof loadExternalScript==='function')loadExternalScript('template-programs-v3.js').catch(e=>console.warn('template programs v3',e))}catch(e){}},0);
+setTimeout(()=>{try{if(typeof loadExternalScript==='function')loadExternalScript('finish-integrity-v109.js').catch(e=>console.warn('finish integrity v109',e))}catch(e){}},0);
