@@ -1,79 +1,65 @@
 'use strict';
 (()=>{
-  if(window.__trainerClientCleanV113)return;
-  window.__trainerClientCleanV113=true;
+  if(window.__trainerClientCleanV116)return;
+  window.__trainerClientCleanV116=true;
 
   const selfStyle=document.createElement('style');
-  selfStyle.id='trainer-self-profile-clean-v115';
+  selfStyle.id='trainer-client-clean-v116-style';
   selfStyle.textContent=`
     .trainer-self-profile-v111>.card>.row.between>.btn{display:none!important}
+    #sheet .trainer-live-programs,#sheet .trainer-remove-programs-block,#sheet .trainer-client-profile-card,#sheet .trainer-profile-card{display:none!important}
   `;
   document.head.appendChild(selfStyle);
 
-  let observer=null;
-  let activeClient=null;
-
-  function isClientSheet(){
-    const sh=document.getElementById('sheet');
-    return !!(sh&&activeClient&&sh.querySelector('.tcv3-tabs'));
-  }
+  let busy=false;
 
   function cleanup(){
-    const sh=document.getElementById('sheet');
-    if(!sh||!activeClient)return;
-    const tabs=sh.querySelector('.tcv3-tabs');
-    if(!tabs)return;
+    if(busy)return;
+    busy=true;
+    try{
+      const sh=document.getElementById('sheet');
+      if(!sh||!sh.querySelector('.tcv3-tabs'))return;
 
-    sh.querySelectorAll('.trainer-live-programs,.trainer-remove-programs-block,.trainer-client-profile-card,.trainer-profile-card').forEach(x=>x.remove());
+      // Старые патчи не должны ничего добавлять поверх финального экрана клиента.
+      sh.querySelectorAll('.trainer-live-programs,.trainer-remove-programs-block,.trainer-client-profile-card,.trainer-profile-card').forEach(x=>x.remove());
 
-    [...sh.querySelectorAll('.card,.rule-card,.listline')].forEach(x=>{
-      if(x.closest('.tcv3-program-head')||x.closest('#trainerClientTabBodyV3'))return;
-      const t=(x.textContent||'').replace(/\s+/g,' ').trim();
-      if(/^Профиль\b/i.test(t)&&/Рост\s*·\s*возраст/i.test(t))x.remove();
-    });
+      // Удаляем любые старые карточки «Профиль / Рост · возраст», даже если у них нет специального класса.
+      [...sh.querySelectorAll('.card,.rule-card,.listline')].forEach(x=>{
+        if(x.closest('#trainerClientTabBodyV3'))return;
+        const t=(x.textContent||'').replace(/\s+/g,' ').trim();
+        if(/^Профиль\b/i.test(t)&&(/Рост\s*·\s*возраст/i.test(t)||/Не указан/i.test(t)))x.remove();
+      });
 
-    const sections=[...sh.querySelectorAll('.section')].filter(x=>/^ПРОГРАММЫ$/i.test((x.textContent||'').trim()));
-    sections.forEach(sec=>{
-      if(sec.closest('.tcv3-program-head'))return;
-      let n=sec.nextElementSibling;
-      sec.remove();
-      while(n&&!n.classList.contains('section')&&!n.classList.contains('tcv3-tabs')){
-        const next=n.nextElementSibling;n.remove();n=next;
-      }
-    });
+      // Оставляем только финальный блок программ, который принадлежит tcv3.
+      const programHeads=[...sh.querySelectorAll('.tcv3-program-head')];
+      const canonicalHead=programHeads[0]||null;
+      programHeads.slice(1).forEach(x=>x.remove());
+      [...sh.querySelectorAll('.section')].forEach(sec=>{
+        if(!/^ПРОГРАММЫ$/i.test((sec.textContent||'').trim()))return;
+        if(canonicalHead&&sec.closest('.tcv3-program-head')===canonicalHead)return;
+        let n=sec.nextElementSibling;
+        sec.remove();
+        while(n&&!n.classList.contains('section')&&!n.classList.contains('tcv3-tabs')){
+          const next=n.nextElementSibling;
+          n.remove();
+          n=next;
+        }
+      });
+
+      // Единое название кнопки назначения программы.
+      const add=sh.querySelector('.tcv3-program-head .tcv3-add');
+      if(add) add.textContent='＋ Отправить программу';
+    }finally{
+      busy=false;
+    }
   }
 
-  function watch(){
-    observer?.disconnect();
-    const sh=document.getElementById('sheet');if(!sh)return;
-    observer=new MutationObserver(()=>cleanup());
-    observer.observe(sh,{childList:true,subtree:true});
-    cleanup();
-  }
+  // Наблюдаем за всем документом: это не зависит от порядка загрузки trainer-direct-ui и старых патчей.
+  const observer=new MutationObserver(()=>queueMicrotask(cleanup));
+  observer.observe(document.documentElement,{childList:true,subtree:true});
 
-  function install(){
-    const base=window.trainerClientDetail;
-    if(typeof base!=='function'||base.__cleanV113)return;
-    const wrapped=async function(id){
-      activeClient=id;
-      const r=await base.apply(this,arguments);
-      setTimeout(watch,0);
-      setTimeout(cleanup,80);
-      setTimeout(cleanup,250);
-      setTimeout(cleanup,700);
-      return r;
-    };
-    wrapped.__cleanV113=true;
-    window.trainerClientDetail=wrapped;
-    try{trainerClientDetail=wrapped}catch(e){}
-  }
+  // Страховка для очень поздних вставок старых модулей.
+  [0,50,120,250,500,900,1500,2500,4000,7000].forEach(t=>setTimeout(cleanup,t));
 
-  install();
-  [100,400,900,1600,3000].forEach(t=>setTimeout(install,t));
-
-  const close=window.closeModal;
-  if(typeof close==='function'&&!close.__clientCleanV113){
-    const w=function(){activeClient=null;observer?.disconnect();observer=null;return close.apply(this,arguments)};
-    w.__clientCleanV113=true;window.closeModal=w;try{closeModal=w}catch(e){}
-  }
+  document.addEventListener('click',()=>setTimeout(cleanup,0),true);
 })();
