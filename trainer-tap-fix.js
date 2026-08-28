@@ -1,12 +1,13 @@
 'use strict';
 (()=>{
-  if(window.__unvrslTrainerTapFixV2)return;window.__unvrslTrainerTapFixV2=true;
+  if(window.__unvrslTrainerTapFixV3)return;window.__unvrslTrainerTapFixV3=true;
 
-  const style=document.createElement('style');style.id='trainer-tap-fix-style';style.textContent=`
+  const style=document.createElement('style');style.id='trainer-tap-fix-style-v3';style.textContent=`
     #clients .client-card,#clients [data-trainer-action="sent-plans"]{pointer-events:auto!important;touch-action:manipulation!important;position:relative!important;z-index:2!important}
     #clients #clientList,#clients #onlineClientsPane{pointer-events:auto!important}
     .trainer-live-programs{margin-top:14px}.trainer-live-program-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #303034}.trainer-live-program-row:last-child{border-bottom:0}.trainer-live-program-row .btn{white-space:nowrap;min-width:84px}
-    @media(max-width:390px){.trainer-live-program-row{grid-template-columns:1fr}.trainer-live-program-row .btn{width:100%}}
+    .tcv3-add.primary{background:var(--accent,#30d158)!important;color:#07110a!important;border-color:transparent!important}
+    @media(max-width:390px){.trainer-live-program-row{grid-template-columns:1fr}.trainer-live-program-row .btn{width:100%}.tcv3-program-head{align-items:center}.tcv3-add{font-size:13px!important}}
   `;document.head.appendChild(style);
 
   function extractClientId(el){
@@ -40,10 +41,27 @@
       sec.remove();
       while(n&&!n.classList.contains('section')){const next=n.nextElementSibling;n.remove();n=next}
     });
-    sheet.querySelectorAll('.trainer-remove-programs-block,.trainer-live-programs').forEach(x=>x.remove());
+    sheet.querySelectorAll('.trainer-remove-programs-block,.trainer-live-programs,.trainer-program-control-v2').forEach(x=>x.remove());
+  }
+
+  function cleanV3ClientSheet(){
+    const sheet=document.getElementById('sheet');
+    if(!sheet||!sheet.querySelector('.tcv3-head'))return;
+    sheet.querySelectorAll('.trainer-remove-programs-block,.trainer-live-programs,.trainer-program-control-v2').forEach(x=>x.remove());
+    sheet.querySelectorAll('.card,.rule-card,.listline').forEach(el=>{
+      const t=(el.textContent||'').replace(/\s+/g,' ').trim();
+      if(/^Профиль\b/i.test(t)&&/Рост/i.test(t)&&/возраст/i.test(t))el.remove();
+    });
+    const add=sheet.querySelector('.tcv3-add');
+    if(add){add.textContent='＋ Отправить программу';add.classList.add('primary');}
+  }
+
+  function scheduleV3Cleanup(){
+    [0,40,120,300,700,1400].forEach(t=>setTimeout(cleanV3ClientSheet,t));
   }
 
   async function renderLivePrograms(clientId){
+    if(window.__unvrslTrainerDirectUIV3){scheduleV3Cleanup();return;}
     if(!window.cloud?.client||!window.cloud?.user)return;
     const r=await window.cloud.client.from('plan_assignments')
       .select('plan_id,version,status,assigned_at,plans(title)')
@@ -66,6 +84,7 @@
   async function openClientWithDelete(clientId){
     if(typeof window.trainerClientDetail!=='function')return typeof window.toast==='function'&&toast('Карточка клиента ещё загружается');
     await window.trainerClientDetail(clientId);
+    if(window.__unvrslTrainerDirectUIV3){scheduleV3Cleanup();return;}
     await renderLivePrograms(clientId);
   }
 
@@ -103,20 +122,20 @@
   },true);
 
   const baseClients=window.clientsPage;
-  if(typeof baseClients==='function'&&!baseClients.__tapFixV2){
+  if(typeof baseClients==='function'&&!baseClients.__tapFixV3){
     const wrapped=async function(){
       const r=await baseClients.apply(this,arguments);
       decorateTrainerClients();
       setTimeout(decorateTrainerClients,80);
       return r;
     };
-    wrapped.__tapFixV2=true;window.clientsPage=wrapped;try{clientsPage=wrapped}catch(e){}
+    wrapped.__tapFixV3=true;window.clientsPage=wrapped;try{clientsPage=wrapped}catch(e){}
   }
 
   const baseNav=window.nav;
-  if(typeof baseNav==='function'&&!baseNav.__trainerTapFixV2){
+  if(typeof baseNav==='function'&&!baseNav.__trainerTapFixV3){
     const wrapped=function(p){const r=baseNav.apply(this,arguments);if(p==='clients'){setTimeout(decorateTrainerClients,0);setTimeout(decorateTrainerClients,180)}return r};
-    wrapped.__trainerTapFixV2=true;window.nav=wrapped;try{nav=wrapped}catch(e){}
+    wrapped.__trainerTapFixV3=true;window.nav=wrapped;try{nav=wrapped}catch(e){}
   }
 
   [0,200,800,1800].forEach(t=>setTimeout(decorateTrainerClients,t));
