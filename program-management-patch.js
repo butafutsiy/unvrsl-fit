@@ -94,7 +94,10 @@
 
   const style=document.createElement('style');
   style.textContent=`
-    #programs .program-card-primary,.primary-plan-head{border-color:rgba(48,209,88,.5)!important;box-shadow:0 0 0 1px rgba(48,209,88,.13) inset!important}
+    #programs .program-card-primary,.primary-plan-head{
+      border-color:color-mix(in srgb,var(--green) 58%,transparent)!important;
+      box-shadow:0 0 0 1px color-mix(in srgb,var(--green) 18%,transparent) inset!important
+    }
     #programs .program-primary-badge{display:inline-flex;margin-top:7px;width:max-content}
   `;document.head.appendChild(style);
 
