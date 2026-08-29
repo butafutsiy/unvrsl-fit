@@ -16,8 +16,11 @@
  function step(n,id,rs){let s=2.5;try{s=Number(loadStepFor(n,id))||s}catch(_){}const w=mean(rs.map(x=>x.w))||0;if(w<=6)return Math.min(s,.5);if(w<=12)return Math.min(s,1);if(w<=22)return Math.min(s,2);return s}
  function round(v,s){return Math.max(s,Math.round(v/s)*s)}
  function calc(baseName,sourceId,target){const cur=S()?.current;if(!cur)return null;const e=(cur.ex||[]).find(x=>same(x,baseName,sourceId));if(!e||!prescribed(e,cur))return null;const rs=rows(base(e.n),e.sourceId,cur.id);if(!rs.length)return null;const e1=capacity(rs);if(!(e1>0))return null;const reps=mean((e.set||[]).map(x=>N(x.r)).filter(x=>x>0));if(!(reps>0))return null;const tr=N(target)??N(e.target)??N(cur.target)??8,rir=clamp(10-tr,0,10),stp=step(base(e.n),e.sourceId,rs),weight=round(e1/(1+(reps+rir)/30),stp);if(!(weight>0))return null;return{weight,reps:Math.round(reps*10)/10,target:tr,e1rm:Math.round(e1*10)/10,from:mean(rs.map(x=>x.w)),model:'E1RM-MEAN-188'}}
+ function baselineForExercise(e){const cur=S()?.current;if(!cur||!e||!prescribed(e,cur))return null;return calc(base(e.n),e.sourceId,N(e.target)??N(cur.target)??8)}
+ window.unvrslPrescribedBaseline188=baselineForExercise;
+ window.unvrslIsPrescribed188=e=>prescribed(e,S()?.current);
  const oldSuggestion=window.suggestionFor;
- window.suggestionFor=function(baseName,sourceId=null,target=8){const cur=S()?.current,e=(cur?.ex||[]).find(x=>same(x,baseName,sourceId));if(e&& !prescribed(e,cur))return null;const c=calc(baseName,sourceId,target);if(c)return c;return e?null:(typeof oldSuggestion==='function'?oldSuggestion.apply(this,arguments):null)};
+ window.suggestionFor=function(baseName,sourceId=null,target=8){const cur=S()?.current,e=(cur?.ex||[]).find(x=>same(x,baseName,sourceId));if(e&&!prescribed(e,cur))return null;const c=calc(baseName,sourceId,target);if(c)return c;return e?null:(typeof oldSuggestion==='function'?oldSuggestion.apply(this,arguments):null)};
  try{suggestionFor=window.suggestionFor}catch(_){}
  const oldApply=window.applySuggestion;
  window.applySuggestion=function(indices,weight){const cur=S()?.current,w=N(weight);if(!cur||!(w>0))return;let applied=false;(indices||[]).forEach(i=>{const e=cur.ex?.[i];if(!e||!prescribed(e,cur))return;(e.set||[]).forEach(x=>{if(!x.ok&&!x.manualOverride)x.w=w});applied=true});if(!applied)return;try{if(typeof save==='function')save()}catch(_){};try{if(typeof startPage==='function')startPage()}catch(_){};try{if(typeof toast==='function')toast(`Установлено ${w} кг`)}catch(_){}};
