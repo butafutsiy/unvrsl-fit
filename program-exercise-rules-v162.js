@@ -62,20 +62,6 @@
   function methodButtons(method){return METHODS.map(([id,title])=>`<button type="button" class="px-choice ${id===method?'on':''}" data-method="${id}" onclick="programSetMethod('${id}')">${title}</button>`).join('')}
   function kindButtons(kind){return `<button type="button" class="px-choice ${kind==='compound'?'on':''}" data-kind="compound" onclick="programSetKind('compound')">Базовое</button><button type="button" class="px-choice ${kind==='isolation'?'on':''}" data-kind="isolation" onclick="programSetKind('isolation')">Изолирующее</button>`}
 
-  const originalModal=window.modal;
-  if(typeof originalModal==='function'){
-    const cleanModal=function(html){
-      document.getElementById('modal')?.classList.remove('px-program-modal','px-exercise-modal');
-      document.getElementById('sheet')?.classList.remove('px-program-sheet','px-exercise-sheet');
-      return originalModal.call(this,html)
-    };
-    window.modal=cleanModal;try{modal=cleanModal}catch(e){}
-  }
-  function markModal(type){
-    document.getElementById('modal')?.classList.add(type==='program'?'px-program-modal':'px-exercise-modal');
-    document.getElementById('sheet')?.classList.add(type==='program'?'px-program-sheet':'px-exercise-sheet')
-  }
-
   window.programChooseTempo=function(target,value){
     const hidden=document.getElementById(target),custom=document.getElementById(target+'Custom');if(!hidden||!custom)return;
     if(value==='CUSTOM'){custom.hidden=false;hidden.value=custom.value.trim()||recommendedTempo(document.getElementById('pmKind')?.value);setTimeout(()=>custom.focus(),0)}
@@ -127,7 +113,6 @@
     const method=e?.method||'STANDARD',kind=e?.kind||inferKind(x.n),restMode=e?.restMode||(e?'manual':'auto'),rest=e?.rest??autoRest(kind,method),first=e?.sets?.[0]||{},second=e?.sets?.[1]||{};
     const tempo=e?.tempo||recommendedTempo(kind),tempoLight=e?.tempoLight||second.tempo||'3-1-2',heavyReps=e?.heavyReps||first.r||3,lightReps=e?.lightReps||second.r||9,lightWeight=e?.lightWeight??second.w??roundProgramLoad((first.w||0)*.7);
     modal(`<div class="px-exercise-head"><button class="px-icon-btn" onclick="openProgramEditor('${x.pid}',${x.wi},${x.di})">←</button><div class="px-head-copy grow"><h2>${esc(x.n)}</h2><div class="muted">Настройка упражнения</div></div></div><input id="pmKind" type="hidden" value="${kind}"><input id="pmMethod" type="hidden" value="${method}"><input id="pmRestMode" type="hidden" value="${restMode}"><div class="px-choice-section"><div class="px-choice-label">Вид упражнения</div><div class="px-segment">${kindButtons(kind)}</div></div><div class="px-choice-section"><div class="px-choice-label">Метод выполнения</div><div class="px-segment methods">${methodButtons(method)}</div></div><div class="px-main-grid"><div class="field" id="pmSetsField"><label>Подходов</label><input id="pmSets" type="number" min="1" max="10" value="${e?.sets?.length||3}"></div><div class="field" id="pmRepsField"><label>Повторений</label><input id="pmReps" type="number" min="1" max="50" value="${first.r||10}"></div><div class="field"><label>Вес, кг</label><input id="pmWeight" inputmode="decimal" value="${first.w||0}"></div><div class="field"><label>Целевой RPE</label><input id="pmRpe" inputmode="decimal" value="${e?.rpe||8}"></div><div id="pmUnvrslFields" class="px-span-2 px-main-grid"><div class="field"><label>Тяжёлых повторов</label><input id="pmHeavyReps" type="number" min="1" max="10" value="${heavyReps}"></div><div class="field"><label>Лёгких повторов</label><input id="pmLightReps" type="number" min="1" max="30" value="${lightReps}"></div><div class="field px-span-2"><label>Лёгкий вес, кг</label><input id="pmLightWeight" inputmode="decimal" value="${lightWeight}"></div></div></div><div id="pmTempoGeneral">${tempoChooser('pmTempo','Темп',tempo)}</div><div id="pmTempoUnvrsl">${tempoChooser('pmTempoHeavy','Темп тяжёлой тройки',tempo)}${tempoChooser('pmTempoLight','Темп лёгкой девятки',tempoLight)}</div><div class="px-choice-section" id="pmRestField"><div class="px-rest-head"><div class="px-choice-label">Отдых после блока</div><div class="px-rest-toggle"><button type="button" data-rest-mode="auto" class="${restMode==='auto'?'on':''}" onclick="programSetRestMode('auto')">Авто</button><button type="button" data-rest-mode="manual" class="${restMode==='manual'?'on':''}" onclick="programSetRestMode('manual')">Вручную</button></div></div><div class="field"><input id="pmRest" type="number" min="0" step="15" value="${rest}" ${restMode==='auto'?'disabled':''}></div><div id="pmRestHelp" class="px-auto-help"></div><div id="pmInnerRest" class="px-auto-help"></div></div><div id="methodHint" class="px-method-info"></div><div class="field"><label>Комментарий</label><input id="pmNote" value="${esc(e?.note||'')}"></div><button class="btn primary full px-save-exercise" onclick="saveProgramExercise('${x.pid}',${x.wi},${x.di},'${encodeURIComponent(x.n)}','${encodeURIComponent(x.sourceId||'')}','${encodeURIComponent(x.bp||'')}','${encodeURIComponent(x.tg||'')}','${encodeURIComponent(x.eq||'')}',${x.existingIndex===null||x.existingIndex===undefined?'null':x.existingIndex})">${x.existingIndex===null||x.existingIndex===undefined?'Добавить':'Сохранить'}</button>`);
-    markModal('exercise');
     setTimeout(()=>{programRefreshMethodUi(false);programSetRestMode(restMode)},0)
   };
 
@@ -148,33 +133,6 @@
     const tempo=(method==='UNVRSL'?document.getElementById('pmTempoHeavy'):document.getElementById('pmTempo'))?.value.trim()||recommendedTempo(kind),tempoLight=document.getElementById('pmTempoLight')?.value.trim()||'3-1-2',heavyReps=Math.max(1,numberValue('pmHeavyReps',3)),lightReps=Math.max(1,numberValue('pmLightReps',9)),lightWeight=Math.max(0,numberValue('pmLightWeight',roundProgramLoad(w*.7)));
     const data={tempo,tempoLight,heavyReps,lightReps,lightWeight},sets=buildSets(method,count,w,r,rest,data),obj={...(old||{}),id:old?.id||uid('pex'),n,sourceId:decodeURIComponent(sourceToken||'')||null,bp:decodeURIComponent(bpToken||''),tg:decodeURIComponent(tgToken||''),eq:decodeURIComponent(eqToken||''),kind,method,rpe,tempo,tempoLight:method==='UNVRSL'?tempoLight:null,restMode,rest,innerRest:INNER_REST[method],heavyReps:method==='UNVRSL'?heavyReps:null,lightReps:method==='UNVRSL'?lightReps:null,lightWeight:method==='UNVRSL'?lightWeight:null,note,sets};
     if(old)d.ex[existingIndex]=obj;else d.ex.push(obj);p.updated=Date.now();save();openProgramEditor(pid,wi,di)
-  };
-
-  const baseProgramExerciseRow=window.programExerciseRow;
-  window.programExerciseRow=function(p,d,e,ei){
-    if(e?.method==='SUPERSET'&&typeof baseProgramExerciseRow==='function')return baseProgramExerciseRow(p,d,e,ei);
-    const kind=e?.kind||inferKind(e?.n),method=e?.method||'STANDARD',tempo=method==='UNVRSL'&&e?.tempoLight?`${e.tempo} → ${e.tempoLight}`:(e?.tempo||'—');
-    return `<div class="px-program-ex"><div class="row between"><div class="grow"><div class="px-ex-title">${esc(e.n)}</div><div class="muted small" style="margin-top:4px">${esc(typeof prescriptionText==='function'?prescriptionText(e):'')}</div></div><button class="btn tiny" onclick="editProgramExercise('${p.id}',${programUi.week},'${d.id}',${ei})">Изм.</button></div><div class="px-ex-meta"><span class="px-meta-chip kind">${kindLabel(kind)}</span><span class="px-meta-chip method">${METHOD_LABEL[method]||method}</span><span class="px-meta-chip">Темп ${esc(tempo)}</span><span class="px-meta-chip">Отдых ${e?.rest??autoRest(kind,method)} сек${e?.restMode==='auto'?' · авто':''}</span></div><div class="px-ex-controls"><button onclick="moveProgramExercise('${p.id}',${programUi.week},'${d.id}',${ei},-1)">↑ Выше</button><button onclick="moveProgramExercise('${p.id}',${programUi.week},'${d.id}',${ei},1)">↓ Ниже</button><button class="danger-text" onclick="removeProgramExercise('${p.id}',${programUi.week},'${d.id}',${ei})">Удалить</button></div></div>`
-  };
-
-  const openDays={};
-  function openDayKey(pid,wi){return `${pid}:${wi}`}
-  window.programToggleDay=function(pid,wi,di){const k=openDayKey(pid,wi);openDays[k]=openDays[k]===di?-1:di;renderProgramEditor()};
-  window.programDayActions=function(pid,wi,di){
-    const d=programById(pid)?.weeks?.[wi]?.days?.[di];if(!d)return;
-    modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${esc(d.name)}</h2><div class="muted">Действия с тренировкой</div></div><button class="btn tiny" onclick="openProgramEditor('${pid}',${wi},${di})">←</button></div><div class="px-action-list"><button class="btn" onclick="renameProgramDaySheet('${pid}',${wi},${di})">Переименовать</button><button class="btn" onclick="createProgramSuperset('${pid}',${wi},${di})">Добавить суперсет</button><button class="btn danger" onclick="deleteProgramDay('${pid}',${wi},${di})">Удалить день</button></div>`)
-  };
-  window.programEditorActions=function(pid,wi){
-    modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>Действия</h2><div class="muted">Программа и неделя W${wi+1}</div></div><button class="btn tiny" onclick="openProgramEditor('${pid}',${wi})">←</button></div><div class="px-action-list"><button class="btn" onclick="renameProgramSheet('${pid}')">Переименовать программу</button><button class="btn" onclick="copyProgramWeek('${pid}',${wi})">Копировать неделю</button><button class="btn" onclick="addProgramWeek('${pid}')">Добавить неделю</button><button class="btn" onclick="shareProgram('${pid}')">Поделиться программой</button><button class="btn" onclick="saveProgramAsTemplate('${pid}')">Сохранить как шаблон</button></div>`)
-  };
-  window.programDayCard=function(p,w,d,di){
-    const k=openDayKey(p.id,programUi.week);if(!(k in openDays))openDays[k]=Number.isFinite(programUi.day)?programUi.day:0;const open=openDays[k]===di,rows=(d.ex||[]).map((e,ei)=>programExerciseRow(p,d,e,ei)).join('');
-    return `<div class="card px-day ${open?'open':''}"><button class="px-day-head" onclick="programToggleDay('${p.id}',${programUi.week},${di})"><span class="px-day-chevron">⌄</span><span class="grow"><span class="px-day-title">${esc(d.name)}</span><span class="muted small" style="display:block;margin-top:4px">${d.ex.length} упражнений</span></span><span class="px-icon-btn px-day-menu" onclick="event.stopPropagation();programDayActions('${p.id}',${programUi.week},${di})">•••</span></button>${open?`<div class="px-day-body">${rows||'<div class="px-empty">Добавь первое упражнение. Вид, темп и отдых настроятся на следующем шаге.</div>'}<div class="px-day-actions"><button class="px-add-exercise" onclick="chooseProgramExercise('${p.id}',${programUi.week},${di})">＋ Добавить упражнение</button><button class="px-add-super" onclick="createProgramSuperset('${p.id}',${programUi.week},${di})">Суперсет</button></div></div>`:''}</div>`
-  };
-  window.renderProgramEditor=function(){
-    const p=programById(programUi.pid);if(!p)return;ensureProgramShape(p);const w=p.weeks[programUi.week]||p.weeks[0];if(!w)return;
-    modal(`<div class="px-editor-head"><div class="px-head-copy grow"><h2>${esc(p.name)}</h2><div class="muted">Неделя ${programUi.week+1} · ${w.days.length} тренировок</div></div><div class="px-head-actions"><button class="px-icon-btn" onclick="programEditorActions('${p.id}',${programUi.week})">•••</button><button class="px-done" onclick="closeModal();planPage()">Готово</button></div></div><div class="px-week-wrap"><div class="weekbar">${p.weeks.map((x,i)=>`<button class="weekbtn ${i===programUi.week?'on':''}" onclick="programUi.week=${i};programUi.day=0;renderProgramEditor()">W${i+1}</button>`).join('')}</div></div><div class="px-program-section">Неделя ${programUi.week+1}</div>${w.days.map((d,di)=>programDayCard(p,w,d,di)).join('')}<button class="btn full px-add-day" onclick="addProgramDay('${p.id}',${programUi.week})">＋ Добавить тренировку</button>`);
-    markModal('program')
   };
 
   const baseBegin=window.beginProgramDay;
