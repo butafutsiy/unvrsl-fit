@@ -9,10 +9,12 @@ const EQUIPMENT_FILTERS=[
  ['machine','Тренажёр'],
  ['body weight','Свой вес'],
  ['kettlebell','Гиря'],
- ['band','Резина']
+ ['band','Резина'],
+ ['cardio','Кардио']
 ];
 function equipmentGroup(ex){
  const eq=String(ex?.eq||'').toLowerCase();
+ if(ex?.kind==='cardio'||ex?.bp==='cardio')return'cardio';
  if(eq==='smith machine')return'smith machine';
  if(eq==='dumbbell')return'dumbbell';
  if(['barbell','olympic barbell','ez barbell'].includes(eq))return'barbell';
@@ -58,14 +60,9 @@ exercisesPage=function(){
 })();
 
 Promise.resolve()
- .then(()=>loadExternalScript('exercise-library-quality.js'))
- .then(()=>loadExternalScript('exercise-library-curated.js'))
- .then(()=>loadExternalScript('exercise-library-strict.js'))
- .then(()=>loadExternalScript('exercise-media-mapping.js'))
  .then(()=>loadExternalScript('cardio-metric-fixes.js'))
  .then(()=>loadExternalScript('preview-mobile-fix.js'))
  .then(()=>loadExternalScript('template-programs-v3.js'))
  .then(()=>loadExternalScript('template-tempo-wave.js'))
  .then(()=>loadExternalScript('persistence-safety.js'))
- .then(()=>loadExternalScript('exercise-library-final-rules.js'))
- .catch(e=>console.warn('exercise/cardio/preview/template/persistence pipeline',e));
+ .catch(e=>console.warn('cardio/preview/template/persistence pipeline',e));
