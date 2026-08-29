@@ -29,7 +29,6 @@
   `;
   document.head.appendChild(style);
 
-  const norm=s=>String(s||'').toLowerCase().replace(/[^a-zа-яё0-9]+/gi,' ').trim();
   const BODY_PART={abs:'waist',obliques:'waist',chest:'chest',deltoids:'shoulders',triceps:'upper arms',biceps:'upper arms',forearm:'lower arms','upper-back':'back',trapezius:'back','lower-back':'back',quadriceps:'upper legs',hamstring:'upper legs',gluteal:'upper legs',adductors:'upper legs',calves:'lower legs',tibialis:'lower legs'};
   const TARGET={abs:'abs',obliques:'abs',chest:'pectorals',deltoids:'delts',triceps:'triceps',biceps:'biceps',forearm:'forearms','upper-back':'lats',trapezius:'traps','lower-back':'spine',quadriceps:'quads',hamstring:'hamstrings',gluteal:'glutes',adductors:'adductors',calves:'calves',tibialis:'calves'};
   const EQ={
@@ -39,6 +38,8 @@
   function localExercise(x){
     const primary=String(x?.anatome_primary_slugs?.[0]||'');
     const secondary=(x?.anatome_secondary_slugs||[]).map(s=>TARGET[s]||s);
+    const rawInstructions=Array.isArray(x.instructions)?x.instructions.join('\n'):String(x.instructions||'').trim();
+    const instructions=rawInstructions||'Описание техники в исходном каталоге Anatome отсутствует.';
     return {
       id:`anatome:${x.ext_id||x.name}`,
       n:x.name||'Exercise',
@@ -46,25 +47,33 @@
       tg:TARGET[primary]||primary,
       eq:EQ[String(x.equipment||'').toLowerCase()]||String(x.equipment||'').toLowerCase()||'body weight',
       secondary,
-      instructions:{en:Array.isArray(x.instructions)?x.instructions.join('\n'):String(x.instructions||'')},
+      instructions:{ru:instructions,en:instructions},
       image:'',gif:'./icon.svg',custom:false,anatome:true,
       anatomePrimary:x.anatome_primary_slugs||[],anatomeSecondary:x.anatome_secondary_slugs||[],
       level:x.level||'',force:x.force||'',mechanic:x.mechanic||'',category:x.category||''
     };
   }
 
+  function mergeExercises(){
+    if(typeof ogLibrary==='undefined'||!Array.isArray(ogLibrary)||!anatomeExercises.length)return 0;
+    const ids=new Set(ogLibrary.map(e=>String(e.id))),names=new Set(ogLibrary.filter(e=>e?.anatome).map(e=>String(e.n||'').toLowerCase()));let added=0;
+    anatomeExercises.forEach(e=>{const name=String(e.n||'').toLowerCase();if(ids.has(e.id)||names.has(name))return;ogLibrary.push(e);ids.add(e.id);names.add(name);added++});
+    try{ogLibraryLoaded=true}catch(_){ }
+    return added;
+  }
+
+  function refreshMerged(){
+    const added=mergeExercises();
+    if(added){try{if(typeof refreshCatalogUI==='function')refreshCatalogUI()}catch(_){ }}
+  }
+
   async function loadExercises(){
     try{
       const r=await fetch(EX_URL,{cache:'default'});if(!r.ok)throw new Error(`HTTP ${r.status}`);
       const d=await r.json();if(!Array.isArray(d))throw new Error('bad Anatome dataset');
-      anatomeExercises=d.map(localExercise);
-      if(typeof ogLibrary!=='undefined'&&Array.isArray(ogLibrary)){
-        const ids=new Set(ogLibrary.map(e=>String(e.id)));
-        anatomeExercises.forEach(e=>{if(!ids.has(e.id)){ogLibrary.push(e);ids.add(e.id)}});
-        try{ogLibraryLoaded=true}catch(_){ }
-        try{if(typeof refreshCatalogUI==='function')refreshCatalogUI()}catch(_){ }
-      }
-      window.UNVRSL_ANATOME_EXERCISES=anatomeExercises;
+      anatomeExercises=d.map(localExercise);window.UNVRSL_ANATOME_EXERCISES=anatomeExercises;
+      refreshMerged();
+      let tries=0;const timer=setInterval(()=>{refreshMerged();if(++tries>=24)clearInterval(timer)},500);
     }catch(e){console.warn('local Anatome exercises',e)}
   }
 
@@ -77,7 +86,6 @@
   function scoresFromCard(card){
     const rows=[];
     card.querySelectorAll('.anatome-muscle').forEach(el=>{
-      const label=el.querySelector('b')?.textContent?.trim()||'';
       const val=Number(String(el.querySelector('.anatome-muscle-row span')?.textContent||'0').replace(',','.'))||0;
       const drill=el.dataset.drilldown||'';
       if(drill&&val>0)rows.push([drill,val,el]);
@@ -94,8 +102,7 @@
   }
 
   function sideSvg(side,scores){
-    const parts=bodyData?.male?.[side]||[];
-    const paths=[];
+    const parts=bodyData?.male?.[side]||[],paths=[];
     parts.forEach(part=>{
       const fill=colorFor(part.slug,scores),active=scores.has(part.slug),opacity=active?'.98':'.72';
       Object.values(part.path||{}).flat().forEach(d=>{if(d)paths.push(`<path d="${String(d).replace(/"/g,'&quot;')}" fill="${fill}" opacity="${opacity}" data-muscle="${part.slug}"></path>`)})
