@@ -1,9 +1,11 @@
 'use strict';
 
-// Keep the stable pre-RIR workout layout. The adaptive module can still exist in the repo,
-// but it must not mutate the active-workout DOM or add a sixth set column.
+// Restore the original stable active-workout layout.
+// These optional UI modules stay in the repo but are prevented from mutating the workout screen.
+window.__unvrslActiveWorkoutCompact=true;
 window.__unvrslAdaptiveEffortV2=true;
 window.__unvrslAdaptiveEffortSafetyV170=true;
+try{document.getElementById('unvrsl-active-workout-compact')?.remove()}catch(e){}
 try{document.getElementById('adaptive-effort-v2-style')?.remove()}catch(e){}
 
 (()=>{
