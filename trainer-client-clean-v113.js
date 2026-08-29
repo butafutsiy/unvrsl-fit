@@ -1,11 +1,9 @@
 'use strict';
 
-// Restore the original stable active-workout layout.
-// These optional UI modules stay in the repo but are prevented from mutating the workout screen.
-window.__unvrslActiveWorkoutCompact=true;
+// Keep the compact workout layout that was active this morning.
+// Disable only the RIR/adaptive UI layer that was breaking the set grid.
 window.__unvrslAdaptiveEffortV2=true;
 window.__unvrslAdaptiveEffortSafetyV170=true;
-try{document.getElementById('unvrsl-active-workout-compact')?.remove()}catch(e){}
 try{document.getElementById('adaptive-effort-v2-style')?.remove()}catch(e){}
 
 (()=>{
@@ -145,4 +143,60 @@ try{document.getElementById('adaptive-effort-v2-style')?.remove()}catch(e){}
   s.async=false;
   s.dataset.unvrslStableClientProfileV171='1';
   document.body.appendChild(s);
+})();
+
+// Make the muscle-load map follow the actual profile sex, not a stale legacy body flag.
+(()=>{
+  if(window.__unvrslAnatomeSexRuntimeV173)return;
+  window.__unvrslAnatomeSexRuntimeV173=true;
+
+  function appState(){
+    try{if(typeof st!=='undefined'){window.st=st;return st}}catch(e){}
+    return window.st||null;
+  }
+  function profileSex(){
+    const s=appState();
+    let sex=s?.profileBio?.sex||null;
+    if(!sex){try{if(typeof cloud!=='undefined')sex=cloud?.profile?.sex||null}catch(e){}}
+    if(!sex)sex=window.cloud?.profile?.sex||null;
+    return sex;
+  }
+  function syncBody(){
+    const s=appState();if(!s)return false;
+    const sex=profileSex();
+    const body=sex==='female'?'female':'male';
+    const changed=s.body!==body||window.st!==s;
+    s.body=body;window.st=s;
+    if(changed){try{if(typeof save==='function')save()}catch(e){}}
+    const fig=document.querySelector('#anatomeMuscleCard .anatome-figure');
+    if(fig&&fig.dataset.localSig&&!fig.dataset.localSig.startsWith(body+'|'))delete fig.dataset.localSig;
+    return changed;
+  }
+  function refreshStats(){
+    syncBody();
+    try{if(typeof statsPage==='function')statsPage();else if(typeof window.statsPage==='function')window.statsPage()}catch(e){}
+  }
+
+  function wrapStats(){
+    let base=null;try{if(typeof statsPage==='function')base=statsPage}catch(e){};if(!base)base=window.statsPage;
+    if(typeof base!=='function'||base.__anatomeSexV173)return false;
+    const wrapped=function(){syncBody();return base.apply(this,arguments)};
+    wrapped.__anatomeSexV173=true;window.statsPage=wrapped;try{statsPage=wrapped}catch(e){};return true;
+  }
+  const install=setInterval(()=>{if(wrapStats())clearInterval(install)},100);
+  setTimeout(()=>clearInterval(install),15000);
+
+  document.addEventListener('change',e=>{
+    if(e.target?.id!=='bioSex')return;
+    const s=appState();if(s){s.profileBio=s.profileBio||{};s.profileBio.sex=e.target.value||null}
+    setTimeout(refreshStats,180);
+  },true);
+  document.addEventListener('click',e=>{
+    const b=e.target?.closest?.('button');
+    if(!b||!/profileSaveBio\s*\(/.test(b.getAttribute('onclick')||''))return;
+    setTimeout(refreshStats,350);
+  },true);
+  window.addEventListener('focus',()=>setTimeout(()=>{syncBody();const fig=document.querySelector('#anatomeMuscleCard .anatome-figure');if(fig&&!fig.dataset.localSig)refreshStats()},180));
+  setTimeout(syncBody,600);
+  setTimeout(refreshStats,2200);
 })();
