@@ -9,13 +9,11 @@
   function sourceRecords(){
    const src=(typeof ogLibrary!=='undefined'&&Array.isArray(ogLibrary))?ogLibrary:[];
    const adapt=window.UNVRSL_ADAPT_EXERCISE;
-   if(typeof adapt!=='function')return typeof window.UNVRSL_CATALOG_RECORDS==='function'?window.UNVRSL_CATALOG_RECORDS():[];
    const out=[],seen=new Set();
-   for(const raw of src){
-    const e=adapt(raw);if(!e)continue;
-    const key=String(e.__ruTitle||e.n||e.name||'').trim().toLowerCase();if(!key||seen.has(key))continue;
-    seen.add(key);out.push({...e,id:String(e.id).startsWith('og:')?e.id:`og:${e.id}`,rawId:e.rawId||e.id,custom:false});
-   }
+   if(typeof adapt==='function')for(const raw of src){const e=adapt(raw);if(!e)continue;const key=String(e.__ruTitle||e.n||e.name||'').trim().toLowerCase();if(!key||seen.has(key))continue;seen.add(key);out.push({...e,id:String(e.id).startsWith('og:')?e.id:`og:${e.id}`,rawId:e.rawId||e.id,custom:false})}
+   else if(typeof window.UNVRSL_CATALOG_RECORDS==='function')for(const e of window.UNVRSL_CATALOG_RECORDS()||[]){const key=String(e.__ruTitle||e.n||e.name||'').trim().toLowerCase();if(!key||seen.has(key))continue;seen.add(key);out.push(e)}
+   const cardio=typeof window.UNVRSL_CARDIO_RECORDS_V6==='function'?window.UNVRSL_CARDIO_RECORDS_V6():[];
+   for(const e of cardio){const key=String(e.__ruTitle||e.n||e.name||'').trim().toLowerCase();if(!key)continue;const old=out.findIndex(x=>String(x.__ruTitle||x.n||x.name||'').trim().toLowerCase()===key);if(old>=0)out.splice(old,1);out.push(e)}
    return out.sort((a,b)=>title(a).localeCompare(title(b),'ru'));
   }
   function title(e){if(typeof window.UNVRSL_CATALOG_TITLE==='function'){const t=String(window.UNVRSL_CATALOG_TITLE(e)||'').trim();if(t)return t}try{return ruExerciseName(e.n||e.name||'')}catch(_){return String(e.n||e.name||'Упражнение')}}
@@ -28,7 +26,8 @@
   const oldRefresh=window.refreshCatalogUI;if(typeof oldRefresh==='function'){window.refreshCatalogUI=function(){const r=oldRefresh.apply(this,arguments);setTimeout(render,0);return r};try{refreshCatalogUI=window.refreshCatalogUI}catch(_){}}
   const obs=new MutationObserver(()=>{if(document.querySelector('#exercises.page.active'))removeModeTabs()});obs.observe(document.documentElement,{childList:true,subtree:true});setTimeout(()=>{if(document.querySelector('#exercises.page.active'))render()},100);
  }
- function load(src){return new Promise((ok,bad)=>{if(src.endsWith('exercise-format-v5.js')&&window.UNVRSL_FORMAT_V5_READY)return ok();const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=bad;document.head.appendChild(s)})}
- if(window.UNVRSL_FORMAT_V5_READY)return boot();
- load('exercise-format-v5.js').then(boot).catch(()=>boot());
+ function load(src){return new Promise((ok,bad)=>{if(src.endsWith('exercise-format-v5.js')&&window.UNVRSL_FORMAT_V5_READY)return ok();if(src.endsWith('exercise-cardio-fix-v6.js')&&window.__unvrslCardioFixV6)return ok();const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=bad;document.head.appendChild(s)})}
+ const start=()=>load('exercise-cardio-fix-v6.js').catch(()=>{}).then(boot);
+ if(window.UNVRSL_FORMAT_V5_READY)return start();
+ load('exercise-format-v5.js').then(start).catch(start);
 })();
