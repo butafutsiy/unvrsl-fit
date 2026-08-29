@@ -25,19 +25,39 @@
   `;
   document.head.appendChild(style);
 
+  function clientMode(){
+    if(!window.cloud?.user)return false;
+    if(typeof window.unvrslTrainerMode==='function')return !window.unvrslTrainerMode();
+    if(typeof window.trainerIsTrainer==='function')return !window.trainerIsTrainer();
+    return window.cloud?.profile?.role!=='trainer';
+  }
+  function hasActiveAssignment(planId){
+    if(typeof window.clientHasActivePlan==='function')return window.clientHasActivePlan(planId);
+    const uid=String(window.cloud?.user?.id||'');
+    if(!uid||String(st.clientAssignedUserId||'')!==uid||st.clientAssignmentsLoaded!==true)return false;
+    return (Array.isArray(st.clientAssignedPlanIds)?st.clientAssignedPlanIds:[]).map(String).includes(String(planId||''));
+  }
   function programs(){
-    const list=[{id:BUILTIN,name:builtInName(),weeks:8,days:routineList().length,builtin:true,kind:'Встроенная'}];
-    const seen=new Set([BUILTIN]);
+    const list=[],seen=new Set();
+    if(!clientMode()){
+      list.push({id:BUILTIN,name:builtInName(),weeks:8,days:routineList().length,builtin:true,kind:'Встроенная'});
+      seen.add(BUILTIN);
+    }
     (Array.isArray(st.programs)?st.programs:[]).forEach(p=>{
       if(!p||p.archived||!Array.isArray(p.weeks)||!p.weeks.length)return;
+      if(clientMode()&&(!p.cloudPlanId||!p.trainerId||!hasActiveAssignment(p.cloudPlanId)))return;
       const id=String(p.id||'');
       if(!id||seen.has(id))return;
       seen.add(id);
-      list.push({id,name:p.name||'Программа',weeks:p.weeks.length,days:p.weeks.reduce((a,w)=>a+(w?.days?.length||0),0),p,builtin:false,kind:'Моя программа'});
+      list.push({id,name:p.name||'Программа',weeks:p.weeks.length,days:p.weeks.reduce((a,w)=>a+(w?.days?.length||0),0),p,builtin:false,kind:clientMode()?'Назначена тренером':'Моя программа'});
     });
     return list;
   }
-  function selected(){const a=programs();return a.find(x=>x.id===ui.pid)||a.find(x=>x.id===st.primaryProgramId)||a[0]}
+  function selected(){
+    const a=programs();
+    if(!a.length)return null;
+    return a.find(x=>x.id===ui.pid)||a.find(x=>x.id===st.primaryProgramId)||a[0]
+  }
   function weekFor(p){
     const saved=Number(st.startProgramWeeks?.[p.id]);
     const fallback=p.builtin?Number(st.week||1):1;
@@ -45,7 +65,12 @@
   }
   function escId(v){return encodeURIComponent(String(v))}
   function renderPicker(){
-    const p=selected(),w=weekFor(p);ui.pid=p.id;ui.week=w;
+    const p=selected();
+    if(!p){
+      modal('<div class="row between"><h2>Выбрать тренировку</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="card"><div class="title">План пока не назначен</div><div class="muted" style="margin-top:7px">Здесь появятся только программы, которые тренер отправил именно тебе.</div></div>');
+      return
+    }
+    const w=weekFor(p);ui.pid=p.id;ui.week=w;
     const ps=programs();
     const programHtml=ps.map(x=>{const primary=String(x.id)===String(st.primaryProgramId);return `<button class="start-program-choice ${x.id===p.id?'on':''}" onclick="selectStartProgram('${escId(x.id)}')"><span class="start-program-kind ${primary?'primary-kind':''}">${esc(primary?'Основная':x.kind)}</span><b>${esc(x.name)}</b><span>${x.weeks} нед. · ${x.days} тренировок</span></button>`}).join('');
     const weeks=Array.from({length:p.weeks},(_,i)=>i+1).map(n=>`<button class="weekbtn ${n===w?'on':''}" aria-pressed="${n===w}" onclick="selectStartWeek(${n})">W${n}</button>`).join('');
@@ -62,11 +87,22 @@
     if(document.getElementById('modal')?.classList.contains('show')&&sh)sh.innerHTML=html;else modal(html);
   }
 
-  window.selectStartProgram=function(token){ui.pid=decodeURIComponent(token);ui.week=null;st.startProgramId=ui.pid;save();renderPicker()};
-  window.selectStartWeek=function(w){const p=selected();ui.week=Math.max(1,Math.min(p.weeks,+w||1));st.startProgramWeeks[p.id]=ui.week;if(p.builtin)st.week=ui.week;save();renderPicker()};
-  window.startPickedBuiltin=function(w,token){const c=decodeURIComponent(token);st.startProgramId=BUILTIN;st.startProgramWeeks[BUILTIN]=w;st.week=w;window.__pendingStartProgramMeta={id:BUILTIN,name:builtInName()};save();begin(w,c)};
-  window.startPickedProgram=function(token,wi,di){const pid=decodeURIComponent(token);st.startProgramId=pid;st.startProgramWeeks[pid]=wi+1;save();beginProgramDay(pid,wi,di)};
-  window.openStartProgramPicker=function(){ui.pid=defaultProgram();ui.week=null;renderPicker()};
+  window.selectStartProgram=function(token){
+    const id=decodeURIComponent(token),allowed=programs().some(x=>x.id===id);
+    if(!allowed)return typeof toast==='function'?toast('Эта программа тебе не назначена'):undefined;
+    ui.pid=id;ui.week=null;st.startProgramId=ui.pid;save();renderPicker()
+  };
+  window.selectStartWeek=function(w){const p=selected();if(!p)return;ui.week=Math.max(1,Math.min(p.weeks,+w||1));st.startProgramWeeks[p.id]=ui.week;if(p.builtin)st.week=ui.week;save();renderPicker()};
+  window.startPickedBuiltin=function(w,token){
+    if(clientMode())return typeof toast==='function'?toast('Встроенный цикл недоступен клиенту'):undefined;
+    const c=decodeURIComponent(token);st.startProgramId=BUILTIN;st.startProgramWeeks[BUILTIN]=w;st.week=w;window.__pendingStartProgramMeta={id:BUILTIN,name:builtInName()};save();begin(w,c)
+  };
+  window.startPickedProgram=function(token,wi,di){
+    const pid=decodeURIComponent(token),p=(st.programs||[]).find(x=>String(x.id)===String(pid));
+    if(clientMode()&&(!p?.cloudPlanId||!hasActiveAssignment(p.cloudPlanId)))return typeof toast==='function'?toast('Эта программа тебе не назначена'):undefined;
+    st.startProgramId=pid;st.startProgramWeeks[pid]=wi+1;save();beginProgramDay(pid,wi,di)
+  };
+  window.openStartProgramPicker=function(){ui.pid=clientMode()?(programs()[0]?.id||null):defaultProgram();ui.week=null;renderPicker()};
 
   const replacement=function(){return window.openStartProgramPicker()};
   window.quick=replacement;try{quick=replacement}catch(e){}
