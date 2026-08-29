@@ -9,7 +9,6 @@
   let periodDays=7;
   let cloudSessions=null;
   let cloudLoadedAt=0;
-  let rendering=false;
 
   const LABELS={
     chest:'Грудь',deltoids:'Дельты',triceps:'Трицепс',biceps:'Бицепс',forearm:'Предплечья',
@@ -57,8 +56,8 @@
     const n=normalize(name);
     if(/жим.*(груд|лежа|наклон|отриц)|bench press|chest press|кроссовер|сведение рук|разведение гантел|бабочк/.test(n))return'chest';
     if(/жим.*плеч|армейск|arnold|арнольд|мах.*сторон|дельт|тяга каната к лицу|face pull/.test(n))return'deltoids';
-    if(/разгиб.*рук|разгиб.*рук|француз|трицеп|pushdown|skull crusher|жим узким/.test(n))return'triceps';
-    if(/сгиб.*рук|сгиб.*рук|бицеп|молот|preacher|curl|скотт/.test(n))return'biceps';
+    if(/разгиб.*рук|француз|трицеп|pushdown|skull crusher|жим узким/.test(n))return'triceps';
+    if(/сгиб.*рук|бицеп|молот|preacher|curl|скотт/.test(n))return'biceps';
     if(/шраг|shrug/.test(n))return'trapezius';
     if(/тяга верхн|подтяг|pulldown|pull.?up|chin.?up|пуловер/.test(n))return'upper-back';
     if(/тяга т-гриф|тяга.*наклон|горизонтальн.*тяга|high row|seated row|low row|one arm row/.test(n))return'upper-back';
@@ -183,18 +182,24 @@
   }
 
   async function renderCard(card){
-    if(rendering||!card?.isConnected)return;rendering=true;
+    if(!card?.isConnected)return;
+    if(card.dataset.anatomeRendering==='1'){card.dataset.anatomeRerender='1';return}
+    card.dataset.anatomeRendering='1';
+    const days=periodDays;
     const figure=card.querySelector('.anatome-figure'),top=card.querySelector('.anatome-top'),sub=card.querySelector('.anatome-sub');
     try{
-      const sessions=await getSessions(),data=scoreSessions(sessions,periodDays),built=layersFromScores(data.scores);
-      if(sub)sub.textContent=`Последние ${periodDays} дн. · ${data.sets} выполн. подходов`;
+      const sessions=await getSessions(),data=scoreSessions(sessions,days),built=layersFromScores(data.scores);
+      if(sub)sub.textContent=`Последние ${days} дн. · ${data.sets} выполн. подходов`;
       if(!built.layers){if(figure)figure.innerHTML='<div class="anatome-empty">Нет выполненных силовых подходов за этот период.</div>';if(top)top.innerHTML='';return}
       if(top)top.innerHTML=topHtml(built.rows);
       const src=await imageSrc(built.layers);if(!card.isConnected)return;
-      if(figure)figure.innerHTML=`<img src="${src}" alt="Карта нагрузки на мышцы за ${periodDays} дней">`;
+      if(figure)figure.innerHTML=`<img src="${src}" alt="Карта нагрузки на мышцы за ${days} дней">`;
     }catch(e){
       console.warn('Anatome muscle map',e);if(figure)figure.innerHTML='<div class="anatome-error">Не удалось загрузить карту мышц. Статистика тренировок сохранена.</div>';
-    }finally{rendering=false}
+    }finally{
+      delete card.dataset.anatomeRendering;
+      if(card.isConnected&&(card.dataset.anatomeRerender==='1'||days!==periodDays)){delete card.dataset.anatomeRerender;queueMicrotask(()=>renderCard(card))}
+    }
   }
 
   function cardHtml(){return `<div id="anatomeMuscleCard" class="sd2-card anatome-card"><div class="anatome-head"><div><div class="anatome-title">Нагрузка по мышцам</div><div class="anatome-sub">Последние ${periodDays} дн.</div></div><div class="anatome-seg"><button data-days="7" class="${periodDays===7?'on':''}">7 дн.</button><button data-days="28" class="${periodDays===28?'on':''}">28 дн.</button></div></div><div class="anatome-body"><div class="anatome-figure"><div class="anatome-loading">Строю карту…</div></div><div class="anatome-top"></div></div><div class="anatome-foot">Визуализация: Anatome · интенсивность рассчитана UNVRSL FIT по выполненным подходам, включая вспомогательную нагрузку.</div></div>`}
