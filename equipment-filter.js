@@ -66,3 +66,6 @@ Promise.resolve()
  .then(()=>loadExternalScript('template-tempo-wave.js'))
  .then(()=>loadExternalScript('persistence-safety.js'))
  .catch(e=>console.warn('cardio/preview/template/persistence pipeline',e));
+
+// Load the final ExerciseDB audit after the clean catalog module has initialized.
+setTimeout(()=>loadExternalScript('exercise-audit-v1.js').catch(e=>console.warn('exercise audit',e)),0);
