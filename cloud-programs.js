@@ -1,34 +1,194 @@
 'use strict';
-function cloudProgramSnapshot(p){const clean=JSON.parse(JSON.stringify(p));delete clean.id;delete clean.cloudPlanId;delete clean.cloudVersion;delete clean.trainerId;delete clean.pendingCloudUpdate;return{kind:'coach-program',schema:1,program:clean}}
-async function cloudShareProgram(id){const p=typeof programById==='function'?programById(id):null;if(!p)return;if(!cloudConfigured())return _cloudLocalShareProgram(id);if(!cloud.user)return cloudAccountSheet();if(!trainerIsTrainer())return alert('Включи роль «Тренер» в аккаунте.');const snapshot=cloudProgramSnapshot(p);toast('Создаю ссылку…');let planId=p.cloudPlanId||null,version=p.cloudVersion||1;if(planId){const q=await cloud.client.from('plans').select('version').eq('id',planId).maybeSingle();version=q.data?.version||version}else{const ins=await cloud.client.from('plans').insert({trainer_id:cloud.user.id,title:p.name,version:1,snapshot}).select().single();if(ins.error)return alert(ins.error.message);planId=ins.data.id;version=1;await cloud.client.from('plan_versions').insert({plan_id:planId,trainer_id:cloud.user.id,version,snapshot});p.cloudPlanId=planId;p.cloudVersion=version;p.trainerId=cloud.user.id;save()}
- const token=(crypto.randomUUID?.()||('t'+Date.now()+Math.random())).replaceAll('-','');const inv=await cloud.client.from('plan_invites').insert({token,trainer_id:cloud.user.id,plan_id:planId,max_uses:1}).select().single();if(inv.error)return alert(inv.error.message);trainerShareSheet(p.name,`${location.origin}${location.pathname}?invite=${token}`)}
+
+function cloudProgramSnapshot(p){
+  const clean=JSON.parse(JSON.stringify(p));
+  delete clean.id;delete clean.cloudPlanId;delete clean.cloudVersion;delete clean.trainerId;delete clean.pendingCloudUpdate;
+  return{kind:'coach-program',schema:1,program:clean}
+}
+
+function clientAssignmentAccess(){
+  const userId=String(window.cloud?.user?.id||'');
+  if(!userId||String(st.clientAssignedUserId||'')!==userId||st.clientAssignmentsLoaded!==true){
+    return{userId,loaded:false,planIds:[]}
+  }
+  const planIds=[...new Set((Array.isArray(st.clientAssignedPlanIds)?st.clientAssignedPlanIds:[]).map(String).filter(Boolean))];
+  return{userId,loaded:true,planIds}
+}
+function clientHasActivePlan(planId){
+  const id=String(planId||'');if(!id)return false;
+  const access=clientAssignmentAccess();
+  return access.loaded&&access.planIds.includes(id)
+}
+function setClientAssignmentAccess(userId,planIds){
+  const uid=String(userId||'');
+  const ids=[...new Set((Array.isArray(planIds)?planIds:[]).map(String).filter(Boolean))];
+  const prevUid=String(st.clientAssignedUserId||'');
+  const prevIds=(Array.isArray(st.clientAssignedPlanIds)?st.clientAssignedPlanIds:[]).map(String);
+  const changed=prevUid!==uid||st.clientAssignmentsLoaded!==true||prevIds.length!==ids.length||prevIds.some((x,i)=>x!==ids[i]);
+  st.clientAssignedUserId=uid;
+  st.clientAssignedPlanIds=ids;
+  st.clientAssignmentsLoaded=true;
+  return changed
+}
+function allowAcceptedClientPlan(planId){
+  const uid=String(window.cloud?.user?.id||''),id=String(planId||'');
+  if(!uid||!id)return;
+  const ids=String(st.clientAssignedUserId||'')===uid&&Array.isArray(st.clientAssignedPlanIds)?st.clientAssignedPlanIds.map(String):[];
+  if(!ids.includes(id))ids.push(id);
+  setClientAssignmentAccess(uid,ids)
+}
+window.clientAssignmentAccess=clientAssignmentAccess;
+window.clientHasActivePlan=clientHasActivePlan;
+
+async function cloudShareProgram(id){
+  const p=typeof programById==='function'?programById(id):null;
+  if(!p)return;
+  if(!cloudConfigured())return _cloudLocalShareProgram(id);
+  if(!cloud.user)return cloudAccountSheet();
+  if(!trainerIsTrainer())return alert('Включи роль «Тренер» в аккаунте.');
+  const snapshot=cloudProgramSnapshot(p);
+  toast('Создаю ссылку…');
+  let planId=p.cloudPlanId||null,version=p.cloudVersion||1;
+  if(planId){
+    const q=await cloud.client.from('plans').select('version').eq('id',planId).maybeSingle();
+    version=q.data?.version||version
+  }else{
+    const ins=await cloud.client.from('plans').insert({trainer_id:cloud.user.id,title:p.name,version:1,snapshot}).select().single();
+    if(ins.error)return alert(ins.error.message);
+    planId=ins.data.id;version=1;
+    await cloud.client.from('plan_versions').insert({plan_id:planId,trainer_id:cloud.user.id,version,snapshot});
+    p.cloudPlanId=planId;p.cloudVersion=version;p.trainerId=cloud.user.id;save()
+  }
+  const token=(crypto.randomUUID?.()||('t'+Date.now()+Math.random())).replaceAll('-','');
+  const inv=await cloud.client.from('plan_invites').insert({token,trainer_id:cloud.user.id,plan_id:planId,max_uses:1}).select().single();
+  if(inv.error)return alert(inv.error.message);
+  trainerShareSheet(p.name,`${location.origin}${location.pathname}?invite=${token}`)
+}
 const _cloudLocalShareProgram=window.shareProgram;
 if(typeof _cloudLocalShareProgram==='function')window.shareProgram=async function(id){
- if(!cloudConfigured())return _cloudLocalShareProgram(id);
- if(!cloud.user)return cloudAccountSheet();
- if(!trainerIsTrainer())return alert('В аккаунте включи роль «Тренер», чтобы отправлять программы клиентам.');
- return cloudShareProgram(id)
+  if(!cloudConfigured())return _cloudLocalShareProgram(id);
+  if(!cloud.user)return cloudAccountSheet();
+  if(!trainerIsTrainer())return alert('В аккаунте включи роль «Тренер», чтобы отправлять программы клиентам.');
+  return cloudShareProgram(id)
 };
 
-async function cloudAcceptInviteProgramAware(){if(!cloud.user)return cloudAccountSheet();const {data,error}=await cloud.client.rpc('accept_plan_invite',{p_token:cloud.invite});if(error)return alert('Не удалось принять программу: '+error.message);if(!data)return alert('Приглашение недействительно или истекло');const snap=data.snapshot||{};
- if(snap.kind==='coach-program'&&snap.program&&Array.isArray(st.programs)){
-   let p=JSON.parse(JSON.stringify(snap.program));p.id=typeof uid==='function'?uid('prog'):'prog-'+Date.now();p.cloudPlanId=data.plan_id;p.cloudVersion=data.version||1;p.trainerId=data.trainer_id;p.trainerName=data.trainer;p.created=Date.now();p.updated=Date.now();if(typeof ensureProgramShape==='function')ensureProgramShape(p);p.weeks?.forEach(w=>w.days?.forEach(d=>d.id=typeof uid==='function'?uid('day'):'day-'+Math.random()));const old=st.programs.findIndex(x=>x.cloudPlanId===data.plan_id);if(old>=0)st.programs[old]=p;else st.programs.push(p)
- }else{
-   st.remotePlans=Array.isArray(st.remotePlans)?st.remotePlans:[];const obj={id:data.plan_id,title:data.title,version:data.version,trainer:data.trainer,trainerId:data.trainer_id,snapshot:snap};const i=st.remotePlans.findIndex(x=>x.id===obj.id);if(i>=0)st.remotePlans[i]=obj;else st.remotePlans.push(obj)
- }
- save();history.replaceState({},'',location.pathname);cloud.invite=null;closeModal();render();toast('Программа добавлена')}
+async function cloudAcceptInviteProgramAware(){
+  if(!cloud.user)return cloudAccountSheet();
+  const {data,error}=await cloud.client.rpc('accept_plan_invite',{p_token:cloud.invite});
+  if(error)return alert('Не удалось принять программу: '+error.message);
+  if(!data)return alert('Приглашение недействительно или истекло');
+  const snap=data.snapshot||{};
+  if(snap.kind==='coach-program'&&snap.program&&Array.isArray(st.programs)){
+    let p=JSON.parse(JSON.stringify(snap.program));
+    p.id=typeof uid==='function'?uid('prog'):'prog-'+Date.now();
+    p.cloudPlanId=data.plan_id;p.cloudVersion=data.version||1;p.trainerId=data.trainer_id;p.trainerName=data.trainer;
+    p.created=Date.now();p.updated=Date.now();
+    if(typeof ensureProgramShape==='function')ensureProgramShape(p);
+    p.weeks?.forEach(w=>w.days?.forEach(d=>d.id=typeof uid==='function'?uid('day'):'day-'+Math.random()));
+    const old=st.programs.findIndex(x=>x.cloudPlanId===data.plan_id);
+    if(old>=0)st.programs[old]=p;else st.programs.push(p)
+  }else{
+    st.remotePlans=Array.isArray(st.remotePlans)?st.remotePlans:[];
+    const obj={id:data.plan_id,title:data.title,version:data.version,trainer:data.trainer,trainerId:data.trainer_id,snapshot:snap};
+    const i=st.remotePlans.findIndex(x=>x.id===obj.id);
+    if(i>=0)st.remotePlans[i]=obj;else st.remotePlans.push(obj)
+  }
+  allowAcceptedClientPlan(data.plan_id);
+  save();
+  history.replaceState({},'',location.pathname);
+  cloud.invite=null;
+  closeModal();
+  render();
+  toast('Программа добавлена')
+}
 window.cloudAcceptInvite=cloudAcceptInviteProgramAware;
 
-async function cloudPushProgramUpdate(id){const p=programById(id);if(!p?.cloudPlanId||!cloud.user||!trainerIsTrainer())return;const snapshot=cloudProgramSnapshot(p);const q=await cloud.client.from('plans').select('version').eq('id',p.cloudPlanId).single();if(q.error)return alert(q.error.message);const version=(q.data.version||1)+1;const up=await cloud.client.from('plans').update({title:p.name,version,snapshot,updated_at:new Date().toISOString()}).eq('id',p.cloudPlanId);if(up.error)return alert(up.error.message);await cloud.client.from('plan_versions').insert({plan_id:p.cloudPlanId,trainer_id:cloud.user.id,version,snapshot});await cloud.client.from('plan_assignments').update({version,snapshot,updated_at:new Date().toISOString()}).eq('plan_id',p.cloudPlanId).eq('trainer_id',cloud.user.id);p.cloudVersion=version;save();toast(`Версия ${version} отправлена клиентам`)}
+async function cloudPushProgramUpdate(id){
+  const p=programById(id);
+  if(!p?.cloudPlanId||!cloud.user||!trainerIsTrainer())return;
+  const snapshot=cloudProgramSnapshot(p);
+  const q=await cloud.client.from('plans').select('version').eq('id',p.cloudPlanId).single();
+  if(q.error)return alert(q.error.message);
+  const version=(q.data.version||1)+1;
+  const up=await cloud.client.from('plans').update({title:p.name,version,snapshot,updated_at:new Date().toISOString()}).eq('id',p.cloudPlanId);
+  if(up.error)return alert(up.error.message);
+  await cloud.client.from('plan_versions').insert({plan_id:p.cloudPlanId,trainer_id:cloud.user.id,version,snapshot});
+  await cloud.client.from('plan_assignments').update({version,snapshot,updated_at:new Date().toISOString()}).eq('plan_id',p.cloudPlanId).eq('trainer_id',cloud.user.id);
+  p.cloudVersion=version;save();toast(`Версия ${version} отправлена клиентам`)
+}
 const _cloudRenderProgramEditor=window.renderProgramEditor;
-if(typeof _cloudRenderProgramEditor==='function')window.renderProgramEditor=function(){_cloudRenderProgramEditor();const p=programById(programUi.pid),sh=$('#sheet');if(p?.cloudPlanId&&trainerIsTrainer()&&sh&&!sh.querySelector('.cloud-update-program')){const b=document.createElement('button');b.className='btn primary full cloud-update-program';b.style.marginTop='12px';b.textContent=`Обновить клиентам · версия ${p.cloudVersion||1}`;b.onclick=()=>cloudPushProgramUpdate(p.id);sh.appendChild(b)}};
+if(typeof _cloudRenderProgramEditor==='function')window.renderProgramEditor=function(){
+  _cloudRenderProgramEditor();
+  const p=programById(programUi.pid),sh=$('#sheet');
+  if(p?.cloudPlanId&&trainerIsTrainer()&&sh&&!sh.querySelector('.cloud-update-program')){
+    const b=document.createElement('button');
+    b.className='btn primary full cloud-update-program';b.style.marginTop='12px';
+    b.textContent=`Обновить клиентам · версия ${p.cloudVersion||1}`;
+    b.onclick=()=>cloudPushProgramUpdate(p.id);sh.appendChild(b)
+  }
+};
 
-async function cloudLoadAssignments(){if(!cloud.ready||!cloud.user||!Array.isArray(st.programs))return;const r=await cloud.client.from('plan_assignments').select('plan_id,trainer_id,version,snapshot,status').eq('client_id',cloud.user.id).eq('status','active');if(r.error)return;let changed=false;(r.data||[]).forEach(a=>{if(a.snapshot?.kind!=='coach-program'||!a.snapshot.program)return;const p=st.programs.find(x=>x.cloudPlanId===a.plan_id);if(!p){let n=JSON.parse(JSON.stringify(a.snapshot.program));n.id=typeof uid==='function'?uid('prog'):'prog-'+Date.now()+Math.random();n.cloudPlanId=a.plan_id;n.cloudVersion=a.version;n.trainerId=a.trainer_id;n.created=Date.now();n.updated=Date.now();if(typeof ensureProgramShape==='function')ensureProgramShape(n);n.weeks?.forEach(w=>w.days?.forEach(d=>d.id=typeof uid==='function'?uid('day'):'day-'+Math.random()));st.programs.push(n);changed=true}else if((p.cloudVersion||1)<a.version){p.pendingCloudUpdate={version:a.version,snapshot:a.snapshot};changed=true}});if(changed){save();render()}}
-function cloudPendingProgramsHtml(){const pending=(st.programs||[]).filter(p=>p.pendingCloudUpdate);if(!pending.length)return'';return `<div class="section">ОБНОВЛЕНИЯ ОТ ТРЕНЕРА</div>${pending.map(p=>`<div class="card"><div class="row between"><div><b>${esc(p.name)}</b><div class="muted small">Доступна версия ${p.pendingCloudUpdate.version}</div></div><button class="btn tiny primary" onclick="applyCloudProgramUpdate('${p.id}')">Обновить</button></div></div>`).join('')}`}
-function applyCloudProgramUpdate(id){const p=programById(id);if(!p?.pendingCloudUpdate)return;const keep={id:p.id,cloudPlanId:p.cloudPlanId,trainerId:p.trainerId,trainerName:p.trainerName,created:p.created};const fresh=JSON.parse(JSON.stringify(p.pendingCloudUpdate.snapshot.program));Object.assign(fresh,keep,{cloudVersion:p.pendingCloudUpdate.version,updated:Date.now()});if(typeof ensureProgramShape==='function')ensureProgramShape(fresh);fresh.weeks?.forEach(w=>w.days?.forEach(d=>d.id=typeof uid==='function'?uid('day'):'day-'+Math.random()));const i=st.programs.findIndex(x=>x.id===id);st.programs[i]=fresh;save();planPage();toast('Программа обновлена')}
+async function cloudLoadAssignments(){
+  if(!cloud.ready||!cloud.user||!Array.isArray(st.programs))return;
+  if(typeof trainerIsTrainer==='function'&&trainerIsTrainer())return;
+  const r=await cloud.client.from('plan_assignments').select('plan_id,trainer_id,version,snapshot,status').eq('client_id',cloud.user.id).eq('status','active');
+  if(r.error)return;
+  const rows=r.data||[];
+  let changed=setClientAssignmentAccess(cloud.user.id,rows.map(a=>a.plan_id));
+  const activeIds=new Set(rows.map(a=>String(a.plan_id)));
+  (st.programs||[]).forEach(p=>{
+    if(p?.pendingCloudUpdate&&p.cloudPlanId&&!activeIds.has(String(p.cloudPlanId))){delete p.pendingCloudUpdate;changed=true}
+  });
+  rows.forEach(a=>{
+    if(a.snapshot?.kind!=='coach-program'||!a.snapshot.program)return;
+    const p=st.programs.find(x=>String(x.cloudPlanId||'')===String(a.plan_id));
+    if(!p){
+      let n=JSON.parse(JSON.stringify(a.snapshot.program));
+      n.id=typeof uid==='function'?uid('prog'):'prog-'+Date.now()+Math.random();
+      n.cloudPlanId=a.plan_id;n.cloudVersion=a.version;n.trainerId=a.trainer_id;n.created=Date.now();n.updated=Date.now();
+      if(typeof ensureProgramShape==='function')ensureProgramShape(n);
+      n.weeks?.forEach(w=>w.days?.forEach(d=>d.id=typeof uid==='function'?uid('day'):'day-'+Math.random()));
+      st.programs.push(n);changed=true
+    }else if((p.cloudVersion||1)<a.version){
+      p.pendingCloudUpdate={version:a.version,snapshot:a.snapshot};changed=true
+    }
+  });
+  if(changed)save();
+  render()
+}
+
+function cloudPendingProgramsHtml(){
+  const trainer=typeof trainerIsTrainer==='function'&&trainerIsTrainer();
+  const pending=(st.programs||[]).filter(p=>p.pendingCloudUpdate&&(trainer||clientHasActivePlan(p.cloudPlanId)));
+  if(!pending.length)return'';
+  return `<div class="section">ОБНОВЛЕНИЯ ОТ ТРЕНЕРА</div>${pending.map(p=>`<div class="card"><div class="row between"><div><b>${esc(p.name)}</b><div class="muted small">Доступна версия ${p.pendingCloudUpdate.version}</div></div><button class="btn tiny primary" onclick="applyCloudProgramUpdate('${p.id}')">Обновить</button></div></div>`).join('')}`
+}
+function applyCloudProgramUpdate(id){
+  const p=programById(id);if(!p?.pendingCloudUpdate)return;
+  const keep={id:p.id,cloudPlanId:p.cloudPlanId,trainerId:p.trainerId,trainerName:p.trainerName,created:p.created};
+  const fresh=JSON.parse(JSON.stringify(p.pendingCloudUpdate.snapshot.program));
+  Object.assign(fresh,keep,{cloudVersion:p.pendingCloudUpdate.version,updated:Date.now()});
+  if(typeof ensureProgramShape==='function')ensureProgramShape(fresh);
+  fresh.weeks?.forEach(w=>w.days?.forEach(d=>d.id=typeof uid==='function'?uid('day'):'day-'+Math.random()));
+  const i=st.programs.findIndex(x=>x.id===id);st.programs[i]=fresh;save();planPage();toast('Программа обновлена')
+}
 const _cloudPlanPageUpdates=window.planPage;
-if(typeof _cloudPlanPageUpdates==='function')window.planPage=function(){_cloudPlanPageUpdates();const el=$('#plan'),html=cloudPendingProgramsHtml();if(el&&html)el.insertAdjacentHTML('afterbegin',html)};
+if(typeof _cloudPlanPageUpdates==='function')window.planPage=function(){
+  _cloudPlanPageUpdates();
+  const el=$('#plan'),html=cloudPendingProgramsHtml();
+  if(el&&html)el.insertAdjacentHTML('afterbegin',html)
+};
 
 const _cloudBeginProgramDay=window.beginProgramDay;
-if(typeof _cloudBeginProgramDay==='function')window.beginProgramDay=function(pid,wi,di){const p=programById(pid);_cloudBeginProgramDay(pid,wi,di);if(st.current&&p?.cloudPlanId){st.current.planId=p.cloudPlanId;st.current.trainerId=p.trainerId||null;save()}};
+if(typeof _cloudBeginProgramDay==='function')window.beginProgramDay=function(pid,wi,di){
+  const p=programById(pid);
+  const clientMode=!!cloud?.user&&!(typeof trainerIsTrainer==='function'&&trainerIsTrainer());
+  if(clientMode&&p?.cloudPlanId&&!clientHasActivePlan(p.cloudPlanId)){
+    if(typeof toast==='function')toast('Эта программа тебе не назначена');
+    return
+  }
+  _cloudBeginProgramDay(pid,wi,di);
+  if(st.current&&p?.cloudPlanId){st.current.planId=p.cloudPlanId;st.current.trainerId=p.trainerId||null;save()}
+};
+
 setTimeout(cloudLoadAssignments,1400);
