@@ -61,4 +61,9 @@
  const previous=window.UNVRSL_FINAL_EXERCISES;if(typeof previous==='function')window.UNVRSL_FINAL_EXERCISES=function(){return (previous()||[]).filter(sensible)};
  const oldRu=window.ruExerciseName;function translated(raw){const n=natural(raw);if(n)return n;return typeof oldRu==='function'?oldRu(raw):String(raw||'')}translated.__cleanupV2=true;window.ruExerciseName=translated;try{ruExerciseName=translated}catch(_){}
  window.UNVRSL_CLEAN_TITLE=e=>translated(e?.n||e?.name||'');window.UNVRSL_CARDIO_MACHINE_ONLY=e=>{const s=norm(e?.n||e?.name);return cardioMachine.test(s)&&!cardioNotMachine.test(s)};
+ const originalCatalog=window.catalogRecords;
+ const exerciseDbRecords=()=>{const src=Array.isArray(window.ogLibrary)?window.ogLibrary:(typeof ogLibrary!=='undefined'&&Array.isArray(ogLibrary)?ogLibrary:[]);return src.map(e=>({...e,id:String(e.id||'').startsWith('og:')?String(e.id):`og:${e.id}`,rawId:e.rawId||e.id,custom:false,anatome:false,cardioPreset:false}))};
+ const catalogLocked=function(){if(document.querySelector('#exercises.page.active'))return exerciseDbRecords();return typeof originalCatalog==='function'?originalCatalog.apply(this,arguments):exerciseDbRecords()};
+ window.catalogRecords=catalogLocked;try{catalogRecords=catalogLocked}catch(_){}
+ window.UNVRSL_EXERCISEDB_ONLY=exerciseDbRecords;
 })();
