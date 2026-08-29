@@ -1,0 +1,8 @@
+'use strict';
+(()=>{
+  if(window.__unvrslWorkoutRecommendation185)return;window.__unvrslWorkoutRecommendation185=true;
+  const style=document.createElement('style');style.id='workout-recommendation-v185-style';style.textContent=`#start .wr185{margin:8px 0 2px;padding:9px 11px;border-radius:13px;background:rgba(191,90,242,.10);border:1px solid rgba(191,90,242,.28);font-size:12px;line-height:1.35;color:#c7c7cc}#start .wr185 b{color:#d68cff}#start .wr185 .main{color:#f5f5f7;font-weight:750;margin-left:4px}`;document.head.appendChild(style);
+  const S=()=>{try{return typeof st!=='undefined'?st:(window.st||null)}catch(_){return window.st||null}},fmt=v=>{const n=Number(v);if(!Number.isFinite(n))return'—';return Number.isInteger(n)?String(n):String(Math.round(n*10)/10).replace('.',',')};
+  function render(){const cur=S()?.current;if(!cur)return;const cards=[...document.querySelectorAll('#start .exercise')];cards.forEach((card,i)=>{const e=cur.ex?.[i],p=e?.progression185;let box=card.querySelector('.wr185');if(!p||p.mode!=='recommendation'||!(p.recommendedWeight>0)){box?.remove();return}if(!box){box=document.createElement('div');box.className='wr185';const anchor=card.querySelector('.chips,.method-strip,.sethead');if(anchor)anchor.insertAdjacentElement('afterend',box);else card.appendChild(box)}box.innerHTML=`<b>Рекомендация</b><span class="main">${fmt(p.recommendedWeight)} кг${p.reps?` × ${fmt(p.reps)}`:''}</span>${p.target?` · цель RPE ${fmt(p.target)}`:''}`})}
+  const root=document.getElementById('start')||document.body;new MutationObserver(()=>queueMicrotask(render)).observe(root,{childList:true,subtree:true});[0,120,400,1000,2200].forEach(t=>setTimeout(render,t));
+})();
