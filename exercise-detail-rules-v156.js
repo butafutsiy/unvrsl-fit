@@ -71,4 +71,11 @@
     s.dataset.unvrslWorkoutRecommendationV180='1';
     document.body.appendChild(s);
   }
+  if(!document.querySelector('script[data-unvrsl-muscle-drilldown-v181]')){
+    const s=document.createElement('script');
+    s.src='muscle-drilldown-fix-v181.js';
+    s.async=false;
+    s.dataset.unvrslMuscleDrilldownV181='1';
+    document.body.appendChild(s);
+  }
 })();
