@@ -5,7 +5,16 @@
  const day=(pid,wi,di)=>programById(pid)?.weeks?.[wi]?.days?.[di];
  const label=e=>e?.custom?(e.raw||e.n):ruExerciseName(e?.n||'');
  const meta=e=>e?.custom?inferCustomMeta(e.raw||e.n):{bp:e?.bp||'',tg:e?.tg||'',eq:e?.eq||''};
- function records(q=''){const s=String(q).trim().toLowerCase();return catalogRecords().filter(e=>{const h=`${label(e)} ${e.n||''} ${BP_RU[e.bp]||''} ${EQ_RU[e.eq]||''}`.toLowerCase();return !s||h.includes(s)}).slice(0,100)}
+ function records(q=''){
+  const s=String(q).trim().toLowerCase();
+  return catalogRecords().filter(e=>{
+    if(!e||e.custom)return false;
+    let found=null;try{found=findExercise(encodeURIComponent(e.id))}catch(_){found=null}
+    if(!found)return false;
+    const h=`${label(e)} ${e.n||''} ${BP_RU[e.bp]||''} ${EQ_RU[e.eq]||''}`.toLowerCase();
+    return !s||h.includes(s)
+  }).slice(0,100)
+ }
  function row(e,pid,wi,di,mode){const t=label(e),m=e.gif||e.image||'',thumb=m?`<img class="ex-thumb" src="${mediaUrl(m)}" loading="lazy">`:'<div class="ex-thumb placeholder">🏋︎</div>';return `<button class="card exlib exlib-btn" onclick="pbrPick('${pid}',${wi},${di},'${encodeURIComponent(e.id)}','${mode}')"><div class="exercise-list-row">${thumb}<div class="grow"><b>${esc(t)}</b><div class="catalog-meta">${esc(BP_RU[e.bp]||'—')} · ${esc(EQ_RU[e.eq]||'—')}</div></div><span class="chev">›</span></div></button>`}
  function renderResults(pid,wi,di,mode,q){const h=document.getElementById('pbrResults');if(!h)return;const a=records(q),name=String(q).trim();h.innerHTML=a.map(e=>row(e,pid,wi,di,mode)).join('')+(name?`<button class="card exlib exlib-btn" onclick="pbrCustom('${pid}',${wi},${di},'${encodeURIComponent(name)}','${mode}')"><b>＋ Добавить «${esc(name)}» как своё упражнение</b></button>`:'')}
  function picker(pid,wi,di,mode,titleText){modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${titleText}</h2></div><button class="btn tiny" onclick="openProgramEditor('${pid}',${wi},${di})">←</button></div><input id="pbrSearch" class="search" autocomplete="off" placeholder="Поиск упражнения" oninput="pbrFilter('${pid}',${wi},${di},'${mode}',this.value)"><div id="pbrResults" class="pbr-search"></div>`);renderResults(pid,wi,di,mode,'');setTimeout(()=>document.getElementById('pbrSearch')?.focus(),30)}
