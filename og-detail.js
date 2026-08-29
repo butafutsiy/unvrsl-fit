@@ -5,6 +5,9 @@ function renderExerciseDetail(ex){
  const title=ex.custom?ex.n:ruExerciseName(ex.n),body=BP_RU[ex.bp]||ex.bp||'—',eq=ex.custom?(EQ_RU[ex.eq]||'Своё'):(EQ_RU[ex.eq]||ex.eq||'—'),target=ruTarget(ex.tg),sourceId=ex.rawId||ex.sourceId||null,key=detailPlanKey(ex),best=bestEstimateFor(key,sourceId),hist=historySetsFor(key,sourceId),rules=planOccurrences(key),est=estimate1RM(rmState.w,rmState.r),gif=mediaUrl(ex.gif||ex.gif_url||''),img=mediaUrl(ex.image||''),tech=instructionRu(ex),en=ex.sourceName||(!ex.custom?ex.n:'');
  if(best&&rmState.id===ex.id&&rmState.w===20&&rmState.r===5){rmState.w=best.w;rmState.r=best.r}
  const currentEst=estimate1RM(rmState.w,rmState.r);
+ const sourceNote=ex.anatome
+  ?'<div class="source-note">Метаданные упражнения и анатомия: Anatome. Изображения упражнений не копируются из-за неподтверждённых прав на исходные медиа.</div>'
+  :(!ex.custom||gif||img?`<div class="source-note">Данные и техника: ExerciseDB dataset. Медиа © Gym visual; в публичном/коммерческом использовании нужны условия правообладателя. <a href="${OG_SOURCE_URL}" target="_blank" rel="noopener">Источник</a></div>`:'');
  modal(`<div class="sheet-grabber"></div><div class="detail-title">${esc(title)}</div>${en&&String(en).toLowerCase()!==String(title).toLowerCase()?`<div class="detail-en">${esc(en)}</div>`:''}<div class="detail-tags"><span>${esc(body)}</span><span>${esc(eq)}</span><span>${esc(target)}</span></div>
   ${gif||img?`<div class="exercise-media"><img src="${gif||img}" alt="${esc(title)}" loading="eager"></div>`:''}
   <button class="add-plan-btn" onclick="addToPlanSheet('${encodeURIComponent(ex.id)}')">＋ Добавить в мой план</button>${ex.custom?`<div class="detail-actions"><button onclick="editExerciseAlias('${encodeURIComponent(ex.raw)}')">✎ Изменить</button><button class="danger-text" onclick="removeAddedExercise('${encodeURIComponent(ex.raw)}')">⌫ Удалить добавленные</button></div>`:''}
@@ -12,7 +15,7 @@ function renderExerciseDetail(ex){
   ${rules.length?`<div class="section">МОИ СЕТЫ И ПРАВИЛА</div><div class="rule-list">${rules.map(ruleCardHtml).join('')}</div>`:''}
   <div class="section">РАСЧЁТНЫЙ 1ПМ</div>${best?`<div class="history-best">Из журнала: <b>${best.est} кг</b> · ${best.w}×${best.r}${best.date?` · ${best.date}`:''}</div>`:''}<div class="rm-grid"><div><label>Вес (кг)</label><div class="stepbox"><button onclick="stepRM('w',-2.5)">−</button><b id="rmW">${fmt1(rmState.w)}</b><button onclick="stepRM('w',2.5)">＋</button></div></div><div><label>Повт.</label><div class="stepbox"><button onclick="stepRM('r',-1)">−</button><b id="rmR">${rmState.r}</b><button onclick="stepRM('r',1)">＋</button></div></div></div><div class="rm-est-row"><span>Оценка</span><b id="rmEst">${currentEst!==null?`${fmt1(currentEst)} кг`:'—'}</b></div><div class="muted rm-note">Формула Эпли · расчёт по одному подходу. Для >12 повторов оценку не показываем.</div>
   ${hist.length?`<div class="section">ПОСЛЕДНИЕ СЕТЫ</div>${hist.slice(0,8).map(h=>`<div class="history-row"><span>${esc(h.date)}</span><b>${h.w} кг × ${h.r}${h.rpe!==''?` @${h.rpe}`:''}</b></div>`).join('')}`:''}
-  ${!ex.custom||gif||img?`<div class="source-note">Данные и техника: ExerciseDB dataset. Медиа © Gym visual; в публичном/коммерческом использовании нужны условия правообладателя. <a href="${OG_SOURCE_URL}" target="_blank" rel="noopener">Источник</a></div>`:''}`)
+  ${sourceNote}`)
 }
 function fmt1(v){return Number(v)%1?Number(v).toFixed(1):String(Number(v))}
 function estimate1RM(w,r){w=Number(w);r=Number(r);if(!Number.isFinite(w)||!Number.isFinite(r)||w<=0||r<1||r>12)return null;const v=r===1?w:w*(1+r/30);return Math.round(v*10)/10}
