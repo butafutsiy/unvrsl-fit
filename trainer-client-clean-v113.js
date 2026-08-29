@@ -65,9 +65,6 @@
     return changed;
   }
 
-  // Late legacy patches may still try to append old cards. Observe only the sheet,
-  // and never write to it unless something actually changed. This avoids the v118
-  // self-triggering MutationObserver loop that froze the UI on "Загружаю клиента…".
   const sheet=document.getElementById('sheet');
   if(sheet){
     let queued=false;
@@ -112,4 +109,13 @@
   setTimeout(()=>clearInterval(captureTimer),12000);
 
   window.openTrainerClientCanonicalV119=openCanonical;
+})();
+
+(()=>{
+  if(document.querySelector('script[data-unvrsl-anatome-local]'))return;
+  const s=document.createElement('script');
+  s.src='anatome-local-v2.js';
+  s.async=false;
+  s.dataset.unvrslAnatomeLocal='1';
+  document.body.appendChild(s);
 })();
