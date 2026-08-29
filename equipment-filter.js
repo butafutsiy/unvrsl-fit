@@ -40,6 +40,7 @@ exercisesPage=function(){
  renderExerciseResults()
 };
 
+// Preserve timed cardio when the built-in 8-week cycle is copied into «Мои программы».
 (()=>{
  const normalize=n=>typeof baseExerciseName==='function'?baseExerciseName(n).trim().toLowerCase():String(n||'').trim().toLowerCase();
  const timeText=sec=>sec%60===0?`${sec/60} мин`:`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;
@@ -102,10 +103,6 @@ Promise.resolve()
  .then(()=>loadExternalScript('exercise-library-quality.js'))
  .then(()=>loadExternalScript('exercise-library-curated.js'))
  .then(()=>loadExternalScript('exercise-library-strict.js'))
- .then(()=>loadExternalScript('exercise-media-mapping.js'))
  .then(()=>loadExternalScript('cardio-metric-fixes.js'))
  .then(()=>loadExternalScript('preview-mobile-fix.js'))
- .then(()=>loadExternalScript('template-programs-v3.js'))
- .then(()=>loadExternalScript('template-tempo-wave.js'))
- .then(()=>loadExternalScript('persistence-safety.js'))
- .catch(e=>console.warn('curated exercise/cardio/preview/template/persistence fixes',e));
+ .catch(e=>console.warn('curated exercise/cardio/preview fixes',e));
