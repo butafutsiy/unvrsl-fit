@@ -1,9 +1,9 @@
 'use strict';
 (()=>{
  if(window.__unvrslTrainingEngineV200)return;window.__unvrslTrainingEngineV200=true;
- const W=window,REV=200;
+ const W=window,REV=201;
  const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
- const num=v=>N(v)??0,mean=a=>{a=(a||[]).filter(Number.isFinite);return a.length?a.reduce((s,x)=>s+x,0)/a.length:null},clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ const num=v=>N(v)??0,mean=a=>{a=(a||[]).filter(Number.isFinite);return a.length?a.reduce((s,x)=>s+x,0)/a.length:null},median=a=>{a=(a||[]).filter(Number.isFinite).sort((x,y)=>x-y);if(!a.length)return null;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2},clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const base=n=>{try{return W.baseExerciseName?W.baseExerciseName(n):String(n||'').replace(/\s+—\s+.*$/,'').trim()}catch(_){return String(n||'')}};
  const same=(e,n,id)=>(id&&String(e?.sourceId||'')===String(id))||base(e?.n).toLowerCase()===base(n).toLowerCase();
  const key=e=>e?.sourceId?`id:${e.sourceId}`:`n:${base(e?.n).toLowerCase()}`;
@@ -27,6 +27,8 @@
  function e1rm(rows){let a=(rows||[]).map(x=>x.w*(1+(x.r+x.rir)/30)).filter(x=>x>0);if(!a.length)return null;const m=mean(a);if(a.length>=3){const kept=a.filter(x=>x>=m*.82&&x<=m*1.18);if(kept.length>=2)a=kept}return mean(a)}
  function step(ex,rows=[]){let s=2.5;try{s=Number(W.loadStepFor?.(base(ex.n),ex.sourceId||null))||s}catch(_){}const m=mean(rows.map(x=>x.w))||0;if(m<=6)s=Math.min(s,.5);else if(m<=12)s=Math.min(s,1);else if(m<=22)s=Math.min(s,2);return s}
  function round(v,s){return Math.max(s,Math.round(v/s)*s)}
+ function limitedWeight(v,rows,stp){const previous=median((rows||[]).map(x=>x.w).filter(x=>x>0));if(!(v>0))return null;if(!(previous>0))return round(v,stp);return round(clamp(v,previous*.90,previous*1.075),stp)}
+ function method(src,ex){return String(src?.method||ex?.method||'STANDARD').trim().toUpperCase()||'STANDARD'}
  function target(ex,set,cur){return [N(set?.targetRpe),N(ex?.targetRpe),N(ex?.rpeTarget),N(ex?.target),N(ex?.rpe),N(cur?.target),8].find(x=>x!=null&&x>0)||8}
  function occurrenceIndex(ex,cur){const a=(cur.ex||[]).filter(x=>same(x,ex.n,ex.sourceId));const i=a.indexOf(ex);return i<0?0:i}
  function sourceWeight(src,ex,setIndex,cur){const sets=src?.sets||[];if((ex.set||[]).length>1)return num(sets[setIndex]?.w);return num(sets[occurrenceIndex(ex,cur)]?.w??sets[0]?.w)}
@@ -42,7 +44,13 @@
    if(mode==='adaptive'){adaptive++;sets.forEach(s=>{s.programW=0;delete s.recommendedW;if(!s.ok&&!s.manualOverride){s.w=0;s.plannedW=0;s.baselineW=0;s.baselineSource='adaptive_pending'}})}
    else{prescribed++;sets.forEach((s,i)=>{s.programW=sourceWeight(src,ex,i,cur);delete s.recommendedW;if(!s.ok&&!s.manualOverride){s.w=num(s.programW);s.plannedW=s.w;s.baselineW=s.w;s.baselineSource='program'}})}
    const rows=await history(ex,cur),cap=e1rm(rows),stp=step(ex,rows);
-   if(cap>0){sets.forEach(s=>{const reps=num(s.r);if(reps<=0)return;const rir=clamp(10-target(ex,s,cur),0,10),w=round(cap/(1+(reps+rir)/30),stp);if(w>0)s.recommendedW=w});ex.trainingEstimate200={e1rm:+cap.toFixed(1),sourceDate:rows[0]?.date||'',mode}}
+   if(cap>0){
+    const calculated=sets.map(s=>{const reps=num(s.r);if(reps<=0)return null;const rir=clamp(10-target(ex,s,cur),0,10);return limitedWeight(cap/(1+(reps+rir)/30),rows,stp)});
+    if(method(src,ex)==='STANDARD'){
+     const stable=limitedWeight(median(calculated),rows,stp);sets.forEach((s,i)=>{if(calculated[i]>0&&stable>0)s.recommendedW=stable})
+    }else sets.forEach((s,i)=>{if(calculated[i]>0)s.recommendedW=calculated[i]});
+    ex.trainingEstimate200={e1rm:+cap.toFixed(1),sourceDate:rows[0]?.date||'',mode,method:method(src,ex),changeFloor:-.10,changeCeiling:.075}
+   }
    if(mode==='adaptive'){
     if(cap>0){sets.forEach(s=>{if(s.ok||s.manualOverride||num(s.recommendedW)<=0)return;s.w=num(s.recommendedW);s.plannedW=s.w;s.baselineW=s.w;s.baselineSource='adaptive_previous_workout'});ex.weightDecision='adaptive_auto'}else ex.weightDecision='calibration'
    }else ex.weightDecision='program';

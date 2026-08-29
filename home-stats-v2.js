@@ -37,7 +37,7 @@
   }
   function localWeights(){return (st.bw||[]).map(x=>({d:x.d,v:num(x.w)})).filter(x=>x.d&&x.v!=null).sort((a,b)=>a.d.localeCompare(b.d))}
   function workouts(){return cache.loaded&&cache.workouts.length?cache.workouts:localWorkouts()}
-  function weights(){return cache.loaded&&cache.weights.length?cache.weights:localWeights()}
+  function weights(){return cache.loaded?cache.weights:localWeights()}
   function goal(){return num(cache.goal)??num(st.weightGoalKg)}
 
   async function hydrate(force=false){
@@ -87,7 +87,7 @@
     let goalLine='';if(g){const gy=T+(ymax-g)/span*(h-T-B);goalLine=`<line x1="${L}" y1="${gy}" x2="${w-R}" y2="${gy}" stroke="#ffd60a" stroke-width="2" stroke-dasharray="7 5"/><text x="${w-R}" y="${gy-5}" text-anchor="end" fill="#ffd60a" font-size="10" font-weight="800">${fmt(g)}</text>`}
     const labels=p.length===1?[0]:[0,Math.floor((p.length-1)/2),p.length-1];
     const dates=[...new Set(labels)].map(i=>{const d=parseDate(p[i].d);return `<text class="sd2-date" x="${xy[i][0]}" y="${h-6}" text-anchor="middle">${d.getDate()} ${['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'][d.getMonth()]}</text>`}).join('');
-    return `<svg class="sd2-chart" viewBox="0 0 ${w} ${h}" aria-label="График веса">${grid}${goalLine}<polygon points="${fill}" fill="rgba(191,90,242,.10)"/><polyline points="${poly}" fill="none" stroke="#bf5af2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${xy.map((a,i)=>`<circle cx="${a[0]}" cy="${a[1]}" r="${i===xy.length-1?4.5:3}" fill="#bf5af2"/>`).join('')}${dates}</svg>`;
+    return `<svg class="sd2-chart" viewBox="0 0 ${w} ${h}" aria-label="График веса">${grid}${goalLine}<polygon points="${fill}" fill="rgba(191,90,242,.10)"/><polyline points="${poly}" fill="none" stroke="#bf5af2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${xy.map((a,i)=>`<circle class="bw190-point ${window.__unvrslSelectedBodyweightDate===p[i].d?'is-selected':''}" data-bw-date="${p[i].d}" data-bw-value="${p[i].v}" cx="${a[0]}" cy="${a[1]}" r="${i===xy.length-1?4.5:3}" fill="#bf5af2" role="button" tabindex="0" aria-label="${fmt(p[i].v)} кг, ${p[i].d}" onclick="bw190SelectPoint('${p[i].d}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();bw190SelectPoint('${p[i].d}')}"/>`).join('')}${dates}</svg>`;
   }
 
   function weightHtml(){

@@ -3,7 +3,12 @@ const MASTER_TRAINER_EMAIL='butafutsiy@mail.ru';
 
 function masterTrainerEmail(){return String(cloud?.user?.email||'').trim().toLowerCase()===MASTER_TRAINER_EMAIL}
 function unvrslTrainerMode(){return masterTrainerEmail()||cloud?.profile?.role==='trainer'}
-function assignedClientPrograms(){return (st.programs||[]).filter(p=>p&&p.cloudPlanId&&p.trainerId)}
+function assignedClientPrograms(){
+  const userId=String(cloud?.user?.id||'');
+  if(!userId||String(st.clientAssignedUserId||'')!==userId||st.clientAssignmentsLoaded!==true)return[];
+  const active=new Set((Array.isArray(st.clientAssignedPlanIds)?st.clientAssignedPlanIds:[]).map(String));
+  return(st.programs||[]).filter(p=>p&&p.cloudPlanId&&p.trainerId&&active.has(String(p.cloudPlanId)))
+}
 
 const _modeCloudEnsureProfile=window.cloudEnsureProfile;
 if(typeof _modeCloudEnsureProfile==='function')window.cloudEnsureProfile=async function(){
@@ -54,7 +59,9 @@ function clientCleanPlanPage(){
 }
 
 function openClientProgram(id,wi=0){
-  const p=programById(id);if(!p)return;const w=p.weeks?.[wi]||p.weeks?.[0];if(!w)return;
+  const p=programById(id);if(!p)return;
+  if(!unvrslTrainerMode()&&!assignedClientPrograms().some(x=>String(x.id)===String(id))){toast('Эта программа тебе не назначена');return}
+  const w=p.weeks?.[wi]||p.weeks?.[0];if(!w)return;
   modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${esc(p.name)}</h2><div class="muted">Тренировочная программа</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="weekbar">${p.weeks.map((x,i)=>`<button class="weekbtn ${i===wi?'on':''}" onclick="openClientProgram('${p.id}',${i})">W${i+1}</button>`).join('')}</div><div class="section">НЕДЕЛЯ ${wi+1}</div>${w.days.map((d,di)=>`<div class="card program-day"><div class="row between"><div class="grow"><b>${esc(d.name)}</b><div class="muted small">${d.ex?.length||0} упражнений</div></div><button class="btn primary" onclick="beginProgramDay('${p.id}',${wi},${di})">Старт</button></div>${(d.ex||[]).map(e=>`<div class="program-ex"><b>${esc(e.n)}</b><div class="muted small">${typeof prescriptionText==='function'?esc(prescriptionText(e)):''}${e.rpe?` · RPE ${e.rpe}`:''}${e.tempo?` · темп ${esc(e.tempo)}`:''}</div></div>`).join('')}</div>`).join('')}`)
 }
 

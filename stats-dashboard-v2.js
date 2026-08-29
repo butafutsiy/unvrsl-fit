@@ -24,7 +24,7 @@
   function localWorkouts(){return (st.sessions||[]).map(s=>({date:s.date||isoDate(s.started||Date.now()),duration:Math.max(1,Math.round(((+s.ended||+s.started||Date.now())-(+s.started||Date.now()))/60000))})).filter(x=>x.date)}
   function dataWorkouts(){if(cloudCache.loaded&&cloudCache.workouts.length)return cloudCache.workouts.map(w=>({date:w.workout_date,duration:Math.max(1,Math.round((((w.payload?.ended||0)-(w.payload?.started||0))/60000)||1))}));return localWorkouts()}
   function localWeights(){return (st.bw||[]).map(x=>({d:x.d,v:num(x.w)})).filter(x=>x.d&&x.v!=null).sort((a,b)=>a.d.localeCompare(b.d))}
-  function dataWeights(){if(cloudCache.loaded&&cloudCache.weights.length)return cloudCache.weights.map(x=>({d:x.measure_date,v:num(x.weight_kg)})).filter(x=>x.v!=null).sort((a,b)=>a.d.localeCompare(b.d));return localWeights()}
+  function dataWeights(){if(cloudCache.loaded)return cloudCache.weights.map(x=>({d:x.measure_date,v:num(x.weight_kg)})).filter(x=>x.v!=null).sort((a,b)=>a.d.localeCompare(b.d));return localWeights()}
   function goalWeight(){return num(cloudCache.goal)??num(st.weightGoalKg)}
 
   function monthCount(ws){const now=new Date(),ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;return ws.filter(x=>String(x.date).startsWith(ym)).length}
@@ -54,7 +54,7 @@
     let goalLine='';if(goal){const gy=T+(ymax-goal)/range*(h-T-B);goalLine=`<line x1="${L}" y1="${gy}" x2="${w-R}" y2="${gy}" stroke="#ffd60a" stroke-width="2" stroke-dasharray="7 5"/><text x="${w-R}" y="${gy-5}" text-anchor="end" fill="#ffd60a" font-size="10" font-weight="800">${fmt(goal)}</text>`}
     const labels=p.length===1?[0]:[0,Math.floor((p.length-1)/2),p.length-1];
     const dateLabels=[...new Set(labels)].map(i=>{const d=parseDate(p[i].d);return `<text class="sd2-date" x="${xy[i][0]}" y="${h-6}" text-anchor="middle">${d.getDate()} ${['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'][d.getMonth()]}</text>`}).join('');
-    return `<svg class="sd2-chart" viewBox="0 0 ${w} ${h}" aria-label="График веса">${grid}${goalLine}<polygon points="${fill}" fill="rgba(191,90,242,.10)"/><polyline points="${poly}" fill="none" stroke="#bf5af2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${xy.map((a,i)=>`<circle cx="${a[0]}" cy="${a[1]}" r="${i===xy.length-1?4.5:3}" fill="#bf5af2"/>`).join('')}${dateLabels}</svg>`
+    return `<svg class="sd2-chart" viewBox="0 0 ${w} ${h}" aria-label="График веса">${grid}${goalLine}<polygon points="${fill}" fill="rgba(191,90,242,.10)"/><polyline points="${poly}" fill="none" stroke="#bf5af2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${xy.map((a,i)=>`<circle class="bw190-point ${window.__unvrslSelectedBodyweightDate===p[i].d?'is-selected':''}" data-bw-date="${p[i].d}" data-bw-value="${p[i].v}" cx="${a[0]}" cy="${a[1]}" r="${i===xy.length-1?4.5:3}" fill="#bf5af2" role="button" tabindex="0" aria-label="${fmt(p[i].v)} кг, ${p[i].d}" onclick="bw190SelectPoint('${p[i].d}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();bw190SelectPoint('${p[i].d}')}"/>`).join('')}${dateLabels}</svg>`
   }
 
   function weightCardHtml(weights){
@@ -98,6 +98,8 @@
       cloudCache.workouts=wo.data||[];cloudCache.weights=bw.data||[];cloudCache.checkins=ci.data||[];cloudCache.goal=num(pr.data?.target_weight_kg)??num(st.weightGoalKg);cloudCache.loaded=true;cloudCache.ts=Date.now();
     }catch(e){console.warn('stats hydrate',e)}finally{cloudCache.loading=false}
   }
+
+  window.statsProgressRefresh=async function(force=true){if(force)cloudCache.loaded=false;await hydrateCloud(force);renderDashboard()};
 
   const base=window.statsPage;
   window.statsPage=function(){if(typeof base==='function'){try{base.apply(this,arguments)}catch(e){console.warn('base stats',e)}}renderDashboard();hydrateCloud().then(()=>{if(document.getElementById('stats')?.classList.contains('active'))renderDashboard()});};
