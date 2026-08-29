@@ -128,3 +128,12 @@
   s.dataset.unvrslExerciseDetailRules='1';
   document.body.appendChild(s);
 })();
+
+(()=>{
+  if(document.querySelector('script[data-unvrsl-body-sex-sync]'))return;
+  const s=document.createElement('script');
+  s.src='body-sex-sync-v166.js';
+  s.async=false;
+  s.dataset.unvrslBodySexSync='1';
+  document.body.appendChild(s);
+})();
