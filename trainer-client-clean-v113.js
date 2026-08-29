@@ -119,3 +119,12 @@
   s.dataset.unvrslAnatomeLocal='1';
   document.body.appendChild(s);
 })();
+
+(()=>{
+  if(document.querySelector('script[data-unvrsl-exercise-detail-rules]'))return;
+  const s=document.createElement('script');
+  s.src='exercise-detail-rules-v156.js';
+  s.async=false;
+  s.dataset.unvrslExerciseDetailRules='1';
+  document.body.appendChild(s);
+})();
