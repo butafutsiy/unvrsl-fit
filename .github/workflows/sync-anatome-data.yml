@@ -1,0 +1,54 @@
+name: Sync Anatome data
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sync-anatome-data.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Download Anatome datasets
+        run: |
+          mkdir -p data
+          curl -fsSL https://raw.githubusercontent.com/Rippy1911/anatome/main/api/data/bodyPaths.json -o data/anatome-body-paths.json
+          curl -fsSL https://raw.githubusercontent.com/Rippy1911/anatome/main/api/data/exercises.json -o /tmp/anatome-exercises-source.json
+      - name: Keep all exercise metadata, drop unlicensed media references
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const src=JSON.parse(fs.readFileSync('/tmp/anatome-exercises-source.json','utf8'));
+          const cleaned=src.map(({images,anatome_imageSrc,...x})=>x);
+          fs.writeFileSync('data/anatome-exercises.json',JSON.stringify(cleaned));
+          console.log(`Saved ${cleaned.length} Anatome exercises`);
+          NODE
+      - name: Add attribution
+        run: |
+          cat > data/ANATOME-NOTICE.md <<'EOF'
+          # Anatome data attribution
+
+          Source: https://github.com/Rippy1911/anatome
+
+          - Anatome project: Apache-2.0.
+          - Anatomical SVG paths: MIT, originally from react-native-body-highlighter by Hicham El Boussarghini.
+          - Exercise metadata: Unlicense, derived from wrkout/exercises.json.
+          - Exercise photo/media references are intentionally not copied because Anatome documents their redistribution status as unverified.
+          EOF
+      - name: Commit local data
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/anatome-body-paths.json data/anatome-exercises.json data/ANATOME-NOTICE.md
+          git diff --cached --quiet && exit 0
+          git commit -m 'data: sync Anatome anatomy and exercises'
+          git push
