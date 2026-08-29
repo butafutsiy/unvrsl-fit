@@ -137,3 +137,12 @@
   s.dataset.unvrslBodySexSync='1';
   document.body.appendChild(s);
 })();
+
+(()=>{
+  if(document.querySelector('script[data-unvrsl-adaptive-effort-safety-v170]'))return;
+  const s=document.createElement('script');
+  s.src='adaptive-effort-safety-v170.js';
+  s.async=false;
+  s.dataset.unvrslAdaptiveEffortSafetyV170='1';
+  document.body.appendChild(s);
+})();
