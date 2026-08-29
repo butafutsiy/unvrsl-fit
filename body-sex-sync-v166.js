@@ -1,39 +1,53 @@
 'use strict';
 (()=>{
-  if(window.__unvrslBodySexSyncV166)return;
-  window.__unvrslBodySexSyncV166=true;
+  if(window.__unvrslBodySexSyncV167)return;
+  window.__unvrslBodySexSyncV167=true;
 
+  function state(){
+    try{
+      if(typeof st!=='undefined'){
+        window.st=st;
+        return st;
+      }
+    }catch(e){}
+    return window.st||null;
+  }
   function normalizedSex(){
-    const sex=String(window.st?.profileBio?.sex||'').toLowerCase();
+    const s=state();
+    const sex=String(s?.profileBio?.sex||'').toLowerCase();
     return sex==='female'?'female':'male';
   }
   function syncBodySex(forceRender=false){
-    if(!window.st)return false;
+    const s=state();
+    if(!s)return false;
     const next=normalizedSex();
-    const changed=st.body!==next;
-    st.body=next;
+    const changed=s.body!==next;
+    s.body=next;
     if(changed){
       try{localStorage.removeItem('unvrsl-anatome-svg-v1')}catch(e){}
       try{save()}catch(e){}
+      const fig=document.querySelector('#anatomeMuscleCard .anatome-figure');
+      if(fig)delete fig.dataset.localSig;
     }
-    if((changed||forceRender)&&typeof window.statsPage==='function'){
-      try{window.statsPage()}catch(e){}
+    if((changed||forceRender)&&typeof statsPage==='function'){
+      try{statsPage()}catch(e){}
     }
     return changed;
   }
 
   window.syncBodySex=syncBodySex;
+  state();
   syncBodySex(false);
 
   const wrapSave=()=>{
-    const f=window.profileSaveBio;
-    if(typeof f!=='function'||f.__bodySexSyncV166)return false;
+    const f=typeof profileSaveBio==='function'?profileSaveBio:window.profileSaveBio;
+    if(typeof f!=='function'||f.__bodySexSyncV167)return false;
     const wrapped=async function(){
       const out=await f.apply(this,arguments);
       syncBodySex(true);
       return out;
     };
-    wrapped.__bodySexSyncV166=true;
+    wrapped.__bodySexSyncV167=true;
     window.profileSaveBio=wrapped;
     try{profileSaveBio=wrapped}catch(e){}
     return true;
@@ -41,19 +55,31 @@
 
   if(!wrapSave()){
     const t=setInterval(()=>{if(wrapSave())clearInterval(t)},120);
-    setTimeout(()=>clearInterval(t),12000);
+    setTimeout(()=>clearInterval(t),15000);
   }
 
-  const originalStats=window.statsPage;
-  if(typeof originalStats==='function'&&!originalStats.__bodySexSyncV166){
-    const wrappedStats=function(){
-      if(window.st)st.body=normalizedSex();
-      return originalStats.apply(this,arguments);
+  const wrapStats=()=>{
+    const f=typeof statsPage==='function'?statsPage:window.statsPage;
+    if(typeof f!=='function'||f.__bodySexSyncV167)return false;
+    const wrapped=function(){
+      const s=state();
+      if(s)s.body=normalizedSex();
+      return f.apply(this,arguments);
     };
-    wrappedStats.__bodySexSyncV166=true;
-    window.statsPage=wrappedStats;
-    try{statsPage=wrappedStats}catch(e){}
-  }
+    wrapped.__bodySexSyncV167=true;
+    window.statsPage=wrapped;
+    try{statsPage=wrapped}catch(e){}
+    return true;
+  };
+  wrapStats();
+
+  const observer=new MutationObserver(()=>{
+    const s=state();
+    if(!s)return;
+    const next=normalizedSex();
+    if(s.body!==next){s.body=next;try{save()}catch(e){}}
+  });
+  if(document.documentElement)observer.observe(document.documentElement,{childList:true,subtree:true});
 
   window.addEventListener('focus',()=>syncBodySex(false));
 })();
