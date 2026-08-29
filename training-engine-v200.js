@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
  if(window.__unvrslTrainingEngineV200)return;window.__unvrslTrainingEngineV200=true;
- const W=window,REV=202;
+ const W=window,REV=203;
  const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
  const num=v=>N(v)??0,mean=a=>{a=(a||[]).filter(Number.isFinite);return a.length?a.reduce((s,x)=>s+x,0)/a.length:null},median=a=>{a=(a||[]).filter(Number.isFinite).sort((x,y)=>x-y);if(!a.length)return null;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2},clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const base=n=>{try{return W.baseExerciseName?W.baseExerciseName(n):String(n||'').replace(/\s+—\s+.*$/,'').trim()}catch(_){return String(n||'')}};
@@ -18,6 +18,8 @@
  .te200-ready{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}.te200-item{background:#202023;border:1px solid #303034;border-radius:18px;padding:13px}.te200-item b{display:flex;justify-content:space-between;margin-bottom:9px}.te200-item input{width:100%;accent-color:var(--green)}
  #start .smart-suggest,#start .u177-rec,#start .wr180,#start .wr185{display:none!important}
  `;document.head.appendChild(style);
+ function disableLegacyReadiness(){if(typeof W.advAskReadiness!=='function'||W.advAskReadiness.__te203)return;const bypass=(fn,args)=>typeof fn==='function'?fn.apply(W,Array.isArray(args)?args:[]):undefined;bypass.__te203=true;W.advAskReadiness=bypass;try{advAskReadiness=bypass}catch(_){}}
+ disableLegacyReadiness();
  function program(cur){try{if(cur?.programId&&W.programById){const p=W.programById(cur.programId);if(p)return p}}catch(_){}return(W.st?.programs||[]).find(p=>String(p?.cloudPlanId||'')===String(cur?.planId||''))||(W.st?.programs||[]).find(p=>String(p?.name||'')===String(cur?.programName||''))||null}
  function source(ex,cur){const p=program(cur),week=p?.weeks?.[Math.max(0,(N(cur?.w)||1)-1)];if(!week)return null;let days=week.days||[];const exact=days.find(d=>String(d?.name||'')===String(cur?.c||''));if(exact)days=[exact,...days.filter(d=>d!==exact)];for(const d of days){const s=(d.ex||[]).find(x=>same({n:x.n,sourceId:x.sourceId},ex.n,ex.sourceId));if(s)return s}return null}
  function modeFromSource(src){return(src?.sets||[]).some(x=>num(x?.w)>0)?'prescribed':'adaptive'}
@@ -78,7 +80,7 @@
   const head=root.querySelector('.workout-head')||root.firstElementChild;if(head){const b=document.createElement('button');b.className='te200-readiness'+(cur.trainingReadinessDone?' done':'');b.type='button';b.textContent=cur.trainingReadinessDone?(cur.readinessAdjusted?`Самочувствие учтено · ${cur.readiness?.score??'—'}/100`:'Базовые веса оставлены'):'Самочувствие · скорректировать тренировку';b.onclick=showReadiness;head.insertAdjacentElement('afterend',b)}root.dataset.te200Sig=sig
  }
  let last='',busy=false;
- async function tick(){const cur=W.st?.current;if(!cur?.id||cur.ended)return;const id=String(cur.id);if(id!==last){last=id;busy=false;delete cur.trainingReadinessDone;delete cur.readinessAdjusted;const root=document.getElementById('start');if(root)delete root.dataset.te200Sig}if(busy)return;busy=true;try{if(cur.trainingEngineRevision!==REV){const ok=await prepare(cur);if(!ok)return}enhanceDom()}finally{busy=false}}
+ async function tick(){disableLegacyReadiness();const cur=W.st?.current;if(!cur?.id||cur.ended)return;const id=String(cur.id);if(id!==last){last=id;busy=false;delete cur.trainingReadinessDone;delete cur.readinessAdjusted;const root=document.getElementById('start');if(root)delete root.dataset.te200Sig}if(busy)return;busy=true;try{if(cur.trainingEngineRevision!==REV){const ok=await prepare(cur);if(!ok)return}enhanceDom()}finally{busy=false}}
  W.trainingApplyRecommendation200=applyRecommendation;W.trainingRestoreProgram200=restoreProgram;W.trainingShowReadiness200=showReadiness;W.trainingConfirmReadiness200=confirm;W.trainingEngine200Tick=tick;
  const oldApply=W.applySuggestion;W.applySuggestion=function(){if(W.st?.current?.id){W.toast?.('Используй рекомендацию над упражнением');return}return typeof oldApply==='function'?oldApply.apply(this,arguments):undefined};try{applySuggestion=W.applySuggestion}catch(_){}
  setInterval(tick,300);[0,80,250,700,1500,3000].forEach(t=>setTimeout(tick,t));

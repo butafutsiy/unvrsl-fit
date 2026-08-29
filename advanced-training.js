@@ -23,9 +23,9 @@ function advAskReadiness(fn,args){advPendingStart={fn,args};modal(`<div class="s
 function advReadinessData(){const sleep=+($('#advSleep')?.value||3),energy=+($('#advEnergy')?.value||3),soreness=+($('#advSore')?.value||3),stress=+($('#advStress')?.value||3);const score=Math.round((sleep+energy+(6-soreness)+(6-stress))/20*100);let factor=1,advice='Работай по плану';if(score<50){factor=.95;advice='Снизить рабочие веса примерно на 5%'}else if(score<65){factor=.975;advice='Снизить рабочие веса примерно на 2,5%'}else if(score>=82){advice='Хорошая готовность — по плану, прибавляй только если RPE ниже цели'}return{sleep,energy,soreness,stress,score,factor,advice,at:new Date().toISOString()}}
 function advApplyReadinessToCurrent(d,useAdjust){if(!st.current)return;st.current.readiness=d;st.readinessLog.push({date:st.current.date,sessionId:st.current.id,...d});st.readinessLog=st.readinessLog.slice(-120);if(useAdjust&&d.factor<1){st.current.ex.forEach(e=>{const step=typeof loadStepFor==='function'?loadStepFor(baseExerciseName(e.n),e.sourceId||null):2.5;(e.set||[]).forEach(x=>{if(x.w>0)x.w=advRound(x.w*d.factor,step)})})}save();startPage();toast(d.advice)}
 function advConfirmReadiness(useAdjust){const p=advPendingStart;if(!p)return closeModal();const d=advReadinessData();advPendingStart=null;closeModal();p.fn.apply(window,p.args);setTimeout(()=>advApplyReadinessToCurrent(d,useAdjust),0)}
-const _advBegin=window.begin;if(typeof _advBegin==='function')window.begin=function(){return advAskReadiness(_advBegin,[...arguments])};
-function advWrapRemoteStart(){const f=window.beginRemotePlan;if(typeof f==='function'&&!f.__advReadiness){const base=f;const w=function(){return advAskReadiness(base,[...arguments])};w.__advReadiness=true;window.beginRemotePlan=w}}
-setInterval(advWrapRemoteStart,1500);setTimeout(advWrapRemoteStart,500);
+// Readiness is optional and is handled inside the active workout by the unified
+// training engine. Starting a workout must never apply default slider values.
+function advWrapRemoteStart(){return false}
 
 // ── Automatic warm-up ─────────────────────────────────────────────────────
 function advMetaFor(base,sourceId){if(sourceId&&typeof ogLibrary!=='undefined'){const x=ogLibrary.find(e=>String(e.id)===String(sourceId));if(x)return x}return typeof inferCustomMeta==='function'?inferCustomMeta(base):{eq:''}}
