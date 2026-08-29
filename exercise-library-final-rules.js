@@ -1,0 +1,40 @@
+'use strict';
+(()=>{
+ if(window.__unvrslExerciseFinalRules)return;window.__unvrslExerciseFinalRules=true;
+ const clean=s=>String(s||'').toLowerCase().replace(/\([^)]*\)/g,' ').replace(/[_–—-]+/g,' ').replace(/\s+/g,' ').trim();
+ const externalWeight=new Set(['barbell','olympic barbell','ez barbell','dumbbell','cable','leverage machine','sled machine','smith machine','kettlebell','weighted','rope']);
+ const noRmEq=new Set(['body weight','assisted','cardio']);
+ const junk=/(stretch|mobility|warm.?up|yoga|pilates|neck|finger|wrist rotation|ankle|balance|bosu|stability ball|swiss ball|exercise ball|suspension|band\b|medicine ball|archer|typewriter|commando|muscle up|handstand|planche|human flag|iron cross|dragon flag|burpee|power clean|clean and jerk|snatch|overhead squat|jump squat|jump lunge|plyometric|pistol|sissy squat|zercher|jefferson|bear crawl|crab walk|frog pump|donkey calf|scorpion|windmill)/i;
+ const preferred={
+  'body weight squat':'Приседания с собственным весом','air squat':'Приседания с собственным весом',
+  'push up':'Отжимания','push-up':'Отжимания','pull up':'Подтягивания','pull-up':'Подтягивания',
+  'chin up':'Подтягивания обратным хватом','chin-up':'Подтягивания обратным хватом',
+  'plank':'Планка','side plank':'Боковая планка','crunch':'Скручивания','russian twist':'Русские повороты',
+  'hanging leg raise':'Подъём ног в висе','hanging knee raise':'Подъём коленей в висе',
+  'barbell bench press':'Жим штанги лёжа','dumbbell bench press':'Жим гантелей лёжа',
+  'barbell squat':'Приседания со штангой','barbell full squat':'Глубокий присед со штангой',
+  'barbell deadlift':'Становая тяга','barbell romanian deadlift':'Румынская тяга со штангой',
+  'dumbbell romanian deadlift':'Румынская тяга с гантелями','barbell hip thrust':'Ягодичный мост со штангой',
+  'cable lat pulldown':'Тяга верхнего блока','cable seated row':'Тяга нижнего блока сидя',
+  'lever leg extension':'Разгибание ног в тренажёре','lever seated leg curl':'Сгибание ног сидя в тренажёре','lever lying leg curl':'Сгибание ног лёжа в тренажёре'
+ };
+ function ru(ex){const key=clean(ex?.n||ex?.name);if(preferred[key])return preferred[key];try{return ruExerciseName(ex?.n||ex?.name||'')}catch(_){return String(ex?.n||ex?.name||'Упражнение')}}
+ function isCardio(e){return e?.kind==='cardio'||e?.cardioPreset||String(e?.eq||'').toLowerCase()==='cardio'||String(e?.bp||'').toLowerCase()==='cardio'||String(e?.sourceId||e?.rawId||'').startsWith('cardio:')}
+ function hasMedia(e){return isCardio(e)||!!String(e?.gif||e?.gif_url||e?.image||'').trim()}
+ function valid(e){if(!e||e.custom&&!e.cardioPreset)return false;const n=clean(e.n||e.name);if(!n||junk.test(n)||!hasMedia(e))return false;if(isCardio(e))return true;const eq=String(e.eq||e.equipment||'').toLowerCase();return externalWeight.has(eq)||noRmEq.has(eq)}
+ function canonical(e){return ru(e).toLocaleLowerCase('ru')+'|'+String(e.eq||'').toLowerCase()}
+ function finalRecords(){const src=typeof catalogRecords==='function'?catalogRecords():[];const out=[],seen=new Set();for(const e of src){if(!valid(e))continue;const k=canonical(e);if(seen.has(k))continue;seen.add(k);out.push(e)}return out.sort((a,b)=>ru(a).localeCompare(ru(b),'ru'))}
+ window.UNVRSL_FINAL_EXERCISES=finalRecords;
+ window.exerciseUsesExternalWeight=function(ex){if(!ex||isCardio(ex))return false;return externalWeight.has(String(ex.eq||ex.equipment||'').toLowerCase())};
+ const baseRu=window.ruExerciseName;if(typeof baseRu==='function'&&!baseRu.__finalRules){const w=function(name=''){const k=clean(name);return preferred[k]||baseRu.call(this,name)};w.__finalRules=true;window.ruExerciseName=w;try{ruExerciseName=w}catch(_){}}
+ function fav(e){const id=String(e.rawId||e.id||e.n||'');return typeof isFavorite==='function'&&isFavorite(id)}
+ function recent(e){const id=String(e.rawId||e.id||e.n||'');return Array.isArray(st?.recentExercises)&&st.recentExercises.includes(id)}
+ function eqGroup(e){try{return typeof equipmentGroup==='function'?equipmentGroup(e):String(e.eq||'')}catch(_){return String(e.eq||'')}}
+ function filtered(){const q=String(typeof exQuery==='undefined'?'':exQuery).trim().toLowerCase();return finalRecords().filter(e=>{if(typeof exBody!=='undefined'){if(exBody==='favorites'&&!fav(e))return false;if(exBody==='recent'&&!recent(e))return false;if(exBody==='frequent')return false;if(!['all','favorites','recent','frequent'].includes(exBody)&&e.bp!==exBody)return false}if(typeof exEquipment!=='undefined'&&exEquipment!=='all'&&eqGroup(e)!==exEquipment)return false;const h=`${ru(e)} ${e.n||''} ${(BP_RU&&BP_RU[e.bp])||''} ${(EQ_RU&&EQ_RU[e.eq])||''} ${typeof ruTarget==='function'?ruTarget(e.tg):e.tg||''}`.toLowerCase();return !q||h.includes(q)})}
+ function row(e){const t=ru(e),body=(BP_RU&&BP_RU[e.bp])||e.bp||'—',eq=isCardio(e)?'Кардио':((EQ_RU&&EQ_RU[e.eq])||e.eq||'—'),tg=isCardio(e)?'Кардиореспираторная система':(typeof ruTarget==='function'?ruTarget(e.tg):e.tg||'—'),thumb=e.image||e.gif||e.gif_url||'';if(isCardio(e)&&!thumb)return `<div class="card exlib exlib-btn smart-ex-row" onclick="openExerciseDetail('${encodeURIComponent(e.id)}')"><div class="exercise-list-row"><div class="ex-thumb placeholder">♥︎</div><div class="grow"><b>${esc(t)}</b><div class="catalog-meta">${esc(body)} · ${esc(eq)} · ${esc(tg)}</div></div><span class="chev">›</span></div></div>`;return `<div class="card exlib exlib-btn smart-ex-row" onclick="openExerciseDetail('${encodeURIComponent(e.id)}')"><div class="exercise-list-row">${thumb?`<img class="ex-thumb" src="${mediaUrl(thumb)}" loading="lazy" alt="${esc(t)}">`:''}<div class="grow"><b>${esc(t)}</b><div class="catalog-meta">${esc(body)} · ${esc(eq)} · ${esc(tg)}</div></div><span class="chev">›</span></div></div>`}
+ let limit=180;
+ function installRender(){window.renderExerciseResults=function(){const el=document.querySelector('#exList');if(!el)return;if(typeof exBody!=='undefined'&&exBody==='frequent'&&typeof exerciseUseCount==='function'){const q=String(exQuery||'').toLowerCase();const f=finalRecords().map(e=>({e,c:exerciseUseCount(e)})).filter(x=>x.c>0&&(!q||(`${ru(x.e)} ${x.e.n||''}`).toLowerCase().includes(q))).sort((a,b)=>b.c-a.c);el.innerHTML=f.slice(0,limit).map(x=>row(x.e).replace('</b>',`</b><div class="muted small">${x.c} выполненных подходов</div>`)).join('')||'<div class="card muted">После первых тренировок здесь появятся часто используемые упражнения.</div>';const c=document.querySelector('#catalogCount');if(c)c.textContent=`Основная база · ${finalRecords().length} упражнений · найдено ${f.length}`;return}const all=finalRecords(),f=filtered(),shown=f.slice(0,limit);el.innerHTML=shown.map(row).join('')+(shown.length<f.length?`<button class="btn full" style="margin:12px 0 4px" onclick="showMoreFinalExercises()">Показать ещё · ${shown.length} из ${f.length}</button>`:'')+(!f.length?'<div class="card muted">По этому фильтру ничего не найдено.</div>':'');const c=document.querySelector('#catalogCount');if(c)c.textContent=`Основная база · ${all.length} упражнений${f.length!==all.length?` · найдено ${f.length}`:''}`};try{renderExerciseResults=window.renderExerciseResults}catch(_){};window.showMoreFinalExercises=()=>{limit+=180;window.renderExerciseResults()}}
+ function removeRm(){const heads=[...document.querySelectorAll('.section')],h=heads.find(x=>(x.textContent||'').trim()==='РАСЧЁТНЫЙ 1ПМ');if(!h)return;let n=h.nextElementSibling;h.remove();while(n&&!n.classList.contains('section')){const next=n.nextElementSibling;n.remove();n=next}}
+ function installDetail(){const base=window.renderExerciseDetail;if(typeof base!=='function'||base.__finalWeightRules)return;const w=function(ex){const r=base.apply(this,arguments);if(!window.exerciseUsesExternalWeight(ex)){removeRm();setTimeout(removeRm,0)}return r};w.__finalWeightRules=true;window.renderExerciseDetail=w;try{renderExerciseDetail=w}catch(_){}}
+ installRender();installDetail();let tries=0;const timer=setInterval(()=>{installRender();installDetail();if(document.querySelector('#exercises.page.active'))try{window.renderExerciseResults()}catch(_){}if(++tries>16)clearInterval(timer)},250);
+})();
