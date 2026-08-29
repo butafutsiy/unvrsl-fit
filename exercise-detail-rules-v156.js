@@ -57,10 +57,18 @@
 })();
 
 (()=>{
-  if(document.querySelector('script[data-unvrsl-unified-training-v174]'))return;
-  const s=document.createElement('script');
-  s.src='unified-training-v174.js';
-  s.async=false;
-  s.dataset.unvrslUnifiedTrainingV174='1';
-  document.body.appendChild(s);
+  if(!document.querySelector('script[data-unvrsl-unified-training-v174]')){
+    const s=document.createElement('script');
+    s.src='unified-training-v174.js';
+    s.async=false;
+    s.dataset.unvrslUnifiedTrainingV174='1';
+    document.body.appendChild(s);
+  }
+  if(!document.querySelector('script[data-unvrsl-workout-recommendation-v180]')){
+    const s=document.createElement('script');
+    s.src='workout-recommendation-v180.js';
+    s.async=false;
+    s.dataset.unvrslWorkoutRecommendationV180='1';
+    document.body.appendChild(s);
+  }
 })();
