@@ -6,14 +6,17 @@
   const BODY_URL='./data/anatome-body-paths.json';
   const EX_URL='./data/anatome-exercises.json';
   let bodyData=null,anatomeExercises=[];
-  const THEME='#0a84ff',OVERLOAD='#ff375f';
+  const OVERLOAD='#ff375f';
+  const themeAccent=()=>{
+    try{return String(st?.accent||'').trim()||getComputedStyle(document.documentElement).getPropertyValue('--green').trim()||'#30d158'}catch(_){return'#30d158'}
+  };
 
   const style=document.createElement('style');
   style.id='anatome-local-v2-style';
   style.textContent=`
     #stats .stats-muscle-week{display:none!important}
     #anatomeMuscleCard .anatome-body{grid-template-columns:1fr!important;gap:16px!important}
-    #anatomeMuscleCard .anatome-figure{min-height:440px!important;padding:0!important;background:radial-gradient(circle at 50% 42%,rgba(10,132,255,.10),rgba(10,132,255,.035) 46%,transparent 72%)!important}
+    #anatomeMuscleCard .anatome-figure{min-height:440px!important;padding:0!important;background:radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--green) 10%,transparent),color-mix(in srgb,var(--green) 3.5%,transparent) 46%,transparent 72%)!important}
     #anatomeMuscleCard .anatome-figure>img{display:none!important}
     #anatomeMuscleCard .anatome-local-dual{display:grid;grid-template-columns:1fr 1fr;gap:2px;width:100%;height:440px;align-items:center}
     #anatomeMuscleCard .anatome-local-side{height:430px;width:100%;display:block;overflow:visible}
@@ -25,7 +28,7 @@
     #anatomeMuscleCard .anatome-top{grid-template-columns:repeat(2,minmax(0,1fr))!important}
     #anatomeMuscleCard .anatome-muscle[data-load-level="3"] .anatome-bar i{background:${OVERLOAD}!important}
     #anatomeMuscleCard .anatome-muscle[data-load-level="2"] .anatome-bar i,
-    #anatomeMuscleCard .anatome-muscle[data-load-level="1"] .anatome-bar i{background:${THEME}!important}
+    #anatomeMuscleCard .anatome-muscle[data-load-level="1"] .anatome-bar i{background:var(--green)!important}
     @media(max-width:430px){#anatomeMuscleCard .anatome-figure{min-height:400px!important}#anatomeMuscleCard .anatome-local-dual{height:400px}#anatomeMuscleCard .anatome-local-side{height:390px}}
   `;
   document.head.appendChild(style);
@@ -58,11 +61,33 @@
     const rows=[];card.querySelectorAll('.anatome-muscle').forEach(el=>{const val=Number(String(el.querySelector('.anatome-muscle-row span')?.textContent||'0').replace(',','.'))||0;const drill=el.dataset.drilldown||'';if(drill&&val>0)rows.push([drill,val,el])});
     rows.sort((a,b)=>b[1]-a[1]);const max=rows[0]?.[1]||1;rows.forEach(([,v,el])=>{const q=v/max;el.dataset.loadLevel=q>=.67?'3':q>=.34?'2':'1'});return new Map(rows.map(([s,v])=>[s,v]));
   }
-  function colorFor(slug,scores){const v=scores.get(slug)||0;if(!v)return'#34343a';const max=Math.max(1,...scores.values()),q=v/max;return q>=.67?OVERLOAD:THEME}
-  function sideSvg(side,scores){const parts=bodyData?.male?.[side]||[],paths=[];parts.forEach(part=>{const fill=colorFor(part.slug,scores),active=scores.has(part.slug),opacity=active?'.98':'.72';Object.values(part.path||{}).flat().forEach(d=>{if(d)paths.push(`<path d="${String(d).replace(/"/g,'&quot;')}" fill="${fill}" opacity="${opacity}" data-muscle="${part.slug}"></path>`)})});return `<svg class="anatome-local-side" viewBox="40 140 640 1230" preserveAspectRatio="xMidYMid meet" aria-label="${side==='front'?'Мышцы спереди':'Мышцы сзади'}">${paths.join('')}</svg>`}
+  function colorFor(slug,scores){const v=scores.get(slug)||0;if(!v)return'#34343a';const max=Math.max(1,...scores.values()),q=v/max;return q>=.67?OVERLOAD:themeAccent()}
+  function sideSvg(side,scores){
+    const body=(typeof st!=='undefined'&&st?.body==='female')?'female':'male';
+    const parts=bodyData?.[body]?.[side]||[],paths=[];
+    parts.forEach(part=>{const fill=colorFor(part.slug,scores),active=scores.has(part.slug),opacity=active?'.98':'.72';Object.values(part.path||{}).flat().forEach(d=>{if(d)paths.push(`<path d="${String(d).replace(/"/g,'&quot;')}" fill="${fill}" opacity="${opacity}" data-muscle="${part.slug}"></path>`)})});
+    const viewBox=side==='back'?'800 140 640 1230':'40 140 640 1230';
+    return `<svg class="anatome-local-side" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet" aria-label="${side==='front'?'Мышцы спереди':'Мышцы сзади'}">${paths.join('')}</svg>`
+  }
   async function loadBody(){if(bodyData)return bodyData;try{const r=await fetch(BODY_URL,{cache:'default'});if(!r.ok)throw new Error(`HTTP ${r.status}`);bodyData=await r.json();window.UNVRSL_ANATOME_BODY_PATHS=bodyData;return bodyData}catch(e){console.warn('local Anatome body',e);return null}}
-  async function upgradeCard(){const card=document.getElementById('anatomeMuscleCard');if(!card)return;const old=document.querySelector('#stats .stats-muscle-week');if(old)old.style.display='none';let ton=card.querySelector('.anatome-tonnage-local');if(!ton){ton=document.createElement('div');ton.className='anatome-tonnage-local';ton.innerHTML='<span>Недельный тоннаж</span><b></b>';const body=card.querySelector('.anatome-body');body?.before(ton)}const tb=ton.querySelector('b');if(tb)tb.textContent=`${weekTonnage().toLocaleString('ru-RU')} кг`;const scores=scoresFromCard(card);if(!scores.size)return;if(!await loadBody())return;const fig=card.querySelector('.anatome-figure');if(!fig)return;const sig=[...scores.entries()].map(x=>x.join(':')).join('|');if(fig.dataset.localSig===sig)return;fig.dataset.localSig=sig;fig.innerHTML=`<div style="width:100%"><div class="anatome-local-dual">${sideSvg('front',scores)}${sideSvg('back',scores)}</div><div class="anatome-local-caption">СПЕРЕДИ · СЗАДИ</div></div>`}
-  function watch(){const root=document.getElementById('stats');if(!root)return;let queued=false;const run=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;upgradeCard()})};new MutationObserver(run).observe(root,{childList:true,subtree:true,characterData:true});run()}
+  async function upgradeCard(){
+    const card=document.getElementById('anatomeMuscleCard');if(!card)return;
+    const old=document.querySelector('#stats .stats-muscle-week');if(old)old.style.display='none';
+    let ton=card.querySelector('.anatome-tonnage-local');if(!ton){ton=document.createElement('div');ton.className='anatome-tonnage-local';ton.innerHTML='<span>Недельный тоннаж</span><b></b>';const body=card.querySelector('.anatome-body');body?.before(ton)}
+    const tb=ton.querySelector('b');if(tb)tb.textContent=`${weekTonnage().toLocaleString('ru-RU')} кг`;
+    const scores=scoresFromCard(card);if(!scores.size)return;if(!await loadBody())return;
+    const fig=card.querySelector('.anatome-figure');if(!fig)return;
+    const sig=`${typeof st!=='undefined'?(st.body||'male'):'male'}|${themeAccent()}|${[...scores.entries()].map(x=>x.join(':')).join('|')}`;
+    if(fig.dataset.localSig===sig)return;fig.dataset.localSig=sig;
+    fig.innerHTML=`<div style="width:100%"><div class="anatome-local-dual">${sideSvg('front',scores)}${sideSvg('back',scores)}</div><div class="anatome-local-caption">СПЕРЕДИ · СЗАДИ</div></div>`
+  }
+  function watch(){
+    const root=document.getElementById('stats');if(!root)return;
+    let queued=false;const run=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;upgradeCard()})};
+    new MutationObserver(run).observe(root,{childList:true,subtree:true,characterData:true});
+    new MutationObserver(run).observe(document.documentElement,{attributes:true,attributeFilter:['style']});
+    run()
+  }
 
   loadExercises();if(document.readyState==='loading')window.addEventListener('DOMContentLoaded',watch,{once:true});else watch();
 })();
