@@ -55,3 +55,12 @@
   patchDetail();
   [50,250,900,2200].forEach(t=>setTimeout(patchDetail,t));
 })();
+
+(()=>{
+  if(document.querySelector('script[data-unvrsl-unified-training-v174]'))return;
+  const s=document.createElement('script');
+  s.src='unified-training-v174.js';
+  s.async=false;
+  s.dataset.unvrslUnifiedTrainingV174='1';
+  document.body.appendChild(s);
+})();
