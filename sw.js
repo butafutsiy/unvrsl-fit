@@ -20,5 +20,5 @@ self.addEventListener('fetch',event=>{
   if(request.mode==='navigate'){
     event.respondWith(fetch(request,{cache:'no-store'}).then(response=>{if(response&&response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put('./index.html',copy));}return response;}).catch(()=>caches.match('./index.html')));return;
   }
-  event.respondWith((sameOrigin?fetch(request,{cache:'no-store'}):fetch(request)).then(response=>{if(response&&(response.ok||response.type==='opaque')){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy));}return response;}).catch(()=>caches.match(request));
+  event.respondWith((sameOrigin?fetch(request,{cache:'no-store'}):fetch(request)).then(response=>{if(response&&(response.ok||response.type==='opaque')){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy));}return response;}).catch(()=>caches.match(request)));
 });
