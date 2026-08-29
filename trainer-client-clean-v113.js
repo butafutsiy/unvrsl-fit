@@ -1,4 +1,11 @@
 'use strict';
+
+// Keep the stable pre-RIR workout layout. The adaptive module can still exist in the repo,
+// but it must not mutate the active-workout DOM or add a sixth set column.
+window.__unvrslAdaptiveEffortV2=true;
+window.__unvrslAdaptiveEffortSafetyV170=true;
+try{document.getElementById('adaptive-effort-v2-style')?.remove()}catch(e){}
+
 (()=>{
   if(window.__trainerClientCanonicalGuardV119)return;
   window.__trainerClientCanonicalGuardV119=true;
@@ -130,19 +137,10 @@
 })();
 
 (()=>{
-  if(document.querySelector('script[data-unvrsl-body-sex-sync]'))return;
+  if(document.querySelector('script[data-unvrsl-stable-client-profile-v171]'))return;
   const s=document.createElement('script');
-  s.src='body-sex-sync-v166.js';
+  s.src='stable-client-profile-v171.js';
   s.async=false;
-  s.dataset.unvrslBodySexSync='1';
-  document.body.appendChild(s);
-})();
-
-(()=>{
-  if(document.querySelector('script[data-unvrsl-adaptive-effort-safety-v170]'))return;
-  const s=document.createElement('script');
-  s.src='adaptive-effort-safety-v170.js';
-  s.async=false;
-  s.dataset.unvrslAdaptiveEffortSafetyV170='1';
+  s.dataset.unvrslStableClientProfileV171='1';
   document.body.appendChild(s);
 })();
