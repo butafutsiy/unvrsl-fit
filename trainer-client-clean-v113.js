@@ -137,12 +137,3 @@
   s.dataset.unvrslBodySexSync='1';
   document.body.appendChild(s);
 })();
-
-(()=>{
-  if(document.querySelector('script[data-unvrsl-active-workout-mobile-v168]'))return;
-  const s=document.createElement('script');
-  s.src='active-workout-mobile-v168.js';
-  s.async=false;
-  s.dataset.unvrslActiveWorkoutMobileV168='1';
-  document.body.appendChild(s);
-})();
