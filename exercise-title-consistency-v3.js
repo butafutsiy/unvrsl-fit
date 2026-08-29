@@ -44,5 +44,6 @@
  }
  const oldRecords=window.UNVRSL_EXERCISE_RECORDS;
  if(typeof oldRecords==='function')window.UNVRSL_EXERCISE_RECORDS=function(){return (oldRecords()||[]).map(e=>({...e,__ruTitle:contextualTitle(e)}))};
+ if(!document.querySelector('script[data-cardio-gif-fix]')){const s=document.createElement('script');s.src='./cardio-gif-fix-v1.js';s.dataset.cardioGifFix='1';document.head.appendChild(s)}
  if(document.querySelector('#exercises.page.active')&&typeof window.exercisesPage==='function')setTimeout(()=>window.exercisesPage(),0);
 })();
