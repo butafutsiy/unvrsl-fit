@@ -153,4 +153,48 @@
     };
     wrappedBegin.__programRulesV162=true;window.beginProgramDay=wrappedBegin;try{beginProgramDay=wrappedBegin}catch(e){}
   }
+
+  // Редактор программы и запуск тренировки — разные сценарии.
+  // Поздние патчи запуска (опрос готовности, облачная синхронизация и темп)
+  // не должны участвовать в простом открытии или создании программы.
+  function renderProgramEditorSafe(){
+    const p=programById(programUi?.pid);if(!p)return;
+    ensureProgramShape(p);
+    const wi=Math.max(0,Math.min(Number(programUi.week)||0,p.weeks.length-1));
+    const w=p.weeks[wi]||p.weeks[0];if(!w)return typeof toast==='function'?toast('В программе нет недель'):undefined;
+    programUi.week=wi;
+    const html=`<div class="sheet-grabber"></div><div class="row between"><div><h2>${esc(p.name)}</h2><div class="muted">Конструктор программы</div></div><button class="btn tiny" onclick="closeModal();planPage()">✕</button></div><div class="weekbar">${p.weeks.map((x,i)=>`<button class="weekbtn ${i===wi?'on':''}" onclick="programUi.week=${i};renderProgramEditor()">W${i+1}</button>`).join('')}</div><div class="coach-actions"><button class="btn tiny" onclick="renameProgramSheet('${p.id}')">Переименовать</button><button class="btn tiny" onclick="copyProgramWeek('${p.id}',${wi})">Копировать неделю</button><button class="btn tiny" onclick="addProgramWeek('${p.id}')">＋ Неделя</button></div><div class="section">НЕДЕЛЯ ${wi+1}</div>${w.days.map((d,di)=>programDayCard(p,w,d,di)).join('')}<button class="btn full" onclick="addProgramDay('${p.id}',${wi})">＋ Добавить тренировку</button><div class="coach-actions"><button class="btn primary" onclick="shareProgram('${p.id}')">Поделиться программой</button><button class="btn" onclick="saveProgramAsTemplate('${p.id}')">Сохранить как шаблон</button></div>`;
+    const modalRoot=document.getElementById('modal');
+    modalRoot?.classList.remove('px-program-modal','px-exercise-modal');
+    modal(html);
+    const sheet=document.getElementById('sheet');
+    if(p.cloudPlanId&&typeof trainerIsTrainer==='function'&&trainerIsTrainer()&&sheet&&!sheet.querySelector('.cloud-update-program')&&typeof cloudPushProgramUpdate==='function'){
+      const button=document.createElement('button');button.className='btn primary full cloud-update-program';button.style.marginTop='12px';button.textContent=`Обновить клиентам · версия ${p.cloudVersion||1}`;button.onclick=()=>cloudPushProgramUpdate(p.id);sheet.appendChild(button)
+    }
+  }
+
+  function openProgramEditorSafe(id,week=0,day=0){
+    const p=programById(id);if(!p)return typeof toast==='function'?toast('Программа не найдена'):undefined;
+    ensureProgramShape(p);
+    programUi={pid:id,week:Math.max(0,Math.min(Number(week)||0,p.weeks.length-1)),day:Math.max(0,Number(day)||0),query:''};
+    renderProgramEditorSafe()
+  }
+
+  function createProgramSafe(){
+    if(window.__programCreateBusy)return;
+    const nameInput=document.getElementById('npName'),weeksInput=document.getElementById('npWeeks'),daysInput=document.getElementById('npDays');
+    if(!weeksInput||!daysInput)return typeof toast==='function'?toast('Не удалось прочитать параметры программы'):undefined;
+    const name=String(nameInput?.value||'').trim()||'Программа';
+    const wc=Math.max(1,Math.min(16,Number(weeksInput.value)||4));
+    const dc=Math.max(1,Math.min(7,Number(daysInput.value)||3));
+    const p={id:uid('prog'),name,created:Date.now(),updated:Date.now(),weeks:Array.from({length:wc},(_,wi)=>({n:wi+1,days:Array.from({length:dc},(_,di)=>({id:uid('day'),name:`День ${di+1}`,ex:[]}))}))};
+    window.__programCreateBusy=true;
+    try{st.programs.push(p);save();openProgramEditorSafe(p.id,0,0)}finally{setTimeout(()=>{window.__programCreateBusy=false},350)}
+  }
+
+  // template-tempo-wave не должен оборачивать безопасный рендер повторно.
+  renderProgramEditorSafe.__tempoWave=true;
+  window.renderProgramEditor=renderProgramEditorSafe;try{renderProgramEditor=renderProgramEditorSafe}catch(e){}
+  window.openProgramEditor=openProgramEditorSafe;try{openProgramEditor=openProgramEditorSafe}catch(e){}
+  window.createProgram=createProgramSafe;try{createProgram=createProgramSafe}catch(e){}
 })();
