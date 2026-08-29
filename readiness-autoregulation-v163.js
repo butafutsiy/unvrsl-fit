@@ -36,14 +36,14 @@
     if(el)el.innerHTML=`<b>Готовность ${d.score}/100</b><div class="muted small">${d.advice}</div>`;
   }
 
-  function askReadiness(fn,args){
-    root.__advReadinessPending={fn,args};
-    modal(`<div class="sheet-grabber"></div><h2>Готовность к тренировке</h2><div class="muted">Сначала UNVRSL рассчитывает базовые рабочие веса из прошлых тренировок. Здесь ты только корректируешь их по самочувствию.</div><div class="readiness-grid">${range('advSleep','Сон','1 – плохо · 5 – отлично')}${range('advEnergy','Энергия','1 – нет сил · 5 – отлично')}${range('advSore','Крепатура рабочих мышц','1 – нет · 5 – сильная')}${range('advStress','Стресс','1 – низкий · 5 – высокий')}</div><div id="advReadinessResult" class="readiness-result"></div><button class="btn primary full" onclick="advConfirmReadiness(true)">Начать по самочувствию</button><button class="btn full" style="margin-top:10px" onclick="advConfirmReadiness(false)">Оставить базовые веса</button>`);
+  function askReadiness(){
+    modal(`<div class="sheet-grabber"></div><h2>Готовность к тренировке</h2><div class="muted">Рабочие веса уже рассчитаны по прошлым тренировкам. Здесь можно только скорректировать их по сегодняшнему самочувствию.</div><div class="readiness-grid">${range('advSleep','Сон','1 – плохо · 5 – отлично')}${range('advEnergy','Энергия','1 – нет сил · 5 – отлично')}${range('advSore','Крепатура рабочих мышц','1 – нет · 5 – сильная')}${range('advStress','Стресс','1 – низкий · 5 – высокий')}</div><div id="advReadinessResult" class="readiness-result"></div><button class="btn primary full" onclick="advConfirmReadiness(true)">Скорректировать по самочувствию</button><button class="btn full" style="margin-top:10px" onclick="advConfirmReadiness(false)">Оставить рассчитанные веса</button>`);
     readinessPreview();
   }
 
   function computeBaselines(session){
-    if(!session)return;
+    if(!session)return false;
+    let changed=false;
     (session.ex||[]).forEach(exercise=>{
       const sets=exercise.set||[];
       sets.forEach(set=>{if(set.programW==null&&number(set.w)>0)set.programW=number(set.w)});
@@ -52,17 +52,28 @@
       if(c?.weight>0){
         exercise.calculatedBaseline={weight:c.weight,e1rm:c.e1rm,target:c.target,reps:c.reps,source:'history'};
         sets.forEach(set=>{if(set.ok||set.manualOverride)return;set.w=c.weight;set.plannedW=c.weight;set.baselineW=c.weight});
+        changed=true;
         return;
       }
       const adaptive=exercise?.progression187?.weight||exercise?.adaptiveSuggestedW||null;
       if(number(adaptive)>0){
         exercise.calculatedBaseline={weight:number(adaptive),e1rm:exercise?.progression187?.e1rm||null,target:exercise?.progression187?.target||exercise?.target||session.target,source:'history'};
         sets.forEach(set=>{if(set.ok||set.manualOverride)return;set.w=number(adaptive);set.plannedW=number(adaptive);set.baselineW=number(adaptive)});
+        changed=true;
         return;
       }
       sets.forEach(set=>{if(set.plannedW==null&&number(set.w)>0)set.plannedW=number(set.w);if(set.baselineW==null&&number(set.w)>0)set.baselineW=number(set.w)});
     });
     session.baselineWeightsCalculated=true;
+    try{save()}catch(e){}
+    return changed;
+  }
+
+  function prepareCurrentBeforeReadiness(){
+    const session=root.st?.current;if(!session)return;
+    try{if(typeof root.startPage==='function')root.startPage()}catch(_){}
+    computeBaselines(session);
+    try{if(typeof root.startPage==='function')root.startPage()}catch(_){}
   }
 
   function trimVolume(exercise,d){
@@ -77,14 +88,14 @@
   function applyReadiness(d,useAdjust){
     const session=root.st?.current;
     if(!session)return;
-    computeBaselines(session);
+    if(!session.baselineWeightsCalculated)computeBaselines(session);
     session.readiness=d;
     session.keepPlannedWeights=!useAdjust;
     root.st.readinessLog.push({date:session.date,sessionId:session.id,...d});
     root.st.readinessLog=root.st.readinessLog.slice(-120);
 
     (session.ex||[]).forEach(exercise=>{
-      (exercise.set||[]).forEach(set=>{if(!useAdjust&&set.plannedW!=null)set.w=number(set.plannedW)});
+      (exercise.set||[]).forEach(set=>{if(!useAdjust&&set.plannedW!=null&&!set.ok&&!set.manualOverride)set.w=number(set.plannedW)});
       if(!useAdjust||d.factor>=1)return;
       const base=typeof root.baseExerciseName==='function'?root.baseExerciseName(exercise.n):exercise.n;
       const step=typeof root.loadStepFor==='function'?root.loadStepFor(base,exercise.sourceId||null):2.5;
@@ -94,20 +105,14 @@
 
     try{save()}catch(e){}
     try{startPage()}catch(e){}
-    toast(useAdjust?d.advice:'Оставлены рассчитанные базовые веса');
+    toast(useAdjust?d.advice:'Оставлены рассчитанные рабочие веса');
   }
 
   function confirmReadiness(useAdjust){
-    const pending=root.__advReadinessPending;
-    if(!pending)return closeModal();
+    if(!root.st?.current)return closeModal();
     const data=readinessData();
-    root.__advReadinessPending=null;
     closeModal();
-    pending.fn.apply(root,pending.args||[]);
-    setTimeout(()=>{
-      try{if(typeof root.startPage==='function')root.startPage()}catch(_){}
-      setTimeout(()=>applyReadiness(data,useAdjust),40);
-    },0);
+    applyReadiness(data,useAdjust);
   }
 
   function targetRpe(exercise,set){const values=[set?.targetRpe,exercise?.targetRpe,exercise?.rpeTarget,exercise?.rpe,root.st?.current?.target,8];return values.map(number).find(v=>v>0)||8}
@@ -131,11 +136,25 @@
   }
   function keepRpeWeight(ei){const exercise=root.st?.current?.ex?.[ei];if(exercise){exercise.readinessRpeReviewed=true;delete exercise.readinessPendingReduction;try{save()}catch(e){}}closeModal();toast('Вес оставлен')}
 
-  root.advReadinessData=readinessData;root.advReadinessPreview=readinessPreview;root.advAskReadiness=askReadiness;root.advApplyReadinessToCurrent=applyReadiness;root.advConfirmReadiness=confirmReadiness;root.advApplyRpeCorrection=applyRpeCorrection;root.advKeepRpeWeight=keepRpeWeight;root.advComputeBaselines=computeBaselines;
+  root.advReadinessData=readinessData;root.advReadinessPreview=readinessPreview;root.advAskReadiness=askReadiness;root.advApplyReadinessToCurrent=applyReadiness;root.advConfirmReadiness=confirmReadiness;root.advApplyRpeCorrection=applyRpeCorrection;root.advKeepRpeWeight=keepRpeWeight;root.advComputeBaselines=computeBaselines;root.advPrepareBaseline=prepareCurrentBeforeReadiness;
 
-  function wrapStart(name){const fn=root[name];if(typeof fn!=='function'||fn.__readinessV163)return;if(fn.__advReadiness||String(fn).includes('advAskReadiness'))return;const wrapped=function(){return askReadiness(fn,[...arguments])};wrapped.__readinessV163=true;root[name]=wrapped}
+  function wrapStart(name){
+    const fn=root[name];
+    if(typeof fn!=='function'||fn.__readinessV192)return;
+    if(fn.__advReadiness||String(fn).includes('advAskReadiness'))return;
+    const wrapped=function(){
+      const r=fn.apply(this,arguments);
+      setTimeout(()=>{
+        prepareCurrentBeforeReadiness();
+        setTimeout(()=>askReadiness(),30);
+      },0);
+      return r;
+    };
+    wrapped.__readinessV192=true;
+    root[name]=wrapped;
+  }
   function wrapToggle(){const fn=root.toggleSet;if(typeof fn!=='function'||fn.__readinessRpeV163)return;const wrapped=function(ei,si){const exercise=root.st?.current?.ex?.[ei],set=exercise?.set?.[si],was=!!set?.ok;const result=fn.apply(this,arguments);if(!was&&set?.ok)setTimeout(()=>reviewFirstSet(ei,si),0);return result};wrapped.__readinessRpeV163=true;root.toggleSet=wrapped}
   function wrapEditSet(){const fn=root.editSet;if(typeof fn!=='function'||fn.__readinessRpeV163)return;const wrapped=function(ei,si,key,value){const result=fn.apply(this,arguments);if(key==='rpe')setTimeout(()=>reviewFirstSet(ei,si),0);return result};wrapped.__readinessRpeV163=true;root.editSet=wrapped}
   function install(){['begin','beginProgramDay','beginRemotePlan'].forEach(wrapStart);wrapToggle();wrapEditSet()}
-  install();setTimeout(install,500);setTimeout(install,1500);
+  install();setTimeout(install,500);setTimeout(install,1500);setTimeout(install,3000);
 })();
