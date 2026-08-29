@@ -128,3 +128,12 @@
   s.dataset.unvrslExerciseDetailRules='1';
   document.body.appendChild(s);
 })();
+
+(()=>{
+  if(document.querySelector('script[data-unvrsl-startup-splash]'))return;
+  const s=document.createElement('script');
+  s.src='startup-splash-v156.js';
+  s.async=false;
+  s.dataset.unvrslStartupSplash='1';
+  document.body.appendChild(s);
+})();
