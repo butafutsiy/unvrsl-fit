@@ -35,6 +35,11 @@
     const base=preferRemote?{...local,...remote}:{...remote,...local};
     base.sessions=mergeByKey(first.sessions,second.sessions,x=>String(x.id||''),sessionScore).sort((a,b)=>(a.started||0)-(b.started||0));
     base.bw=mergeByKey(first.bw,second.bw,x=>String(x.d||''),x=>Number(x.updatedAt||x.t||x.ts||0)).sort((a,b)=>String(a.d||'').localeCompare(String(b.d||'')));
+    base.deletedBodyweights=mergeByKey(first.deletedBodyweights,second.deletedBodyweights,x=>String(x?.d||x||''),x=>Number(x?.at||x?.t||0));
+    const weightStamp=new Map(base.bw.map(x=>[String(x.d||'').slice(0,10),Number(x.updatedAt||x.t||x.ts||0)]));
+    base.deletedBodyweights=base.deletedBodyweights.filter(x=>{const d=String(x?.d||x||'').slice(0,10),deletedAt=Number(x?.at||x?.t||0);return d&&deletedAt>=Number(weightStamp.get(d)||0)});
+    const deletedWeights=new Set(base.deletedBodyweights.map(x=>String(x?.d||x||'').slice(0,10)).filter(Boolean));
+    base.bw=base.bw.filter(x=>!deletedWeights.has(String(x.d||'').slice(0,10)));
     base.programs=mergeByKey(first.programs,second.programs,x=>String(x.id||x.title||x.name||''),x=>Number(x.updatedAt||x.createdAt||0));
     base.remotePlans=mergeByKey(first.remotePlans,second.remotePlans,x=>String(x.id||''),x=>Number(x.version||x.updatedAt||0));
     base.customExercises=mergeByKey(first.customExercises,second.customExercises,x=>String(x.id||x.n||x.name||''),x=>Number(x.updatedAt||x.createdAt||0));

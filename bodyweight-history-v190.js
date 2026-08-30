@@ -16,14 +16,15 @@
   `;
   document.head.appendChild(style);
 
-  function localRows(){return (window.st?.bw||[]).map(x=>({d:String(x.d||'').slice(0,10),v:N(x.w)})).filter(x=>x.d&&x.v!=null)}
+  function deletedDates(){return new Set((window.st?.deletedBodyweights||[]).map(x=>String(x?.d||x||'').slice(0,10)).filter(Boolean))}
+  function localRows(){const deleted=deletedDates();return (window.st?.bw||[]).map(x=>({d:String(x.d||'').slice(0,10),v:N(x.w)})).filter(x=>x.d&&x.v!=null&&!deleted.has(x.d))}
   async function load(){
     if(loading)return;loading=true;
     try{
       let cloudRows=null;
       if(window.cloud?.client&&window.cloud?.user){
         const r=await window.cloud.client.from('bodyweights').select('measure_date,weight_kg').eq('user_id',window.cloud.user.id).order('measure_date',{ascending:true}).limit(1000);
-        if(!r.error)cloudRows=(r.data||[]).map(x=>({d:String(x.measure_date).slice(0,10),v:N(x.weight_kg)})).filter(x=>x.v!=null)
+        if(!r.error){const deleted=deletedDates();cloudRows=(r.data||[]).map(x=>({d:String(x.measure_date).slice(0,10),v:N(x.weight_kg)})).filter(x=>x.v!=null&&!deleted.has(x.d))}
       }
       rows=Array.isArray(cloudRows)?cloudRows:localRows();rows.sort((a,b)=>a.d.localeCompare(b.d));
       if(!selected||!rows.some(x=>x.d===selected))selected=rows.at(-1)?.d||null;
@@ -69,8 +70,8 @@
     if(oldDate!==newDate){const del=await c.from('bodyweights').delete().eq('user_id',uid).eq('measure_date',oldDate);if(del.error)throw del.error}
   }
   async function cloudDelete(date){if(!window.cloud?.client||!window.cloud?.user)return;const r=await window.cloud.client.from('bodyweights').delete().eq('user_id',window.cloud.user.id).eq('measure_date',date);if(r.error)throw r.error}
-  function localSave(oldDate,newDate,w){if(!window.st)return;window.st.bw=Array.isArray(window.st.bw)?window.st.bw:[];window.st.bw=window.st.bw.filter(x=>{const d=String(x.d||'').slice(0,10);return d!==oldDate&&d!==newDate});window.st.bw.push({d:newDate,w});window.st.bw.sort((a,b)=>String(a.d).localeCompare(String(b.d)));try{window.save?.()}catch(_){}}
-  function localDelete(date){if(!window.st)return;window.st.bw=(Array.isArray(window.st.bw)?window.st.bw:[]).filter(x=>String(x.d||'').slice(0,10)!==date);try{window.save?.()}catch(_){}}
+  function localSave(oldDate,newDate,w){if(!window.st)return;const now=Date.now();window.st.bw=Array.isArray(window.st.bw)?window.st.bw:[];window.st.bw=window.st.bw.filter(x=>{const d=String(x.d||'').slice(0,10);return d!==oldDate&&d!==newDate});window.st.bw.push({d:newDate,w,t:now,updatedAt:now});window.st.bw.sort((a,b)=>String(a.d).localeCompare(String(b.d)));window.st.deletedBodyweights=(Array.isArray(window.st.deletedBodyweights)?window.st.deletedBodyweights:[]).filter(x=>{const d=String(x?.d||x||'').slice(0,10);return d!==oldDate&&d!==newDate});try{window.save?.()}catch(_){}}
+  function localDelete(date){if(!window.st)return;const now=Date.now();window.st.bw=(Array.isArray(window.st.bw)?window.st.bw:[]).filter(x=>String(x.d||'').slice(0,10)!==date);const deleted=Array.isArray(window.st.deletedBodyweights)?window.st.deletedBodyweights:[];window.st.deletedBodyweights=deleted.filter(x=>String(x?.d||x||'').slice(0,10)!==date);window.st.deletedBodyweights.push({d:date,at:now});try{window.save?.()}catch(_){}}
   async function refreshSurfaces(){
     try{if(typeof window.homeProgressRefresh==='function')await window.homeProgressRefresh(true)}catch(e){console.warn('home weight refresh',e)}
     try{if(typeof window.statsProgressRefresh==='function')await window.statsProgressRefresh(true)}catch(e){console.warn('stats weight refresh',e)}
@@ -86,8 +87,12 @@
   window.bw190Delete=async date=>{
     const x=rows.find(r=>r.d===date);if(!x)return;
     if(!window.confirm(`Удалить запись ${fmt(x.v)} кг от ${dateLabel(date)}?`))return;
-    try{await cloudDelete(date);localDelete(date);rows=rows.filter(r=>r.d!==date);selected=rows.at(-1)?.d||null;window.__unvrslSelectedBodyweightDate=selected;window.closeModal?.();await refreshSurfaces();window.toast?.('Запись удалена')}
-    catch(e){console.warn(e);window.alert?.('Не удалось удалить запись: '+(e.message||e))}
+    const button=document.querySelector('.bw190-delete');if(button){button.disabled=true;button.textContent='Удаляем…'}
+    let synced=true;localDelete(date);rows=rows.filter(r=>r.d!==date);selected=rows.at(-1)?.d||null;window.__unvrslSelectedBodyweightDate=selected;window.closeModal?.();
+    try{await cloudDelete(date)}catch(e){synced=false;console.warn('bodyweight delete queued',e)}
+    try{await refreshSurfaces();window.toast?.(synced?'Запись удалена':'Запись удалена · синхронизируется позже')}
+    catch(e){console.warn('bodyweight delete refresh',e);window.toast?.('Запись удалена')}
+    finally{if(button?.isConnected){button.disabled=false;button.textContent='Удалить запись'}}
   };
 
   let scheduled=false;

@@ -53,7 +53,8 @@
         c.from('profiles').select('target_weight_kg').eq('id',uid).maybeSingle()
       ]);
       cache.workouts=(wo.data||[]).map(w=>({date:w.workout_date,duration:Math.max(1,Math.round((((w.payload?.ended||0)-(w.payload?.started||0))/60000)||1))}));
-      cache.weights=(bw.data||[]).map(x=>({d:x.measure_date,v:num(x.weight_kg)})).filter(x=>x.v!=null).sort((a,b)=>a.d.localeCompare(b.d));
+      const deleted=new Set((st.deletedBodyweights||[]).map(x=>String(x?.d||x||'').slice(0,10)).filter(Boolean));
+      cache.weights=(bw.data||[]).map(x=>({d:String(x.measure_date).slice(0,10),v:num(x.weight_kg)})).filter(x=>x.v!=null&&!deleted.has(x.d)).sort((a,b)=>a.d.localeCompare(b.d));
       cache.goal=num(pr.data?.target_weight_kg)??num(st.weightGoalKg);
       cache.loaded=true;cache.ts=Date.now();
     }catch(e){console.warn('home stats hydrate',e)}finally{cache.loading=false}

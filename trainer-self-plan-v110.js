@@ -142,7 +142,7 @@
     if(!Object.keys(m).length)return toast('Добавь хотя бы один обхват');
     const q=await c.client.from('body_measurements').upsert({user_id:u,measure_date:d,measurements:m,updated_at:new Date().toISOString()},{onConflict:'user_id,measure_date'});if(q.error)return alert(q.error.message);
     const wr=N(String(document.getElementById('ts110Weight')?.value||'').replace(',','.'));
-    if(wr){await c.client.from('bodyweights').upsert({user_id:u,measure_date:d,weight_kg:+wr.toFixed(1)},{onConflict:'user_id,measure_date'});window.st.bw=A(window.st.bw);const x=window.st.bw.find(z=>z.d===d);if(x)x.w=+wr.toFixed(1);else window.st.bw.push({d,w:+wr.toFixed(1)});window.st.bw.sort((a,b)=>String(a.d).localeCompare(String(b.d)))}
+    if(wr){await c.client.from('bodyweights').upsert({user_id:u,measure_date:d,weight_kg:+wr.toFixed(1)},{onConflict:'user_id,measure_date'});const now=Date.now();window.st.bw=A(window.st.bw);const x=window.st.bw.find(z=>z.d===d);if(x){x.w=+wr.toFixed(1);x.t=now;x.updatedAt=now}else window.st.bw.push({d,w:+wr.toFixed(1),t:now,updatedAt:now});window.st.bw.sort((a,b)=>String(a.d).localeCompare(String(b.d)));window.st.deletedBodyweights=A(window.st.deletedBodyweights).filter(x=>String(x?.d||x||'').slice(0,10)!==d)}
     if(typeof save==='function')save();C.at=0;closeModal();await renderSelf(true);toast('Замеры сохранены');
   };
 
