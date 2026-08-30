@@ -6,8 +6,9 @@
     if(window.__unvrslTrainingEngineV200||attempts>=3)return;
     document.querySelectorAll('script[data-unvrsl-training-engine-v200]').forEach(x=>x.remove());
     const s=document.createElement('script');attempts++;
-    s.src=`training-engine-v200.js?v=208-${attempts}`;
+    s.src=`training-engine-v200.js?v=209-${attempts}`;
     s.async=false;s.dataset.unvrslTrainingEngineV200='1';
+    s.onload=()=>{if(!window.__unvrslTrainingEngineV200)setTimeout(load,250)};
     s.onerror=()=>setTimeout(load,700);
     document.body.appendChild(s)
   }
