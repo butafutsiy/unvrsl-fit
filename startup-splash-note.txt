@@ -1,1 +1,0 @@
-Temporary startup splash asset added 2026-08-30. Loaded via plan-w1 boot cover integration.
