@@ -2,31 +2,24 @@
   if(window.__unvrslBootScreen)return;
   window.__unvrslBootScreen=true;
   const started=performance.now();
-  let bootAccent='#30d158';
-  try{
-    for(const key of ['unvrsl-fit-v3','unvrsl-fit-v2']){
-      const raw=localStorage.getItem(key);if(!raw)continue;
-      const saved=JSON.parse(raw),accent=String(saved?.accent||'').trim();
-      if(/^#[0-9a-f]{6}$/i.test(accent)){bootAccent=accent;break}
-    }
-  }catch(e){}
-  document.documentElement.style.setProperty('--boot-accent',bootAccent);
   const style=document.createElement('style');
   style.id='unvrsl-boot-style';
   style.textContent=`
-    body.unvrsl-booting{overflow:hidden!important;background:#050505!important}
+    body.unvrsl-booting{overflow:hidden!important;background:#000!important}
     body.unvrsl-booting>.app,body.unvrsl-booting>.nav,body.unvrsl-booting>#timer,body.unvrsl-booting>#modal,body.unvrsl-booting>#toast{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
-    #unvrslBoot{position:fixed;inset:0;z-index:10000;background:#050505;display:flex;align-items:center;justify-content:center;transition:opacity .18s ease;pointer-events:auto}
+    #unvrslBoot{position:fixed;inset:0;z-index:2147483647;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .28s ease;pointer-events:auto}
     #unvrslBoot.out{opacity:0;pointer-events:none}
-    #unvrslBoot .boot-inner{display:flex;flex-direction:column;align-items:center;gap:14px;transform:translateY(-2vh)}
-    #unvrslBoot .boot-brand{font:850 34px/1 -apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,sans-serif;letter-spacing:-1.3px;color:#f5f5f7}
-    #unvrslBoot .boot-dot{width:7px;height:7px;border-radius:50%;color:var(--boot-accent,#30d158);background:currentColor;box-shadow:0 0 18px currentColor;animation:unvrslBootPulse 1s ease-in-out infinite alternate}
-    @keyframes unvrslBootPulse{from{opacity:.35;transform:scale(.8)}to{opacity:1;transform:scale(1.15)}}
+    #unvrslBoot .boot-inner{display:flex;flex-direction:column;align-items:center;transform:translateY(-1vh)}
+    #unvrslBoot .boot-brand{font:900 clamp(42px,11vw,68px)/.95 -apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,sans-serif;letter-spacing:-2.2px;color:#f7f7f8;white-space:nowrap}
+    #unvrslBoot .boot-dot{width:16px;height:16px;margin-top:30px;border-radius:50%;background:#b44cff;box-shadow:0 0 18px rgba(180,76,255,.42);animation:unvrslBootPulse 1s ease-in-out infinite alternate}
+    @keyframes unvrslBootPulse{from{opacity:.5;transform:scale(.86)}to{opacity:1;transform:scale(1.08)}}
+    @media (prefers-reduced-motion:reduce){#unvrslBoot .boot-dot{animation:none}#unvrslBoot{transition:none}}
   `;
   document.head.appendChild(style);
   document.body.classList.add('unvrsl-booting');
   const boot=document.createElement('div');
   boot.id='unvrslBoot';
+  boot.setAttribute('aria-hidden','true');
   boot.innerHTML='<div class="boot-inner"><div class="boot-brand">UNVRSL FIT</div><div class="boot-dot"></div></div>';
   document.body.appendChild(boot);
 
@@ -41,15 +34,15 @@
   function release(){
     if(released)return;
     released=true;
-    const wait=Math.max(0,220-(performance.now()-started));
+    const wait=Math.max(0,450-(performance.now()-started));
     setTimeout(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
       document.body.classList.remove('unvrsl-booting');
       boot.classList.add('out');
-      setTimeout(()=>boot.remove(),220);
+      setTimeout(()=>{boot.remove();style.remove()},320);
     })),wait);
   }
   const timer=setInterval(()=>{
-    if(ready()||performance.now()-started>2500){clearInterval(timer);release()}
+    if(ready()||performance.now()-started>3000){clearInterval(timer);release()}
   },40);
   window.addEventListener('unvrsl:ready',()=>{clearInterval(timer);release()},{once:true});
 })();
