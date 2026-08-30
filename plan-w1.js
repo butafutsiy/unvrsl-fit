@@ -33,11 +33,9 @@
   let released=false;
   function ready(){
     return !!(
-      window.__unvrslTrainerDirectUIV3 &&
-      window.__unvrslClientsActionLayout &&
-      window.__unvrslMobileFinalFix &&
-      window.__unvrslHomeStatsV2 &&
-      document.querySelector('#home .home-stats-v2')
+      document.querySelector('.app') &&
+      document.querySelector('.nav') &&
+      document.querySelector('.page.active')
     );
   }
   function release(){
@@ -51,7 +49,7 @@
     })),wait);
   }
   const timer=setInterval(()=>{
-    if(ready()||performance.now()-started>6500){clearInterval(timer);release()}
+    if(ready()||performance.now()-started>2500){clearInterval(timer);release()}
   },40);
   window.addEventListener('unvrsl:ready',()=>{clearInterval(timer);release()},{once:true});
 })();

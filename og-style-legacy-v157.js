@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
   // Web boot cover: keep the legacy/base UI completely hidden until the final visual stack is active.
-  if(!document.getElementById('unvrsl-boot-cover')){
+  if(!window.__unvrslSkipLegacyBootCover&&!document.getElementById('unvrsl-boot-cover')){
     const bs=document.createElement('style');bs.id='unvrsl-boot-cover-style';bs.textContent=`
       #unvrsl-boot-cover{position:fixed;inset:0;z-index:2147483647;background:#000;display:flex;align-items:center;justify-content:center;opacity:1;visibility:visible;transition:opacity .22s ease,visibility 0s linear .22s;pointer-events:auto}
       #unvrsl-boot-cover.ready{opacity:0;visibility:hidden;pointer-events:none}
