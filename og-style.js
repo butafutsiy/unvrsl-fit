@@ -9,6 +9,13 @@
 
   // Keep one visible startup splash until the final UI has actually settled.
   if(!document.getElementById('unvrsl-startup-splash-final')){
+    let splashAccent='#30d158';
+    try{
+      const saved=JSON.parse(localStorage.getItem('unvrsl-fit-v3')||'null');
+      if(saved&&/^#[0-9a-f]{6}$/i.test(saved.accent||''))splashAccent=saved.accent;
+    }catch(e){}
+    const accentGlow=`${splashAccent}66`;
+
     const style=document.createElement('style');
     style.id='unvrsl-startup-splash-final-style';
     style.textContent=`
@@ -16,7 +23,7 @@
       #unvrsl-startup-splash-final.out{opacity:0;visibility:hidden;pointer-events:none}
       #unvrsl-startup-splash-final .u-inner{display:flex;flex-direction:column;align-items:center;transform:translateY(-1vh)}
       #unvrsl-startup-splash-final .u-brand{font:900 clamp(42px,11vw,68px)/.95 -apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,sans-serif;letter-spacing:-2.2px;color:#f7f7f8;white-space:nowrap}
-      #unvrsl-startup-splash-final .u-dot{width:16px;height:16px;margin-top:30px;border-radius:50%;background:#b44cff;box-shadow:0 0 18px rgba(180,76,255,.42);animation:unvrslFinalPulse 1s ease-in-out infinite alternate}
+      #unvrsl-startup-splash-final .u-dot{width:16px;height:16px;margin-top:30px;border-radius:50%;background:${splashAccent};box-shadow:0 0 18px ${accentGlow};animation:unvrslFinalPulse 1s ease-in-out infinite alternate}
       @keyframes unvrslFinalPulse{from{opacity:.5;transform:scale(.86)}to{opacity:1;transform:scale(1.08)}}
       @media (prefers-reduced-motion:reduce){#unvrsl-startup-splash-final .u-dot{animation:none}#unvrsl-startup-splash-final{transition:none}}
     `;
