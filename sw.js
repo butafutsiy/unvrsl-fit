@@ -1,33 +1,35 @@
 const CACHE_PREFIX='unvrsl-fit-';
-const CACHE='unvrsl-fit-v214-weight-delete';
-const ASSETS=['./','./index.html','./app.js','./manifest.webmanifest','./icon.svg','./plan-w1.js','./plan-w2.js','./plan-w3.js','./plan-w4.js','./plan-w5.js','./plan-w6.js','./plan-w7.js','./plan-w8.js','./og-style.js','./og-style-legacy-v157.js','./og-core.js','./og-db.js','./og-detail.js','./og-settings.js','./coach-style.js','./coach-programs.js','./smart-training.js','./frequent-patch.js','./anatome-muscle-map.js','./anatome-muscle-drilldown.js','./anatome-local-v2.js','./muscle-map-full-v176.js','./muscle-drilldown-fix-v181.js','./body-sex-sync-v166.js','./stable-client-profile-v171.js','./training-engine-v200.js','./unified-training-v174.js','./bodyweight-history-v190.js','./client-plan-profile-first-v198.js','./equipment-filter.js','./exercise-library-quality.js','./exercise-library-full.js','./exercise-library-curated.js','./exercise-library-strict.js','./exercise-library-final-rules.js','./exercise-media-mapping.js','./cardio-metric-fixes.js','./active-workout-compact.js','./preview-mobile-fix.js','./finish-integrity-v109.js','./template-programs-v3.js','./template-tempo-wave.js','./program-management-patch.js','./start-program-picker.js','./program-delete-fix.js','./requested-cleanup-v2.js','./program-delete-persistence-v3.js','./workout-template-ux-v2.js','./client-program-picker.js','./popular-programs.js','./female-program-templates.js','./anton-gorkusha-plan.js','./anton-plan-rules.js','./wake-lock.js','./workout-duration.js','./cardio-timer.js','./cardio-exercise-library.js','./rest-timer-v2.js','./advanced-training.js','./profile-stats.js','./premium-ui.js','./stable-ui.js','./mockup-ui.js','./density-ui.js','./mobile-final-fix.js','./sheet-swipe.js','./stats-dashboard-v2.js','./home-stats-v2.js','./stats-cleanup.js','./stats-integrity-v104.js','./client-journal-profile-v107.js','./client-nav-hotfix.js','./clients-action-layout.js','./trainer-self-plan-v110.js','./cloud-config.js','./supabase-loader.js','./cloud.js','./persistence-safety.js','./account-sync.js','./auth-ux.js','./auth-handoff.js','./trainer-style.js','./trainer.js','./trainer-nav-patch.js','./progression.js','./cloud-patch.js','./cloud-programs.js','./app-mode.js','./client-link.js','./auth-password.js','./checkin.js','./checkin-singleton-fix.js','./offline-clients.js','./offline-create-measures.js','./online-progress.js','./client-ui-fix.js','./client-experience-v2.js','./trainer-plan-controls.js','./trainer-client-detail-v2.js','./trainer-tap-fix.js','./trainer-direct-ui.js','./trainer-client-clean-v113.js','./program-builder-restored.js','./program-exercise-rules-v162.js','./program-editor-v161-fix.js','./storage-resilience-v162.js','./readiness-autoregulation-v163.js','./exercise-detail-rules-v156.js','./startup-splash-v156.js'];
+const CACHE='unvrsl-fit-v1.1.0';
+const CORE_ASSETS=[
+  './','./index.html','./manifest.webmanifest','./icon.svg','./cloud-config.js',
+  './plan-w1.js','./plan-w2.js','./plan-w3.js','./plan-w4.js',
+  './plan-w5.js','./plan-w6.js','./plan-w7.js','./plan-w8.js',
+  './v11/app.css','./v11/core.mjs','./v11/store.mjs','./v11/cloud.mjs','./v11/app.mjs'
+];
+
 self.addEventListener('install',event=>{
   self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE).then(cache=>cache.addAll(ASSETS.map(url=>new Request(url,{cache:'reload'}))))
-  )
+  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE_ASSETS.map(url=>new Request(url,{cache:'reload'})))));
 });
 
 self.addEventListener('activate',event=>{
-  event.waitUntil(
-    caches.keys()
-      .then(keys=>Promise.all(keys.filter(key=>key.startsWith(CACHE_PREFIX)&&key!==CACHE).map(key=>caches.delete(key))))
-      .then(()=>self.clients.claim())
-  )
+  event.waitUntil(caches.keys()
+    .then(keys=>Promise.all(keys.filter(key=>key.startsWith(CACHE_PREFIX)&&key!==CACHE).map(key=>caches.delete(key))))
+    .then(()=>self.clients.claim()));
 });
 
-self.addEventListener('message',event=>{
-  if(event.data==='SKIP_WAITING')self.skipWaiting()
-});
+self.addEventListener('message',event=>{if(event.data==='SKIP_WAITING')self.skipWaiting()});
 
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;
-  event.respondWith(
-    fetch(event.request,{cache:'no-store'})
-      .then(response=>{
-        if(response&&response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy))}
-        return response
-      })
-      .catch(()=>caches.match(event.request))
-  )
+  const url=new URL(event.request.url);
+  if(url.origin!==self.location.origin)return;
+  if(event.request.mode==='navigate'){
+    event.respondWith(fetch(event.request,{cache:'no-store'}).catch(()=>caches.match('./index.html')));
+    return;
+  }
+  event.respondWith(caches.match(event.request).then(cached=>cached||fetch(event.request).then(response=>{
+    if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy))}
+    return response;
+  })));
 });
