@@ -24,7 +24,7 @@ const _ruExercisesPage=exercisesPage;
 exercisesPage=function(){_ruExercisesPage();const search=document.getElementById('exSearch');if(search)search.placeholder='Поиск упражнений';const chip=document.querySelector('#exercises .catalog-head .chip');if(chip)chip.textContent='Русский · анимации'};
 const _ruRenderExerciseDetail=renderExerciseDetail;
 renderExerciseDetail=function(ex){_ruRenderExerciseDetail(ex);document.querySelectorAll('.detail-en').forEach(el=>el.remove())};
-function dynamicScript(src){return new Promise(resolve=>{if(document.querySelector(`script[data-dyn="${src}"]`))return resolve();const s=document.createElement('script');s.src=src;s.dataset.dyn=src;s.onload=resolve;s.onerror=resolve;document.body.appendChild(s)})}
+function dynamicScript(src){return new Promise(resolve=>{const key=String(src).replace(/^\.\//,'');if(document.querySelector(`script[data-dyn="${src}"],script[data-dyn="${key}"],script[data-unvrsl-src="${src}"],script[data-unvrsl-src="${key}"]`))return resolve();const s=document.createElement('script');s.src=src;s.dataset.dyn=key;s.onload=resolve;s.onerror=resolve;document.body.appendChild(s)})}
 async function loadCloudModules(){
   if(!window.UNVRSL_CLOUD)await dynamicScript('./cloud-config.js');
   if(!window.supabase?.createClient){await dynamicScript('./supabase-loader.js');if(window.UNVRSL_SUPABASE_READY)try{await window.UNVRSL_SUPABASE_READY}catch(e){}}

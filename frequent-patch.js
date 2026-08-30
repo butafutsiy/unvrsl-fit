@@ -81,7 +81,7 @@ customCatalog=function(){
 };
 
 let cloudModulesLoading=false,cloudModulesLoaded=false;
-function loadExternalScript(src){return new Promise((resolve,reject)=>{if(document.querySelector(`script[data-unvrsl-src="${src}"]`))return resolve();const s=document.createElement('script');s.src=src;s.async=false;s.dataset.unvrslSrc=src;s.onload=resolve;s.onerror=reject;document.body.appendChild(s)})}
+function loadExternalScript(src){return new Promise((resolve,reject)=>{const key=String(src).replace(/^\.\//,'');if(document.querySelector(`script[data-unvrsl-src="${src}"],script[data-unvrsl-src="${key}"],script[data-dyn="${src}"],script[data-dyn="./${key}"]`))return resolve();const s=document.createElement('script');s.src=src;s.async=false;s.dataset.unvrslSrc=key;s.onload=resolve;s.onerror=reject;document.body.appendChild(s)})}
 async function loadCloudModules(){
  if(cloudModulesLoaded||cloudModulesLoading)return;cloudModulesLoading=true;
  try{
