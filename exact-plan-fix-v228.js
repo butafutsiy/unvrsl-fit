@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
-  if(window.__unvrslExactPlanFixV228)return;
-  window.__unvrslExactPlanFixV228=true;
+  if(window.__unvrslExactPlanFixV229)return;
+  window.__unvrslExactPlanFixV229=true;
   const W=window;
   const n=v=>{const x=Number(v);return Number.isFinite(x)?x:0};
   function restore(cur){
@@ -11,10 +11,12 @@
       let hasPlan=false;
       (ex.set||[]).forEach(s=>{
         if(!s||s.ok||s.manualOverride)return;
+        const program=n(s.programW);
         const launch=s.launchWeightCaptured206?n(s.launchW):0;
-        const plan=launch>0?launch:(n(s.programW)||n(s.plannedW)||n(s.baselineW)||n(s.w));
-        s.programW=plan;s.plannedW=plan;s.baselineW=plan;s.w=plan;
-        s.baselineSource=plan>0?'exact_plan':'exact_plan_empty';
+        const plan=program>0?program:(launch>0?launch:(n(s.plannedW)||n(s.baselineW)||n(s.w)));
+        s.plannedW=plan;s.baselineW=plan;s.w=plan;
+        if(program<=0&&plan>0)s.programW=plan;
+        s.baselineSource=plan>0?'exact_program_plan':'exact_plan_empty';
         if(plan>0){hasPlan=true;changed++}
       });
       ex.weightDecision=hasPlan?'program':'calibration';
@@ -28,7 +30,7 @@
   }
   function install(){
     const old=W.readinessUiStartV227;
-    if(typeof old!=='function'||old.__exactPlanV228)return false;
+    if(typeof old!=='function'||old.__exactPlanV229)return false;
     const wrapped=function(usePlan){
       if(!usePlan)return old.apply(this,arguments);
       const before=W.st?.current||null;
@@ -37,14 +39,15 @@
       const timer=setInterval(()=>{
         tries++;
         const cur=W.st?.current;
-        const ready=cur?.id&&cur.trainingReadinessDone&&(cur.trainingEngineRevision||tries>20);
+        const isNew=!!cur?.id&&cur!==before;
+        const ready=isNew&&cur.trainingReadinessDone&&(cur.trainingEngineRevision||tries>20);
         if(ready){
           clearInterval(timer);
-          setTimeout(()=>{const ok=restore(cur);W.toast?.(ok?'Точные веса из плана':'План без автокоррекции')},80);
+          setTimeout(()=>{const ok=restore(cur);W.toast?.(ok?'Точные веса из программы':'План без автокоррекции')},80);
         }else if(tries>60)clearInterval(timer);
       },80);
     };
-    wrapped.__exactPlanV228=true;wrapped.__exactPlanBase=old;
+    wrapped.__exactPlanV229=true;wrapped.__exactPlanBase=old;
     W.readinessUiStartV227=wrapped;
     try{readinessUiStartV227=wrapped}catch(_){ }
     return true;
