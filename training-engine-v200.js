@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
  if(window.__unvrslTrainingEngineV200)return;window.__unvrslTrainingEngineV200=true;
- const W=window,REV=207;
+ const W=window,REV=208;
  const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
  const num=v=>N(v)??0,mean=a=>{a=(a||[]).filter(Number.isFinite);return a.length?a.reduce((s,x)=>s+x,0)/a.length:null},median=a=>{a=(a||[]).filter(Number.isFinite).sort((x,y)=>x-y);if(!a.length)return null;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2},clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const base=n=>{try{return W.baseExerciseName?W.baseExerciseName(n):String(n||'').replace(/\s+—\s+.*$/,'').trim()}catch(_){return String(n||'')}};
@@ -21,11 +21,12 @@
  #start .smart-suggest,#start .u177-rec,#start .wr180,#start .wr185,#start .adaptive-choice-btn,#start .adaptive-load-chip,#start .unvrsl-auto-load{display:none!important}
  `;document.head.appendChild(style);
  function disableLegacyReadiness(){if(typeof W.advAskReadiness!=='function'||W.advAskReadiness.__te205)return;const bypass=(fn,args)=>typeof fn==='function'?fn.apply(W,Array.isArray(args)?args:[]):undefined;bypass.__te205=true;W.advAskReadiness=bypass;try{advAskReadiness=bypass}catch(_){}}
- function lockLegacy(cur){if(!cur)return;cur.unvrslAdaptive174Applied=true;cur.adaptiveEffortV2Applied=true;cur.adaptiveDecision='engine207';cur.adaptivePrompted=true;delete cur.trainingWeightChoice;delete cur.engine196Prepared;delete cur.engine196FlowShown;delete cur.weightsPrepared194}
+ function lockLegacy(cur){if(!cur)return;cur.unvrslAdaptive174Applied=true;cur.adaptiveEffortV2Applied=true;cur.adaptiveDecision='engine208';cur.adaptivePrompted=true;delete cur.trainingWeightChoice;delete cur.engine196Prepared;delete cur.engine196FlowShown;delete cur.weightsPrepared194}
  function captureLaunchWeights(cur){if(!cur||cur.launchWeightsCaptured206)return;for(const ex of cur.ex||[]){for(const s of ex.set||[]){s.launchW=N(s.w)??0;s.launchWeightCaptured206=true}}cur.launchWeightsCaptured206=true;lockLegacy(cur)}
  disableLegacyReadiness();
  function program(cur){try{if(cur?.programId&&W.programById){const p=W.programById(cur.programId);if(p)return p}}catch(_){}return(W.st?.programs||[]).find(p=>String(p?.cloudPlanId||'')===String(cur?.planId||''))||(W.st?.programs||[]).find(p=>String(p?.name||'')===String(cur?.programName||''))||null}
- function source(ex,cur){const p=program(cur),week=p?.weeks?.[Math.max(0,(N(cur?.w)||1)-1)];if(!week)return null;let days=week.days||[];const exact=days.find(d=>String(d?.name||'')===String(cur?.c||''));if(exact)days=[exact,...days.filter(d=>d!==exact)];for(const d of days){const s=(d.ex||[]).find(x=>same({n:x.n,sourceId:x.sourceId},ex.n,ex.sourceId));if(s)return s}return null}
+ function builtInSource(ex,cur){let r=null;try{if(typeof rmap!=='undefined'&&rmap?.get)r=rmap.get(`${cur?.w}-${cur?.c}`)}catch(_){}if(!r)r=(W.UNVRSL_ROUTINES||[]).find(x=>Number(x?.w)===Number(cur?.w)&&String(x?.c||'')===String(cur?.c||''));const e=(r?.e||[]).find(x=>same({n:x.n,sourceId:x.sourceId},ex.n,ex.sourceId));if(!e)return null;if(Array.isArray(e.sets))return e;const count=Math.max(1,Number(e.s)||1);return{...e,method:e.method||(/UNVRSL/i.test(e.n||'')?'UNVRSL':/FST-7/i.test(e.n||'')?'FST-7':/SLDR/i.test(e.n||'')?'SLDR':/\bDS\b/i.test(e.n||'')?'DS':'STANDARD'),sets:Array.from({length:count},()=>({w:num(e.w),r:num(e.r)}))}}
+ function source(ex,cur){const p=program(cur);if(!p)return builtInSource(ex,cur);const week=p?.weeks?.[Math.max(0,(N(cur?.w)||1)-1)];if(!week)return null;let days=week.days||[];const exact=days.find(d=>String(d?.name||'')===String(cur?.c||''));if(exact)days=[exact,...days.filter(d=>d!==exact)];for(const d of days){const s=(d.ex||[]).find(x=>same({n:x.n,sourceId:x.sourceId},ex.n,ex.sourceId));if(s)return s}return null}
  function modeFromSource(src){return(src?.sets||[]).some(x=>num(x?.w)>0)?'prescribed':'adaptive'}
  function effort(x){let rpe=N(x?.rpe),rir=N(x?.rir);if(rir==null&&rpe!=null)rir=10-rpe;if(rpe==null&&rir!=null)rpe=10-rir;return rpe==null?null:{rpe,rir:clamp(rir,0,10)}}
  function rowsFrom(s,ex){const out=[];(s?.ex||[]).forEach(e=>{if(!same(e,ex.n,ex.sourceId))return;(e.set||[]).forEach(x=>{const actual=effort(x),w=N(x?.w),r=N(x?.r),fallbackRpe=target(e,x,s),ef=actual||{rpe:fallbackRpe,rir:clamp(10-fallbackRpe,0,10)};if(x?.ok&&w>0&&r>0)out.push({w,r,rpe:ef.rpe,rir:ef.rir,date:s.date||'',estimatedRpe:!actual})})});return out}

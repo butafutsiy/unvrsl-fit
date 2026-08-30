@@ -15,7 +15,7 @@ function profileSexLabel(v){return v==='male'?'Мужской':v==='female'?'Ж�
 function profileE1rm(w,r){w=+w||0;r=+r||0;if(!w||!r)return 0;if(typeof advE1rm==='function')return advE1rm(w,r);return r===1?w:w*(1+r/30)}
 
 function profileExerciseSeries(){
- const map=new Map(),sessions=[...(st.sessions||[])].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||(+a.started||0)-(+b.started||0));
+ const merged=typeof window.unvrslStatsSessions208==='function'?window.unvrslStatsSessions208():(st.sessions||[]),map=new Map(),sessions=[...(merged||[])].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||(+a.started||0)-(+b.started||0));
  sessions.forEach(s=>{
   const perSession=new Map();
   (s.ex||[]).forEach(e=>{

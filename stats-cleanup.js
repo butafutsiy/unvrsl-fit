@@ -7,7 +7,6 @@
   style.id='stats-cleanup-style';
   style.textContent=`
     #stats.stats-v2 .sd2-head{display:block;margin-bottom:20px}
-    #stats.stats-v2 .sd2-history{display:none!important}
     #stats.stats-v2 .sd2-metric-label{gap:9px;align-items:center}
     #stats.stats-v2 .sd2-metric-label .stats-metric-icon{width:24px;height:24px;display:grid;place-items:center;flex:0 0 24px;border-radius:8px}
     #stats.stats-v2 .sd2-metric-label .stats-metric-icon svg{width:17px;height:17px;display:block;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -20,7 +19,6 @@
     #stats.stats-v2 .stats-muscle-week{margin-top:8px}
     #stats.stats-v2 .stats-muscle-week .section{margin-top:20px}
     #stats.stats-v2 .stats-muscle-week-card{overflow:hidden}
-    #stats .card.stats-last-session-v104{display:none!important}
   `;
   document.head.appendChild(style);
 
@@ -57,7 +55,7 @@
 
   function patchStats(){
     const root=document.getElementById('stats');if(!root||!root.classList.contains('stats-v2'))return;
-    root.querySelectorAll('.sd2-history').forEach(x=>x.remove());removeMovedCards(root);decorateMetrics(root);ensureMuscleMap(root);
+    removeMovedCards(root);decorateMetrics(root);ensureMuscleMap(root);
   }
   function schedulePatch(){[0,80,260,700,1400].forEach(t=>setTimeout(patchStats,t));}
 

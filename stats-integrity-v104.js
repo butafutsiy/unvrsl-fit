@@ -42,12 +42,8 @@
   const weekTonnage=()=>last7().reduce((a,s)=>a+sessionTonnage(s),0);
   const fmtKg=n=>`${Math.round(Number(n)||0).toLocaleString('ru-RU')} кг`;
 
-  // Remove accidental zero-set sessions created today. They are not completed workouts.
+  // Never delete workout records automatically. Incomplete records may still be needed for recovery.
   function cleanTodayPhantoms(){
-    if(!Array.isArray(st?.sessions))return false;
-    const d=today(),before=st.sessions.length;
-    st.sessions=st.sessions.filter(s=>!(sessionDate(s)===d&&completedCount(s)===0));
-    if(st.sessions.length!==before){try{save()}catch(e){};return true}
     return false;
   }
 
