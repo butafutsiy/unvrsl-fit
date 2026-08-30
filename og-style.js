@@ -71,6 +71,31 @@
     setTimeout(release,8000);
   }
 
+  // All legacy purple accents follow the user's selected accent color.
+  if(!document.getElementById('unvrsl-user-accent-bridge')){
+    const accentStyle=document.createElement('style');
+    accentStyle.id='unvrsl-user-accent-bridge';
+    accentStyle.textContent=`
+      :root{--purple:var(--green)!important}
+      .sd2-write,.bw190-all,.bw190-chip.on b,.bw190-point-info b{color:var(--green)!important}
+      .bw190-chip.on{border-color:var(--green)!important;background:color-mix(in srgb,var(--green) 12%,transparent)!important}
+      .bw190-point-info{background:color-mix(in srgb,var(--green) 10%,transparent)!important;border-color:color-mix(in srgb,var(--green) 28%,transparent)!important}
+      .sd2-chart .bw190-point{fill:var(--green)!important}
+      .sd2-chart .bw190-point:hover,.sd2-chart .bw190-point:focus,.sd2-chart .bw190-point.is-selected{stroke:color-mix(in srgb,var(--green) 38%,transparent)!important}
+      .sd2-chart polyline{stroke:var(--green)!important}
+      .sd2-chart polygon{fill:color-mix(in srgb,var(--green) 10%,transparent)!important}
+      .sd2-cell.l1{background:color-mix(in srgb,var(--green) 28%,#2c2c31)!important}
+      .sd2-cell.l2{background:color-mix(in srgb,var(--green) 46%,#2c2c31)!important}
+      .sd2-cell.l3{background:color-mix(in srgb,var(--green) 68%,#2c2c31)!important}
+      .sd2-cell.l4{background:var(--green)!important}
+      .sd2-legend i:nth-of-type(2){background:color-mix(in srgb,var(--green) 28%,#2c2c31)!important}
+      .sd2-legend i:nth-of-type(3){background:color-mix(in srgb,var(--green) 46%,#2c2c31)!important}
+      .sd2-legend i:nth-of-type(4){background:color-mix(in srgb,var(--green) 68%,#2c2c31)!important}
+      .sd2-legend i:nth-of-type(5){background:var(--green)!important}
+    `;
+    document.head.appendChild(accentStyle);
+  }
+
   // Preserve the legacy OG visual styles without creating a second loading cover.
   window.__unvrslSkipLegacyBootCover=true;
 
