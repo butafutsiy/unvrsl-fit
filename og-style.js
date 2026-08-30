@@ -7,7 +7,7 @@
   document.getElementById('unvrsl-startup-splash-v156-style')?.remove();
   document.getElementById('unvrsl-boot-cover')?.remove();
 
-  // Keep one visible startup splash while the final UI finishes loading.
+  // Keep one visible startup splash until the final UI has actually settled.
   if(!document.getElementById('unvrsl-startup-splash-final')){
     const style=document.createElement('style');
     style.id='unvrsl-startup-splash-final-style';
@@ -29,18 +29,39 @@
 
     const started=performance.now();
     let released=false;
+    let quietTimer=0;
+    let loadDone=document.readyState==='complete';
+    let fontsDone=!document.fonts;
+
     const release=()=>{
       if(released)return;
       released=true;
-      const wait=Math.max(0,1100-(performance.now()-started));
-      setTimeout(()=>{
+      clearTimeout(quietTimer);
+      observer.disconnect();
+      const wait=Math.max(0,900-(performance.now()-started));
+      setTimeout(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
         splash.classList.add('out');
         setTimeout(()=>{splash.remove();style.remove()},320);
-      },wait);
+      })),wait);
     };
-    window.addEventListener('load',release,{once:true});
-    window.addEventListener('unvrsl:ready',release,{once:true});
-    setTimeout(release,2500);
+
+    const maybeRelease=()=>{
+      if(released||!loadDone||!fontsDone)return;
+      clearTimeout(quietTimer);
+      quietTimer=setTimeout(release,700);
+    };
+
+    const observer=new MutationObserver(()=>maybeRelease());
+    observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true});
+
+    if(!loadDone)window.addEventListener('load',()=>{loadDone=true;maybeRelease()},{once:true});
+    if(document.fonts){
+      document.fonts.ready.catch(()=>{}).then(()=>{fontsDone=true;maybeRelease()});
+    }
+    maybeRelease();
+
+    // Emergency fallback only: never leave the app blocked forever.
+    setTimeout(release,8000);
   }
 
   // Preserve the legacy OG visual styles without creating a second loading cover.
