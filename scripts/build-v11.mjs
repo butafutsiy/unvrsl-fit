@@ -14,7 +14,9 @@ for(const file of files)await cp(resolve(root,file),resolve(output,file));
 await cp(resolve(root,'v11'),resolve(output,'v11'),{recursive:true});
 
 const index=await readFile(resolve(output,'index.html'),'utf8');
-const required=['v11/app.css','v11/app.mjs','plan-w1.js','plan-w8.js','sw.js'];
-for(const asset of required)if(!index.includes(asset)&&asset!=='sw.js')throw new Error(`index.html does not reference ${asset}`);
-await writeFile(resolve(output,'VERSION'),'1.1.0\n');
+const required=['v11/app.css','v11/app.mjs','plan-w1.js','plan-w8.js'];
+for(const asset of required)if(!index.includes(asset))throw new Error(`index.html does not reference ${asset}`);
+const appSource=await readFile(resolve(output,'v11/app.mjs'),'utf8');
+if(!appSource.includes("./sergey-plan.mjs"))throw new Error('app.mjs does not import the Sergey plan module');
+await writeFile(resolve(output,'VERSION'),'1.1.1\n');
 console.log(`Built ${output} with only v1.1 runtime assets`);

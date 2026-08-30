@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   applyRecommendation,createWorkout,emptyState,exerciseRecommendation,mergeStates,
-  migrateLegacy,muscleLoad,readinessAdjustment,workoutWeightHistory
+  migrateLegacy,muscleLoad,readinessAdjustment,replaceProgramExercise,workoutWeightHistory
 } from '../v11/core.mjs';
+import {createSergeyPlan,ensureSergeyPlan} from '../v11/sergey-plan.mjs';
 
 function completedWorkout({id='previous',date='2026-08-29',name='Жим лёжа',sets=[],endedAt=1000}={}){
   return {
@@ -112,4 +113,32 @@ test('deleted workout cannot return during merge',()=>{
   const remote=emptyState(100);
   remote.workouts=[stale];
   assert.deepEqual(mergeStates(local,remote).workouts,[]);
+});
+
+test('deleted measurements cannot return during cloud merge',()=>{
+  const local=emptyState(200);
+  local.deletedMeasurements=[{date:'2026-08-29',deletedAt:200}];
+  const remote=emptyState(100);
+  remote.measurements=[{id:'measurement-2026-08-29',date:'2026-08-29',waist:82,updatedAt:100}];
+  assert.deepEqual(mergeStates(local,remote).measurements,[]);
+});
+
+test('Sergey plan is seeded once with eight weeks and a lower-body day',()=>{
+  const state=emptyState(100);
+  assert.equal(ensureSergeyPlan(state,100),true);
+  assert.equal(ensureSergeyPlan(state,200),false);
+  assert.equal(state.programs.length,1);
+  const plan=createSergeyPlan(100);
+  assert.equal(plan.weeks.length,8);
+  assert.ok(plan.weeks.every(week=>week.days.some(day=>/Ноги/.test(day.name))));
+});
+
+test('exercise replacement preserves its prescription',()=>{
+  const program=createSergeyPlan(100),day=program.weeks[0].days[0],before=structuredClone(day.ex[0]);
+  assert.equal(replaceProgramExercise(program,0,day.id,0,{name:'Жим в Смите'}),true);
+  assert.equal(day.ex[0].n,'Жим в Смите');
+  assert.deepEqual(day.ex[0].sets,before.sets);
+  assert.equal(day.ex[0].rpe,before.rpe);
+  assert.equal(day.ex[0].tempo,before.tempo);
+  assert.equal(day.ex[0].rest,before.rest);
 });

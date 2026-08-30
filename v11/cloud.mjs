@@ -58,17 +58,20 @@ export async function initCloud(){
 
 async function fetchStructuredState(){
   if(!cloud.user)return {};
-  const [workoutsResult,weightsResult,assignmentsResult]=await Promise.all([
+  const [workoutsResult,weightsResult,measurementsResult,assignmentsResult]=await Promise.all([
     cloud.client.from('workouts').select('external_id,payload,updated_at').eq('user_id',cloud.user.id),
     cloud.client.from('bodyweights').select('measure_date,weight_kg,created_at').eq('user_id',cloud.user.id),
+    cloud.client.from('body_measurements').select('measure_date,measurements,updated_at').eq('user_id',cloud.user.id),
     cloud.client.from('plan_assignments').select('plan_id,trainer_id,version,snapshot,status,updated_at').eq('client_id',cloud.user.id).eq('status','active')
   ]);
   if(workoutsResult.error)throw workoutsResult.error;
   if(weightsResult.error)throw weightsResult.error;
+  if(measurementsResult.error)throw measurementsResult.error;
   if(assignmentsResult.error)throw assignmentsResult.error;
   return {
     workouts:(workoutsResult.data||[]).map(row=>normalizeWorkout(row.payload||{id:row.external_id,updatedAt:Date.parse(row.updated_at||0)})),
     bodyweights:(weightsResult.data||[]).map(row=>({date:row.measure_date,value:Number(row.weight_kg),updatedAt:Date.parse(row.created_at||0)||0})),
+    measurements:(measurementsResult.data||[]).map(row=>({id:`measurement-${row.measure_date}`,date:row.measure_date,...(row.measurements||{}),updatedAt:Date.parse(row.updated_at||0)||0})),
     assignedPrograms:(assignmentsResult.data||[]).map(row=>({id:row.plan_id,trainerId:row.trainer_id,version:row.version,snapshot:row.snapshot,status:row.status,updatedAt:Date.parse(row.updated_at||0)||0}))
   };
 }
@@ -106,6 +109,22 @@ async function pushStructuredState(state){
   }));
   if(weightRows.length){
     const written=await cloud.client.from('bodyweights').upsert(weightRows,{onConflict:'user_id,measure_date'});
+    if(written.error)throw written.error;
+  }
+  const deletedMeasurementDates=[...new Set((state.deletedMeasurements||[]).map(item=>String(item.date||item.d||item).slice(0,10)).filter(Boolean))];
+  if(deletedMeasurementDates.length){
+    const deleted=await cloud.client.from('body_measurements').delete().eq('user_id',cloud.user.id).in('measure_date',deletedMeasurementDates);
+    if(deleted.error)throw deleted.error;
+  }
+  const blockedMeasurements=new Set(deletedMeasurementDates);
+  const measurementRows=(state.measurements||[]).filter(item=>!blockedMeasurements.has(String(item.date||item.d||'').slice(0,10))).map(item=>({
+    user_id:cloud.user.id,
+    measure_date:String(item.date||item.d).slice(0,10),
+    measurements:Object.fromEntries(['chest','waist','abdomen','hips','thigh','arm','calf'].map(key=>[key,item[key]]).filter(([,value])=>Number(value)>0)),
+    updated_at:new Date(item.updatedAt||Date.now()).toISOString()
+  })).filter(item=>item.measure_date);
+  if(measurementRows.length){
+    const written=await cloud.client.from('body_measurements').upsert(measurementRows,{onConflict:'user_id,measure_date'});
     if(written.error)throw written.error;
   }
 }
@@ -202,6 +221,82 @@ export async function loadTrainerClients(){
   if(profiles.error)throw profiles.error;
   const byId=new Map((profiles.data||[]).map(profile=>[profile.id,profile]));
   return (relations.data||[]).map(row=>({...row,profiles:byId.get(row.client_id)||null}));
+}
+
+export async function loadTrainerClient(clientId){
+  if(!cloud.client||!cloud.user||cloud.profile?.role!=='trainer')throw new Error('Нужен аккаунт тренера');
+  const [profile,workouts,weights,measurements,assignments]=await Promise.all([
+    cloud.client.from('profiles').select('id,display_name,avatar_url').eq('id',clientId).maybeSingle(),
+    cloud.client.from('workouts').select('external_id,workout_date,avg_rpe,completed_sets,total_sets,payload').eq('user_id',clientId).order('workout_date',{ascending:false}).limit(100),
+    cloud.client.from('bodyweights').select('measure_date,weight_kg').eq('user_id',clientId).order('measure_date',{ascending:false}).limit(100),
+    cloud.client.from('body_measurements').select('measure_date,measurements').eq('user_id',clientId).order('measure_date',{ascending:false}).limit(100),
+    cloud.client.from('plan_assignments').select('plan_id,version,status,assigned_at,snapshot,plans(title)').eq('trainer_id',cloud.user.id).eq('client_id',clientId).eq('status','active').order('assigned_at',{ascending:false})
+  ]);
+  for(const result of [profile,workouts,weights,measurements,assignments])if(result.error)throw result.error;
+  return {profile:profile.data,workouts:workouts.data||[],weights:weights.data||[],measurements:measurements.data||[],assignments:assignments.data||[]};
+}
+
+export async function revokeClientPlan(clientId,planId){
+  if(!cloud.client||!cloud.user||cloud.profile?.role!=='trainer')throw new Error('Нужен аккаунт тренера');
+  const {error}=await cloud.client.from('plan_assignments').update({status:'revoked',updated_at:new Date().toISOString()}).eq('trainer_id',cloud.user.id).eq('client_id',clientId).eq('plan_id',planId).eq('status','active');
+  if(error)throw error;
+}
+
+export async function loadTrainerPlan(planId){
+  if(!cloud.client||!cloud.user||cloud.profile?.role!=='trainer')throw new Error('Нужен аккаунт тренера');
+  const [plan,uses]=await Promise.all([
+    cloud.client.from('plans').select('id,title,version,snapshot').eq('id',planId).eq('trainer_id',cloud.user.id).maybeSingle(),
+    cloud.client.from('plan_assignments').select('client_id').eq('trainer_id',cloud.user.id).eq('plan_id',planId).eq('status','active')
+  ]);
+  if(plan.error)throw plan.error;
+  if(uses.error)throw uses.error;
+  return {plan:plan.data,assignmentCount:(uses.data||[]).length};
+}
+
+function programSnapshot(program){
+  const clean=JSON.parse(JSON.stringify(program));
+  for(const key of ['id','cloudPlanId','cloudVersion','trainerId','pendingCloudUpdate'])delete clean[key];
+  return {kind:'coach-program',schema:1,program:clean};
+}
+
+export async function publishProgram(program){
+  if(!cloud.client||!cloud.user||cloud.profile?.role!=='trainer')throw new Error('Нужен аккаунт тренера');
+  const now=new Date().toISOString();
+  const snapshot=programSnapshot(program);
+  if(!program.cloudPlanId){
+    const created=await cloud.client.from('plans').insert({trainer_id:cloud.user.id,title:program.name||'Программа',version:1,snapshot}).select('id,version').single();
+    if(created.error)throw created.error;
+    program.cloudPlanId=created.data.id;
+    program.cloudVersion=created.data.version||1;
+    const history=await cloud.client.from('plan_versions').insert({plan_id:program.cloudPlanId,trainer_id:cloud.user.id,version:program.cloudVersion,snapshot});
+    if(history.error)throw history.error;
+    return program.cloudVersion;
+  }
+  const current=await cloud.client.from('plans').select('version,title,snapshot').eq('id',program.cloudPlanId).eq('trainer_id',cloud.user.id).maybeSingle();
+  if(current.error)throw current.error;
+  if(current.data&&current.data.title===(program.name||'Программа')&&JSON.stringify(current.data.snapshot||{})===JSON.stringify(snapshot)){
+    program.cloudVersion=Number(current.data.version)||1;
+    return program.cloudVersion;
+  }
+  const version=Math.max(Number(program.cloudVersion)||0,Number(current.data?.version)||0)+1;
+  const updated=await cloud.client.from('plans').update({title:program.name||'Программа',version,snapshot,updated_at:now}).eq('id',program.cloudPlanId).eq('trainer_id',cloud.user.id);
+  if(updated.error)throw updated.error;
+  const history=await cloud.client.from('plan_versions').insert({plan_id:program.cloudPlanId,trainer_id:cloud.user.id,version,snapshot});
+  if(history.error)throw history.error;
+  const assignments=await cloud.client.from('plan_assignments').update({version,snapshot,updated_at:now}).eq('plan_id',program.cloudPlanId).eq('trainer_id',cloud.user.id).eq('status','active');
+  if(assignments.error)throw assignments.error;
+  program.cloudVersion=version;
+  return version;
+}
+
+export async function assignProgram(clientId,program){
+  const version=await publishProgram(program);
+  const snapshot=programSnapshot(program);
+  const {error}=await cloud.client.from('plan_assignments').upsert({
+    plan_id:program.cloudPlanId,trainer_id:cloud.user.id,client_id:clientId,version,snapshot,status:'active',updated_at:new Date().toISOString()
+  },{onConflict:'plan_id,client_id'});
+  if(error)throw error;
+  return version;
 }
 
 window.addEventListener('unvrsl:saved',scheduleCloudSync);

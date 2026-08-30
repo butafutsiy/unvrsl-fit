@@ -1,9 +1,13 @@
 import {
   adjustedWeight,applyPlanWeight,applyRecommendation,canonicalExerciseName,createWorkout,
-  isoDate,learnFromHistory,muscleLoad,readinessAdjustment,workoutWeightHistory
+  isoDate,learnFromHistory,muscleLoad,readinessAdjustment,replaceProgramExercise,workoutWeightHistory
 } from './core.mjs';
 import {exportBackup,getState,importBackup,loadState,persistNow,subscribe,updateState} from './store.mjs';
-import {cloud,initCloud,loadTrainerClients,signIn,signOut,syncNow,updateProfile} from './cloud.mjs';
+import {
+  assignProgram,cloud,initCloud,loadTrainerClient,loadTrainerClients,loadTrainerPlan,publishProgram,revokeClientPlan,
+  signIn,signOut,syncNow,updateProfile
+} from './cloud.mjs';
+import {ensureSergeyPlan} from './sergey-plan.mjs';
 
 const RPE={1:7,2:8,3:8.5,4:6.5,5:8.5,6:6.5,7:9,8:9};
 const BASE_REST={1:150,2:150,3:120,4:75,5:150,6:75,7:210,8:300};
@@ -24,6 +28,8 @@ let statsExercise='';
 let modalCleanup=null;
 let toastTimer=null;
 let trainerClients=[];
+let trainerClientState=null;
+let programUi={programId:null,week:0};
 
 function prepareRoutine(source){
   const routine=JSON.parse(JSON.stringify(source));
@@ -118,7 +124,7 @@ function renderPlan(){
     <div class="profile-tabs"><button data-plan-tab="profile">Профиль и замеры</button><button class="active" data-plan-tab="program">Программа</button></div>
     <div class="weekbar">${Array.from({length:8},(_,index)=>index+1).map(value=>`<button class="week ${value===week?'active':''}" data-week="${value}">W${value}</button>`).join('')}</div>
     <div class="card"><div class="row between"><div><div class="title">Неделя ${week}</div><div class="subtitle">${weekType(week)}</div></div><span class="chip accent">RPE ${RPE[week]}</span></div></div>
-    ${routines.filter(routine=>routine.w===week).map(routine=>routineCard(routine)).join('')}
+    ${(state.profile.role==='client'&&cloud.user)?'':routines.filter(routine=>routine.w===week).map(routine=>routineCard(routine)).join('')}
     ${programCards(state,week)}`;
 }
 
@@ -140,16 +146,18 @@ function routineCard(routine){
 
 function programCards(state,week){
   const all=availablePrograms(state);
-  if(!all.length)return '';
-  return `<div class="eyebrow">Другие программы</div>${all.map((program,programIndex)=>{const days=program.weeks?.[week-1]?.days||program.routines.filter(item=>Number(item.w)===Number(week));return `<div class="card"><div class="title">${esc(program.name)}</div>${program.trainer?`<div class="subtitle">Тренер: ${esc(program.trainer)}</div>`:''}${days.map((day,dayIndex)=>`<div class="history-line row between"><div><b>${esc(day.name||day.t||day.c||`День ${dayIndex+1}`)}</b><div class="muted small">${day.ex?.length||day.e?.length||0} упражнений</div></div><button class="btn tiny primary" data-action="custom-routine" data-program="${programIndex}" data-day="${dayIndex}">Старт</button></div>`).join('')||'<div class="empty">На этой неделе тренировок нет.</div>'}</div>`}).join('')}`;
+  const create=state.profile.role==='trainer'?'<button class="btn primary full" data-action="create-program">＋ Новая программа</button>':'';
+  if(!all.length)return `<div class="card empty">${cloud.user&&state.profile.role==='client'?'План пока не назначен. Здесь появится программа тренера.':'Программ пока нет.'}</div>${create}`;
+  return `<div class="eyebrow">${state.profile.role==='client'?'Моя программа':'Мои программы'}</div>${all.map((program,programIndex)=>{const days=program.weeks?.[week-1]?.days||program.routines.filter(item=>Number(item.w)===Number(week));return `<div class="card"><div class="row between"><div><div class="title">${esc(program.name)}</div>${program.trainer?`<div class="subtitle">Назначено тренером${program.version?` · v${program.version}`:''}</div>`:''}</div>${program.editable?`<button class="btn tiny" data-action="edit-program" data-program-id="${esc(program.id)}">Открыть</button>`:''}</div>${days.map((day,dayIndex)=>`<div class="history-line row between"><div><b>${esc(day.name||day.t||day.c||`День ${dayIndex+1}`)}</b><div class="muted small">${day.ex?.length||day.e?.length||0} упражнений</div></div><button class="btn tiny primary" data-action="custom-routine" data-program="${programIndex}" data-day="${dayIndex}">Старт</button></div>`).join('')||'<div class="empty">На этой неделе тренировок нет.</div>'}</div>`}).join('')}${create}`;
 }
 
 function availablePrograms(state){
   const assigned=state.assignedPrograms.map(item=>{
     const snapshot=item.snapshot?.program||item.snapshot||item;
-    return {name:item.title||snapshot.name||'Назначенная программа',trainer:item.trainer||'',weeks:snapshot.weeks||[],routines:snapshot.routines||[]};
+    return {id:`assigned-${item.id||item.plan_id}`,name:item.title||snapshot.name||'Назначенная программа',trainer:item.trainer||item.trainerId||'Тренер',version:item.version,weeks:snapshot.weeks||[],routines:snapshot.routines||[],editable:false};
   });
-  const own=state.programs.map(item=>({name:item.name||'Моя программа',trainer:'',weeks:item.weeks||[],routines:item.routines||[]}));
+  if(state.profile.role==='client'&&cloud.user)return assigned;
+  const own=state.programs.map(item=>({id:item.id,name:item.name||'Моя программа',trainer:'',weeks:item.weeks||[],routines:item.routines||[],editable:state.profile.role==='trainer'}));
   return [...assigned,...own];
 }
 
@@ -215,7 +223,7 @@ function renderStats(){
 function renderProfile(){
   const state=getState();
   const cloudLabel=cloud.user?cloud.profile?.display_name||cloud.user.email:'Вход не выполнен';
-  const clients=state.profile.role==='trainer'?`<div class="eyebrow">Клиенты</div>${trainerClients.map(row=>`<div class="card"><b>${esc(row.profiles?.display_name||row.client_id)}</b><div class="subtitle">${esc(row.status||'active')}</div></div>`).join('')||'<div class="card empty">Клиенты появятся после синхронизации.</div>'}`:'';
+  const clients=state.profile.role==='trainer'?`<div class="eyebrow">Клиенты</div>${trainerClients.map(row=>`<button class="card full" data-action="trainer-client" data-client-id="${esc(row.client_id)}"><div class="row between"><div style="text-align:left"><b>${esc(row.profiles?.display_name||row.client_id)}</b><div class="subtitle">Тренировки, замеры и программы</div></div><span>›</span></div></button>`).join('')||'<div class="card empty">Клиенты появятся после синхронизации.</div>'}`:'';
   return `${profileMeasurementsCard(state)}<div class="card"><div class="title">Аккаунт</div><div class="subtitle">${esc(cloudLabel)}</div><div class="stack" style="margin-top:15px">${cloud.user?`<button class="btn primary full" data-action="cloud-sync">${cloud.syncing?'Синхронизация…':'Синхронизировать'}</button><button class="btn danger full" data-action="sign-out">Выйти</button>`:'<button class="btn primary full" data-action="sign-in">Войти по почте</button>'}</div></div>${clients}`;
 }
 
@@ -235,7 +243,12 @@ function chooseWorkout(){
 }
 
 function pickerList(week){
-  return routines.filter(routine=>routine.w===Number(week)).map(routine=>`<button class="card routine full" data-action="routine" data-routine="${routine.w}:${esc(routine.c)}"><div style="text-align:left"><h3>${esc(routine.c)} · ${esc(routine.t)}</h3><div class="subtitle">RPE ${RPE[routine.w]} · ${routine.e.length} упражнений</div></div></button>`).join('');
+  const state=getState(),builtIn=(state.profile.role==='client'&&cloud.user)?'':routines.filter(routine=>routine.w===Number(week)).map(routine=>`<button class="card routine full" data-action="routine" data-routine="${routine.w}:${esc(routine.c)}"><div style="text-align:left"><h3>${esc(routine.c)} · ${esc(routine.t)}</h3><div class="subtitle">RPE ${RPE[routine.w]} · ${routine.e.length} упражнений</div></div></button>`).join('');
+  const custom=availablePrograms(state).flatMap((program,programIndex)=>{
+    const days=program.weeks?.[Number(week)-1]?.days||program.routines.filter(item=>Number(item.w)===Number(week));
+    return days.map((day,dayIndex)=>`<button class="card routine full" data-action="custom-routine" data-program="${programIndex}" data-day="${dayIndex}"><div style="text-align:left"><h3>${esc(day.name||day.t||day.c||program.name)}</h3><div class="subtitle">${esc(program.name)} · ${day.ex?.length||day.e?.length||0} упражнений</div></div></button>`);
+  }).join('');
+  return builtIn+custom||'<div class="card empty">На этой неделе нет доступных тренировок.</div>';
 }
 
 function readinessSheet(routine){
@@ -279,8 +292,8 @@ function editProfileSheet(){
 }
 
 function measurementsSheet(){
-  const fields=[['chest','Грудь'],['waist','Талия'],['hips','Бёдра'],['arm','Бицепс'],['thigh','Бедро'],['calf','Икры']];
-  openModal(`<div class="row between"><h2>Новые замеры</h2><button class="btn tiny" data-action="close-modal">✕</button></div><div class="grid2">${fields.map(([key,label])=>`<div class="field"><label>${label}, см</label><input id="measure-${key}" inputmode="decimal"></div>`).join('')}</div><button class="btn primary full" data-action="save-measurements">Сохранить</button>`);
+  const fields=[['chest','Грудь'],['waist','Талия'],['abdomen','Живот'],['hips','Бёдра'],['arm','Бицепс'],['thigh','Бедро'],['calf','Икры']];
+  openModal(`<div class="row between"><h2>Новые замеры</h2><button class="btn tiny" data-action="close-modal">✕</button></div><div class="grid2"><div class="field"><label>Дата</label><input id="measure-date" type="date" value="${isoDate()}"></div><div class="field"><label>Вес, кг</label><input id="measure-weight" inputmode="decimal"></div>${fields.map(([key,label])=>`<div class="field"><label>${label}, см</label><input id="measure-${key}" inputmode="decimal"></div>`).join('')}</div><button class="btn primary full" data-action="save-measurements">Сохранить</button>`);
 }
 
 function addWeightSheet(){
@@ -304,10 +317,72 @@ function workoutDetailSheet(id){
   openModal(`<div class="row between"><div><h2>${esc(workout.code)} · ${esc(workout.name)}</h2><div class="subtitle">${fmtDate(workout.date)}</div></div><button class="btn tiny" data-action="close-modal">✕</button></div>${workout.exercises.map(exercise=>`<div class="history-line"><b>${esc(exercise.name)}</b><div class="subtitle">${exercise.sets.filter(set=>set.done).map(set=>`${fmtNumber(set.weight)}×${set.reps}${set.rpe!==''?` @RPE ${set.rpe}`:''}`).join(' · ')||'Нет выполненных подходов'}</div></div>`).join('')}<button class="btn danger full" data-action="delete-workout" data-workout-id="${workout.id}">Удалить тренировку</button>`);
 }
 
+function programById(id){return getState().programs.find(program=>String(program.id)===String(id))}
+function programDay(program,weekIndex,dayId){return program?.weeks?.[weekIndex]?.days?.find(day=>String(day.id)===String(dayId))}
+function uid(prefix){return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`}
+function exercisePrescription(exercise){
+  const sets=exercise.sets||[],reps=sets.map(set=>Number(set.r)).filter(Number.isFinite),weights=sets.map(set=>Number(set.w)).filter(value=>value>0);
+  const repsText=reps.length?(Math.min(...reps)===Math.max(...reps)?String(reps[0]):`${Math.min(...reps)}–${Math.max(...reps)}`):'–';
+  const weightText=weights.length?` · ${fmtNumber(Math.min(...weights))}${Math.min(...weights)!==Math.max(...weights)?`–${fmtNumber(Math.max(...weights))}`:''} кг`:'';
+  return `${sets.length}×${repsText}${weightText} · RPE ${exercise.rpe||8} · ${exercise.rest||90} сек`;
+}
+
+function programEditorSheet(programId,weekIndex=programUi.week){
+  const program=programById(programId);if(!program)return;
+  const week=Math.max(0,Math.min(Number(weekIndex)||0,Math.max(0,program.weeks.length-1)));programUi={programId,week};
+  const current=program.weeks[week]||{n:week+1,days:[]};
+  openModal(`<div class="row between"><div><h2>${esc(program.name)}</h2><div class="subtitle">Редактор программы${program.cloudVersion?` · облачная v${program.cloudVersion}`:''}</div></div><button class="btn tiny" data-action="close-modal">✕</button></div>
+    <div class="weekbar" style="margin-top:15px">${program.weeks.map((item,index)=>`<button class="week ${index===week?'active':''}" data-action="program-week" data-program-id="${esc(program.id)}" data-program-week="${index}">${item.n||index+1}</button>`).join('')}</div>
+    ${(current.days||[]).map((day,dayIndex)=>`<div class="card program-day"><div class="row between"><div><b>${esc(day.name||`День ${dayIndex+1}`)}</b><div class="subtitle">${day.ex?.length||0} упражнений</div></div><button class="btn tiny danger" data-action="delete-program-day" data-program-id="${esc(program.id)}" data-program-week="${week}" data-day-id="${esc(day.id)}">Удалить день</button></div>${(day.ex||[]).map((exercise,exerciseIndex)=>`<div class="program-exercise"><div class="grow"><b>${esc(exercise.n||'Упражнение')}</b><div class="muted small">${esc(exercisePrescription(exercise))}</div></div><div class="program-actions"><button class="btn tiny" data-action="replace-program-exercise" data-program-id="${esc(program.id)}" data-program-week="${week}" data-day-id="${esc(day.id)}" data-exercise-index="${exerciseIndex}">Заменить</button><button class="btn tiny" data-action="edit-program-exercise" data-program-id="${esc(program.id)}" data-program-week="${week}" data-day-id="${esc(day.id)}" data-exercise-index="${exerciseIndex}">Изм.</button></div></div>`).join('')||'<div class="empty">Упражнений пока нет.</div>'}<button class="btn full" data-action="add-program-exercise" data-program-id="${esc(program.id)}" data-program-week="${week}" data-day-id="${esc(day.id)}">＋ Упражнение</button></div>`).join('')||'<div class="card empty">На этой неделе нет тренировок.</div>'}
+    <div class="stack"><button class="btn full" data-action="add-program-day" data-program-id="${esc(program.id)}" data-program-week="${week}">＋ Добавить день</button>${getState().profile.role==='trainer'?`<button class="btn primary full" data-action="publish-program" data-program-id="${esc(program.id)}">${program.cloudPlanId?'Обновить клиентам':'Сохранить для клиентов'}</button>`:''}</div>`);
+}
+
+function createProgramSheet(){
+  openModal(`<div class="row between"><h2>Новая программа</h2><button class="btn tiny" data-action="close-modal">✕</button></div><div class="field"><label>Название</label><input id="newProgramName" value="Новая программа"></div><div class="grid2"><div class="field"><label>Недель</label><input id="newProgramWeeks" type="number" min="1" max="16" value="8"></div><div class="field"><label>Дней в неделю</label><input id="newProgramDays" type="number" min="1" max="7" value="3"></div></div><button class="btn primary full" data-action="save-new-program">Создать</button>`);
+}
+
+function programExerciseSheet({programId,weekIndex,dayId,exerciseIndex=null,replacement=false}){
+  const program=programById(programId),day=programDay(program,weekIndex,dayId),exercise=exerciseIndex==null?null:day?.ex?.[exerciseIndex];if(!day)return;
+  const builtInNames=routines.flatMap(routine=>routine.e.map(item=>item.n));
+  const programNames=getState().programs.flatMap(item=>(item.weeks||[]).flatMap(week=>(week.days||[]).flatMap(value=>(value.ex||[]).map(ex=>ex.n))));
+  const candidates=[...new Set([...builtInNames,...programNames].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
+  if(replacement){
+    openModal(`<div class="row between"><div><h2>Заменить упражнение</h2><div class="subtitle">Подходы, повторы, вес, RPE, темп и отдых сохранятся</div></div><button class="btn tiny" data-action="edit-program" data-program-id="${esc(programId)}">←</button></div><div class="field"><label>Новое упражнение</label><input id="replacementName" list="exerciseCandidates" value="${esc(exercise?.n||'')}"><datalist id="exerciseCandidates">${candidates.map(name=>`<option value="${esc(name)}">`).join('')}</datalist></div><button class="btn primary full" data-action="save-program-replacement" data-program-id="${esc(programId)}" data-program-week="${weekIndex}" data-day-id="${esc(dayId)}" data-exercise-index="${exerciseIndex}">Заменить</button>`);return;
+  }
+  const sets=exercise?.sets||[{w:0,r:10},{w:0,r:10},{w:0,r:10}],first=sets[0]||{};
+  openModal(`<div class="row between"><h2>${exercise?'Настройка упражнения':'Новое упражнение'}</h2><button class="btn tiny" data-action="edit-program" data-program-id="${esc(programId)}">←</button></div><div class="field"><label>Название</label><input id="programExerciseName" list="exerciseCandidates" value="${esc(exercise?.n||'')}"><datalist id="exerciseCandidates">${candidates.map(name=>`<option value="${esc(name)}">`).join('')}</datalist></div><div class="grid2"><div class="field"><label>Подходов</label><input id="programExerciseSets" type="number" min="1" max="12" value="${sets.length}"></div><div class="field"><label>Повторений</label><input id="programExerciseReps" type="number" min="1" max="100" value="${first.r||10}"></div><div class="field"><label>Вес, кг</label><input id="programExerciseWeight" inputmode="decimal" value="${first.w||0}"></div><div class="field"><label>Целевой RPE</label><input id="programExerciseRpe" inputmode="decimal" value="${exercise?.rpe||8}"></div><div class="field"><label>Темп</label><input id="programExerciseTempo" value="${esc(exercise?.tempo||'2-0-2')}"></div><div class="field"><label>Отдых, сек</label><input id="programExerciseRest" type="number" min="0" value="${exercise?.rest||90}"></div></div><div class="field"><label>Комментарий</label><input id="programExerciseNote" value="${esc(exercise?.note||'')}"></div><button class="btn primary full" data-action="save-program-exercise" data-program-id="${esc(programId)}" data-program-week="${weekIndex}" data-day-id="${esc(dayId)}" data-exercise-index="${exerciseIndex==null?'':exerciseIndex}">Сохранить</button>`);
+}
+
+function trainerMeasurementDays(data){
+  const map=new Map();
+  for(const row of data.weights||[]){const date=String(row.measure_date||'').slice(0,10);if(date)map.set(date,{...(map.get(date)||{date,measurements:{}}),weight:Number(row.weight_kg)||null})}
+  for(const row of data.measurements||[]){const date=String(row.measure_date||'').slice(0,10);if(date)map.set(date,{...(map.get(date)||{date}),measurements:row.measurements||{}})}
+  return [...map.values()].sort((a,b)=>b.date.localeCompare(a.date));
+}
+
+function trainerClientSheet(){
+  const data=trainerClientState;if(!data)return;
+  const rpes=(data.workouts||[]).map(row=>Number(row.avg_rpe)).filter(Number.isFinite),average=rpes.length?fmtNumber(rpes.reduce((a,b)=>a+b,0)/rpes.length):'–';
+  const tab=data.tab||'workouts';
+  const body=tab==='measurements'?trainerMeasurementDays(data).map(day=>`<div class="history-line"><b>${fmtDate(day.date)}</b><div class="subtitle">${day.weight?`Вес ${fmtNumber(day.weight)} кг · `:''}${Object.entries(day.measurements||{}).filter(([,value])=>Number(value)>0).map(([key,value])=>`${({chest:'Грудь',waist:'Талия',abdomen:'Живот',hips:'Бёдра',thigh:'Бедро',arm:'Рука',calf:'Икра'})[key]||key} ${fmtNumber(value)} см`).join(' · ')||'Нет замеров'}</div></div>`).join('')||'<div class="empty">Замеров пока нет.</div>':(data.workouts||[]).map(row=>`<div class="history-line"><b>${esc(row.payload?.code||row.payload?.c||'')} · ${esc(row.payload?.name||'Тренировка')}</b><div class="subtitle">${fmtDate(row.workout_date)} · ${row.completed_sets||0} подходов${row.avg_rpe!=null?` · RPE ${row.avg_rpe}`:''}</div></div>`).join('')||'<div class="empty">Тренировок пока нет.</div>';
+  openModal(`<div class="row between"><div><h2>${esc(data.profile?.display_name||'Клиент')}</h2><div class="subtitle">${data.workouts.length} тренировок · средний RPE ${average}</div></div><button class="btn tiny" data-action="close-modal">✕</button></div><div class="profile-tabs"><button class="${tab==='workouts'?'active':''}" data-action="trainer-client-tab" data-tab="workouts">Тренировки</button><button class="${tab==='measurements'?'active':''}" data-action="trainer-client-tab" data-tab="measurements">Замеры</button></div>${body}<div class="row between"><div class="eyebrow">Программы</div><button class="btn tiny primary" data-action="trainer-assign-picker">＋ Программа</button></div>${(data.assignments||[]).map(row=>`<div class="card"><div class="row between"><div><b>${esc(row.plans?.title||row.snapshot?.program?.name||'Программа')}</b><div class="subtitle">Версия ${row.version||1}</div></div><div class="program-actions"><button class="btn tiny" data-action="trainer-open-plan" data-plan-id="${esc(row.plan_id)}">Открыть</button><button class="btn tiny danger" data-action="trainer-revoke-plan" data-plan-id="${esc(row.plan_id)}">Удалить</button></div></div></div>`).join('')||'<div class="card empty">Активных программ нет.</div>'}`);
+}
+
+function trainerAssignPicker(){
+  const programs=getState().programs;
+  openModal(`<div class="row between"><div><h2>Назначить программу</h2><div class="subtitle">${esc(trainerClientState?.profile?.display_name||'Клиент')}</div></div><button class="btn tiny" data-action="trainer-client-back">←</button></div>${programs.map(program=>`<button class="card full" data-action="trainer-assign-program" data-program-id="${esc(program.id)}"><div class="row between"><div style="text-align:left"><b>${esc(program.name)}</b><div class="subtitle">${program.weeks?.length||0} недель</div></div><span>›</span></div></button>`).join('')||'<div class="card empty">Сначала создай программу.</div>'}`);
+}
+
+function trainerPlanSheet(planId,weekIndex=0){
+  const row=trainerClientState?.assignments?.find(item=>String(item.plan_id)===String(planId)),program=row?.snapshot?.program;if(!program)return toast('Снимок программы не найден');
+  const week=Math.max(0,Math.min(Number(weekIndex)||0,program.weeks.length-1)),current=program.weeks[week]||{days:[]};
+  openModal(`<div class="row between"><div><h2>${esc(program.name||row.plans?.title||'Программа')}</h2><div class="subtitle">Версия ${row.version||1}</div></div><button class="btn tiny" data-action="trainer-client-back">←</button></div><div class="weekbar" style="margin-top:15px">${program.weeks.map((item,index)=>`<button class="week ${index===week?'active':''}" data-action="trainer-plan-week" data-plan-id="${esc(planId)}" data-program-week="${index}">${item.n||index+1}</button>`).join('')}</div>${(current.days||[]).map(day=>`<div class="card"><div class="title">${esc(day.name)}</div>${(day.ex||[]).map(exercise=>`<div class="history-line"><b>${esc(exercise.n)}</b><div class="subtitle">${esc(exercisePrescription(exercise))}</div></div>`).join('')}</div>`).join('')}<button class="btn primary full" data-action="trainer-edit-plan" data-plan-id="${esc(planId)}">Редактировать</button>`);
+}
+
 function settingsSheet(){
   const profile=getState().profile;
   const colors=['#30d158','#0a84ff','#ff9f0a','#bf5af2','#ff375f','#64d2ff'];
-  openModal(`<div class="row between"><h2>Настройки</h2><button class="btn tiny" data-action="close-modal">✕</button></div><div class="field"><label>Акцентный цвет</label><div class="button-row">${colors.map(color=>`<button class="score ${profile.accent===color?'active':''}" style="background:${color}" data-accent="${color}" aria-label="${color}"></button>`).join('')}</div></div><div class="stack"><button class="btn full" data-action="export-backup">Экспорт данных</button><label class="btn full">Импорт данных<input id="importBackup" type="file" accept="application/json" hidden></label><button class="btn full" data-action="cloud-sync">Синхронизировать</button></div><div class="subtitle" style="margin-top:16px">UNVRSL FIT v1.1.0 stable candidate · данные загружаются до показа интерфейса</div>`);
+  openModal(`<div class="row between"><h2>Настройки</h2><button class="btn tiny" data-action="close-modal">✕</button></div><div class="field"><label>Акцентный цвет</label><div class="button-row">${colors.map(color=>`<button class="score ${profile.accent===color?'active':''}" style="background:${color}" data-accent="${color}" aria-label="${color}"></button>`).join('')}</div></div><div class="stack"><button class="btn full" data-action="export-backup">Экспорт данных</button><label class="btn full">Импорт данных<input id="importBackup" type="file" accept="application/json" hidden></label><button class="btn full" data-action="cloud-sync">Синхронизировать</button></div><div class="subtitle" style="margin-top:16px">UNVRSL FIT v1.1.1 stable candidate · данные загружаются до показа интерфейса</div>`);
 }
 
 function finishWorkout(){
@@ -402,6 +477,43 @@ document.addEventListener('click',async event=>{
     const routine=customRoutine(Number(actionNode.dataset.program),Number(actionNode.dataset.day));
     if(routine)return readinessSheet(prepareRoutine(routine));
   }
+  if(action==='create-program')return createProgramSheet();
+  if(action==='save-new-program'){
+    const name=sheet.querySelector('#newProgramName')?.value.trim()||'Новая программа',weekCount=Math.max(1,Math.min(16,Number(sheet.querySelector('#newProgramWeeks')?.value)||8)),dayCount=Math.max(1,Math.min(7,Number(sheet.querySelector('#newProgramDays')?.value)||3));
+    const program={id:uid('program'),name,created:Date.now(),updated:Date.now(),weeks:Array.from({length:weekCount},(_,weekIndex)=>({n:weekIndex+1,days:Array.from({length:dayCount},(_,dayIndex)=>({id:uid('day'),name:`День ${dayIndex+1}`,ex:[]}))}))};
+    updateState(state=>state.programs.push(program),{immediate:true});programEditorSheet(program.id,0);return;
+  }
+  if(action==='edit-program')return programEditorSheet(actionNode.dataset.programId,programUi.week);
+  if(action==='program-week')return programEditorSheet(actionNode.dataset.programId,Number(actionNode.dataset.programWeek));
+  if(action==='add-program-day'){
+    const program=programById(actionNode.dataset.programId),week=program?.weeks?.[Number(actionNode.dataset.programWeek)];if(!week)return;
+    updateState(()=>week.days.push({id:uid('day'),name:`День ${week.days.length+1}`,ex:[]}),{immediate:true});programEditorSheet(program.id,Number(actionNode.dataset.programWeek));return;
+  }
+  if(action==='delete-program-day'){
+    if(!confirm('Удалить этот тренировочный день?'))return;
+    const program=programById(actionNode.dataset.programId),weekIndex=Number(actionNode.dataset.programWeek),week=program?.weeks?.[weekIndex];if(!week)return;
+    updateState(()=>week.days=week.days.filter(day=>String(day.id)!==String(actionNode.dataset.dayId)),{immediate:true});programEditorSheet(program.id,weekIndex);return;
+  }
+  if(action==='add-program-exercise')return programExerciseSheet({programId:actionNode.dataset.programId,weekIndex:Number(actionNode.dataset.programWeek),dayId:actionNode.dataset.dayId});
+  if(action==='edit-program-exercise')return programExerciseSheet({programId:actionNode.dataset.programId,weekIndex:Number(actionNode.dataset.programWeek),dayId:actionNode.dataset.dayId,exerciseIndex:Number(actionNode.dataset.exerciseIndex)});
+  if(action==='replace-program-exercise')return programExerciseSheet({programId:actionNode.dataset.programId,weekIndex:Number(actionNode.dataset.programWeek),dayId:actionNode.dataset.dayId,exerciseIndex:Number(actionNode.dataset.exerciseIndex),replacement:true});
+  if(action==='save-program-replacement'){
+    const name=sheet.querySelector('#replacementName')?.value.trim();if(!name)return toast('Укажи упражнение');
+    const program=programById(actionNode.dataset.programId),weekIndex=Number(actionNode.dataset.programWeek);
+    updateState(()=>replaceProgramExercise(program,weekIndex,actionNode.dataset.dayId,Number(actionNode.dataset.exerciseIndex),{name}),{immediate:true});programEditorSheet(program.id,weekIndex);return;
+  }
+  if(action==='save-program-exercise'){
+    const program=programById(actionNode.dataset.programId),weekIndex=Number(actionNode.dataset.programWeek),day=programDay(program,weekIndex,actionNode.dataset.dayId);if(!day)return;
+    const name=sheet.querySelector('#programExerciseName')?.value.trim();if(!name)return toast('Укажи упражнение');
+    const count=Math.max(1,Math.min(12,Number(sheet.querySelector('#programExerciseSets')?.value)||3)),reps=Math.max(1,Number(sheet.querySelector('#programExerciseReps')?.value)||10),weight=Math.max(0,Number(String(sheet.querySelector('#programExerciseWeight')?.value||0).replace(',','.'))||0),rpe=Math.max(1,Math.min(10,Number(String(sheet.querySelector('#programExerciseRpe')?.value||8).replace(',','.'))||8)),rest=Math.max(0,Number(sheet.querySelector('#programExerciseRest')?.value)||90);
+    const index=actionNode.dataset.exerciseIndex===''?null:Number(actionNode.dataset.exerciseIndex),old=index==null?null:day.ex[index];
+    const exercise={...(old||{}),id:old?.id||uid('exercise'),n:name,method:old?.method||'STANDARD',rpe,tempo:sheet.querySelector('#programExerciseTempo')?.value.trim()||'2-0-2',rest,note:sheet.querySelector('#programExerciseNote')?.value.trim()||'',sets:Array.from({length:count},()=>({w:weight,r:reps,rest}))};
+    updateState(()=>{if(index==null)day.ex.push(exercise);else day.ex[index]=exercise;program.updated=Date.now()},{immediate:true});programEditorSheet(program.id,weekIndex);return;
+  }
+  if(action==='publish-program'){
+    const program=programById(actionNode.dataset.programId);if(!program)return;
+    try{const version=await publishProgram(program);updateState(()=>{}, {immediate:true});programEditorSheet(program.id,programUi.week);toast(`Программа сохранена · v${version}`)}catch(error){toast(error.message||'Не удалось сохранить программу')}return;
+  }
   if(action==='add-weight')return addWeightSheet();
   if(action==='weight-history')return weightHistorySheet();
   if(action==='save-weight'){
@@ -436,13 +548,15 @@ document.addEventListener('click',async event=>{
   }
   if(action==='add-measurements')return measurementsSheet();
   if(action==='save-measurements'){
-    const item={id:`measurement-${Date.now()}`,date:isoDate(),updatedAt:Date.now()};
-    for(const key of ['chest','waist','hips','arm','thigh','calf'])item[key]=Number(String(sheet.querySelector(`#measure-${key}`)?.value||'').replace(',','.'))||null;
-    updateState(state=>state.measurements.push(item),{immediate:true});closeModal();toast('Замеры сохранены');return;
+    const date=sheet.querySelector('#measure-date')?.value||isoDate(),item={id:`measurement-${date}`,date,updatedAt:Date.now()};
+    for(const key of ['chest','waist','abdomen','hips','arm','thigh','calf'])item[key]=Number(String(sheet.querySelector(`#measure-${key}`)?.value||'').replace(',','.'))||null;
+    const weight=Number(String(sheet.querySelector('#measure-weight')?.value||'').replace(',','.'))||null;
+    if(!weight&&!['chest','waist','abdomen','hips','arm','thigh','calf'].some(key=>Number(item[key])>0))return toast('Добавь вес или хотя бы один замер');
+    updateState(state=>{state.measurements=state.measurements.filter(row=>String(row.date||row.d)!==date);state.measurements.push(item);state.deletedMeasurements=state.deletedMeasurements.filter(row=>row.date!==date);if(weight>=20&&weight<=400){state.bodyweights=state.bodyweights.filter(row=>row.date!==date);state.bodyweights.push({date,value:weight,updatedAt:Date.now()});state.bodyweights.sort((a,b)=>a.date.localeCompare(b.date));state.deletedBodyweights=state.deletedBodyweights.filter(row=>row.date!==date)}},{immediate:true});closeModal();toast('Замеры сохранены');return;
   }
   if(action==='delete-measurement'){
     if(!confirm('Удалить запись замеров?'))return;
-    updateState(state=>state.measurements=state.measurements.filter(item=>String(item.id||item.date||item.d)!==actionNode.dataset.id),{immediate:true});return;
+    updateState(state=>{const removed=state.measurements.find(item=>String(item.id||item.date||item.d)===actionNode.dataset.id),date=String(removed?.date||removed?.d||'').slice(0,10);state.measurements=state.measurements.filter(item=>String(item.id||item.date||item.d)!==actionNode.dataset.id);if(date){const old=state.deletedMeasurements.find(item=>item.date===date);if(old)old.deletedAt=Date.now();else state.deletedMeasurements.push({date,deletedAt:Date.now()})}},{immediate:true});return;
   }
   if(action==='toggle-set'){
     updateState(state=>{
@@ -489,6 +603,31 @@ document.addEventListener('click',async event=>{
   }
   if(action==='sign-out'){await signOut();render();return}
   if(action==='cloud-sync'){await syncNow();return}
+  if(action==='trainer-client'){
+    try{trainerClientState={...(await loadTrainerClient(actionNode.dataset.clientId)),clientId:actionNode.dataset.clientId,tab:'workouts'};trainerClientSheet()}catch(error){toast(error.message||'Не удалось загрузить клиента')}return;
+  }
+  if(action==='trainer-client-tab'){trainerClientState.tab=actionNode.dataset.tab;trainerClientSheet();return}
+  if(action==='trainer-client-back'){trainerClientSheet();return}
+  if(action==='trainer-assign-picker')return trainerAssignPicker();
+  if(action==='trainer-assign-program'){
+    const program=programById(actionNode.dataset.programId);if(!program)return;
+    try{await assignProgram(trainerClientState.clientId,program);updateState(()=>{}, {immediate:true});trainerClientState={...(await loadTrainerClient(trainerClientState.clientId)),clientId:trainerClientState.clientId,tab:'workouts'};trainerClientSheet();toast('Программа назначена')}catch(error){toast(error.message||'Не удалось назначить программу')}return;
+  }
+  if(action==='trainer-open-plan')return trainerPlanSheet(actionNode.dataset.planId,0);
+  if(action==='trainer-plan-week')return trainerPlanSheet(actionNode.dataset.planId,Number(actionNode.dataset.programWeek));
+  if(action==='trainer-revoke-plan'){
+    if(!confirm('Удалить программу у клиента? История тренировок и замеров сохранится.'))return;
+    try{await revokeClientPlan(trainerClientState.clientId,actionNode.dataset.planId);trainerClientState={...(await loadTrainerClient(trainerClientState.clientId)),clientId:trainerClientState.clientId,tab:'workouts'};trainerClientSheet();toast('Программа удалена у клиента')}catch(error){toast(error.message||'Не удалось удалить программу')}return;
+  }
+  if(action==='trainer-edit-plan'){
+    try{
+      const {plan,assignmentCount}=await loadTrainerPlan(actionNode.dataset.planId);if(!plan?.snapshot?.program)throw new Error('Снимок программы не найден');
+      if(assignmentCount>1&&!confirm(`Эта программа назначена ${assignmentCount} клиентам. Обновление получат все. Продолжить?`))return;
+      let local=getState().programs.find(item=>String(item.cloudPlanId||'')===String(plan.id));
+      if(!local){local=JSON.parse(JSON.stringify(plan.snapshot.program));local.id=uid('program');local.cloudPlanId=plan.id;local.cloudVersion=plan.version||1;local.created=local.created||Date.now();updateState(state=>state.programs.push(local),{immediate:true})}
+      closeModal();programEditorSheet(local.id,0);
+    }catch(error){toast(error.message||'Не удалось открыть программу')}return;
+  }
   if(action==='export-backup'){exportBackup();return}
   if(action==='start-with-readiness'||action==='start-plan')return;
 });
@@ -496,6 +635,8 @@ document.addEventListener('click',async event=>{
 async function bootApplication(){
   try{
     loadState();
+    if(ensureSergeyPlan(getState()))persistNow();
+    document.documentElement.style.setProperty('--accent',getState().profile.accent||'#30d158');
     await initCloud();
     const state=getState();
     if(cloud.profile){

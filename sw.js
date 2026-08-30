@@ -1,10 +1,10 @@
 const CACHE_PREFIX='unvrsl-fit-';
-const CACHE='unvrsl-fit-v1.1.0';
+const CACHE='unvrsl-fit-v1.1.1';
 const CORE_ASSETS=[
   './','./index.html','./manifest.webmanifest','./icon.svg','./cloud-config.js',
   './plan-w1.js','./plan-w2.js','./plan-w3.js','./plan-w4.js',
   './plan-w5.js','./plan-w6.js','./plan-w7.js','./plan-w8.js',
-  './v11/app.css','./v11/core.mjs','./v11/store.mjs','./v11/cloud.mjs','./v11/app.mjs'
+  './v11/app.css','./v11/core.mjs','./v11/store.mjs','./v11/cloud.mjs','./v11/sergey-plan.mjs','./v11/app.mjs'
 ];
 
 self.addEventListener('install',event=>{

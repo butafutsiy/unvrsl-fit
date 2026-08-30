@@ -31,6 +31,7 @@ export function emptyState(now=Date.now()){
     bodyweights:[],
     deletedBodyweights:[],
     measurements:[],
+    deletedMeasurements:[],
     workouts:[],
     deletedWorkoutIds:[],
     activeWorkout:null,
@@ -127,6 +128,9 @@ export function migrateLegacy(legacy,now=Date.now()){
   const deletedDates=new Set(state.deletedBodyweights.map(item=>item.date));
   state.bodyweights=state.bodyweights.filter(item=>!deletedDates.has(item.date));
   state.measurements=asArray(legacy.measurements).map(item=>({...clone(item),date:String(item.date||item.d||isoDate()).slice(0,10)}));
+  state.deletedMeasurements=normalizeTombstones(legacy.deletedMeasurements,'date');
+  const deletedMeasurementDates=new Set(state.deletedMeasurements.map(item=>item.date));
+  state.measurements=state.measurements.filter(item=>!deletedMeasurementDates.has(String(item.date||item.d||'').slice(0,10)));
   state.workouts=uniqueBy(asArray(legacy.workouts||legacy.sessions).map(normalizeWorkout),item=>item.id);
   state.deletedWorkoutIds=normalizeTombstones(legacy.deletedWorkoutIds,'id');
   const deletedIds=new Set(state.deletedWorkoutIds.map(item=>item.id));
@@ -150,12 +154,15 @@ export function normalizeState(source,now=Date.now()){
   base.bodyweights=normalizeBodyweights(source?.bodyweights);
   base.deletedBodyweights=normalizeTombstones(source?.deletedBodyweights,'date');
   base.measurements=asArray(source?.measurements).map(item=>clone(item));
+  base.deletedMeasurements=normalizeTombstones(source?.deletedMeasurements,'date');
   base.workouts=uniqueBy(asArray(source?.workouts).map(normalizeWorkout),item=>item.id);
   base.deletedWorkoutIds=normalizeTombstones(source?.deletedWorkoutIds,'id');
   const deletedDates=new Set(base.deletedBodyweights.map(item=>item.date));
   const deletedIds=new Set(base.deletedWorkoutIds.map(item=>item.id));
+  const deletedMeasurementDates=new Set(base.deletedMeasurements.map(item=>item.date));
   base.bodyweights=base.bodyweights.filter(item=>!deletedDates.has(item.date));
   base.workouts=base.workouts.filter(item=>!deletedIds.has(item.id));
+  base.measurements=base.measurements.filter(item=>!deletedMeasurementDates.has(String(item.date||item.d||'').slice(0,10)));
   base.activeWorkout=source?.activeWorkout?normalizeWorkout(source.activeWorkout):null;
   base.programs=asArray(source?.programs);
   base.assignedPrograms=asArray(source?.assignedPrograms);
@@ -171,19 +178,38 @@ export function mergeStates(localSource,remoteSource){
   const merged=normalizeState(stamp(remote)>=stamp(local)?{...local,...remote}:{...remote,...local});
   merged.deletedBodyweights=normalizeTombstones([...local.deletedBodyweights,...remote.deletedBodyweights],'date');
   merged.deletedWorkoutIds=normalizeTombstones([...local.deletedWorkoutIds,...remote.deletedWorkoutIds],'id');
+  merged.deletedMeasurements=normalizeTombstones([...local.deletedMeasurements,...remote.deletedMeasurements],'date');
   merged.bodyweights=normalizeBodyweights([...local.bodyweights,...remote.bodyweights]);
   merged.workouts=uniqueBy([...local.workouts,...remote.workouts],item=>item.id);
   const deletedDates=new Set(merged.deletedBodyweights.map(item=>item.date));
   const deletedIds=new Set(merged.deletedWorkoutIds.map(item=>item.id));
+  const deletedMeasurementDates=new Set(merged.deletedMeasurements.map(item=>item.date));
   merged.bodyweights=merged.bodyweights.filter(item=>!deletedDates.has(item.date));
   merged.workouts=merged.workouts.filter(item=>!deletedIds.has(item.id));
   merged.measurements=uniqueBy([...local.measurements,...remote.measurements],item=>String(item.id||item.date||item.d||''));
+  merged.measurements=merged.measurements.filter(item=>!deletedMeasurementDates.has(String(item.date||item.d||'').slice(0,10)));
   merged.programs=uniqueBy([...local.programs,...remote.programs],item=>String(item.id||item.title||item.name||''));
   merged.assignedPrograms=uniqueBy([...local.assignedPrograms,...remote.assignedPrograms],item=>String(item.id||item.plan_id||item.title||''));
   merged.clients=uniqueBy([...local.clients,...remote.clients],item=>String(item.id||item.user_id||item.email||''));
   merged.learnedWeights={...remote.learnedWeights,...local.learnedWeights};
   merged.updatedAt=Math.max(stamp(local),stamp(remote),Date.now());
   return learnFromHistory(merged);
+}
+
+export function replaceProgramExercise(program,weekIndex,dayId,exerciseIndex,replacement={}){
+  const day=asArray(program?.weeks?.[weekIndex]?.days).find(item=>String(item.id)===String(dayId));
+  const current=day?.ex?.[exerciseIndex];
+  if(!current)return false;
+  day.ex[exerciseIndex]={
+    ...current,
+    n:String(replacement.name||replacement.n||current.n||'Упражнение'),
+    sourceId:replacement.sourceId??null,
+    bp:replacement.bp??current.bp,
+    tg:replacement.tg??current.tg,
+    eq:replacement.eq??current.eq
+  };
+  program.updated=Date.now();
+  return true;
 }
 
 export function readinessAdjustment(answers={}){
