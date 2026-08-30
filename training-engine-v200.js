@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
  if(window.__unvrslTrainingEngineV200)return;window.__unvrslTrainingEngineV200=true;
- const W=window,REV=205;
+ const W=window,REV=206;
  const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
  const num=v=>N(v)??0,mean=a=>{a=(a||[]).filter(Number.isFinite);return a.length?a.reduce((s,x)=>s+x,0)/a.length:null},median=a=>{a=(a||[]).filter(Number.isFinite).sort((x,y)=>x-y);if(!a.length)return null;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2},clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const base=n=>{try{return W.baseExerciseName?W.baseExerciseName(n):String(n||'').replace(/\s+—\s+.*$/,'').trim()}catch(_){return String(n||'')}};
@@ -17,15 +17,17 @@
  .te200-readiness.done{color:#30d158;border-color:rgba(48,209,88,.25);background:rgba(48,209,88,.08)}
  .te200-ready{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}.te200-item{background:#202023;border:1px solid #303034;border-radius:18px;padding:13px}.te200-item b{display:flex;justify-content:space-between;margin-bottom:9px}.te200-item input{width:100%;accent-color:var(--green)}
  .te200-scale{display:flex;justify-content:space-between;color:#777;font-size:10px;margin-top:3px}.te200-explicit{margin-top:10px;color:#777;font-size:11px;line-height:1.4}
- #start .smart-suggest,#start .u177-rec,#start .wr180,#start .wr185{display:none!important}
+ #start .smart-suggest,#start .u177-rec,#start .wr180,#start .wr185,#start .adaptive-choice-btn,#start .adaptive-load-chip,#start .unvrsl-auto-load{display:none!important}
  `;document.head.appendChild(style);
  function disableLegacyReadiness(){if(typeof W.advAskReadiness!=='function'||W.advAskReadiness.__te205)return;const bypass=(fn,args)=>typeof fn==='function'?fn.apply(W,Array.isArray(args)?args:[]):undefined;bypass.__te205=true;W.advAskReadiness=bypass;try{advAskReadiness=bypass}catch(_){}}
+ function lockLegacy(cur){if(!cur)return;cur.unvrslAdaptive174Applied=true;cur.adaptiveEffortV2Applied=true;cur.adaptiveDecision='engine206';cur.adaptivePrompted=true;delete cur.trainingWeightChoice;delete cur.engine196Prepared;delete cur.engine196FlowShown;delete cur.weightsPrepared194}
+ function captureLaunchWeights(cur){if(!cur||cur.launchWeightsCaptured206)return;for(const ex of cur.ex||[]){for(const s of ex.set||[]){s.launchW=N(s.w)??0;s.launchWeightCaptured206=true}}cur.launchWeightsCaptured206=true;lockLegacy(cur)}
  disableLegacyReadiness();
  function program(cur){try{if(cur?.programId&&W.programById){const p=W.programById(cur.programId);if(p)return p}}catch(_){}return(W.st?.programs||[]).find(p=>String(p?.cloudPlanId||'')===String(cur?.planId||''))||(W.st?.programs||[]).find(p=>String(p?.name||'')===String(cur?.programName||''))||null}
  function source(ex,cur){const p=program(cur),week=p?.weeks?.[Math.max(0,(N(cur?.w)||1)-1)];if(!week)return null;let days=week.days||[];const exact=days.find(d=>String(d?.name||'')===String(cur?.c||''));if(exact)days=[exact,...days.filter(d=>d!==exact)];for(const d of days){const s=(d.ex||[]).find(x=>same({n:x.n,sourceId:x.sourceId},ex.n,ex.sourceId));if(s)return s}return null}
  function modeFromSource(src){return(src?.sets||[]).some(x=>num(x?.w)>0)?'prescribed':'adaptive'}
  function effort(x){let rpe=N(x?.rpe),rir=N(x?.rir);if(rir==null&&rpe!=null)rir=10-rpe;if(rpe==null&&rir!=null)rpe=10-rir;return rpe==null?null:{rpe,rir:clamp(rir,0,10)}}
- function rowsFrom(s,ex){const out=[];(s?.ex||[]).forEach(e=>{if(!same(e,ex.n,ex.sourceId))return;(e.set||[]).forEach(x=>{const ef=effort(x),w=N(x?.w),r=N(x?.r);if(x?.ok&&w>0&&r>0&&ef)out.push({w,r,rir:ef.rir,date:s.date||''})})});return out}
+ function rowsFrom(s,ex){const out=[];(s?.ex||[]).forEach(e=>{if(!same(e,ex.n,ex.sourceId))return;(e.set||[]).forEach(x=>{const actual=effort(x),w=N(x?.w),r=N(x?.r),fallbackRpe=target(e,x,s),ef=actual||{rpe:fallbackRpe,rir:clamp(10-fallbackRpe,0,10)};if(x?.ok&&w>0&&r>0)out.push({w,r,rpe:ef.rpe,rir:ef.rir,date:s.date||'',estimatedRpe:!actual})})});return out}
  function localHistory(ex,cur){const ss=W.st?.sessions||[];for(let i=ss.length-1;i>=0;i--){const s=ss[i];if(String(s?.id||'')===String(cur.id||'')||!s?.ended)continue;const r=rowsFrom(s,ex);if(r.length)return r}return[]}
  async function history(ex,cur){const local=localHistory(ex,cur);if(local.length)return local;try{if(!W.cloud?.client||!W.cloud?.user?.id)return[];const q=await W.cloud.client.from('workouts').select('payload,workout_date').eq('user_id',W.cloud.user.id).order('workout_date',{ascending:false}).limit(50);if(q.error)return[];for(const row of q.data||[]){const p=row.payload||{};if(String(p.id||'')===String(cur.id||'')||!p?.ended)continue;const r=rowsFrom(p,ex);if(r.length)return r}}catch(e){console.warn('v200 history',e)}return[]}
  function e1rm(rows){let a=(rows||[]).map(x=>x.w*(1+(x.r+x.rir)/30)).filter(x=>x>0);if(!a.length)return null;const m=mean(a);if(a.length>=3){const kept=a.filter(x=>x>=m*.82&&x<=m*1.18);if(kept.length>=2)a=kept}return mean(a)}
@@ -35,18 +37,17 @@
  function method(src,ex){return String(src?.method||ex?.method||'STANDARD').trim().toUpperCase()||'STANDARD'}
  function target(ex,set,cur){return [N(set?.targetRpe),N(ex?.targetRpe),N(ex?.rpeTarget),N(ex?.target),N(ex?.rpe),N(cur?.target),8].find(x=>x!=null&&x>0)||8}
  function occurrenceIndex(ex,cur){const a=(cur.ex||[]).filter(x=>same(x,ex.n,ex.sourceId));const i=a.indexOf(ex);return i<0?0:i}
- function sourceWeight(src,ex,setIndex,cur){const sets=src?.sets||[];if((ex.set||[]).length>1)return num(sets[setIndex]?.w);return num(sets[occurrenceIndex(ex,cur)]?.w??sets[0]?.w)}
+ function sourceWeight(src,ex,setIndex,cur){const sets=src?.sets||[];if(!sets.length)return 0;if((ex.set||[]).length>1)return num(sets[setIndex]?.w??sets.at(-1)?.w);const i=occurrenceIndex(ex,cur),m=method(src,ex),count=(cur.ex||[]).filter(x=>same(x,ex.n,ex.sourceId)).length;if(m==='UNVRSL'&&count>sets.length){const map=sets.length>=3?[0,1,0,1,0,1,2,2]:sets.length===2?[0,1,0,1,0,1,1,1]:[0,0,0,0,0,0,0,0];return num(sets[map[i]??map.at(-1)]?.w)}return num(sets[i]?.w??sets.at(-1)?.w)}
  async function prepare(cur){
   if(!cur)return false;const p=program(cur);if((cur.programId||cur.planId)&&!p)return false;
   let unresolved=false,adaptive=0,prescribed=0;
-  cur.unvrslAdaptive174Applied=true;cur.adaptiveEffortV2Applied=true;
-  delete cur.trainingWeightChoice;delete cur.engine196Prepared;delete cur.engine196FlowShown;delete cur.weightsPrepared194;
+  lockLegacy(cur);
   for(const ex of cur.ex||[]){
    if(ex?.mode==='cardio')continue;const src=source(ex,cur);if((cur.programId||cur.planId)&&!src){unresolved=true;continue}
-   const mode=src?modeFromSource(src):((ex.set||[]).every(s=>num(s.w)<=0)?'adaptive':'prescribed');ex.programWeightMode=mode;delete ex.recommendation194;delete ex.engine196Recommendation;delete ex.progression187;
+   const launch=(ex.set||[]).map(s=>s.launchWeightCaptured206?num(s.launchW):([s.programW,s.plannedW,s.w].map(num).find(x=>x>0)||0)),mode=src?modeFromSource(src):(launch.some(x=>x>0)?'prescribed':'adaptive');ex.programWeightMode=mode;delete ex.recommendation194;delete ex.engine196Recommendation;delete ex.progression187;
    const sets=ex.set||[];
    if(mode==='adaptive'){adaptive++;sets.forEach(s=>{s.programW=0;delete s.recommendedW;if(!s.ok&&!s.manualOverride){s.w=0;s.plannedW=0;s.baselineW=0;s.baselineSource='adaptive_pending'}})}
-   else{prescribed++;sets.forEach((s,i)=>{s.programW=src?sourceWeight(src,ex,i,cur):([s.programW,s.plannedW,s.w].map(num).find(x=>x>0)||0);delete s.recommendedW;if(!s.ok&&!s.manualOverride){s.w=num(s.programW);s.plannedW=s.w;s.baselineW=s.w;s.baselineSource='program'}})}
+   else{prescribed++;sets.forEach((s,i)=>{s.programW=src?sourceWeight(src,ex,i,cur):num(launch[i]);delete s.recommendedW;if(!s.ok&&!s.manualOverride){s.w=num(s.programW);s.plannedW=s.w;s.baselineW=s.w;s.baselineSource='program'}})}
    const rows=await history(ex,cur),cap=e1rm(rows),stp=step(ex,rows);
    if(cap>0){
     const calculated=sets.map(s=>{const reps=num(s.r);if(reps<=0)return null;const rir=clamp(10-target(ex,s,cur),0,10);return limitedWeight(cap/(1+(reps+rir)/30),rows,stp)});
@@ -75,7 +76,7 @@
  function askBeforeStart(fn,args,ctx){pendingStart={fn,args:Array.from(args||[]),ctx,before:W.st?.current||null};W.modal?.(readinessMarkup())}
  function readinessData(adjust){return adjust?readiness():{sleep:null,energy:null,soreness:null,stress:null,score:null,factor:1,skipped:true,at:new Date().toISOString()}}
  function attachReadiness(cur,d,adjust){cur.readiness=d;cur.readinessUsed=!!adjust;cur.readinessAdjusted=!!adjust&&Math.abs(d.factor-1)>.001;cur.trainingReadinessDone=true;cur.trainingReadinessPromptShown=true;W.st.readinessLog.push({date:cur.date,sessionId:cur.id,...d})}
- function confirm(adjust){if(adjust){const fields=['te200Sleep','te200Energy','te200Sore','te200Stress'].map(id=>document.getElementById(id));if(fields.some(x=>!x||x.dataset.touched!=='1')){W.toast?.('Оцени все четыре показателя');return}}const d=readinessData(adjust);if(pendingStart){const p=pendingStart;pendingStart=null;try{W.closeModal?.()}catch(_){}startingAfterReadiness=true;try{p.fn.apply(p.ctx,p.args)}finally{startingAfterReadiness=false}const cur=W.st?.current;if(!cur||cur===p.before)return;attachReadiness(cur,d,adjust);try{W.save?.()}catch(_){}setTimeout(tick,0);return}const cur=W.st?.current;if(!cur)return;attachReadiness(cur,d,adjust);(cur.ex||[]).forEach(ex=>{(ex.set||[]).forEach(s=>{if(s.ok||s.manualOverride||num(s.plannedW)<=0)return;s.w=todayWeight(s.plannedW,ex,cur)})});try{W.save?.();W.startPage?.();W.closeModal?.()}catch(_){}setTimeout(enhanceDom,0)}
+ function confirm(adjust){if(adjust){const fields=['te200Sleep','te200Energy','te200Sore','te200Stress'].map(id=>document.getElementById(id));if(fields.some(x=>!x||x.dataset.touched!=='1')){W.toast?.('Оцени все четыре показателя');return}}const d=readinessData(adjust);if(pendingStart){const p=pendingStart;pendingStart=null;try{W.closeModal?.()}catch(_){}startingAfterReadiness=true;try{p.fn.apply(p.ctx,p.args)}finally{startingAfterReadiness=false}const cur=W.st?.current;if(!cur||cur===p.before)return;captureLaunchWeights(cur);attachReadiness(cur,d,adjust);try{W.save?.()}catch(_){}setTimeout(tick,0);return}const cur=W.st?.current;if(!cur)return;lockLegacy(cur);attachReadiness(cur,d,adjust);(cur.ex||[]).forEach(ex=>{(ex.set||[]).forEach(s=>{if(s.ok||s.manualOverride||num(s.plannedW)<=0)return;s.w=todayWeight(s.plannedW,ex,cur)})});try{W.save?.();W.startPage?.();W.closeModal?.()}catch(_){}setTimeout(enhanceDom,0)}
  function domSignature(cur){return JSON.stringify([cur.id,!!cur.trainingReadinessDone,!!cur.readinessAdjusted,cur.readiness?.score??null,(cur.ex||[]).map(ex=>[key(ex),ex.programWeightMode,ex.weightDecision,(ex.set||[]).map(s=>[num(s.programW),num(s.recommendedW),num(s.plannedW),num(s.w)])])])}
  function enhanceDom(){const cur=W.st?.current,root=document.getElementById('start');if(!cur||!root)return;root.querySelectorAll('.smart-suggest,.u177-rec,.wr180,.wr185').forEach(x=>x.remove());const sig=domSignature(cur);if(root.dataset.te200Sig===sig&&root.querySelector('.te200-readiness'))return;root.querySelectorAll('.te200-rec,.te200-auto,.te200-readiness').forEach(x=>x.remove());const cards=[...root.querySelectorAll('.exercise')];const seen=new Set();
   (cur.ex||[]).forEach((ex,i)=>{if(ex?.mode==='cardio')return;const k=key(ex);if(seen.has(k))return;seen.add(k);const indices=groupIndices(cur,k),group=indices.map(j=>cur.ex[j]),card=cards[i];if(!card)return;const anchor=card.querySelector('.exname')||card.firstElementChild;
@@ -91,7 +92,7 @@
  function assignStart(name,fn){W[name]=fn;try{if(name==='begin')begin=fn;else if(name==='beginProgramDay')beginProgramDay=fn;else if(name==='beginRemotePlan')beginRemotePlan=fn}catch(_){}}
  function installStart(name){const fn=W[name];if(typeof fn!=='function'||fn.__te205PreStart)return;const wrapped=function(){if(startingAfterReadiness)return fn.apply(this,arguments);askBeforeStart(fn,arguments,this)};wrapped.__te205PreStart=true;wrapped.__te205Base=fn;assignStart(name,wrapped)}
  function installStartHooks(){['begin','beginProgramDay','beginRemotePlan'].forEach(installStart)}
- async function tick(){disableLegacyReadiness();installStartHooks();const cur=W.st?.current;if(!cur?.id||cur.ended)return;const id=String(cur.id);if(id!==last){last=id;busy=false;const root=document.getElementById('start');if(root)delete root.dataset.te200Sig}if(busy)return;busy=true;try{if(cur.trainingEngineRevision!==REV){const ok=await prepare(cur);if(!ok)return}enhanceDom()}finally{busy=false}}
+ async function tick(){disableLegacyReadiness();installStartHooks();const cur=W.st?.current;if(!cur?.id||cur.ended)return;lockLegacy(cur);const id=String(cur.id);if(id!==last){last=id;busy=false;const root=document.getElementById('start');if(root)delete root.dataset.te200Sig}if(busy)return;busy=true;try{if(cur.trainingEngineRevision!==REV){const ok=await prepare(cur);if(!ok)return}enhanceDom()}finally{busy=false}}
  W.trainingApplyRecommendation200=applyRecommendation;W.trainingRestoreProgram200=restoreProgram;W.trainingShowReadiness200=showReadiness;W.trainingConfirmReadiness200=confirm;W.trainingEngine200Tick=tick;
  const oldApply=W.applySuggestion;W.applySuggestion=function(){if(W.st?.current?.id){W.toast?.('Используй рекомендацию над упражнением');return}return typeof oldApply==='function'?oldApply.apply(this,arguments):undefined};try{applySuggestion=W.applySuggestion}catch(_){}
  installStartHooks();setInterval(tick,300);[0,80,250,700,1500,3000].forEach(t=>setTimeout(tick,t));
