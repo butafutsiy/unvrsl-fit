@@ -96,6 +96,15 @@
     document.head.appendChild(accentStyle);
   }
 
+  // Final client guard is loaded on every startup. It stays dormant for the trainer account.
+  if(!document.querySelector('script[data-unvrsl-client-final-v222]')){
+    const clientFinal=document.createElement('script');
+    clientFinal.src='client-final-runtime-v222.js';
+    clientFinal.async=false;
+    clientFinal.dataset.unvrslClientFinalV222='1';
+    document.body.appendChild(clientFinal);
+  }
+
   // Preserve the legacy OG visual styles without creating a second loading cover.
   window.__unvrslSkipLegacyBootCover=true;
 
