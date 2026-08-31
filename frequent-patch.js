@@ -82,6 +82,7 @@ customCatalog=function(){
 
 let cloudModulesLoading=false,cloudModulesLoaded=false;
 function loadExternalScript(src){return new Promise((resolve,reject)=>{const key=String(src).replace(/^\.\//,'');if(document.querySelector(`script[data-unvrsl-src="${src}"],script[data-unvrsl-src="${key}"],script[data-dyn="${src}"],script[data-dyn="./${key}"]`))return resolve();const s=document.createElement('script');s.src=src;s.async=false;s.dataset.unvrslSrc=key;s.onload=resolve;s.onerror=reject;document.body.appendChild(s)})}
+window.loadExternalScript=loadExternalScript;
 async function loadCloudModules(){
  if(cloudModulesLoaded||cloudModulesLoading)return;cloudModulesLoading=true;
  try{
@@ -94,10 +95,31 @@ setTimeout(()=>{
  renderBodyFilters();renderExerciseResults();
  const templateChain=loadExternalScript('popular-programs.js').then(()=>loadExternalScript('female-program-templates.js')).catch(e=>console.warn('program templates',e));
  const programChain=loadExternalScript('anton-gorkusha-plan.js').then(()=>loadExternalScript('anton-plan-rules.js')).then(()=>loadExternalScript('program-management-patch.js')).then(()=>loadExternalScript('start-program-picker.js')).catch(e=>console.warn('Anton Garkusha plan/program picker',e));
- loadExternalScript('rpe-auto-progression.js').catch(e=>console.warn('RPE auto progression',e));
- loadExternalScript('wake-lock.js').catch(e=>console.warn('wake lock',e));
- loadExternalScript('workout-duration.js').then(()=>loadExternalScript('cardio-timer.js')).catch(e=>console.warn('workout/cardio timers',e));
- loadExternalScript('advanced-training.js').then(()=>loadExternalScript('profile-stats.js')).then(()=>loadExternalScript('premium-ui.js')).then(()=>loadExternalScript('stable-ui.js')).then(()=>loadExternalScript('mockup-ui.js')).then(()=>loadExternalScript('density-ui.js')).then(()=>loadExternalScript('mobile-final-fix.js')).then(()=>loadExternalScript('sheet-swipe.js')).then(()=>loadExternalScript('stats-dashboard-v2.js')).then(()=>loadExternalScript('home-stats-v2.js')).then(()=>loadExternalScript('stats-cleanup.js')).then(()=>loadExternalScript('client-nav-hotfix.js')).then(()=>loadExternalScript('clients-action-layout.js')).catch(e=>console.warn('advanced training',e));
- const cloudChain=loadCloudModules().then(()=>loadExternalScript('premium-ui.js')).then(()=>loadExternalScript('stable-ui.js')).then(()=>loadExternalScript('mockup-ui.js')).then(()=>loadExternalScript('density-ui.js')).then(()=>loadExternalScript('mobile-final-fix.js')).then(()=>loadExternalScript('sheet-swipe.js')).then(()=>loadExternalScript('stats-dashboard-v2.js')).then(()=>loadExternalScript('home-stats-v2.js')).then(()=>loadExternalScript('stats-cleanup.js')).then(()=>loadExternalScript('client-nav-hotfix.js')).then(()=>loadExternalScript('clients-action-layout.js')).catch(()=>{});
- Promise.allSettled([templateChain,programChain,cloudChain]).then(()=>loadExternalScript('program-delete-fix.js')).then(()=>loadExternalScript('requested-cleanup-v2.js')).then(()=>loadExternalScript('program-delete-persistence-v3.js')).then(()=>loadExternalScript('adaptive-effort-v2.js')).then(()=>loadExternalScript('workout-template-ux-v2.js')).then(()=>loadExternalScript('client-program-picker.js')).then(()=>loadExternalScript('cardio-exercise-library.js')).catch(e=>console.warn('program cleanup/adaptive effort/client picker/cardio library',e));
+ const cloudChain=loadCloudModules();
+ const uiChain=loadExternalScript('wake-lock.js')
+  .then(()=>loadExternalScript('workout-duration.js'))
+  .then(()=>loadExternalScript('cardio-timer.js'))
+  .then(()=>loadExternalScript('advanced-training.js'))
+  .then(()=>loadExternalScript('profile-strength-core-v248.js'))
+  .then(()=>loadExternalScript('premium-ui.js'))
+  .then(()=>loadExternalScript('stable-ui.js'))
+  .then(()=>loadExternalScript('mockup-ui.js'))
+  .then(()=>loadExternalScript('density-ui.js'))
+  .then(()=>loadExternalScript('mobile-final-fix.js'))
+  .then(()=>loadExternalScript('sheet-swipe.js'))
+  .then(()=>loadExternalScript('stats-dashboard-v2.js'))
+  .then(()=>loadExternalScript('home-stats-v2.js'))
+  .then(()=>loadExternalScript('stats-cleanup.js'))
+  .catch(e=>console.warn('modern UI chain',e));
+ Promise.allSettled([templateChain,programChain,cloudChain,uiChain])
+  .then(()=>loadExternalScript('client-nav-hotfix.js'))
+  .then(()=>loadExternalScript('clients-action-layout.js'))
+  .then(()=>loadExternalScript('program-delete-fix.js'))
+  .then(()=>loadExternalScript('requested-cleanup-v2.js'))
+  .then(()=>loadExternalScript('program-delete-persistence-v3.js'))
+  .then(()=>loadExternalScript('adaptive-effort-v2.js'))
+  .then(()=>loadExternalScript('workout-template-ux-v2.js'))
+  .then(()=>loadExternalScript('client-program-picker.js'))
+  .then(()=>loadExternalScript('cardio-exercise-library.js'))
+  .catch(e=>console.warn('post-load modules',e));
 },0);
