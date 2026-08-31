@@ -1,5 +1,5 @@
 const CACHE_PREFIX='unvrsl-fit-';
-const CACHE='unvrsl-fit-v249-stats-owner-hard-fix';
+const CACHE='unvrsl-fit-v250-unified-statistics';
 
 // Only the shell and directly required modules are precached.
 // Everything else is cached on first real use instead of downloading the whole repository.
@@ -34,7 +34,6 @@ self.addEventListener('fetch',event=>{
   const url=new URL(event.request.url);
 
   // Supabase/API/CDN responses are never stored in the PWA cache.
-  // This avoids stale account data and prevents the cache from growing with remote requests.
   if(url.origin!==self.location.origin)return;
 
   event.respondWith(
