@@ -53,6 +53,10 @@
       (s.ex||[]).map(e=>[String(e?.n||''),String(e?.d||''),Number(e?.rest||0),(e?.set||[]).map(x=>[x?.w??'',x?.r??'',x?.rpe??'',!!x?.ok])])
     ]);
   }
+  function workoutDomMatchesState(root){
+    const cur=workoutState(),hasWorkout=!!root?.querySelector?.('.workout-head,.exercise');
+    return cur?hasWorkout:!hasWorkout;
+  }
   function workoutScrollSnapshot(root){
     const y=window.scrollY||document.documentElement?.scrollTop||0;
     const cards=[...root.querySelectorAll('.exercise')];
@@ -97,7 +101,7 @@
     const current=window.startPage;
     if(typeof current!=='function'||current.__clientStableScroll)return;
     const root=document.getElementById('start');
-    if(isClient()&&root?.childElementCount&&!root.dataset.clientWorkoutRenderSig)root.dataset.clientWorkoutRenderSig=workoutRenderSignature();
+    if(isClient()&&root?.childElementCount&&workoutDomMatchesState(root)&&!root.dataset.clientWorkoutRenderSig)root.dataset.clientWorkoutRenderSig=workoutRenderSignature();
     const wrapped=function(){
       const live=document.getElementById('start');
       const active=isClient()&&clientNavigationDepth===0&&live?.classList.contains('active');
