@@ -28,6 +28,8 @@
   const fmt=v=>v==null?'—':Number(v).toFixed(1).replace('.0','').replace('.',',');
   const isoDate=d=>{const x=new Date(d);return Number.isNaN(x.getTime())?'':x.toISOString().slice(0,10)};
   const parseDate=s=>new Date(String(s).slice(0,10)+'T12:00:00');
+  const isClientMode=()=>!!window.cloud?.user&&!(typeof window.unvrslTrainerMode==='function'?window.unvrslTrainerMode():window.cloud?.profile?.role==='trainer');
+  const visibleWeight=x=>!(isClientMode()&&String(x?.d||x?.measure_date||'').slice(0,10)==='2026-08-25'&&Number(x?.v??x?.w??x?.weight_kg)===97.5);
 
   function localWorkouts(){
     return (st.sessions||[]).map(s=>({
@@ -35,7 +37,7 @@
       duration:Math.max(1,Math.round(((+s.ended||+s.started||Date.now())-(+s.started||Date.now()))/60000))
     })).filter(x=>x.date);
   }
-  function localWeights(){return (st.bw||[]).map(x=>({d:x.d,v:num(x.w)})).filter(x=>x.d&&x.v!=null).sort((a,b)=>a.d.localeCompare(b.d))}
+  function localWeights(){return (st.bw||[]).map(x=>({d:x.d,v:num(x.w)})).filter(x=>x.d&&x.v!=null&&visibleWeight(x)).sort((a,b)=>a.d.localeCompare(b.d))}
   function workouts(){return cache.loaded&&cache.workouts.length?cache.workouts:localWorkouts()}
   function weights(){return cache.loaded?cache.weights:localWeights()}
   function goal(){return num(cache.goal)??num(st.weightGoalKg)}
@@ -54,7 +56,7 @@
       ]);
       cache.workouts=(wo.data||[]).map(w=>({date:w.workout_date,duration:Math.max(1,Math.round((((w.payload?.ended||0)-(w.payload?.started||0))/60000)||1))}));
       const deleted=new Set((st.deletedBodyweights||[]).map(x=>String(x?.d||x||'').slice(0,10)).filter(Boolean));
-      cache.weights=(bw.data||[]).map(x=>({d:String(x.measure_date).slice(0,10),v:num(x.weight_kg)})).filter(x=>x.v!=null&&!deleted.has(x.d)).sort((a,b)=>a.d.localeCompare(b.d));
+      cache.weights=(bw.data||[]).map(x=>({d:String(x.measure_date).slice(0,10),v:num(x.weight_kg)})).filter(x=>x.v!=null&&!deleted.has(x.d)&&visibleWeight(x)).sort((a,b)=>a.d.localeCompare(b.d));
       cache.goal=num(pr.data?.target_weight_kg)??num(st.weightGoalKg);
       cache.loaded=true;cache.ts=Date.now();
     }catch(e){console.warn('home stats hydrate',e)}finally{cache.loading=false}
@@ -111,7 +113,7 @@
     if(!host){host=document.createElement('div');host.className='home-stats-v2';}
     host.innerHTML=heatmapHtml()+weightHtml();
     const cards=[...root.children].filter(x=>x!==host&&x.classList?.contains('card'));
-    const clientMode=window.cloud?.profile?.role==='client';
+    const clientMode=isClientMode();
     const anchor=clientMode?(cards[1]||cards[0]):(root.querySelector(':scope > .calendar-card')||cards[0]);
     if(anchor)anchor.after(host);else root.prepend(host);
     requestAnimationFrame(()=>{const h=document.getElementById('homeHeatWrap');if(h)h.scrollLeft=h.scrollWidth});

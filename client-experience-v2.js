@@ -25,6 +25,12 @@
     return r.error?0:(r.count||0);
   }
 
+  function refreshClientHomeExtras(){
+    if(!isClient()||!document.getElementById('home')?.classList.contains('active'))return;
+    try{if(typeof window.renderClientCheckinCard==='function')window.renderClientCheckinCard()}catch(e){}
+    try{if(typeof window.homeProgressRefresh==='function')window.homeProgressRefresh(false)}catch(e){}
+  }
+
   function clientHomeV2(){
     document.body?.classList.toggle('unvrsl-client',isClient());
     const root=document.getElementById('home');if(!root)return;
@@ -38,7 +44,9 @@
       '<div class="card client-progress-card"><div class="muted">ЗАМЕРЫ И ПРОГРЕСС</div><div class="title" style="margin-top:6px">Вес и обхваты</div><div class="muted" style="margin-top:7px">Вес и замеры заполняются тобой в еженедельном чек-ине. Здесь не подставляются данные тренера или чужого аккаунта.</div><div class="client-progress-actions"><button class="btn" onclick="openWeeklyCheckin()">Заполнить чек-ин</button><button class="btn primary" onclick="nav(\'stats\')">Смотреть прогресс</button></div></div>'+
       '<div class="card"><div class="row between"><div><div class="muted">Выполнено тренировок</div><div class="title" id="clientOwnWorkoutCountV2">—</div></div><button class="btn" onclick="nav(\'stats\')">Статистика</button></div></div>';
     clientWorkoutCount().then(n=>{const el=document.getElementById('clientOwnWorkoutCountV2');if(el)el.textContent=String(n)});
+    [0,120].forEach(t=>setTimeout(refreshClientHomeExtras,t));
   }
+  window.clientHomeCanonicalV236=clientHomeV2;
   window.clientCleanHome=clientHomeV2;try{clientCleanHome=clientHomeV2}catch(e){}
 
   const baseNav=window.nav;
@@ -102,5 +110,5 @@
   }
 
   document.body?.classList.toggle('unvrsl-client',isClient());
-  if(isClient()&&typeof window.home==='function')setTimeout(()=>{try{window.home()}catch(e){}},120);
+  if(isClient()&&typeof window.home==='function')setTimeout(()=>{try{window.home();refreshClientHomeExtras()}catch(e){}},120);
 })();

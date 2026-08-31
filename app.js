@@ -12,7 +12,7 @@ const CYCLE_START='2026-08-31';
 const COLORS=['#30d158','#0a84ff','#ff9f0a','#bf5af2','#ff375f','#ff453a','#64d2ff','#ffd60a'];
 let viewDate=new Date();
 let timerId=null,timerEnd=0;
-function loadState(){let x=null;try{x=JSON.parse(localStorage.getItem(KEY))}catch(e){}if(x)return x;try{x=JSON.parse(localStorage.getItem(OLDKEY))}catch(e){}if(x){localStorage.setItem(KEY,JSON.stringify(x));return x}return {bw:[{d:'2026-08-25',w:97.5}],goal:null,sessions:[],current:null,week:1,accent:'#30d158',body:'male',theme:'dark',created:Date.now()}}
+function loadState(){let x=null;try{x=JSON.parse(localStorage.getItem(KEY))}catch(e){}if(x)return x;try{x=JSON.parse(localStorage.getItem(OLDKEY))}catch(e){}if(x){localStorage.setItem(KEY,JSON.stringify(x));return x}return {bw:[],goal:null,sessions:[],current:null,week:1,accent:'#30d158',body:'male',theme:'dark',created:Date.now()}}
 let st=loadState();
 if(!Array.isArray(st.bw))st.bw=[];if(!Array.isArray(st.sessions))st.sessions=[];if(!st.week)st.week=1;
 applyAccent();save();
