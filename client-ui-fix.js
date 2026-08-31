@@ -9,7 +9,8 @@
     body.unvrsl-client .brand{line-height:1.06!important;padding-top:2px!important;overflow:visible!important}
     body.unvrsl-client .date{margin-top:7px!important}
     body.unvrsl-client .page{padding-bottom:118px!important}
-    body.unvrsl-client #start.page{padding-bottom:160px!important;touch-action:pan-y;overscroll-behavior-y:auto}
+    body.unvrsl-client #start.page{padding-bottom:160px!important;touch-action:pan-y;overscroll-behavior-y:contain;overflow-anchor:none!important}
+    body.unvrsl-client #start .workout-head,body.unvrsl-client #start .exercise{overflow-anchor:none!important}
     body.unvrsl-client #start .workout-head{top:8px!important;position:relative!important;margin-top:4px!important}
     body.unvrsl-client #start .workout-head .title{font-size:21px!important;line-height:1.08!important;letter-spacing:-.35px!important}
     body.unvrsl-client #start .exercise{padding:14px!important;margin:9px 0!important;border-radius:21px!important}
@@ -39,6 +40,19 @@
   function applyClientClass(){document.body?.classList.toggle('unvrsl-client',isClient())}
 
   let clientNavigationDepth=0;
+  let workoutTouching=false,lastWorkoutScrollAt=0,deferredWorkoutRender=0;
+  function workoutState(){
+    let cur=window.st?.current||null;
+    try{if(typeof st!=='undefined'&&st?.current)cur=st.current}catch(_){}
+    return cur;
+  }
+  function workoutRenderSignature(){
+    const s=workoutState();if(!s)return'none';
+    return JSON.stringify([
+      String(s.id||''),String(s.programId||''),s.w||0,String(s.c||''),String(s.name||''),Number(s.target||0),
+      (s.ex||[]).map(e=>[String(e?.n||''),String(e?.d||''),Number(e?.rest||0),(e?.set||[]).map(x=>[x?.w??'',x?.r??'',x?.rpe??'',!!x?.ok])])
+    ]);
+  }
   function workoutScrollSnapshot(root){
     const y=window.scrollY||document.documentElement?.scrollTop||0;
     const cards=[...root.querySelectorAll('.exercise')];
@@ -59,15 +73,47 @@
     }
     window.scrollTo({top:snapshot.y,left:0,behavior:'auto'});
   }
+  function workoutGestureActive(){
+    const now=typeof performance!=='undefined'&&performance.now?performance.now():Date.now();
+    return workoutTouching||now-lastWorkoutScrollAt<140;
+  }
+  function queueWorkoutRender(){
+    if(deferredWorkoutRender)return;
+    deferredWorkoutRender=setTimeout(()=>{
+      deferredWorkoutRender=0;
+      if(workoutGestureActive()){queueWorkoutRender();return}
+      try{window.startPage?.()}catch(_){}
+    },170);
+  }
+  document.addEventListener('touchstart',e=>{if(e.target?.closest?.('#start'))workoutTouching=true},{passive:true});
+  document.addEventListener('touchend',()=>{workoutTouching=false},{passive:true});
+  document.addEventListener('touchcancel',()=>{workoutTouching=false},{passive:true});
+  window.addEventListener('scroll',()=>{
+    if(!document.getElementById('start')?.classList.contains('active'))return;
+    lastWorkoutScrollAt=typeof performance!=='undefined'&&performance.now?performance.now():Date.now();
+  },{passive:true});
+
   function installStableWorkoutScroll(){
     const current=window.startPage;
     if(typeof current!=='function'||current.__clientStableScroll)return;
+    const root=document.getElementById('start');
+    if(isClient()&&root?.childElementCount&&!root.dataset.clientWorkoutRenderSig)root.dataset.clientWorkoutRenderSig=workoutRenderSignature();
     const wrapped=function(){
-      const root=document.getElementById('start');
-      const preserve=isClient()&&clientNavigationDepth===0&&root?.classList.contains('active');
-      const snapshot=preserve?workoutScrollSnapshot(root):null;
+      const live=document.getElementById('start');
+      const active=isClient()&&clientNavigationDepth===0&&live?.classList.contains('active');
+      const sig=active?workoutRenderSignature():'';
+      const initialized=!!live?.childElementCount;
+      if(active&&initialized&&live.dataset.clientWorkoutRenderSig===sig)return;
+      if(active&&initialized&&workoutGestureActive()){
+        queueWorkoutRender();
+        return;
+      }
+      const snapshot=active?workoutScrollSnapshot(live):null;
       const result=current.apply(this,arguments);
-      if(preserve)restoreWorkoutScroll(root,snapshot);
+      if(active&&live){
+        live.dataset.clientWorkoutRenderSig=workoutRenderSignature();
+        if(snapshot)requestAnimationFrame(()=>restoreWorkoutScroll(live,snapshot));
+      }
       return result;
     };
     wrapped.__clientStableScroll=true;
