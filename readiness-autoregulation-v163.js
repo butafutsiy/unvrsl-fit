@@ -6,7 +6,7 @@
     if(window.__unvrslTrainingEngineV200||attempts>=3)return;
     document.querySelectorAll('script[data-unvrsl-training-engine-v200]').forEach(x=>x.remove());
     const s=document.createElement('script');attempts++;
-    s.src=`training-engine-v200.js?v=230-${attempts}`;
+    s.src=`training-engine-v200.js?v=231-${attempts}`;
     s.async=false;s.dataset.unvrslTrainingEngineV200='1';
     s.onload=()=>{if(!window.__unvrslTrainingEngineV200)setTimeout(load,250)};
     s.onerror=()=>setTimeout(load,700);
@@ -15,13 +15,13 @@
   function loadQuestionnaire(){
     if(window.__unvrslReadinessQuestionnaireV227||document.querySelector('script[data-unvrsl-readiness-v227]'))return;
     const q=document.createElement('script');
-    q.src='readiness-questionnaire-v227.js?v=230';q.async=false;q.dataset.unvrslReadinessV227='1';
+    q.src='readiness-questionnaire-v227.js?v=231';q.async=false;q.dataset.unvrslReadinessV227='1';
     document.body.appendChild(q)
   }
   function loadExactPlanFix(){
     if(window.__unvrslExactPlanFixV230||document.querySelector('script[data-unvrsl-exact-plan-v230]'))return;
     const f=document.createElement('script');
-    f.src='exact-plan-fix-v228.js?v=230';f.async=false;f.dataset.unvrslExactPlanV230='1';
+    f.src='exact-plan-fix-v228.js?v=231';f.async=false;f.dataset.unvrslExactPlanV230='1';
     document.body.appendChild(f)
   }
   load();

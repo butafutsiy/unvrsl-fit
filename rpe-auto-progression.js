@@ -64,6 +64,9 @@
 
 // Correct UNVRSL structure: 3 rounds of heavy + 30s + light, then 2 intermediate top-off sets.
 (()=>{
+  // The current program editor and training engine own UNVRSL expansion.
+  // Keep this migration only as a fallback for older standalone builds.
+  if(window.__unvrslProgramExerciseRulesV162)return;
   if(window.__unvrslRoundWaveFix)return;window.__unvrslRoundWaveFix=true;
 
   const clone=x=>JSON.parse(JSON.stringify(x));

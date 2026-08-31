@@ -40,3 +40,49 @@ test('main workout session opens the complete eight-set UNVRSL block',()=>{
   assert.deepEqual(exercises.map(exercise=>exercise.rest),[30,120,30,120,30,120,120]);
   assert.equal(context.formatPrescription(routine.e),'3×(130×3 + 30с + 115×9), затем 2×6 – 120 кг');
 });
+
+function loadProgramMethodBuilder(){
+  const context={console};
+  context.window=context;
+  context.document={
+    createElement:()=>({}),
+    head:{appendChild:()=>{}},
+    getElementById:()=>null,
+    querySelectorAll:()=>[]
+  };
+  vm.runInNewContext(fs.readFileSync(require.resolve('../program-exercise-rules-v162.js'),'utf8'),context);
+  return context.programBuildMethodSets;
+}
+
+test('program editor builds UNVRSL as three heavy-light rounds plus middle sets',()=>{
+  const build=loadProgramMethodBuilder();
+  const sets=build('UNVRSL',3,130,0,150,{heavyReps:3,lightWeight:115,lightReps:9,middleSets:2,middleWeight:120,middleReps:6,tempo:'2-0-X',tempoLight:'3-1-2'});
+  assert.deepEqual(JSON.parse(JSON.stringify(sets.map(set=>[set.role,set.w,set.r,set.rest]))),[
+    ['heavy',130,3,30],['light',115,9,150],
+    ['heavy',130,3,30],['light',115,9,150],
+    ['heavy',130,3,30],['light',115,9,150],
+    ['middle',120,6,150],['middle',120,6,150]
+  ]);
+});
+
+test('program editor builds SLDR on one weight with falling reps and 15-second pauses',()=>{
+  const build=loadProgramMethodBuilder();
+  const sets=build('SLDR',3,100,12,120,{sldrSets:3,sldrDrop:2,tempo:'2-1-1'});
+  assert.deepEqual(JSON.parse(JSON.stringify(sets.map(set=>[set.w,set.r,set.rest]))),[[100,12,15],[100,10,15],[100,8,120]]);
+});
+
+test('automatic readiness never raises the program weight at workout start',async()=>{
+  const program={id:'mine',weeks:[{days:[{name:'B',ex:[{n:'Жим лёжа',sourceId:'bench',method:'STANDARD',sets:[{w:110,r:6},{w:110,r:6}]}]}]}]};
+  const context={
+    console,setInterval:()=>0,setTimeout:()=>0,
+    document:{createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null,querySelectorAll:()=>[]},
+    st:{programs:[program],sessions:[],readinessLog:[],current:{id:'current',programId:'mine',w:1,c:'B',target:8,trainingReadinessDone:true,readinessAdjusted:true,readiness:{percent:10,factor:1.1,manual:false},ex:[{n:'Жим лёжа',sourceId:'bench',set:[{w:125,r:6,ok:false},{w:125,r:6,ok:false}]}]}},
+    programById:id=>id==='mine'?program:null,baseExerciseName:name=>String(name).replace(/\s+—\s+.*$/,'').trim(),save:()=>{},startPage:()=>{},UNVRSL_METHOD_V211:require('../unvrsl-method-v211.js')
+  };
+  context.window=context;
+  vm.runInNewContext(fs.readFileSync(require.resolve('../training-engine-v200.js'),'utf8'),context);
+  await context.trainingEngine200Tick();
+  assert.deepEqual(JSON.parse(JSON.stringify(context.st.current.ex[0].set.map(set=>set.w))),[110,110]);
+  assert.equal(context.st.current.readiness.factor,1);
+  assert.equal(context.st.current.readinessAdjusted,false);
+});
