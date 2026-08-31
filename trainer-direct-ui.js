@@ -22,6 +22,7 @@
   window.__unvrslTrainerDirectUIV3=true;
 
   const M=[['chest','Грудь'],['waist','Талия'],['abdomen','Живот'],['hips','Ягодицы'],['thigh','Бедро'],['arm','Рука'],['calf','Икра']];
+  const LEGACY_WEIGHT_CLIENT='4e0b2acf-7482-4698-9111-8573de113490';
   const state={clientId:null,data:null,tab:'workouts',planView:null,planWeek:0};
   const A=x=>Array.isArray(x)?x:[];
   const E=v=>typeof esc==='function'?esc(String(v??'')):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -29,6 +30,7 @@
   const F=v=>v==null?'–':Number(v).toFixed(1).replace('.0','').replace('.',',');
   const rd=v=>{if(!v)return'–';const d=new Date(String(v).slice(0,10)+'T12:00:00');return isNaN(d)?String(v):new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',year:'numeric'}).format(d)};
   const clone=v=>JSON.parse(JSON.stringify(v));
+  const cleanWeights=(id,rows)=>A(rows).filter(x=>!(String(id)===LEGACY_WEIGHT_CLIENT&&String(x?.measure_date||'').slice(0,10)==='2026-08-25'&&Number(x?.weight_kg)===97.5));
 
   const css=document.createElement('style');
   css.id='trainer-client-v3-style';
@@ -53,7 +55,7 @@
       c.client.from('body_measurements').select('measure_date,measurements').eq('user_id',id).order('measure_date',{ascending:false}).limit(100),
       c.client.from('plan_assignments').select('plan_id,version,status,assigned_at,plans(title)').eq('trainer_id',c.user.id).eq('client_id',id).eq('status','active').order('assigned_at',{ascending:false})
     ]);
-    return {profile:pr.data||null,workouts:A(wo.data),weights:A(bw.data),measurements:A(bm.data),plans:A(pa.data)};
+    return {profile:pr.data||null,workouts:A(wo.data),weights:cleanWeights(id,bw.data),measurements:A(bm.data),plans:A(pa.data)};
   }
 
   function avgRpe(rows){const a=rows.map(x=>N(x.avg_rpe)).filter(Boolean);return a.length?Math.round(a.reduce((q,x)=>q+x,0)/a.length*10)/10:null}

@@ -20,6 +20,8 @@
   document.head.appendChild(style);
 
   const num=v=>{const x=Number(v);return Number.isFinite(x)&&x>0?x:null};
+  const LEGACY_WEIGHT_CLIENT='4e0b2acf-7482-4698-9111-8573de113490';
+  const cleanWeights=(id,rows)=>(Array.isArray(rows)?rows:[]).filter(x=>!(String(id)===LEGACY_WEIGHT_CLIENT&&String(x?.measure_date||'').slice(0,10)==='2026-08-25'&&Number(x?.weight_kg)===97.5));
   const fmt=(v,d=1)=>v==null?'—':Number(v).toFixed(d).replace('.0','');
   function latestPoint(a){return a&&a.length?a[a.length-1]:null}
   function deltaMeta(points,unit){
@@ -41,7 +43,7 @@
     const qAssignments=c.client.from('plan_assignments').select('plan_id,version,status,assigned_at,updated_at,plans(title)').eq('client_id',id).eq('trainer_id',trainerId).order('assigned_at',{ascending:false});
     const qCheckins=c.client.from('checkins').select('checkin_date,measurements').eq('user_id',id).order('checkin_date',{ascending:true}).limit(80);
     const [pr,wr,bw,ar,ci]=await Promise.all([qProfile,qWorkouts,qWeights,qAssignments,qCheckins]);
-    return {profile:pr.data||null,workouts:wr.data||[],weights:bw.data||[],assignments:ar.data||[],checkins:ci.error?[]:(ci.data||[])};
+    return {profile:pr.data||null,workouts:wr.data||[],weights:cleanWeights(id,bw.data),assignments:ar.data||[],checkins:ci.error?[]:(ci.data||[])};
   }
 
   function measurementSeries(data){
