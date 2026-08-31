@@ -101,3 +101,32 @@ test('start picker opens the workout preview before beginning the session',()=>{
   context.startPickedBuiltin(3,encodeURIComponent('B'));
   assert.deepEqual(calls,[['preview',3,'B']]);
 });
+
+test('calendar planner can remove, restore and replace a planned workout',()=>{
+  const base={w:1,c:'A1',t:'Ноги',e:[]},calls=[];
+  const context={
+    console,encodeURIComponent,decodeURIComponent,confirm:()=>true,setTimeout:()=>0,
+    st:{calendarPlans:{},sessions:[],programs:[{id:'custom',name:'Моя программа',weeks:[{days:[{name:'День рук',ex:[]}]}]}],week:1,primaryProgramId:'__builtin_cycle__'},
+    ROUTINES:[base,{w:2,c:'B',t:'Грудь',e:[]}],RPE:{1:7,2:8},
+    plannedForDate:d=>String(d instanceof Date?d.toISOString().slice(0,10):d).slice(0,10)==='2026-08-31'?base:null,
+    iso:d=>d.toISOString().slice(0,10),parseDate:s=>new Date(`${s}T12:00:00`),
+    save:()=>{},home:()=>{},modal:()=>{},closeModal:()=>{},toast:()=>{},preview:(w,c)=>calls.push(['builtin',w,c]),previewPrimaryProgramDay:(id,wi,di)=>calls.push(['program',id,wi,di]),
+    document:{createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null}
+  };
+  context.window=context;
+  vm.runInNewContext(fs.readFileSync(require.resolve('../calendar-planner-v234.js'),'utf8'),context);
+  assert.equal(context.plannedForDate('2026-08-31').c,'A1');
+  context.calendarPlannerDeleteV234(encodeURIComponent('2026-08-31'));
+  assert.equal(context.plannedForDate('2026-08-31'),null);
+  context.calendarPlannerRestoreV234(encodeURIComponent('2026-08-31'));
+  assert.equal(context.plannedForDate('2026-08-31').c,'A1');
+  context.calendarPlannerAddV234(encodeURIComponent('2026-09-01'));
+  context.calendarPlannerAssignBuiltinV234(2,encodeURIComponent('B'));
+  assert.equal(context.plannedForDate('2026-09-01').c,'B');
+  context.calendarPlannerPreviewDateV234(encodeURIComponent('2026-09-01'));
+  context.calendarPlannerAddV234(encodeURIComponent('2026-09-02'));
+  context.calendarPlannerAssignProgramV234(encodeURIComponent('custom'),0,0);
+  assert.equal(context.plannedForDate('2026-09-02').c,'День рук');
+  context.calendarPlannerPreviewDateV234(encodeURIComponent('2026-09-02'));
+  assert.deepEqual(calls,[['builtin',2,'B'],['program','custom',0,0]]);
+});
