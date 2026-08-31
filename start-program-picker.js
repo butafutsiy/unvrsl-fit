@@ -11,6 +11,10 @@
   const defaultProgram=()=>st.primaryProgramId||st.startProgramId||BUILTIN;
   let ui={pid:defaultProgram(),week:null};
 
+  if(st.current&&String(st.current.programId||'')===BUILTIN){
+    delete st.current.programId;delete st.current.programName;st.current.builtinCycle=true;try{save()}catch(_){}
+  }
+
   const style=document.createElement('style');
   style.textContent=`
     .start-program-strip{display:flex;gap:10px;overflow-x:auto;padding:2px 1px 10px;scrollbar-width:none}.start-program-strip::-webkit-scrollbar{display:none}
@@ -115,7 +119,12 @@
   const oldStart=window.startPage;
   if(typeof oldStart==='function'){
     const wrapped=function(){
-      if(window.__pendingStartProgramMeta&&st.current&&!st.current.programId){st.current.programId=window.__pendingStartProgramMeta.id;st.current.programName=window.__pendingStartProgramMeta.name;window.__pendingStartProgramMeta=null;save()}
+      if(window.__pendingStartProgramMeta&&st.current&&!st.current.programId){
+        const meta=window.__pendingStartProgramMeta;window.__pendingStartProgramMeta=null;
+        if(String(meta.id)===BUILTIN){delete st.current.programId;delete st.current.programName;st.current.builtinCycle=true}
+        else{st.current.programId=meta.id;st.current.programName=meta.name}
+        save()
+      }
       return oldStart.apply(this,arguments);
     };
     window.startPage=wrapped;try{startPage=wrapped}catch(e){}
