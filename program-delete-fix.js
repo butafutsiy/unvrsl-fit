@@ -145,8 +145,8 @@
   }
   window.selectStartProgram=function(token){picker.pid=decodeURIComponent(token);picker.week=null;st.startProgramId=picker.pid;st.startProgramWeeks=st.startProgramWeeks&&typeof st.startProgramWeeks==='object'?st.startProgramWeeks:{};save();renderPicker()};
   window.selectStartWeek=function(w){const p=pickerPrograms().find(x=>String(x.id)===String(picker.pid))||pickerDefault();if(!p)return;picker.week=Math.max(1,Math.min(p.weeks,+w||1));st.startProgramWeeks=st.startProgramWeeks&&typeof st.startProgramWeeks==='object'?st.startProgramWeeks:{};st.startProgramWeeks[p.id]=picker.week;if(p.builtin)st.week=picker.week;save();renderPicker()};
-  window.startPickedBuiltin=function(w,token){if(st.builtinProgramHidden)return;const c=decodeURIComponent(token);st.startProgramId=BUILTIN;st.week=w;save();begin(w,c)};
-  window.startPickedProgram=function(token,wi,di){const pid=decodeURIComponent(token);st.startProgramId=pid;save();beginProgramDay(pid,wi,di)};
+  window.startPickedBuiltin=function(w,token){if(st.builtinProgramHidden)return;const c=decodeURIComponent(token);st.startProgramId=BUILTIN;st.week=w;save();if(typeof window.preview==='function')return window.preview(w,c);begin(w,c)};
+  window.startPickedProgram=function(token,wi,di){const pid=decodeURIComponent(token);st.startProgramId=pid;save();if(typeof window.previewPrimaryProgramDay==='function')return window.previewPrimaryProgramDay(pid,wi,di);beginProgramDay(pid,wi,di)};
   window.openStartProgramPicker=function(){picker.pid=(pickerDefault()||{}).id||null;picker.week=null;renderPicker()};
   window.quick=window.openStartProgramPicker;try{quick=window.quick}catch(e){}
   window.quickWeek=function(w){picker.week=w;renderPicker()};try{quickWeek=window.quickWeek}catch(e){}

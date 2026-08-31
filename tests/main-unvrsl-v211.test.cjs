@@ -86,3 +86,18 @@ test('automatic readiness never raises the program weight at workout start',asyn
   assert.equal(context.st.current.readiness.factor,1);
   assert.equal(context.st.current.readinessAdjusted,false);
 });
+
+test('start picker opens the workout preview before beginning the session',()=>{
+  const calls=[];
+  const context={
+    console,encodeURIComponent,decodeURIComponent,
+    st:{startProgramWeeks:{},programs:[],week:3,primaryProgramId:'__builtin_cycle__',startProgramId:'__builtin_cycle__'},
+    ROUTINES:[],RPE:{3:8.5},save:()=>{},
+    begin:()=>calls.push(['begin']),preview:(week,day)=>calls.push(['preview',week,day]),
+    document:{createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null}
+  };
+  context.window=context;
+  vm.runInNewContext(fs.readFileSync(require.resolve('../start-program-picker.js'),'utf8'),context);
+  context.startPickedBuiltin(3,encodeURIComponent('B'));
+  assert.deepEqual(calls,[['preview',3,'B']]);
+});
