@@ -37,7 +37,8 @@
   css.textContent=`
     .tcv3-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.tcv3-name{font-size:30px;font-weight:850;line-height:1.05;overflow-wrap:anywhere}
     .tcv3-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#121215;border:1px solid #2b2c31;border-radius:16px;margin:16px 0 12px}.tcv3-tab{border:0;background:transparent;color:#8e8e93;border-radius:12px;padding:11px 8px;font:inherit;font-weight:750}.tcv3-tab.on{background:#2b2c31;color:#f5f5f7}
-    .tcv3-list{padding:0!important;overflow:hidden}.tcv3-workout{padding:13px 14px;border-bottom:1px solid #303034}.tcv3-workout:last-child{border-bottom:0}.tcv3-workout-top{display:flex;justify-content:space-between;gap:12px;align-items:baseline}.tcv3-workout b{font-size:16px}.tcv3-meta{font-size:12px;color:#8e8e93;margin-top:5px;line-height:1.4}
+    .tcv3-list{padding:0!important;overflow:hidden}.tcv3-workout{display:block;width:100%;padding:13px 14px;border:0;border-bottom:1px solid #303034;background:transparent;color:inherit;text-align:left;font:inherit;touch-action:manipulation}.tcv3-workout:last-child{border-bottom:0}.tcv3-workout:active{background:#202024}.tcv3-workout-top{display:flex;justify-content:space-between;gap:12px;align-items:baseline}.tcv3-workout b{font-size:16px}.tcv3-workout-date{display:flex;align-items:center;gap:8px;white-space:nowrap}.tcv3-chevron{color:#6f7076;font-size:21px;line-height:1}.tcv3-meta{font-size:12px;color:#8e8e93;margin-top:5px;line-height:1.4}
+    .tcv3-session-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.tcv3-session-head h2{margin:0;line-height:1.08}.tcv3-session-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:15px 0}.tcv3-session-metric{background:#19191c;border:1px solid #2e3035;border-radius:15px;padding:11px}.tcv3-session-metric span{display:block;color:#8e8e93;font-size:11px}.tcv3-session-metric b{display:block;font-size:19px;margin-top:4px}.tcv3-session-ex{padding:14px 0;border-bottom:1px solid #303034}.tcv3-session-ex:last-child{border-bottom:0}.tcv3-session-ex-name{font-size:16px;font-weight:800;line-height:1.25}.tcv3-set-list{display:grid;gap:7px;margin-top:11px}.tcv3-set-row{display:grid;grid-template-columns:minmax(70px,.8fr) minmax(0,1.5fr);gap:10px;align-items:center;background:#19191c;border:1px solid #2e3035;border-radius:13px;padding:9px 10px}.tcv3-set-row span{color:#8e8e93;font-size:12px}.tcv3-set-values{display:flex;gap:6px 10px;justify-content:flex-end;flex-wrap:wrap;font-size:13px;font-weight:750}.tcv3-set-values i{font-style:normal;white-space:nowrap}.tcv3-session-note{font-size:12px;color:#8e8e93;line-height:1.45;margin-top:7px}
     .tcv3-measure-day{padding:14px 0;border-bottom:1px solid #303034}.tcv3-measure-day:last-child{border-bottom:0}.tcv3-date{font-size:14px;font-weight:800;margin-bottom:10px}.tcv3-measure-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.tcv3-measure{background:#19191c;border:1px solid #2e3035;border-radius:14px;padding:10px;min-width:0}.tcv3-measure span{display:block;color:#8e8e93;font-size:11px}.tcv3-measure b{display:block;font-size:17px;margin-top:4px}
     .tcv3-program{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid #303034}.tcv3-program:last-child{border-bottom:0}.tcv3-program .danger{background:#3a1a1a!important;color:#ff6b63!important}.tcv3-program .muted{margin-top:4px}.tcv3-program-actions{display:flex;align-items:center;gap:7px}.tcv3-program-open{background:#2b2c31!important;color:#f5f5f7!important}
     .tcv3-program-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px}.tcv3-program-head .section{margin:0}.tcv3-add{white-space:nowrap}
@@ -62,7 +63,42 @@
   function workoutTitle(w){const s=w?.payload||{};return [s.c,s.name].filter(Boolean).join(' · ')||s.name||'Тренировка'}
   function workoutsHtml(d){
     if(!d.workouts.length)return '<div class="card muted">Пока нет проведённых тренировок.</div>';
-    return `<div class="card tcv3-list">${d.workouts.slice(0,30).map(w=>`<div class="tcv3-workout"><div class="tcv3-workout-top"><b>${E(workoutTitle(w))}</b><span class="muted small">${E(rd(w.workout_date))}</span></div><div class="tcv3-meta">${w.avg_rpe!=null?'Средний RPE '+E(w.avg_rpe):'RPE не указан'}${w.completed_sets!=null?' · '+E(w.completed_sets)+' подходов':''}</div></div>`).join('')}</div>`;
+    return `<div class="card tcv3-list">${d.workouts.slice(0,30).map((w,i)=>`<button type="button" class="tcv3-workout" onclick="trainerClientWorkoutV3(${i})"><div class="tcv3-workout-top"><b>${E(workoutTitle(w))}</b><span class="tcv3-workout-date"><span class="muted small">${E(rd(w.workout_date))}</span><span class="tcv3-chevron">›</span></span></div><div class="tcv3-meta">${w.avg_rpe!=null?'Средний RPE '+E(w.avg_rpe):'RPE не указан'}${w.completed_sets!=null?' · '+E(w.completed_sets)+' подходов':''}</div></button>`).join('')}</div>`;
+  }
+
+  function fmtTime(ms){
+    const min=Math.max(0,Math.round(Number(ms||0)/60000));
+    if(!min)return '–';
+    const h=Math.floor(min/60),m=min%60;
+    return h?`${h} ч${m?' '+m+' мин':''}`:`${m} мин`;
+  }
+  function workoutDuration(s){return Number(s?.finalDurationMs||s?.durationMs)||Math.max(0,Number(s?.ended||0)-Number(s?.started||0))}
+  function workoutTonnage(s){
+    const saved=Number(s?.advancedMetrics?.tonnage);if(Number.isFinite(saved)&&saved>0)return saved;
+    return A(s?.ex).reduce((sum,e)=>sum+A(e?.set).filter(x=>x?.ok).reduce((q,x)=>q+(Number(x?.w)||0)*(Number(x?.r)||0),0),0);
+  }
+  function setValues(x,e){
+    const out=[],sec=Number(x?.workSeconds||e?.workSeconds||e?.timedSeconds||0),w=Number(x?.w),r=Number(x?.r);
+    if(sec>0)out.push(`${Math.floor(sec/60)?Math.floor(sec/60)+' мин ':''}${sec%60?sec%60+' сек':''}`.trim());
+    else{
+      if(Number.isFinite(w)&&w>0)out.push(`${F(w)} кг`);
+      if(Number.isFinite(r)&&r>0)out.push(`${F(r)} повт.`);
+    }
+    if(x?.rpe!==''&&x?.rpe!=null&&Number.isFinite(Number(x.rpe)))out.push(`RPE ${F(x.rpe)}`);
+    if(x?.rir!==''&&x?.rir!=null&&Number.isFinite(Number(x.rir)))out.push(`RIR ${F(x.rir)}`);
+    return out.length?out:['Выполнено'];
+  }
+  function workoutExercisesHtml(s){
+    const rows=A(s?.ex).map(e=>{
+      const sets=A(e?.set).filter(x=>x?.ok);if(!sets.length)return'';
+      const meta=[];if(e?.method&&e.method!=='STANDARD')meta.push(e.method);if(e?.tempo)meta.push('темп '+e.tempo);if(N(e?.rest))meta.push('отдых '+F(e.rest)+' сек');if(N(e?.target))meta.push('цель RPE '+F(e.target));
+      return `<div class="tcv3-session-ex"><div class="tcv3-session-ex-name">${E(e?.n||'Упражнение')}</div>${meta.length?`<div class="tcv3-session-note">${E(meta.join(' · '))}</div>`:''}<div class="tcv3-set-list">${sets.map((x,i)=>`<div class="tcv3-set-row"><span>Подход ${E(x?.n||i+1)}</span><div class="tcv3-set-values">${setValues(x,e).map(v=>`<i>${E(v)}</i>`).join('')}</div></div>`).join('')}</div>${e?.d?`<div class="tcv3-session-note">${E(e.d)}</div>`:''}</div>`;
+    }).filter(Boolean).join('');
+    return rows||'<div class="card muted">В этой тренировке нет отмеченных подходов.</div>';
+  }
+  function renderWorkoutView(w){
+    const s=w?.payload||{},sets=A(s.ex).reduce((n,e)=>n+A(e?.set).filter(x=>x?.ok).length,0),rpe=w?.avg_rpe??s?.advancedMetrics?.avgRpe,ton=workoutTonnage(s),duration=workoutDuration(s);
+    modal(`<div class="sheet-grabber"></div><div class="tcv3-session-head"><div><h2>${E(workoutTitle(w))}</h2><div class="muted" style="margin-top:6px">${E(rd(w?.workout_date||s?.date))}</div></div><button class="btn tiny" onclick="trainerClientWorkoutBackV3()">Назад</button></div><div class="tcv3-session-metrics"><div class="tcv3-session-metric"><span>Подходы</span><b>${E(sets)}</b></div><div class="tcv3-session-metric"><span>Средний RPE</span><b>${rpe!=null?E(F(rpe)):'–'}</b></div><div class="tcv3-session-metric"><span>Тоннаж</span><b>${ton?E(Math.round(ton).toLocaleString('ru-RU'))+' кг':'–'}</b></div><div class="tcv3-session-metric"><span>Длительность</span><b>${E(fmtTime(duration))}</b></div></div><div class="card" style="padding-top:0;padding-bottom:0">${workoutExercisesHtml(s)}</div>`);
   }
 
   function measurementDays(d){
@@ -116,6 +152,8 @@
   }
 
   window.trainerClientTabV3=function(tab){state.tab=tab==='measures'?'measures':'workouts';const el=document.getElementById('trainerClientTabBodyV3');if(el)el.innerHTML=bodyHtml();document.querySelectorAll('.tcv3-tab').forEach(b=>b.classList.toggle('on',(b.textContent||'').trim()===(state.tab==='measures'?'Замеры':'Тренировки')))};
+  window.trainerClientWorkoutV3=function(index){const w=A(state.data?.workouts)[Number(index)];if(w)renderWorkoutView(w)};
+  window.trainerClientWorkoutBackV3=function(){renderSheet()};
 
   window.trainerClientOpenPlanV3=async function(clientId,planId,titleToken){
     const c=window.cloud;if(!c?.client||!c?.user)return;
