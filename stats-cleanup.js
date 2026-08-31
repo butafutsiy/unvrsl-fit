@@ -57,6 +57,7 @@
     const root=document.getElementById('stats');if(!root||!root.classList.contains('stats-v2'))return;
     removeMovedCards(root);decorateMetrics(root);ensureMuscleMap(root);
   }
+  window.statsCleanupPatch=patchStats;
   function schedulePatch(){[0,80,260,700,1400].forEach(t=>setTimeout(patchStats,t));}
 
   const base=window.statsPage;
@@ -73,6 +74,10 @@
     if(!window.__clientJournal107){
       if(typeof window.loadExternalScript==='function')window.loadExternalScript('client-journal-profile-v107.js').catch(e=>console.warn('client journal/profile',e));
       else{const s=document.createElement('script');s.src='./client-journal-profile-v107.js';document.head.appendChild(s)}
+    }
+    if(!window.__unvrslStatsAuthorityV247){
+      if(typeof window.loadExternalScript==='function')window.loadExternalScript('stats-authority-v247.js').catch(e=>console.warn('stats authority',e));
+      else{const s=document.createElement('script');s.src='./stats-authority-v247.js';document.head.appendChild(s)}
     }
   },0);
 })();
