@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
- const W=window,REV=212;
+ const W=window,REV=213;
  if(W.__unvrslTrainingEngineV200)return;
  let STATE=W.st||null;
  try{if(typeof st!=='undefined')STATE=st}catch(_){}
@@ -77,7 +77,7 @@
    if(mode==='adaptive'){adaptive++;sets.forEach(s=>{s.programW=0;delete s.recommendedW;if(!s.ok&&!s.manualOverride){s.w=0;s.plannedW=0;s.baselineW=0;s.baselineSource='adaptive_pending'}})}
    else{prescribed++;sets.forEach((s,i)=>{s.programW=src?sourceWeight(src,ex,i,cur):num(launch[i]);delete s.recommendedW;if(!s.ok&&!s.manualOverride){s.w=num(s.programW);s.plannedW=s.w;s.baselineW=s.w;s.baselineSource='program'}})}
    const rows=await history(ex,cur),cap=e1rm(rows),stp=step(ex,rows);
-   if(cap>0&&mode==='adaptive'){
+   if(cap>0){
     const activeMethod=method(src,ex),unvrslResult=activeMethod==='UNVRSL'&&UNVRSL?.aggregateRecommendation?UNVRSL.aggregateRecommendation(rows,sets.map(s=>num(s.programW)||num(s.w)),sets.map(s=>num(s.r)),sets.map(s=>target(ex,s,cur)),stp):null;
     const calculated=unvrslResult?.weights||sets.map(s=>{const reps=num(s.r);if(reps<=0)return null;const rir=clamp(10-target(ex,s,cur),0,10);return limitedWeight(cap/(1+(reps+rir)/30),rows,stp)});
     if(activeMethod==='STANDARD'){
@@ -89,7 +89,7 @@
     if(cap>0){sets.forEach(s=>{if(s.ok||s.manualOverride||num(s.recommendedW)<=0)return;s.w=num(s.recommendedW);s.plannedW=s.w;s.baselineW=s.w;s.baselineSource='adaptive_previous_workout'});ex.weightDecision='adaptive_auto'}else ex.weightDecision='calibration'
    }else ex.weightDecision='program';
   }
-  if(unresolved)return false;if(cur.trainingReadinessDone)(cur.ex||[]).forEach(ex=>(ex.set||[]).forEach(s=>{if(!s.ok&&!s.manualOverride&&num(s.plannedW)>0)s.w=todayWeight(s.plannedW,ex,cur)}));cur.trainingEngineRevision=REV;cur.trainingEngineVersion=REV;cur.trainingPreparedAt=new Date().toISOString();cur.trainingTrace200={adaptive,prescribed};try{W.save?.();W.startPage?.()}catch(_){}return true
+  if(unresolved)return false;await harmonizeUnvrsl(cur);if(cur.trainingReadinessDone)(cur.ex||[]).forEach(ex=>(ex.set||[]).forEach(s=>{if(!s.ok&&!s.manualOverride&&num(s.plannedW)>0)s.w=todayWeight(s.plannedW,ex,cur)}));cur.trainingEngineRevision=REV;cur.trainingEngineVersion=REV;cur.trainingPreparedAt=new Date().toISOString();cur.trainingTrace200={adaptive,prescribed};try{W.save?.();W.startPage?.()}catch(_){}return true
  }
  function groupIndices(cur,k){const a=[];(cur.ex||[]).forEach((e,i)=>{if(key(e)===k)a.push(i)});return a}
  function fmtWeights(a){const vals=(a||[]).map(x=>num(x)).filter(x=>x>0),unique=[];vals.forEach(x=>{if(!unique.some(y=>Math.abs(y-x)<.001))unique.push(x)});if(!unique.length)return'—';return unique.map(x=>String(x).replace('.',',')).join(' / ')}
@@ -127,6 +127,8 @@
   (cur.ex||[]).forEach((ex,i)=>{if(ex?.mode==='cardio')return;const k=key(ex);if(seen.has(k))return;seen.add(k);const indices=groupIndices(cur,k),group=indices.map(j=>cur.ex[j]),card=cards[i];if(!card)return;const anchor=card.querySelector('.exname')||card.firstElementChild;
    if(ex.programWeightMode==='adaptive'){
     const baseVals=[],todayVals=[];group.forEach(g=>(g.set||[]).forEach(s=>{if(num(s.plannedW)>0){baseVals.push(num(s.plannedW));todayVals.push(num(s.w)||todayWeight(s.plannedW,g,cur))}}));const el=document.createElement('div');el.className='te200-auto';if(baseVals.length){const rp=readinessPercent(cur);el.textContent=`Автовес · ${fmtWeights(todayVals)} кг · по прошлой ${fmtWeights(baseVals)} кг${rp?` · самочувствие ${rp}`:''}`}else el.textContent='Первая тренировка · укажи рабочий вес для расчёта следующих занятий';anchor?.insertAdjacentElement('afterend',el)
+   }else{
+    const rec=[],recToday=[],plan=[],planToday=[];group.forEach(g=>(g.set||[]).forEach(s=>{if(num(s.recommendedW)>0){rec.push(num(s.recommendedW));recToday.push(todayWeight(s.recommendedW,g,cur))}if(num(s.programW)>0){plan.push(num(s.programW));planToday.push(todayWeight(s.programW,g,cur))}}));if(rec.length){const applied=group.some(g=>g.weightDecision==='recommendation'),rp=readinessPercent(cur),basis=group.map(g=>g.trainingEstimate200).find(x=>x?.method==='UNVRSL'&&x.averageWeight>0),basisText=basis?`Основа: ср. ${String(basis.averageWeight).replace('.',',')} кг × ${String(basis.averageReps).replace('.',',')} повт.${basis.averageRpe!=null?` · ср. RPE ${String(basis.averageRpe).replace('.',',')}`:''}`:`По прошлой ${fmtWeights(rec)} кг`,el=document.createElement('div');el.className='te200-rec'+(applied?' applied':'');el.innerHTML=`<div class="te200-rec-main"><b>Рекомендация · ${fmtWeights(recToday)} кг</b><span>${basisText} · план сегодня ${fmtWeights(planToday)} кг${rp?` · самочувствие ${rp}`:''}</span></div><button type="button">${applied?'Вернуть план':'Применить'}</button>`;el.querySelector('button').onclick=()=>applied?restoreProgram(k):applyRecommendation(k);anchor?.insertAdjacentElement('afterend',el)}
    }
   });
   const head=root.querySelector('.workout-head')||root.firstElementChild;if(head){const b=document.createElement('button');b.className='te200-readiness'+(cur.trainingReadinessDone?' done':'');b.type='button';const rp=readinessPercent(cur);b.textContent=cur.trainingReadinessDone?(cur.readiness?.skipped?'Самочувствие · базовый вес':rp?`Самочувствие · ${rp}`:'Самочувствие · вес оставить'):'Самочувствие · рассчитать коррекцию';b.onclick=showReadiness;head.insertAdjacentElement('afterend',b)}root.dataset.te200Sig=sig
@@ -136,7 +138,7 @@
  function installStart(name){const fn=W[name];if(typeof fn!=='function'||fn.__te205PreStart)return;const wrapped=function(){if(startingAfterReadiness)return fn.apply(this,arguments);askBeforeStart(fn,arguments,this)};wrapped.__te205PreStart=true;wrapped.__te205Base=fn;assignStart(name,wrapped)}
  function installStartHooks(){['begin','beginProgramDay','beginRemotePlan'].forEach(installStart)}
  async function tick(){disableLegacyReadiness();installStartHooks();const cur=W.st?.current;if(!cur?.id||cur.ended)return;lockLegacy(cur);const id=String(cur.id);if(id!==last){last=id;busy=false;const root=document.getElementById('start');if(root)delete root.dataset.te200Sig}if(busy)return;busy=true;try{if(cur.trainingEngineRevision!==REV){const ok=await prepare(cur);if(!ok)return}enhanceDom()}finally{busy=false}}
- W.trainingApplyRecommendation200=()=>{};W.trainingRestoreProgram200=()=>{};W.trainingShowReadiness200=showReadiness;W.trainingConfirmReadiness200=confirm;W.trainingUpdateReadiness200=updateReadiness;W.trainingEngine200Tick=tick;
+ W.trainingApplyRecommendation200=applyRecommendation;W.trainingRestoreProgram200=restoreProgram;W.trainingShowReadiness200=showReadiness;W.trainingConfirmReadiness200=confirm;W.trainingUpdateReadiness200=updateReadiness;W.trainingEngine200Tick=tick;
  const oldApply=W.applySuggestion;W.applySuggestion=function(){if(W.st?.current?.id){W.toast?.('Используй рекомендацию над упражнением');return}return typeof oldApply==='function'?oldApply.apply(this,arguments):undefined};try{applySuggestion=W.applySuggestion}catch(_){}
  installStartHooks();setInterval(tick,300);[0,80,250,700,1500,3000].forEach(t=>setTimeout(tick,t));
 })();

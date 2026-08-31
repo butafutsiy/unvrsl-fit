@@ -87,7 +87,7 @@ test('automatic readiness never raises the program weight at workout start',asyn
   assert.equal(context.st.current.readinessAdjusted,false);
 });
 
-test('autoweight is used only when the program has no initial weight',async()=>{
+test('recommendation stays manual while autoweight is limited to missing program weight',async()=>{
   const program={id:'mine',weeks:[{days:[{name:'B',ex:[
     {n:'Жим лёжа',sourceId:'bench',method:'STANDARD',sets:[{w:110,r:6}]},
     {n:'Тяга блока',sourceId:'row',method:'STANDARD',sets:[{w:0,r:8}]}
@@ -111,11 +111,16 @@ test('autoweight is used only when the program has no initial weight',async()=>{
   const [prescribed,adaptive]=context.st.current.ex;
   assert.equal(prescribed.programWeightMode,'prescribed');
   assert.equal(prescribed.set[0].w,110);
-  assert.equal(prescribed.set[0].recommendedW,undefined);
+  assert.ok(prescribed.set[0].recommendedW>0);
+  assert.equal(prescribed.weightDecision,'program');
   assert.equal(adaptive.programWeightMode,'adaptive');
   assert.equal(adaptive.weightDecision,'adaptive_auto');
   assert.ok(adaptive.set[0].w>0);
   assert.equal(adaptive.set[0].w,adaptive.set[0].plannedW);
+  context.trainingApplyRecommendation200('id:bench');
+  assert.equal(prescribed.set[0].w,prescribed.set[0].recommendedW);
+  context.trainingRestoreProgram200('id:bench');
+  assert.equal(prescribed.set[0].w,110);
 });
 
 test('client workout rerender keeps the visible exercise anchored',()=>{
