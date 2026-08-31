@@ -10,11 +10,12 @@ function baseExerciseName(n=''){
 }
 function displayExerciseName(n=''){const b=baseExerciseName(n);return st.aliases[b]||b}
 function isBase(n){const x=baseExerciseName(n).toLowerCase();return BASEWORDS.some(w=>x.includes(w))}
-function rest(r,e,i){
-  const n=e.n||'';
-  if(/DS/.test(n))return e.g&&routineEntries(r)[i+1]?.g===e.g?0:ISO[r.w];
-  if(/SLDR/.test(n))return e.g&&routineEntries(r)[i+1]?.g===e.g?15:(isBase(n)?BASE[r.w]:ISO[r.w]);
-  if(/UNVRSL/.test(n))return e.g&&routineEntries(r)[i+1]?.g===e.g?30:(isBase(n)?BASE[r.w]:ISO[r.w]);
+function rest(r,e,i,entriesOverride=null){
+  if(Number.isFinite(Number(e?._restOverride)))return Number(e._restOverride);
+  const n=e.n||'',entries=entriesOverride||routineEntries(r);
+  if(/DS/.test(n))return e.g&&entries[i+1]?.g===e.g?0:ISO[r.w];
+  if(/SLDR/.test(n))return e.g&&entries[i+1]?.g===e.g?15:(isBase(n)?BASE[r.w]:ISO[r.w]);
+  if(/UNVRSL/.test(n))return e.g&&entries[i+1]?.g===e.g?30:(isBase(n)?BASE[r.w]:ISO[r.w]);
   if(/FST-7/.test(n))return 30;
   return isBase(n)?BASE[r.w]:ISO[r.w];
 }
@@ -37,11 +38,22 @@ function variantLabel(n='',si=0){
   return String(si+1);
 }
 function tempoOnly(v=''){return String(v).split('|')[0].trim()||'—'}
-function groupRuleText(group){const t=methodType(group.entries),last=group.entries.at(-1);const finalRest=Number(last?.rest||0);if(t==='UNVRSL')return`UNVRSL · 30 сек между фазами · ${finalRest||'полный'} сек после блока`;if(t==='SLDR')return`SLDR · 15 сек между мини-подходами · ${finalRest||'полный'} сек после блока`;if(t==='DS')return`Дроп-сет · без отдыха между сбросами · ${finalRest||'полный'} сек после блока`;if(t==='FST-7')return'FST-7 · 7 подходов · 20–40 сек отдыха';if(t==='TEST')return`Тестовый блок · отдых ${finalRest||300} сек`;return`Рабочие подходы · отдых ${finalRest||90} сек`}
+function groupRuleText(group){const t=methodType(group.entries),last=group.entries.at(-1);const finalRest=Number(last?.rest||0);if(t==='UNVRSL')return`UNVRSL · 3 раунда: тяжёлая тройка → 30 сек → лёгкая девятка · ${finalRest||'полный'} сек между раундами`;if(t==='SLDR')return`SLDR · 15 сек между мини-подходами · ${finalRest||'полный'} сек после блока`;if(t==='DS')return`Дроп-сет · без отдыха между сбросами · ${finalRest||'полный'} сек после блока`;if(t==='FST-7')return'FST-7 · 7 подходов · 20–40 сек отдыха';if(t==='TEST')return`Тестовый блок · отдых ${finalRest||300} сек`;return`Рабочие подходы · отдых ${finalRest||90} сек`}
+function expandedSessionEntries(r){
+  const entries=routineEntries(r),out=[];
+  for(const group of groupIndexedEntries(entries)){
+    const phases=group.entries,type=methodType(phases),compressed=type==='UNVRSL'&&(phases.length===2||phases.length===3)&&Number(phases[0]?.s||1)===1&&Number(phases[1]?.s||1)===1;
+    if(!compressed){out.push(...phases);continue}
+    const lastIndex=group.indices.at(-1),fullRest=rest(r,entries[lastIndex],lastIndex),heavy=phases[0],light=phases[1];
+    for(let round=0;round<3;round++){out.push({...heavy,_restOverride:30});out.push({...light,_restOverride:fullRest})}
+    if(phases[2])out.push({...phases[2],_restOverride:fullRest});
+  }
+  return out;
+}
 function session(r){
-  const entries=routineEntries(r);
+  const entries=expandedSessionEntries(r);
   return {id:'s'+Date.now(),date:iso(),w:r.w,c:r.c,name:r.t,target:RPE[r.w],tempo:r.p||'',started:Date.now(),ended:null,
-    ex:entries.map((e,i)=>({n:e.n,d:e.d||'',rest:rest(r,e,i),g:e.g||null,sourceId:e.sourceId||null,mode:e.m?'cardio':'reps',set:Array.from({length:e.s||1},(_,j)=>e.m?{n:j+1,min:Number(e.m||0),rpe:'',ok:false}:{n:j+1,w:Number(e.w||0),r:Number(e.r||0),rpe:'',ok:false})}))};
+    ex:entries.map((e,i)=>({n:e.n,d:e.d||'',rest:rest(r,e,i,entries),g:e.g||null,sourceId:e.sourceId||null,mode:e.m?'cardio':'reps',set:Array.from({length:e.s||1},(_,j)=>e.m?{n:j+1,min:Number(e.m||0),rpe:'',ok:false}:{n:j+1,w:Number(e.w||0),r:Number(e.r||0),rpe:'',ok:false})}))};
 }
 function planPage(){
   const w=st.week||1,list=ROUTINES.filter(r=>r.w===w);
@@ -59,7 +71,7 @@ function startPage(){
 }
 function exerciseGroupCard(s,group){
   const title=displayExerciseName(group.base),method=methodType(group.entries),last=group.entries.at(-1),finalRest=Number(last?.rest||0),allCardio=group.entries.every(e=>e.mode==='cardio');
-  const rows=[];group.entries.forEach((e,local)=>{const ei=group.indices[local];e.set.forEach((x,si)=>rows.push({e,x,ei,si,label:variantLabel(e.n,si)}))});
+  const rows=[];group.entries.forEach((e,local)=>{const ei=group.indices[local];e.set.forEach((x,si)=>rows.push({e,x,ei,si,label:e.phaseLabel||variantLabel(e.n,si)}))});
   return `<div class="exercise ${method?'method':''}"><div class="row between"><div class="grow"><button class="exname exlink" onclick="openExerciseDetailByName('${encodeURIComponent(group.base)}')">${esc(title)} <span class="info-dot">ⓘ</span></button><div class="rule-line">${esc(groupRuleText(group))}</div><div class="chips compact"><span class="chip green">RPE ${s.target}</span><span class="chip">темп ${esc(tempoOnly(s.tempo))}</span>${method?`<span class="chip method-chip">${method}</span>`:''}</div></div>${finalRest>0?`<button class="btn tiny" onclick="timer(${finalRest})">⏱</button>`:''}</div>${method?'<div class="method-strip"></div>':''}
     ${allCardio?`<div class="sethead cardiohead"><span>Сет</span><span>мин</span><span>RPE</span><span></span></div>${rows.map(z=>`<div class="setrow cardiorow"><span class="phase">${esc(z.label)}</span><input inputmode="decimal" value="${z.x.min||''}" placeholder="мин" onchange="editSet(${z.ei},${z.si},'min',this.value)"><input inputmode="decimal" value="${z.x.rpe||''}" placeholder="${s.target}" onchange="editSet(${z.ei},${z.si},'rpe',this.value)"><button class="check ${z.x.ok?'done':''}" onclick="toggleSet(${z.ei},${z.si})">${z.x.ok?'✓':'○'}</button></div>`).join('')}`:
     `<div class="sethead"><span>Сет</span><span>кг</span><span>повт.</span><span>RPE</span><span></span></div>${rows.map(z=>`<div class="setrow"><span class="phase ${method?'accent-phase':''}">${esc(z.label)}</span><input inputmode="decimal" value="${z.x.w||''}" placeholder="0" onchange="editSet(${z.ei},${z.si},'w',this.value)"><input inputmode="numeric" value="${z.x.r||''}" placeholder="0" onchange="editSet(${z.ei},${z.si},'r',this.value)"><input inputmode="decimal" value="${z.x.rpe||''}" placeholder="${s.target}" onchange="editSet(${z.ei},${z.si},'rpe',this.value)"><button class="check ${z.x.ok?'done':''}" onclick="toggleSet(${z.ei},${z.si})">${z.x.ok?'✓':'○'}</button></div>`).join('')}`}</div>`;
@@ -71,6 +83,12 @@ function preview(w,c){
   modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${esc(r.c)} · ${esc(r.t)}</h2><div class="muted">W${r.w} · RPE ${RPE[r.w]} · темп ${esc(tempoOnly(r.p||''))}</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div>${groups.map(g=>planGroupPreview(r,g)).join('')}<button class="btn primary full" onclick="begin(${r.w},'${r.c}')">Начать</button>`)
 }
 function planGroupPreview(r,g){const method=methodType(g.entries),title=displayExerciseName(g.base),desc=formatPrescription(g.entries);return `<div class="listline"><div class="row between"><button class="detail-name" onclick="openExerciseDetailByName('${encodeURIComponent(g.base)}')"><b>${esc(title)}</b></button>${method?`<span class="chip method-chip">${method}</span>`:''}</div><div class="muted small">${esc(desc)}</div><div class="muted small">RPE ${RPE[r.w]} · темп ${esc(tempoOnly(r.p||''))} · ${esc(planRestRule(r,g))}</div></div>`}
-function formatPrescription(entries){return entries.map(e=>{if(e.m)return`${e.m} мин`;const w=e.w?`${e.w} кг · `:'';return e.s&&e.s>1?`${e.s}×${e.r||'—'} · ${w}`.replace(/ · $/,''):`${w}${e.r||'—'} повт.`}).join(' → ')}
-function planRestRule(r,g){const type=methodType(g.entries),entries=routineEntries(r),lastIndex=g.indices.at(-1),final=rest(r,entries[lastIndex],lastIndex);if(type==='UNVRSL')return`30с между фазами, ${final}с после`;if(type==='SLDR')return`15с между мини-подходами, ${final}с после`;if(type==='DS')return`без отдыха в сбросах, ${final}с после`;if(type==='FST-7')return'20–40с между подходами';return`${final}с отдых`}
+function formatPrescription(entries){
+  if(methodType(entries)==='UNVRSL'&&(entries.length===2||entries.length===3)&&Number(entries[0]?.s||1)===1&&Number(entries[1]?.s||1)===1){
+    const heavy=`${entries[0].w||'—'}×${entries[0].r||'—'}`,light=`${entries[1].w||'—'}×${entries[1].r||'—'}`,finish=entries[2]?`, затем ${entries[2].s||1}×${entries[2].r||'—'} – ${entries[2].w||'—'} кг`:'';
+    return`3×(${heavy} + 30с + ${light})${finish}`;
+  }
+  return entries.map(e=>{if(e.m)return`${e.m} мин`;const w=e.w?`${e.w} кг · `:'';return e.s&&e.s>1?`${e.s}×${e.r||'—'} · ${w}`.replace(/ · $/,''):`${w}${e.r||'—'} повт.`}).join(' → ')
+}
+function planRestRule(r,g){const type=methodType(g.entries),entries=routineEntries(r),lastIndex=g.indices.at(-1),final=rest(r,entries[lastIndex],lastIndex);if(type==='UNVRSL')return`30с между тяжёлой и лёгкой фазой, ${final}с между раундами`;if(type==='SLDR')return`15с между мини-подходами, ${final}с после`;if(type==='DS')return`без отдыха в сбросах, ${final}с после`;if(type==='FST-7')return'20–40с между подходами';return`${final}с отдых`}
 function quickWeek(w){const el=$('#quickList');if(!el)return;el.innerHTML=ROUTINES.filter(r=>r.w===w).map(r=>`<div class="listline row between"><div><b>${esc(r.c)} · ${esc(r.t)}</b><div class="muted small">RPE ${RPE[w]} · ${groupIndexedEntries(routineEntries(r)).length} упражнений</div></div><button class="btn tiny primary" onclick="begin(${r.w},'${r.c}')">Старт</button></div>`).join('')}

@@ -9,7 +9,7 @@
     body.unvrsl-client .brand{line-height:1.06!important;padding-top:2px!important;overflow:visible!important}
     body.unvrsl-client .date{margin-top:7px!important}
     body.unvrsl-client .page{padding-bottom:118px!important}
-    body.unvrsl-client #start.page{padding-bottom:160px!important}
+    body.unvrsl-client #start.page{padding-bottom:160px!important;touch-action:pan-y;overscroll-behavior-y:auto}
     body.unvrsl-client #start .workout-head{top:8px!important;position:relative!important;margin-top:4px!important}
     body.unvrsl-client #start .workout-head .title{font-size:21px!important;line-height:1.08!important;letter-spacing:-.35px!important}
     body.unvrsl-client #start .exercise{padding:14px!important;margin:9px 0!important;border-radius:21px!important}
@@ -37,6 +37,27 @@
     return window.cloud?.profile?.role!=='trainer';
   }
   function applyClientClass(){document.body?.classList.toggle('unvrsl-client',isClient())}
+
+  let clientNavigationDepth=0;
+  function installStableWorkoutScroll(){
+    const current=window.startPage;
+    if(typeof current!=='function'||current.__clientStableScroll)return;
+    const wrapped=function(){
+      const root=document.getElementById('start');
+      const preserve=isClient()&&clientNavigationDepth===0&&root?.classList.contains('active');
+      const y=preserve?window.scrollY:0;
+      const result=current.apply(this,arguments);
+      if(preserve&&y>0)requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        if(clientNavigationDepth||!document.getElementById('start')?.classList.contains('active'))return;
+        const max=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
+        window.scrollTo({top:Math.min(y,max),left:0,behavior:'auto'});
+      }));
+      return result;
+    };
+    wrapped.__clientStableScroll=true;
+    wrapped.__clientStableScrollBase=current;
+    window.startPage=wrapped;try{startPage=wrapped}catch(e){}
+  }
 
   async function ownWorkoutCount(){
     if(!isClient()||!window.cloud?.client||!window.cloud?.user)return 0;
@@ -76,7 +97,7 @@
 
   const baseNav=window.nav;
   if(typeof baseNav==='function'&&!baseNav.__clientUiFix){
-    const wrapped=function(page){const current=document.querySelector('.page.active')?.id,r=baseNav.apply(this,arguments);applyClientClass();if(page&&page!==current)requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:'auto'}));return r};
+    const wrapped=function(page){const current=document.querySelector('.page.active')?.id;clientNavigationDepth++;let r;try{r=baseNav.apply(this,arguments)}finally{clientNavigationDepth--}applyClientClass();if(page&&page!==current)requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:'auto'}));return r};
     wrapped.__clientUiFix=true;window.nav=wrapped;try{nav=wrapped}catch(e){}
   }
   const baseRender=window.render;
@@ -84,6 +105,7 @@
     const wrapped=function(){const r=baseRender.apply(this,arguments);applyClientClass();return r};wrapped.__clientUiFix=true;window.render=wrapped;try{render=wrapped}catch(e){}
   }
 
-  applyClientClass();
+  applyClientClass();installStableWorkoutScroll();
+  [300,900,2200,5000].forEach(t=>setTimeout(()=>{applyClientClass();installStableWorkoutScroll()},t));
   if(isClient()&&typeof window.home==='function')setTimeout(()=>{try{window.home()}catch(e){}},80);
 })();

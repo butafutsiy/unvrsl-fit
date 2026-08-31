@@ -1,45 +1,13 @@
-name: Deploy UNVRSL FIT to GitHub Pages
+name: Stable v1.1 publication info
 
 on:
-  push:
-    branches: ["main"]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  info:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Validate JavaScript
-        run: |
-          node --check v11/core.mjs
-          node --check v11/store.mjs
-          node --check v11/cloud.mjs
-          node --check v11/app.mjs
-          node --test tests/*.test.mjs
-      - name: Build clean v1.1 artifact
-        run: node scripts/build-v11.mjs
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist-v11
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - run: echo "Stable v1.1 is published by the main Pages workflow under /v1.1/."

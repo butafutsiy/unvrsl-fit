@@ -7,9 +7,9 @@
   const style=document.createElement('style');
   style.id='unvrsl-sheet-swipe-style';
   style.textContent=`
-    .sheet{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;will-change:transform}
-    .sheet.sheet-dragging{transition:none!important}
-    .sheet.sheet-snapping{transition:transform .22s cubic-bezier(.2,.8,.2,1)!important}
+    .sheet{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+    .sheet.sheet-dragging{transition:none!important;will-change:transform}
+    .sheet.sheet-snapping{transition:transform .22s cubic-bezier(.2,.8,.2,1)!important;will-change:transform}
     .sheet-grabber{touch-action:none;cursor:grab}
   `;
   document.head.appendChild(style);
@@ -40,11 +40,9 @@
   function canStart(target,y){
     if(!modal.classList.contains('show'))return false;
     if(sheet.scrollTop>1)return false;
-    const r=sheet.getBoundingClientRect();
-    const inTopZone=y-r.top<115;
     const onGrabber=!!target.closest?.('.sheet-grabber');
-    if(target.closest?.(interactive)&&!onGrabber)return false;
-    return inTopZone||onGrabber||!target.closest?.('.field,.setting,.listline,.exercise,.offline-strength-row');
+    if(!onGrabber||target.closest?.(interactive))return false;
+    return true;
   }
   function begin(y,target){
     if(!canStart(target,y))return;

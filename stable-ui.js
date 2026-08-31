@@ -3,7 +3,7 @@
   if(window.__unvrslStableUi)return;window.__unvrslStableUi=true;
   const s=document.createElement('style');s.id='unvrsl-stable-ui';s.textContent=`
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{overflow-x:hidden;touch-action:manipulation}
+  html,body{overflow-x:hidden}
   button,[onclick],input,select,a{touch-action:manipulation;pointer-events:auto}
   button{cursor:pointer}
   svg,.dash-muscle-visual,.dash-muscle-visual *{pointer-events:none}

@@ -1,9 +1,13 @@
-name: Check JavaScript
+name: Check stable v1.1
 
 on:
   push:
-    branches: [main, "release/v1.1"]
+    branches: ["release/v1.1"]
   pull_request:
+
+permissions:
+  contents: read
+  actions: write
 
 jobs:
   syntax:
@@ -15,9 +19,13 @@ jobs:
           node-version: '22'
       - name: Check JavaScript syntax
         run: |
-          node --check v11/core.mjs
-          node --check v11/store.mjs
-          node --check v11/cloud.mjs
-          node --check v11/app.mjs
-          node --test tests/*.test.mjs
-          node scripts/build-v11.mjs
+          for file in *.js; do
+            echo "Checking $file"
+            node --check "$file"
+          done
+          node --test tests/*.test.cjs
+      - name: Refresh GitHub Pages
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref main

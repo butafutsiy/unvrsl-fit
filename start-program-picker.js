@@ -95,12 +95,16 @@
   window.selectStartWeek=function(w){const p=selected();if(!p)return;ui.week=Math.max(1,Math.min(p.weeks,+w||1));st.startProgramWeeks[p.id]=ui.week;if(p.builtin)st.week=ui.week;save();renderPicker()};
   window.startPickedBuiltin=function(w,token){
     if(clientMode())return typeof toast==='function'?toast('Встроенный цикл недоступен клиенту'):undefined;
-    const c=decodeURIComponent(token);st.startProgramId=BUILTIN;st.startProgramWeeks[BUILTIN]=w;st.week=w;window.__pendingStartProgramMeta={id:BUILTIN,name:builtInName()};save();begin(w,c)
+    const c=decodeURIComponent(token);st.startProgramId=BUILTIN;st.startProgramWeeks[BUILTIN]=w;st.week=w;window.__pendingStartProgramMeta={id:BUILTIN,name:builtInName()};save();
+    if(typeof window.preview==='function')return window.preview(w,c);
+    begin(w,c)
   };
   window.startPickedProgram=function(token,wi,di){
     const pid=decodeURIComponent(token),p=(st.programs||[]).find(x=>String(x.id)===String(pid));
     if(clientMode()&&(!p?.cloudPlanId||!hasActiveAssignment(p.cloudPlanId)))return typeof toast==='function'?toast('Эта программа тебе не назначена'):undefined;
-    st.startProgramId=pid;st.startProgramWeeks[pid]=wi+1;save();beginProgramDay(pid,wi,di)
+    st.startProgramId=pid;st.startProgramWeeks[pid]=wi+1;save();
+    if(typeof window.previewPrimaryProgramDay==='function')return window.previewPrimaryProgramDay(pid,wi,di);
+    beginProgramDay(pid,wi,di)
   };
   window.openStartProgramPicker=function(){ui.pid=clientMode()?(programs()[0]?.id||null):defaultProgram();ui.week=null;renderPicker()};
 
