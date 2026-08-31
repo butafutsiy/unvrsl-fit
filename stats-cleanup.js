@@ -29,10 +29,14 @@
     weight:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 9a3 3 0 0 1 6 0M12 9l2-2"/></svg>'
   };
 
-  function removeMovedCards(root){
+  let patching=false,queued=false;
+
+  function removeLegacyCards(root){
+    // Weight is part of the final statistics screen and must never be removed here.
+    // Only the old 12-month heatmap is hidden from the compact final layout.
     [...root.querySelectorAll(':scope > .sd2-card')].forEach(card=>{
       const text=(card.textContent||'').trim();
-      if(card.querySelector('.sd2-weight-head')||/^Активность\s*—\s*последние 12 месяцев/i.test(text))card.remove();
+      if(/^Активность\s*—\s*последние 12 месяцев/i.test(text))card.remove();
     });
   }
 
@@ -42,42 +46,68 @@
     metrics.forEach((card,i)=>{
       const label=card.querySelector('.sd2-metric-label');if(!label)return;
       const first=label.firstElementChild;if(!first)return;
-      const [key,cls]=defs[i]||defs[0];first.className=`stats-metric-icon ${cls}`;first.innerHTML=icons[key];
+      const [key,cls]=defs[i]||defs[0],want=`stats-metric-icon ${cls}`;
+      if(first.className!==want)first.className=want;
+      if(first.innerHTML!==icons[key])first.innerHTML=icons[key];
     });
   }
 
   function ensureMuscleMap(root){
-    if(root.querySelector('.stats-muscle-week')||typeof window.advMuscleMapHtml!=='function')return;
-    const wrap=document.createElement('div');wrap.className='stats-muscle-week';
-    wrap.innerHTML=`<div class="section">НАГРУЗКА ЗА 7 ДНЕЙ</div><div class="card stats-muscle-week-card">${window.advMuscleMapHtml()}</div>`;
-    const grid=root.querySelector('.sd2-grid');if(grid)grid.insertAdjacentElement('afterend',wrap);else root.appendChild(wrap);
+    if(typeof window.advMuscleMapHtml!=='function')return;
+    let wrap=root.querySelector('.stats-muscle-week');
+    if(!wrap){
+      wrap=document.createElement('div');wrap.className='stats-muscle-week';
+      wrap.innerHTML='<div class="section">НАГРУЗКА ЗА 7 ДНЕЙ</div><div class="card stats-muscle-week-card"></div>';
+    }
+    const card=wrap.querySelector('.stats-muscle-week-card');
+    const html=window.advMuscleMapHtml();
+    if(card&&card.innerHTML!==html)card.innerHTML=html;
+    const anchor=root.querySelector('.stats-last-session-v104-wrap')||root.querySelector('.sd2-grid');
+    if(anchor&&wrap.previousElementSibling!==anchor)anchor.insertAdjacentElement('afterend',wrap);
+    else if(!wrap.isConnected)root.appendChild(wrap);
   }
 
   function patchStats(){
-    const root=document.getElementById('stats');if(!root||!root.classList.contains('stats-v2'))return;
-    removeMovedCards(root);decorateMetrics(root);ensureMuscleMap(root);
+    const root=document.getElementById('stats');
+    if(!root||!root.classList.contains('stats-v2')||patching)return;
+    patching=true;
+    try{
+      removeLegacyCards(root);
+      decorateMetrics(root);
+      if(typeof window.statsIntegrityPatch==='function')window.statsIntegrityPatch();
+      ensureMuscleMap(root);
+    }finally{patching=false}
   }
   window.statsCleanupPatch=patchStats;
-  function schedulePatch(){[0,80,260,700,1400].forEach(t=>setTimeout(patchStats,t));}
+
+  function queuePatch(){
+    if(queued)return;queued=true;
+    requestAnimationFrame(()=>{queued=false;patchStats()});
+  }
+
+  function installObserver(){
+    const root=document.getElementById('stats');if(!root||root.__statsFinalObserver)return;
+    const observer=new MutationObserver(()=>queuePatch());
+    observer.observe(root,{childList:true});
+    root.__statsFinalObserver=observer;
+  }
 
   const base=window.statsPage;
   if(typeof base==='function'&&!base.__statsCleanup){
-    const wrapped=function(){const r=base.apply(this,arguments);schedulePatch();return r};wrapped.__statsCleanup=true;window.statsPage=wrapped;try{statsPage=wrapped}catch(e){}
+    const wrapped=function(){const r=base.apply(this,arguments);installObserver();queuePatch();return r};
+    wrapped.__statsCleanup=true;window.statsPage=wrapped;try{statsPage=wrapped}catch(e){}
   }
-  schedulePatch();
+
+  installObserver();queuePatch();
 
   setTimeout(()=>{
     if(!window.__unvrslStatsIntegrityV104){
-      if(typeof window.loadExternalScript==='function')window.loadExternalScript('stats-integrity-v104.js').catch(e=>console.warn('stats integrity',e));
-      else{const s=document.createElement('script');s.src='./stats-integrity-v104.js';document.head.appendChild(s)}
+      if(typeof window.loadExternalScript==='function')window.loadExternalScript('stats-integrity-v104.js').then(()=>queuePatch()).catch(e=>console.warn('stats integrity',e));
+      else{const s=document.createElement('script');s.src='./stats-integrity-v104.js';s.onload=queuePatch;document.head.appendChild(s)}
     }
     if(!window.__clientJournal107){
       if(typeof window.loadExternalScript==='function')window.loadExternalScript('client-journal-profile-v107.js').catch(e=>console.warn('client journal/profile',e));
       else{const s=document.createElement('script');s.src='./client-journal-profile-v107.js';document.head.appendChild(s)}
-    }
-    if(!window.__unvrslStatsAuthorityV247){
-      if(typeof window.loadExternalScript==='function')window.loadExternalScript('stats-authority-v247.js').catch(e=>console.warn('stats authority',e));
-      else{const s=document.createElement('script');s.src='./stats-authority-v247.js';document.head.appendChild(s)}
     }
   },0);
 })();
