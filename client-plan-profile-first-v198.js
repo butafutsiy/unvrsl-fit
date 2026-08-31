@@ -18,7 +18,15 @@
     ]);cache.p=p.data||window.cloud.profile||null;cache.w=w.data?.[0]||null;cache.m=m.data?.[0]||null;cache.at=Date.now();cache.loading=null;return cache})().catch(e=>{cache.loading=null;console.warn('client plan profile',e);return cache});return cache.loading
   }
   function html(){const p=cache.p||window.cloud?.profile||{},w=N(cache.w?.weight_kg),a=age(p.birth_date),mm=cache.m?.measurements||{};const measures=M.map(([k,l])=>[l,N(mm[k])]).filter(x=>x[1]);return `<div class="client-plan-profile-v198"><div class="section">ПРОФИЛЬ И ЗАМЕРЫ</div><div class="card"><div class="row between"><div><div class="title">${E(p.display_name||'Мой профиль')}</div><div class="muted small">${[p.height_cm?F(p.height_cm)+' см':null,a!=null?a+' лет':null,w?F(w)+' кг':null].filter(Boolean).join(' · ')||'Профиль спортсмена'}</div></div><button class="btn" onclick="clientPlanOpenProfile198()">Открыть</button></div>${measures.length?`<div class="cj107-profile" style="margin-top:12px">${measures.map(x=>`<div><span>${x[0]}</span><b>${F(x[1])} см</b></div>`).join('')}</div>`:'<div class="muted small" style="margin-top:12px">Обхваты пока не записаны.</div>'}<div class="cj107-actions"><button class="btn primary" onclick="clientPlanMeasure198()">＋ Записать замеры</button><button class="btn" onclick="clientPlanOpenProfile198()">Профиль</button></div></div></div>`}
-  async function inject(){if(!isClient())return;const root=document.getElementById('plan');if(!root)return;root.querySelector('.client-plan-profile-v198')?.remove();root.insertAdjacentHTML('afterbegin',html());await load();const live=document.getElementById('plan');if(!live)return;live.querySelector('.client-plan-profile-v198')?.remove();live.insertAdjacentHTML('afterbegin',html())}
+  function renderProfile(root){
+    const markup=html(),current=root.querySelector('.client-plan-profile-v198');
+    if(current?.__clientProfileHtml===markup)return;
+    const y=root.classList.contains('active')?(window.scrollY||document.documentElement?.scrollTop||0):0;
+    current?.remove();root.insertAdjacentHTML('afterbegin',markup);
+    const fresh=root.querySelector('.client-plan-profile-v198');if(fresh)fresh.__clientProfileHtml=markup;
+    if(y>0)window.scrollTo({top:y,left:0,behavior:'auto'});
+  }
+  async function inject(){if(!isClient())return;const root=document.getElementById('plan');if(!root)return;renderProfile(root);await load();const live=document.getElementById('plan');if(live)renderProfile(live)}
   window.clientPlanOpenProfile198=async()=>{await load(true);if(typeof window.clientProfile107==='function')return window.clientProfile107();if(typeof window.profileEditSheet==='function')return window.profileEditSheet();if(typeof window.cloudAccountSheet==='function')return window.cloudAccountSheet()};
   window.clientPlanMeasure198=async()=>{await load(true);if(typeof window.clientMeasure107==='function')return window.clientMeasure107();return window.clientPlanOpenProfile198()};
   function wrap(){const f=window.clientCleanPlanPage;if(typeof f!=='function'||f.__profileFirstV198)return false;const w=function(){const r=f.apply(this,arguments);setTimeout(inject,0);return r};w.__profileFirstV198=true;window.clientCleanPlanPage=w;try{clientCleanPlanPage=w}catch(_){}return true}

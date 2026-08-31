@@ -51,7 +51,7 @@
 
   const baseNav=window.nav;
   if(typeof baseNav==='function'&&!baseNav.__clientV2){
-    const wrapped=function(p){const r=baseNav.apply(this,arguments);if(isClient())requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:'auto'}));return r};
+    const wrapped=function(p){const current=document.querySelector('.page.active')?.id,r=baseNav.apply(this,arguments);if(isClient()&&p&&p!==current)requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:'auto'}));return r};
     wrapped.__clientV2=true;window.nav=wrapped;try{nav=wrapped}catch(e){}
   }
 

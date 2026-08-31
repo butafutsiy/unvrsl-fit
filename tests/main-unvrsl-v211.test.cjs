@@ -87,6 +87,63 @@ test('automatic readiness never raises the program weight at workout start',asyn
   assert.equal(context.st.current.readinessAdjusted,false);
 });
 
+test('autoweight is used only when the program has no initial weight',async()=>{
+  const program={id:'mine',weeks:[{days:[{name:'B',ex:[
+    {n:'Жим лёжа',sourceId:'bench',method:'STANDARD',sets:[{w:110,r:6}]},
+    {n:'Тяга блока',sourceId:'row',method:'STANDARD',sets:[{w:0,r:8}]}
+  ]}]}]};
+  const previous={id:'previous',ended:1,date:'2026-08-29',target:8,ex:[
+    {n:'Жим лёжа',sourceId:'bench',set:[{w:100,r:6,rpe:8,ok:true}]},
+    {n:'Тяга блока',sourceId:'row',set:[{w:60,r:8,rpe:8,ok:true}]}
+  ]};
+  const context={
+    console,setInterval:()=>0,setTimeout:()=>0,
+    document:{createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null,querySelectorAll:()=>[]},
+    st:{programs:[program],sessions:[previous],readinessLog:[],current:{id:'current',programId:'mine',w:1,c:'B',target:8,ex:[
+      {n:'Жим лёжа',sourceId:'bench',set:[{w:110,r:6,ok:false}]},
+      {n:'Тяга блока',sourceId:'row',set:[{w:0,r:8,ok:false}]}
+    ]}},
+    programById:id=>id==='mine'?program:null,baseExerciseName:name=>String(name).replace(/\s+—\s+.*$/,'').trim(),save:()=>{},startPage:()=>{},UNVRSL_METHOD_V211:require('../unvrsl-method-v211.js'),loadStepFor:()=>2.5
+  };
+  context.window=context;
+  vm.runInNewContext(fs.readFileSync(require.resolve('../training-engine-v200.js'),'utf8'),context);
+  await context.trainingEngine200Tick();
+  const [prescribed,adaptive]=context.st.current.ex;
+  assert.equal(prescribed.programWeightMode,'prescribed');
+  assert.equal(prescribed.set[0].w,110);
+  assert.equal(prescribed.set[0].recommendedW,undefined);
+  assert.equal(adaptive.programWeightMode,'adaptive');
+  assert.equal(adaptive.weightDecision,'adaptive_auto');
+  assert.ok(adaptive.set[0].w>0);
+  assert.equal(adaptive.set[0].w,adaptive.set[0].plannedW);
+});
+
+test('client workout rerender keeps the visible exercise anchored',()=>{
+  const classList={contains:name=>name==='active'};
+  let cards=[
+    {getBoundingClientRect:()=>({top:-300,bottom:-80})},
+    {getBoundingClientRect:()=>({top:100,bottom:320})}
+  ];
+  const root={classList,querySelectorAll:selector=>selector==='.exercise'?cards:[]};
+  const moves=[];
+  const context={
+    console,cloud:{user:{id:'client'},profile:{role:'client'}},scrollY:600,
+    startPage:()=>{context.scrollY=0;cards=[
+      {getBoundingClientRect:()=>({top:300,bottom:520})},
+      {getBoundingClientRect:()=>({top:700,bottom:920})}
+    ]},
+    scrollBy:options=>moves.push(options),scrollTo:()=>{},setTimeout:()=>0,requestAnimationFrame:fn=>fn(),
+    document:{
+      createElement:()=>({}),head:{appendChild:()=>{}},body:{classList:{toggle:()=>{}}},documentElement:{scrollTop:0},
+      getElementById:id=>id==='start'?root:null,querySelector:selector=>selector==='.page.active'?{id:'start'}:null
+    }
+  };
+  context.window=context;
+  vm.runInNewContext(fs.readFileSync(require.resolve('../client-ui-fix.js'),'utf8'),context);
+  context.startPage();
+  assert.deepEqual(JSON.parse(JSON.stringify(moves)),[{top:600,left:0,behavior:'auto'}]);
+});
+
 test('start picker opens the workout preview before beginning the session',()=>{
   const calls=[];
   const context={

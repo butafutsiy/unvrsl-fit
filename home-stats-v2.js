@@ -111,20 +111,25 @@
   function insertHost(root){
     let host=root.querySelector(':scope > .home-stats-v2');
     if(!host){host=document.createElement('div');host.className='home-stats-v2';}
-    host.innerHTML=heatmapHtml()+weightHtml();
+    const html=heatmapHtml()+weightHtml();
+    if(host.__homeStatsHtml!==html){host.innerHTML=html;host.__homeStatsHtml=html}
     const cards=[...root.children].filter(x=>x!==host&&x.classList?.contains('card'));
     const clientMode=isClientMode();
     const anchor=clientMode?(cards[1]||cards[0]):(root.querySelector(':scope > .calendar-card')||cards[0]);
-    if(anchor)anchor.after(host);else root.prepend(host);
+    if(anchor){if(anchor.nextElementSibling!==host)anchor.after(host)}else if(root.firstElementChild!==host)root.prepend(host);
     requestAnimationFrame(()=>{const h=document.getElementById('homeHeatWrap');if(h)h.scrollLeft=h.scrollWidth});
   }
 
   async function renderHomeProgress(force=false){
     const root=document.getElementById('home');if(!root)return;
-    removeOldHomeWeight(root);
-    insertHost(root);
+    const stable=fn=>{
+      const active=root.classList.contains('active'),y=window.scrollY||document.documentElement?.scrollTop||0;
+      fn();
+      if(active&&y>0)window.scrollTo({top:y,left:0,behavior:'auto'});
+    };
+    stable(()=>{removeOldHomeWeight(root);insertHost(root)});
     await hydrate(force);
-    if(document.getElementById('home')?.classList.contains('active')){removeOldHomeWeight(root);insertHost(root)}
+    if(document.getElementById('home')?.classList.contains('active'))stable(()=>{removeOldHomeWeight(root);insertHost(root)})
   }
   window.homeProgressRefresh=renderHomeProgress;
   window.homeStatsWeightRange=function(k){range=k;renderHomeProgress(false)};

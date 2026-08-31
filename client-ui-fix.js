@@ -39,19 +39,35 @@
   function applyClientClass(){document.body?.classList.toggle('unvrsl-client',isClient())}
 
   let clientNavigationDepth=0;
+  function workoutScrollSnapshot(root){
+    const y=window.scrollY||document.documentElement?.scrollTop||0;
+    const cards=[...root.querySelectorAll('.exercise')];
+    let index=-1,offset=0;
+    for(let i=0;i<cards.length;i++){
+      const rect=cards[i].getBoundingClientRect();
+      if(rect.bottom>8){index=i;offset=rect.top;break}
+    }
+    return{y,index,offset};
+  }
+  function restoreWorkoutScroll(root,snapshot){
+    if(!snapshot||clientNavigationDepth||!root?.classList.contains('active'))return;
+    const card=snapshot.index>=0?root.querySelectorAll('.exercise')[snapshot.index]:null;
+    if(card){
+      const delta=card.getBoundingClientRect().top-snapshot.offset;
+      if(Math.abs(delta)>.5)window.scrollBy({top:delta,left:0,behavior:'auto'});
+      return;
+    }
+    window.scrollTo({top:snapshot.y,left:0,behavior:'auto'});
+  }
   function installStableWorkoutScroll(){
     const current=window.startPage;
     if(typeof current!=='function'||current.__clientStableScroll)return;
     const wrapped=function(){
       const root=document.getElementById('start');
       const preserve=isClient()&&clientNavigationDepth===0&&root?.classList.contains('active');
-      const y=preserve?window.scrollY:0;
+      const snapshot=preserve?workoutScrollSnapshot(root):null;
       const result=current.apply(this,arguments);
-      if(preserve&&y>0)requestAnimationFrame(()=>requestAnimationFrame(()=>{
-        if(clientNavigationDepth||!document.getElementById('start')?.classList.contains('active'))return;
-        const max=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
-        window.scrollTo({top:Math.min(y,max),left:0,behavior:'auto'});
-      }));
+      if(preserve)restoreWorkoutScroll(root,snapshot);
       return result;
     };
     wrapped.__clientStableScroll=true;

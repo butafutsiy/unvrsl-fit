@@ -116,8 +116,16 @@
     document.body?.classList.add('unvrsl-client');
     const root=document.getElementById('home');if(!root)return;
     const p=assigned()[0];
+    const signature=JSON.stringify([String(cloudState()?.user?.id||''),String(p?.id||''),String(p?.name||''),p?.weeks?.length||0]);
+    if(root.dataset.clientHomeSignature===signature&&root.querySelector('#clientOwnWorkoutCountV236')){
+      ownWorkoutCount().then(n=>{const el=document.getElementById('clientOwnWorkoutCountV236');if(el)el.textContent=String(n)});
+      refreshClientHomeExtras();return;
+    }
+    const y=root.classList.contains('active')?(window.scrollY||document.documentElement?.scrollTop||0):0;
     const plan=p?`<div class="title" style="margin-top:6px">${esc2(p.name||'Тренировочная программа')}</div><div class="muted" style="margin-top:6px">${p.weeks?.length||0} нед. · тренер: ${esc2(p.trainerName||'назначен')}</div><button class="btn primary full" style="margin-top:16px" onclick="openClientProgram('${p.id}')">Открыть план</button>`:'<div class="title" style="margin-top:6px">План пока не назначен</div><div class="muted" style="margin-top:8px">Когда тренер назначит программу, она появится здесь автоматически.</div>';
     root.innerHTML=`<div class="card"><div class="muted">МОЙ ПЛАН</div>${plan}</div><div class="card client-progress-card"><div class="muted">ЗАМЕРЫ И ПРОГРЕСС</div><div class="title" style="margin-top:6px">Вес и обхваты</div><div class="muted" style="margin-top:7px">Вес, восстановление и замеры заполняются только из твоего аккаунта.</div><div class="client-progress-actions"><button class="btn" onclick="openWeeklyCheckin()">Заполнить чек-ин</button><button class="btn primary" onclick="nav('stats')">Смотреть прогресс</button></div></div><div class="card"><div class="row between"><div><div class="muted">Выполнено тренировок</div><div class="title" id="clientOwnWorkoutCountV236">—</div></div><button class="btn" onclick="nav('stats')">Статистика</button></div></div>`;
+    root.dataset.clientHomeSignature=signature;
+    if(y>0)window.scrollTo({top:y,left:0,behavior:'auto'});
     ownWorkoutCount().then(n=>{const el=document.getElementById('clientOwnWorkoutCountV236');if(el)el.textContent=String(n)});
     [0,160,700].forEach(t=>setTimeout(refreshClientHomeExtras,t));
   }
@@ -137,7 +145,14 @@
     if(!isClient())return;
     const root=document.getElementById('plan');if(!root)return;
     const ps=assigned();
+    const signature=JSON.stringify(ps.map(p=>[String(p?.id||''),String(p?.name||''),p?.weeks?.length||0]));
+    if(root.dataset.clientPlanSignature===signature&&root.querySelector('.client-final-plan-v222')){
+      setTimeout(()=>{try{window.clientPlanProfileInjectV222?.()}catch(_){ }try{if(typeof window.clientCleanPlanPage==='function'&&window.clientCleanPlanPage.__profileFirstV198)window.clientCleanPlanPage()}catch(_){ }},0);return;
+    }
+    const y=root.classList.contains('active')?(window.scrollY||document.documentElement?.scrollTop||0):0;
     root.innerHTML=`<div class="client-final-plan-v222"><div class="section">МОЯ ПРОГРАММА</div>${ps.length?ps.map(p=>`<div class="card routine"><div class="row between"><div class="grow"><div class="title">${esc2(p.name||'Программа')}</div><div class="muted">${p.weeks?.length||0} нед. · назначено тренером</div></div><button class="btn primary" onclick="openClientProgram('${p.id}')">Открыть</button></div></div>`).join(''):`<div class="card"><div class="title">План пока не назначен</div><div class="muted" style="margin-top:7px">Здесь появится только программа, которую отправил тренер.</div></div>`}</div>`;
+    root.dataset.clientPlanSignature=signature;
+    if(y>0)window.scrollTo({top:y,left:0,behavior:'auto'});
     setTimeout(()=>{try{window.clientPlanProfileInjectV222?.()}catch(_){ }try{if(typeof window.clientCleanPlanPage==='function'&&window.clientCleanPlanPage.__profileFirstV198)window.clientCleanPlanPage()}catch(_){ }},0);
   }
 
