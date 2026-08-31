@@ -1,5 +1,5 @@
 const CACHE_PREFIX='unvrsl-fit-';
-const CACHE='unvrsl-fit-v248-clean-runtime';
+const CACHE='unvrsl-fit-v249-stats-owner-hard-fix';
 
 // Only the shell and directly required modules are precached.
 // Everything else is cached on first real use instead of downloading the whole repository.
