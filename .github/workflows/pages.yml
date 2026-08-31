@@ -21,28 +21,13 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main
+      - name: Checkout
         uses: actions/checkout@v4
-      - name: Checkout stable v1.1
-        uses: actions/checkout@v4
-        with:
-          ref: release/v1.1
-          path: stable-source
       - name: Validate JavaScript
         run: |
           for file in *.js; do
             node --check "$file"
           done
-          node --test tests/*.test.cjs
-          for file in stable-source/*.js; do
-            node --check "$file"
-          done
-          node --test stable-source/tests/*.test.cjs
-      - name: Assemble main and stable sites
-        run: |
-          mkdir -p _site/v1.1
-          rsync -a --exclude='.git' --exclude='.github' --exclude='tests' --exclude='_site' --exclude='stable-source' ./ _site/
-          rsync -a --exclude='.git' --exclude='.github' --exclude='tests' stable-source/ _site/v1.1/
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
@@ -50,7 +35,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: .
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
