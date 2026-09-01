@@ -1,6 +1,7 @@
 'use strict';
 (()=>{
-  if(window.__unvrslClientRuntimeV255)return;
+  if(window.__unvrslClientRuntimeV256||window.__unvrslClientRuntimeV255)return;
+  window.__unvrslClientRuntimeV256=true;
   window.__unvrslClientRuntimeV255=true;
   // Cached loaders may still look for the old marker. Keep it locked so a
   // second client renderer can never start alongside the canonical runtime.
@@ -72,7 +73,7 @@
   window.unvrslCleanupLegacyClientWeightV236=cleanupLegacyClientWeight;
 
   function script(src){
-    if(window.unvrslScriptRetiredV255?.(src)||window.unvrslScriptRetiredV254?.(src)||window.unvrslScriptRetiredV253?.(src))return Promise.resolve({retired:true,src});
+    if(window.unvrslScriptRetiredV256?.(src)||window.unvrslScriptRetiredV255?.(src)||window.unvrslScriptRetiredV254?.(src)||window.unvrslScriptRetiredV253?.(src))return Promise.resolve({retired:true,src});
     if(loaded.has(src)||document.querySelector(`script[src="${src}"],script[src="./${src}"]`))return Promise.resolve();
     loaded.add(src);
     return new Promise(resolve=>{const s=document.createElement('script');s.src=src;s.async=false;s.dataset.clientFinal='1';s.onload=resolve;s.onerror=resolve;document.body.appendChild(s)});
@@ -228,10 +229,10 @@
     clientBooting=(async()=>{
       await cleanupLegacyClientWeight();
       await hydrateAssignments();
-      await script('client-program-picker.js');
-      await script('client-journal-profile-v107.js');
+      await script('client-program-picker.js?v=256');
+      await script('client-journal-profile-v107.js?v=256');
       installPlanGuard();installSettings();installCanonicalClientHome();
-      clientReady=true;document.body?.classList.add('client-runtime-ready-v255');
+      clientReady=true;document.body?.classList.add('client-runtime-ready-v255','client-runtime-ready-v256');
       if(document.getElementById('plan')?.classList.contains('active'))canonicalClientPlan();
       if(document.getElementById('home')?.classList.contains('active'))renderCanonicalClientHome();
       setTimeout(()=>window.clientPlanHistoryRefresh107?.(),0);

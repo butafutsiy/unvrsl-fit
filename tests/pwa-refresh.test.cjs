@@ -21,9 +21,10 @@ test('manifest has a stable GitHub Pages identity and installable PNG icons',()=
 
 test('iOS uses a PNG touch icon and a versioned service worker',()=>{
   const html=read('index.html');
-  assert.match(html,/apple-touch-icon[^>]+apple-touch-icon\.png\?v=255/);
-  assert.match(html,/serviceWorker\.register\('\.\/sw\.js\?v=255'/);
+  assert.match(html,/apple-touch-icon[^>]+apple-touch-icon\.png\?v=256/);
+  assert.match(html,/serviceWorker\.register\('\.\/sw\.js\?v=256'/);
   assert.match(html,/updateViaCache:'none'/);
+  assert.doesNotMatch(html,/controllerchange|location\.reload\(\)/);
 });
 
 test('service worker clears old app caches and uses the network only',()=>{

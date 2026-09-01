@@ -1,10 +1,24 @@
 'use strict';
 (()=>{
-  if(window.__trainerSelfPlanV110)return;
+  if(window.__trainerSelfPlanV256)return;
+  window.__trainerSelfPlanV256=true;
   window.__trainerSelfPlanV110=true;
+
+  if(!document.getElementById('trainer-self-plan-v256-style')){
+    const style=document.createElement('style');style.id='trainer-self-plan-v256-style';style.textContent=`
+      .cj107{margin-top:18px}.cj107-list{padding:0!important;overflow:hidden}
+      .cj107-row{width:100%;border:0;border-bottom:1px solid #303034;background:transparent;color:inherit;text-align:left!important;padding:14px 15px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+      .cj107-row>div{min-width:0}.cj107-row:last-child{border-bottom:0}.cj107-row b{font-size:16px;line-height:1.25}.cj107-meta{color:#8e8e93;font-size:12px;margin-top:5px;line-height:1.35}.cj107-chev{color:#68686e;font-size:24px}
+      .cj107-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:13px 0}.cj107-metric{background:#1b1b1e;border:1px solid #303034;border-radius:17px;padding:13px;min-width:0}.cj107-metric span{display:block;color:#8e8e93;font-size:12px}.cj107-metric b{display:block;font-size:21px;margin-top:5px}
+      .cj107-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}.cj107-profile{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}.cj107-profile>div{background:#19191c;border:1px solid #2d2e33;border-radius:15px;padding:11px}.cj107-profile span{display:block;color:#8e8e93;font-size:10px}.cj107-profile b{display:block;margin-top:4px;font-size:16px}
+      .cj107-ex{padding:11px 0;border-bottom:1px solid #303034}.cj107-ex:last-child{border-bottom:0}.cj107-set{color:#a6a6ab;font-size:12px;margin-top:4px}.cj107-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.cj107-fields .field{margin:0}
+      @media(max-width:390px){.cj107-actions{grid-template-columns:1fr}}
+    `;document.head.appendChild(style)
+  }
 
   const M=[['chest','Грудь'],['waist','Талия'],['abdomen','Живот'],['hips','Ягодицы'],['thigh','Бедро'],['arm','Рука'],['calf','Икра']];
   const C={at:0,rows:[],ms:[],bw:[],p:null,loading:null};
+  let renderTicket=0;
   const A=x=>Array.isArray(x)?x:[];
   const N=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?n:null};
   const E=v=>typeof esc==='function'?esc(String(v??'')):String(v??'');
@@ -81,17 +95,31 @@
     return `<button class="cj107-row" onclick="trainerSelfWorkout110('${encodeURIComponent(key(r))}')"><div><b>${E(title(s))}</b><div class="cj107-meta">${E(rd(date(s,r)))} · ${ton(s).toLocaleString('ru-RU')} кг · RPE ${rpe(s)??'—'} · ${done(s)} сет.</div></div><span class="cj107-chev">›</span></button>`;
   }
 
+  function mountSelf(root){
+    let profile=root.querySelector(':scope > .trainer-self-profile-v111');
+    if(!profile){profile=document.createElement('div');profile.className='cj107 trainer-self-profile-v111';root.prepend(profile)}
+    let history=root.querySelector(':scope > .trainer-self-plan-v110');
+    if(!history){history=document.createElement('div');history.className='cj107 trainer-self-plan-v110';root.appendChild(history)}
+    return{profile,history}
+  }
+  function stableHtml(node,html){if(node.__trainerSelfHtml===html)return;node.innerHTML=html;node.__trainerSelfHtml=html}
+  function renderLoaded(hosts){
+    const p=C.p||{},w=lw(),a=age(p.birth_date);
+    stableHtml(hosts.profile,`<div class="section">ПРОФИЛЬ И ЗАМЕРЫ</div><div class="card"><div class="row between"><div><div class="title">${E(p.display_name||'Мой профиль')}</div><div class="muted small">${[p.height_cm?F(p.height_cm)+' см':null,a!=null?a+' лет':null,w?F(w)+' кг':null].filter(Boolean).join(' · ')||'Профиль спортсмена'}</div></div><button class="btn" onclick="trainerSelfProfile110()">Открыть</button></div>${measures()}<div class="cj107-actions"><button class="btn primary" onclick="trainerSelfMeasure110()">＋ Записать замеры</button><button class="btn" onclick="trainerSelfProfile110()">Профиль</button></div></div>`);
+    stableHtml(hosts.history,`<div class="section">ПРОВЕДЁННЫЕ ТРЕНИРОВКИ</div><div class="card cj107-list">${C.rows.length?C.rows.slice(0,20).map(row).join(''):'<div class="muted" style="padding:15px">После завершения тренировки она появится здесь.</div>'}</div>`)
+  }
   async function renderSelf(force=false){
     if(!isTrainer())return;
     const root=document.getElementById('plan');if(!root)return;
+    const ticket=++renderTicket,hosts=mountSelf(root);
+    if(C.at)renderLoaded(hosts);
+    else{
+      stableHtml(hosts.profile,'<div class="section">ПРОФИЛЬ И ЗАМЕРЫ</div><div class="card muted">Загружаем профиль…</div>');
+      stableHtml(hosts.history,'<div class="section">ПРОВЕДЁННЫЕ ТРЕНИРОВКИ</div><div class="card muted">Загружаем историю…</div>')
+    }
     await load(force);
-    let profile=root.querySelector('.trainer-self-profile-v111');
-    if(!profile){profile=document.createElement('div');profile.className='cj107 trainer-self-profile-v111';root.prepend(profile)}
-    let history=root.querySelector('.trainer-self-plan-v110');
-    if(!history){history=document.createElement('div');history.className='cj107 trainer-self-plan-v110';root.appendChild(history)}
-    const p=C.p||{},w=lw(),a=age(p.birth_date);
-    profile.innerHTML=`<div class="section">ПРОФИЛЬ И ЗАМЕРЫ</div><div class="card"><div class="row between"><div><div class="title">${E(p.display_name||'Мой профиль')}</div><div class="muted small">${[p.height_cm?F(p.height_cm)+' см':null,a!=null?a+' лет':null,w?F(w)+' кг':null].filter(Boolean).join(' · ')||'Профиль спортсмена'}</div></div><button class="btn" onclick="trainerSelfProfile110()">Открыть</button></div>${measures()}<div class="cj107-actions"><button class="btn primary" onclick="trainerSelfMeasure110()">＋ Записать замеры</button><button class="btn" onclick="trainerSelfProfile110()">Профиль</button></div></div>`;
-    history.innerHTML=`<div class="section">ПРОВЕДЁННЫЕ ТРЕНИРОВКИ</div><div class="card cj107-list">${C.rows.length?C.rows.slice(0,20).map(row).join(''):'<div class="muted" style="padding:15px">После завершения тренировки она появится здесь.</div>'}</div>`;
+    if(ticket!==renderTicket||root!==document.getElementById('plan')||!isTrainer())return;
+    renderLoaded(mountSelf(root));
   }
   window.trainerSelfPlanRender110=renderSelf;
   const find=t=>C.rows.find(r=>key(r)===decodeURIComponent(t||''));
@@ -148,12 +176,12 @@
 
   function install(){
     const p=window.planPage;
-    if(typeof p==='function'&&!p.__trainerSelfPlanV110){
-      const b=p,w=function(){const r=b.apply(this,arguments);setTimeout(()=>{if(isTrainer())renderSelf()},0);return r};
-      w.__trainerSelfPlanV110=true;window.planPage=w;try{planPage=w}catch(e){}
+    if(typeof p==='function'&&!p.__trainerSelfPlanAuthorityV256){
+      const b=p,w=function(){const r=b.apply(this,arguments);if(isTrainer())renderSelf();return r};
+      w.__trainerSelfPlanV110=true;w.__trainerSelfPlanAuthorityV256=true;window.planPage=w;try{planPage=w}catch(e){}
     }
   }
   install();
-  let n=0;const timer=setInterval(()=>{install();if(isTrainer()&&document.getElementById('plan')?.classList.contains('active'))renderSelf();if(++n>90)clearInterval(timer)},1000);
-  [200,700,1600,3000].forEach(t=>setTimeout(()=>{install();if(isTrainer()&&document.getElementById('plan')?.classList.contains('active'))renderSelf()},t));
+  [200,700,1600,3000,7000].forEach(t=>setTimeout(install,t));
+  window.addEventListener('pageshow',()=>{install();if(isTrainer()&&document.getElementById('plan')?.classList.contains('active'))renderSelf()},{passive:true});
 })();

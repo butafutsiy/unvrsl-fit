@@ -81,7 +81,7 @@ customCatalog=function(){
 };
 
 let cloudModulesLoading=false,cloudModulesLoaded=false;
-function loadExternalScript(src){return new Promise((resolve,reject)=>{if(window.unvrslScriptRetiredV255?.(src)||window.unvrslScriptRetiredV254?.(src)||window.unvrslScriptRetiredV253?.(src))return resolve({retired:true,src});const key=String(src).replace(/^\.\//,'');if(document.querySelector(`script[data-unvrsl-src="${src}"],script[data-unvrsl-src="${key}"],script[data-dyn="${src}"],script[data-dyn="./${key}"]`))return resolve();const s=document.createElement('script');s.src=src;s.async=false;s.dataset.unvrslSrc=key;s.onload=resolve;s.onerror=reject;document.body.appendChild(s)})}
+function loadExternalScript(src){return new Promise((resolve,reject)=>{if(window.unvrslScriptRetiredV256?.(src)||window.unvrslScriptRetiredV255?.(src)||window.unvrslScriptRetiredV254?.(src)||window.unvrslScriptRetiredV253?.(src))return resolve({retired:true,src});const key=String(src).replace(/^\.\//,'');if(document.querySelector(`script[data-unvrsl-src="${src}"],script[data-unvrsl-src="${key}"],script[data-dyn="${src}"],script[data-dyn="./${key}"]`))return resolve();const s=document.createElement('script');s.src=src;s.async=false;s.dataset.unvrslSrc=key;s.onload=resolve;s.onerror=reject;document.body.appendChild(s)})}
 window.loadExternalScript=loadExternalScript;
 async function loadCloudModules(){
  if(cloudModulesLoaded||cloudModulesLoading)return;cloudModulesLoading=true;
@@ -114,13 +114,13 @@ setTimeout(()=>{
  Promise.allSettled([templateChain,programChain,cloudChain,uiChain])
   .then(()=>loadExternalScript('client-nav-hotfix.js'))
   .then(()=>loadExternalScript('clients-action-layout.js'))
-  .then(()=>loadExternalScript('trainer-self-plan-v110.js'))
   .then(()=>loadExternalScript('program-delete-fix.js'))
   .then(()=>loadExternalScript('requested-cleanup-v2.js'))
   .then(()=>loadExternalScript('program-delete-persistence-v3.js'))
   .then(()=>loadExternalScript('adaptive-effort-v2.js'))
   .then(()=>loadExternalScript('workout-template-ux-v2.js'))
   .then(()=>loadExternalScript('cardio-exercise-library.js'))
+  .then(()=>loadExternalScript('trainer-self-plan-v110.js?v=256'))
   .then(()=>loadExternalScript('stats-authority-v254.js'))
   .then(()=>loadExternalScript('trainer-shell-v252.js'))
   .catch(e=>console.warn('post-load modules',e));
