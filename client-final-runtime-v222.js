@@ -1,22 +1,25 @@
 'use strict';
 (()=>{
-  if(window.__unvrslClientFinalRuntimeV222)return;
+  if(window.__unvrslClientRuntimeV255)return;
+  window.__unvrslClientRuntimeV255=true;
+  // Cached loaders may still look for the old marker. Keep it locked so a
+  // second client renderer can never start alongside the canonical runtime.
   window.__unvrslClientFinalRuntimeV222=true;
 
   const MASTER='butafutsiy@mail.ru';
   const LEGACY_WEIGHT_DATE='2026-08-25';
   const LEGACY_WEIGHT_VALUE=97.5;
   const loaded=new Set();
-  let clientReady=false;
+  let clientReady=false,clientBooting=null;
   let legacyCleanup=null;
 
-  if(!document.getElementById('client-final-runtime-v254-style')){
-    const style=document.createElement('style');style.id='client-final-runtime-v254-style';style.textContent=`
-      body.unvrsl-client .client-progress-card{padding:17px!important}
-      body.unvrsl-client .client-progress-card .title{font-size:22px!important}
-      body.unvrsl-client .client-progress-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
-      body.unvrsl-client .client-progress-actions .btn{min-height:42px!important}
-      @media(max-width:390px){body.unvrsl-client .client-progress-actions{grid-template-columns:1fr}}
+  if(!document.getElementById('client-runtime-v255-style')){
+    const style=document.createElement('style');style.id='client-runtime-v255-style';style.textContent=`
+      body.unvrsl-client #home>.client-plan-card-v255{margin-top:12px!important}
+      body.unvrsl-client #plan>.client-plan-loading-v255{min-height:180px;display:grid;align-content:center;text-align:center}
+      body.unvrsl-client #plan>.client-plan-loading-v255 .title{margin-bottom:8px}
+      body.unvrsl-client .client-streak-v255 .streak-meta{line-height:1.35}
+      @media(max-width:390px){body.unvrsl-client .client-streak-v255{align-items:flex-start}}
     `;document.head.appendChild(style)
   }
 
@@ -69,7 +72,7 @@
   window.unvrslCleanupLegacyClientWeightV236=cleanupLegacyClientWeight;
 
   function script(src){
-    if(window.unvrslScriptRetiredV254?.(src)||window.unvrslScriptRetiredV253?.(src))return Promise.resolve({retired:true,src});
+    if(window.unvrslScriptRetiredV255?.(src)||window.unvrslScriptRetiredV254?.(src)||window.unvrslScriptRetiredV253?.(src))return Promise.resolve({retired:true,src});
     if(loaded.has(src)||document.querySelector(`script[src="${src}"],script[src="./${src}"]`))return Promise.resolve();
     loaded.add(src);
     return new Promise(resolve=>{const s=document.createElement('script');s.src=src;s.async=false;s.dataset.clientFinal='1';s.onload=resolve;s.onerror=resolve;document.body.appendChild(s)});
@@ -112,32 +115,49 @@
   }
 
   function esc2(v){try{return typeof esc==='function'?esc(String(v??'')):String(v??'')}catch(_){return String(v??'')}}
-  async function ownWorkoutCount(){
-    const c=cloudState();if(!isClient()||!c?.client||!c?.user)return 0;
-    const r=await c.client.from('workouts').select('id',{count:'exact',head:true}).eq('user_id',c.user.id);
-    return r.error?0:(r.count||0)
+  function appState(){return state()||{}}
+  function isoDay(d){try{return typeof window.iso==='function'?window.iso(d):new Date(d).toISOString().slice(0,10)}catch(_){return''}}
+  function currentViewDate(){try{if(typeof viewDate!=='undefined'&&viewDate instanceof Date)return viewDate}catch(_){}return window.viewDate instanceof Date?window.viewDate:new Date()}
+  function mondayFor(d){if(typeof window.getMonday==='function')return window.getMonday(d);const x=new Date(d),day=(x.getDay()+6)%7;x.setDate(x.getDate()-day);x.setHours(12,0,0,0);return x}
+  function planForDate(d){try{return window.calendarPlanForDateV234?.(d)||window.plannedForDate?.(d)||null}catch(_){return null}}
+  function calendarTitle(view,today){
+    try{if(typeof window.sameWeek==='function'&&window.sameWeek(view,today))return'Эта неделя'}catch(_){}
+    return new Intl.DateTimeFormat('ru-RU',{month:'long',year:'numeric'}).format(view)
+  }
+  function clientCalendarHtml(){
+    const today=new Date(),monday=mondayFor(currentViewDate()),cells=[];
+    for(let i=0;i<7;i++){const d=new Date(monday);d.setDate(monday.getDate()+i);cells.push(d)}
+    const sessions=Array.isArray(appState().sessions)?appState().sessions:[],todayPlan=planForDate(today),todayKey=isoDay(today);
+    const title=todayPlan?[todayPlan.c,todayPlan.t].filter(Boolean).join(' · '):'День отдыха';
+    return `<div class="card calendar-card"><div class="calendar-head"><button class="arrow" onclick="moveWeek(-1)">‹</button><b>${esc2(calendarTitle(currentViewDate(),today))}</b><button class="arrow" onclick="moveWeek(1)">›</button></div><div class="weekdays">${['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'].map(x=>`<div>${x}</div>`).join('')}</div><div class="dates">${cells.map(d=>{const key=isoDay(d),has=!!planForDate(d)||sessions.some(s=>String(s?.date||'').slice(0,10)===key);return `<div class="datecell ${key===todayKey?'today':''}"><div class="num">${d.getDate()}</div>${has?'<span class="dot"></span>':''}</div>`}).join('')}</div><div class="today-card"><div class="today-icon">${todayPlan?'🏋︎':'☾'}</div><div class="today-main"><small>Сегодня</small><b>${esc2(title)}</b></div><button class="plus" onclick="${todayPlan?`calendarPlannerPreviewDateV234('${encodeURIComponent(todayKey)}')`:`calendarPlannerAddV234('${encodeURIComponent(todayKey)}')`}">＋</button></div></div>`
+  }
+  function clientStreakHtml(){
+    const s=appState(),sessions=Array.isArray(s.sessions)?s.sessions:[],monday=mondayFor(new Date()),end=new Date(monday);end.setDate(end.getDate()+7);
+    const weekDone=sessions.filter(x=>{const d=new Date(`${String(x?.date||'').slice(0,10)}T12:00:00`);return d>=monday&&d<end}).length;
+    let planned=0;for(let i=0;i<7;i++){const d=new Date(monday);d.setDate(d.getDate()+i);if(planForDate(d))planned++}
+    let streak=0;try{streak=typeof window.streakWeeks==='function'?window.streakWeeks():0}catch(_){}
+    return `<div class="card streak client-streak-v255"><div class="fire">🔥</div><div class="grow"><b>серия: ${streak} нед.</b><div class="streak-meta">${weekDone} / ${planned} на этой неделе · всего тренировок: ${sessions.length}</div></div><button onclick="nav('plan')" style="font-size:28px" aria-label="Открыть план">▣</button></div>`
   }
   function refreshClientHomeExtras(){
     if(!isClient()||!document.getElementById('home')?.classList.contains('active'))return;
     try{if(typeof window.renderClientCheckinCard==='function')window.renderClientCheckinCard()}catch(_){ }
-    try{if(typeof window.homeProgressRefresh==='function')window.homeProgressRefresh(true)}catch(_){ }
+    try{if(typeof window.homeProgressRefresh==='function')window.homeProgressRefresh(false)}catch(_){ }
+    try{window.calendarPlannerDecorateV234?.()}catch(_){ }
   }
   function renderCanonicalClientHome(){
     if(!isClient())return;
     document.body?.classList.add('unvrsl-client');
     const root=document.getElementById('home');if(!root)return;
     const p=assigned()[0];
-    const signature=JSON.stringify([String(cloudState()?.user?.id||''),String(p?.id||''),String(p?.name||''),p?.weeks?.length||0]);
-    if(root.dataset.clientHomeSignature===signature&&root.querySelector('#clientOwnWorkoutCountV236')){
-      ownWorkoutCount().then(n=>{const el=document.getElementById('clientOwnWorkoutCountV236');if(el)el.textContent=String(n)});
+    const s=appState(),signature=JSON.stringify([String(cloudState()?.user?.id||''),String(p?.id||''),String(p?.name||''),p?.weeks?.length||0,isoDay(mondayFor(currentViewDate())),s.sessions?.length||0,s.calendarPlans||{}]);
+    if(root.dataset.clientHomeSignature===signature&&root.querySelector('.client-plan-card-v255')&&root.querySelector('.calendar-card')){
       refreshClientHomeExtras();return;
     }
     const y=root.classList.contains('active')?(window.scrollY||document.documentElement?.scrollTop||0):0;
-    const plan=p?`<div class="title" style="margin-top:6px">${esc2(p.name||'Тренировочная программа')}</div><div class="muted" style="margin-top:6px">${p.weeks?.length||0} нед. · тренер: ${esc2(p.trainerName||'назначен')}</div><button class="btn primary full" style="margin-top:16px" onclick="openClientProgram('${p.id}')">Открыть план</button>`:'<div class="title" style="margin-top:6px">План пока не назначен</div><div class="muted" style="margin-top:8px">Когда тренер назначит программу, она появится здесь автоматически.</div>';
-    root.innerHTML=`<div class="card"><div class="muted">МОЙ ПЛАН</div>${plan}</div><div class="card client-progress-card"><div class="muted">ЗАМЕРЫ И ПРОГРЕСС</div><div class="title" style="margin-top:6px">Вес и обхваты</div><div class="muted" style="margin-top:7px">Вес, восстановление и замеры заполняются только из твоего аккаунта.</div><div class="client-progress-actions"><button class="btn" onclick="openWeeklyCheckin()">Заполнить чек-ин</button><button class="btn primary" onclick="nav('stats')">Смотреть прогресс</button></div></div><div class="card"><div class="row between"><div><div class="muted">Выполнено тренировок</div><div class="title" id="clientOwnWorkoutCountV236">—</div></div><button class="btn" onclick="nav('stats')">Статистика</button></div></div>`;
+    const plan=p?`<div class="title" style="margin-top:6px">${esc2(p.name||'Тренировочная программа')}</div><div class="muted" style="margin-top:6px">${p.weeks?.length||0} нед. · тренер: ${esc2(p.trainerName||'назначен')}</div><button class="btn primary full" style="margin-top:16px" onclick="nav('plan')">Открыть план</button>`:'<div class="title" style="margin-top:6px">План пока не назначен</div><div class="muted" style="margin-top:8px">Когда тренер назначит программу, она появится здесь автоматически.</div>';
+    root.innerHTML=`${clientCalendarHtml()}<div class="card client-plan-card-v255"><div class="muted">МОЙ ПЛАН</div>${plan}</div>${clientStreakHtml()}`;
     root.dataset.clientHomeSignature=signature;
     if(y>0)window.scrollTo({top:y,left:0,behavior:'auto'});
-    ownWorkoutCount().then(n=>{const el=document.getElementById('clientOwnWorkoutCountV236');if(el)el.textContent=String(n)});
     [0,160,700].forEach(t=>setTimeout(refreshClientHomeExtras,t));
   }
   function installCanonicalClientHome(){
@@ -145,46 +165,38 @@
     window.clientCleanHome=renderCanonicalClientHome;
     try{clientCleanHome=renderCanonicalClientHome}catch(_){ }
     const current=window.home;
-    if(typeof current==='function'&&!current.__clientHomeV236){
-      const wrapped=function(){const out=current.apply(this,arguments);setTimeout(renderCanonicalClientHome,0);return out};
-      wrapped.__clientHomeV236=true;window.home=wrapped;try{home=wrapped}catch(_){ }
+    if(typeof current==='function'&&!current.__clientHomeAuthorityV255){
+      const wrapped=function(){if(isClient())return renderCanonicalClientHome();return current.apply(this,arguments)};
+      wrapped.__clientHomeAuthorityV255=true;window.home=wrapped;try{home=wrapped}catch(_){ }
     }
     const root=document.getElementById('home');
-    if(root?.classList.contains('active')&&!root.querySelector('#clientOwnWorkoutCountV236'))renderCanonicalClientHome();
+    if(root?.classList.contains('active')&&!root.querySelector('.client-plan-card-v255'))renderCanonicalClientHome();
   }
-  function renderClientPlan(){
+  function canonicalClientPlan(){
     if(!isClient())return;
     const root=document.getElementById('plan');if(!root)return;
-    const ps=assigned();
-    const signature=JSON.stringify(ps.map(p=>[String(p?.id||''),String(p?.name||''),p?.weeks?.length||0]));
-    if(root.dataset.clientPlanSignature===signature&&root.querySelector('.client-final-plan-v222')){
-      setTimeout(()=>{try{window.clientPlanProfileInjectV222?.()}catch(_){ }try{if(typeof window.clientCleanPlanPage==='function'&&window.clientCleanPlanPage.__profileFirstV198)window.clientCleanPlanPage()}catch(_){ }},0);return;
-    }
-    const y=root.classList.contains('active')?(window.scrollY||document.documentElement?.scrollTop||0):0;
-    root.innerHTML=`<div class="client-final-plan-v222"><div class="section">МОЯ ПРОГРАММА</div>${ps.length?ps.map(p=>`<div class="card routine"><div class="row between"><div class="grow"><div class="title">${esc2(p.name||'Программа')}</div><div class="muted">${p.weeks?.length||0} нед. · назначено тренером</div></div><button class="btn primary" onclick="openClientProgram('${p.id}')">Открыть</button></div></div>`).join(''):`<div class="card"><div class="title">План пока не назначен</div><div class="muted" style="margin-top:7px">Здесь появится только программа, которую отправил тренер.</div></div>`}</div>`;
-    root.dataset.clientPlanSignature=signature;
-    if(y>0)window.scrollTo({top:y,left:0,behavior:'auto'});
-    setTimeout(()=>{try{window.clientPlanProfileInjectV222?.()}catch(_){ }try{if(typeof window.clientCleanPlanPage==='function'&&window.clientCleanPlanPage.__profileFirstV198)window.clientCleanPlanPage()}catch(_){ }},0);
+    const renderer=window.clientCleanPlanPage;
+    if(typeof renderer==='function'&&renderer.__clientPlanV255)return renderer();
+    if(!root.querySelector('.client-plan-loading-v255'))root.innerHTML='<div class="card client-plan-loading-v255"><div><div class="title">Загружаем план</div><div class="muted">Получаем назначенную программу…</div></div></div>';
   }
 
   function installPlanGuard(){
     if(!isClient())return;
     const current=window.planPage;
-    if(typeof current==='function'&&!current.__clientFinalV222){
-      const w=function(){renderClientPlan();setTimeout(()=>{try{window.clientPlanProfileRefresh198?.()}catch(_){ }},0)};
-      w.__clientFinalV222=true;window.planPage=w;try{planPage=w}catch(_){ }
+    if(typeof current!=='function'||!current.__clientPlanAuthorityV255){
+      canonicalClientPlan.__clientPlanAuthorityV255=true;window.planPage=canonicalClientPlan;try{planPage=canonicalClientPlan}catch(_){ }
     }
   }
 
   function installSettings(){
     const base=window.settingsSheet;
-    if(typeof base!=='function'||base.__clientFinalV222)return;
+    if(typeof base!=='function'||base.__clientSettingsV255)return;
     const wrapped=function(){
       const out=base.apply(this,arguments);
       if(!isClient())return out;
       setTimeout(()=>{
-        const sh=document.getElementById('sheet');if(!sh||sh.querySelector('.client-settings-v222'))return;
-        const block=document.createElement('div');block.className='client-settings-v222';
+        const sh=document.getElementById('sheet');if(!sh||sh.querySelector('.client-settings-v255'))return;
+        const block=document.createElement('div');block.className='client-settings-v255';
         block.innerHTML=`<div class="section">МОИ ДАННЫЕ</div><div class="settings-card"><div class="setting"><div><b>Профиль</b><div class="muted small">Рост, возраст, пол и цель</div></div><button class="btn tiny" onclick="clientFinalProfileV222()">Открыть</button></div><div class="setting"><div><b>Замеры</b><div class="muted small">Вес и обхваты тела</div></div><button class="btn tiny" onclick="clientFinalMeasuresV222()">Записать</button></div></div>`;
         const firstSection=sh.querySelector('.section');if(firstSection)firstSection.before(block);else sh.prepend(block);
         // Old AI/OpenGym imports were retired: remove any stale controls injected by cached legacy modules.
@@ -192,38 +204,47 @@
       },0);
       return out;
     };
-    wrapped.__clientFinalV222=true;window.settingsSheet=wrapped;try{settingsSheet=wrapped}catch(_){ }
+    wrapped.__clientSettingsV255=true;window.settingsSheet=wrapped;try{settingsSheet=wrapped}catch(_){ }
   }
 
   window.clientFinalProfileV222=()=>{
     if(typeof window.clientProfile107==='function')return window.clientProfile107();
-    if(typeof window.clientPlanOpenProfile198==='function')return window.clientPlanOpenProfile198();
     if(typeof window.profileEditSheet==='function')return window.profileEditSheet();
     if(typeof window.cloudAccountSheet==='function')return window.cloudAccountSheet();
   };
   window.clientFinalMeasuresV222=()=>{
     if(typeof window.clientMeasure107==='function')return window.clientMeasure107();
-    if(typeof window.clientPlanMeasure198==='function')return window.clientPlanMeasure198();
     return window.clientFinalProfileV222();
   };
+  window.clientProfileV255=window.clientFinalProfileV222;
+  window.clientMeasuresV255=window.clientFinalMeasuresV222;
 
   async function bootClient(){
-    if(clientReady||!isClient())return;
-    clientReady=true;
-    await cleanupLegacyClientWeight();
-    await hydrateAssignments();
-    await script('client-journal-profile-v107.js');
-    await script('client-plan-profile-first-v198.js');
+    if(clientReady||!isClient())return clientBooting;
+    if(clientBooting)return clientBooting;
+    // Claim both client routes before any network wait so the built-in trainer
+    // cycle can never flash while assignments are loading.
     installPlanGuard();installSettings();installCanonicalClientHome();
-    if(document.getElementById('plan')?.classList.contains('active'))renderClientPlan();
-    try{if(typeof window.clientCleanPlanPage==='function')window.clientCleanPlanPage()}catch(_){ }
+    clientBooting=(async()=>{
+      await cleanupLegacyClientWeight();
+      await hydrateAssignments();
+      await script('client-program-picker.js');
+      await script('client-journal-profile-v107.js');
+      installPlanGuard();installSettings();installCanonicalClientHome();
+      clientReady=true;document.body?.classList.add('client-runtime-ready-v255');
+      if(document.getElementById('plan')?.classList.contains('active'))canonicalClientPlan();
+      if(document.getElementById('home')?.classList.contains('active'))renderCanonicalClientHome();
+      setTimeout(()=>window.clientPlanHistoryRefresh107?.(),0);
+      return true;
+    })().catch(e=>{console.warn('client runtime v255',e);return false}).finally(()=>{clientBooting=null});
+    return clientBooting;
   }
 
   // Prevent the built-in 8-week trainer cycle from remaining visible once a client session is known.
   document.addEventListener('click',e=>{
     if(!e.target?.closest?.('.nav button[data-p="plan"]')||!isClient())return;
     installPlanGuard();
-    setTimeout(renderClientPlan,0);
+    requestAnimationFrame(canonicalClientPlan);
   },true);
 
   document.addEventListener('visibilitychange',()=>{
@@ -234,7 +255,7 @@
     const c=cloudState();
     if(c?.user){
       if(isClient())bootClient();
-      else {clientReady=true;installSettings()}
+      else installSettings()
     }
     if(isClient()){installPlanGuard();installSettings();installCanonicalClientHome()}
   },120);

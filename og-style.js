@@ -96,12 +96,12 @@
     document.head.appendChild(accentStyle);
   }
 
-  // Final client guard is loaded on every startup. It stays dormant for the trainer account.
-  if(!document.querySelector('script[data-unvrsl-client-final-v222]')){
+  // One client runtime owns Home and Plan. It stays dormant for the trainer account.
+  if(!document.querySelector('script[data-unvrsl-client-runtime-v255]')){
     const clientFinal=document.createElement('script');
-    clientFinal.src='client-final-runtime-v222.js?v=237';
+    clientFinal.src='client-final-runtime-v222.js?v=255';
     clientFinal.async=false;
-    clientFinal.dataset.unvrslClientFinalV222='1';
+    clientFinal.dataset.unvrslClientRuntimeV255='1';
     document.body.appendChild(clientFinal);
   }
 

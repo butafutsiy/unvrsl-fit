@@ -1,13 +1,14 @@
-'use strict';
+'use strict'; // Canonical retirement registry for release v255.
 (()=>{
-  if(window.__unvrslLegacyRetirementV254)return;
+  if(window.__unvrslLegacyRetirementV255)return;
+  window.__unvrslLegacyRetirementV255=true;
   window.__unvrslLegacyRetirementV254=true;
 
   const retired=[
-    'legacy-retirement-v253.js','og-style-legacy-v157.js',
+    'legacy-retirement-v253.js','legacy-retirement-v254.js','og-style-legacy-v157.js',
     'stats-dashboard-v2.js','home-stats-v2.js','stats-cleanup.js','stats-authority-v253.js',
     'stats-authority-v247.js','stats-authority-v252.js','stats-integrity-v104.js','profile-stats.js',
-    'trainer-client-detail-v2.js','trainer-client-guard-v117.js','client-experience-v2.js',
+    'trainer-client-detail-v2.js','trainer-client-guard-v117.js','client-experience-v2.js','client-plan-profile-first-v198.js',
     'startup-splash-v156.js','layout-fix.js','home-dashboard.js','body-sex-sync-v166.js',
     'progression-engine-v182.js','progression-engine-v184.js','progression-engine-v185.js','progression-engine-v186.js',
     'workout-recommendation-v177.js','workout-recommendation-v180.js','workout-recommendation-v185.js','adaptive-effort-safety-v170.js',
@@ -18,7 +19,9 @@
   const names=new Set(retired);
   const file=src=>String(src||'').split(/[?#]/)[0].replace(/\\/g,'/').split('/').pop();
   const isRetired=src=>names.has(file(src));
-  window.UNVRSL_RETIRED_SCRIPTS_V254=Object.freeze(retired.slice());
+  window.UNVRSL_RETIRED_SCRIPTS_V255=Object.freeze(retired.slice());
+  window.UNVRSL_RETIRED_SCRIPTS_V254=window.UNVRSL_RETIRED_SCRIPTS_V255;
+  window.unvrslScriptRetiredV255=isRetired;
   window.unvrslScriptRetiredV254=isRetired;
   window.unvrslScriptRetiredV253=isRetired;
 
@@ -34,9 +37,10 @@
   window.__unvrslTrainerClientDetailV2=true;
   window.__trainerClientGuardV117=true;
   window.__unvrslAdaptiveEffortSafetyV170=true;
+  window.__unvrslClientPlanProfileFirstV198=true;
 
   const style=document.createElement('style');
-  style.id='legacy-retirement-v254-style';
+  style.id='legacy-retirement-v255-style';
   style.textContent=`
     #unvrsl-startup-splash,#unvrsl-startup-splash-v156,#unvrsl-boot-cover,
     #stats .profile-card-head,#stats .profile-overview,#stats .own-body-progress,
@@ -48,7 +52,7 @@
   document.head.appendChild(style);
 
   const obsolete='#unvrsl-startup-splash,#unvrsl-startup-splash-v156,#unvrsl-startup-splash-style,#unvrsl-startup-splash-v156-style,#unvrsl-boot-cover,#unvrsl-boot-cover-style,#stats .profile-card-head,#stats .profile-overview,#stats .own-body-progress,#stats .stats-muscle-week,#stats .stats-last-session-v104-wrap';
-  const oldGlobals=['anatomeMuscleCardHtmlV253','anatomeMountCardV253','unvrslStatsSessions208','statsOpenWorkout208','statsWeightRange','statsWeightSheet','statsSaveWeight','statsGoalSheet','statsSaveGoal','statsEnsureCanonicalV253'];
+  const oldGlobals=['anatomeMuscleCardHtmlV253','anatomeMountCardV253','unvrslStatsSessions208','statsOpenWorkout208','statsWeightRange','statsWeightSheet','statsSaveWeight','statsGoalSheet','statsSaveGoal','statsEnsureCanonicalV253','clientPlanProfileInjectV222','clientPlanProfileRefresh198','clientPlanOpenProfile198','clientPlanMeasure198'];
   let queued=false;
   function removeHistory(root){
     const head=root?.querySelector('#statsWorkoutHistory208');if(!head)return;
@@ -70,8 +74,8 @@
   function schedule(){if(queued)return;queued=true;requestAnimationFrame(clean)}
   function install(){
     for(const id of ['home','stats','sheet']){
-      const node=document.getElementById(id);if(!node||node.__legacyRetirementV254Observer)continue;
-      const observer=new MutationObserver(schedule);observer.observe(node,{childList:true,subtree:true});node.__legacyRetirementV254Observer=observer;
+      const node=document.getElementById(id);if(!node||node.__legacyRetirementV255Observer)continue;
+      const observer=new MutationObserver(schedule);observer.observe(node,{childList:true,subtree:true});node.__legacyRetirementV255Observer=observer;
     }
     schedule();
   }

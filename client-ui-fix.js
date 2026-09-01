@@ -89,10 +89,10 @@
       try{window.startPage?.()}catch(_){}
     },170);
   }
-  document.addEventListener('touchstart',e=>{if(e.target?.closest?.('#start'))workoutTouching=true},{passive:true});
-  document.addEventListener('touchend',()=>{workoutTouching=false},{passive:true});
-  document.addEventListener('touchcancel',()=>{workoutTouching=false},{passive:true});
-  window.addEventListener('scroll',()=>{
+  document.addEventListener?.('touchstart',e=>{if(e.target?.closest?.('#start'))workoutTouching=true},{passive:true});
+  document.addEventListener?.('touchend',()=>{workoutTouching=false},{passive:true});
+  document.addEventListener?.('touchcancel',()=>{workoutTouching=false},{passive:true});
+  window.addEventListener?.('scroll',()=>{
     if(!document.getElementById('start')?.classList.contains('active'))return;
     lastWorkoutScrollAt=typeof performance!=='undefined'&&performance.now?performance.now():Date.now();
   },{passive:true});
@@ -115,7 +115,7 @@
       const snapshot=active?workoutScrollSnapshot(live):null;
       const result=current.apply(this,arguments);
       if(active&&live){
-        live.dataset.clientWorkoutRenderSig=workoutRenderSignature();
+        if(live.dataset)live.dataset.clientWorkoutRenderSig=workoutRenderSignature();
         if(snapshot)requestAnimationFrame(()=>restoreWorkoutScroll(live,snapshot));
       }
       return result;
@@ -124,28 +124,6 @@
     wrapped.__clientStableScrollBase=current;
     window.startPage=wrapped;try{startPage=wrapped}catch(e){}
   }
-
-  async function ownWorkoutCount(){
-    if(!isClient()||!window.cloud?.client||!window.cloud?.user)return 0;
-    const r=await window.cloud.client.from('workouts').select('id',{count:'exact',head:true}).eq('user_id',window.cloud.user.id);
-    return r.error?0:(r.count||0);
-  }
-  async function refreshWorkoutCount(){const el=document.getElementById('clientOwnWorkoutCount');if(el)el.textContent=String(await ownWorkoutCount())}
-
-  function cleanClientHome(){
-    applyClientClass();
-    const root=document.getElementById('home');if(!root)return;
-    const ps=typeof window.assignedClientPrograms==='function'?window.assignedClientPrograms():[],p=ps[0];
-    if(!window.cloud?.user){
-      root.innerHTML='<div class="card"><div class="muted">UNVRSL FIT</div><div class="title" style="margin-top:6px">Твои тренировки — только твои</div><div class="muted" style="margin-top:8px">Войди в аккаунт, чтобы получить программу от тренера.</div><button class="btn primary full" style="margin-top:16px" onclick="cloudAccountSheet()">Войти</button></div>';
-      return;
-    }
-    const plan=p?'<div class="title" style="margin-top:6px">'+esc(p.name)+'</div><div class="muted" style="margin-top:6px">'+(p.weeks?.length||0)+' нед. · тренер: '+esc(p.trainerName||'назначен')+'</div><button class="btn primary full" style="margin-top:16px" onclick="openClientProgram(\''+p.id+'\')">Открыть план</button>':'<div class="title" style="margin-top:6px">План пока не назначен</div><div class="muted" style="margin-top:8px">Когда тренер отправит программу, она появится здесь автоматически.</div>';
-    root.innerHTML='<div class="card"><div class="muted">МОЙ ПЛАН</div>'+plan+'</div>'+
-      '<div class="card"><div class="row between"><div><div class="muted">Выполнено тренировок</div><div class="title" id="clientOwnWorkoutCount">—</div></div><button class="btn" onclick="nav(\'stats\')">Статистика</button></div></div>';
-    refreshWorkoutCount();
-  }
-  window.clientCleanHome=cleanClientHome;try{clientCleanHome=cleanClientHome}catch(e){}
 
   const baseOpenCheckin=window.openWeeklyCheckin;
   if(typeof baseOpenCheckin==='function'&&!baseOpenCheckin.__clientWeightFix){
@@ -173,5 +151,4 @@
 
   applyClientClass();installStableWorkoutScroll();
   [300,900,2200,5000].forEach(t=>setTimeout(()=>{applyClientClass();installStableWorkoutScroll()},t));
-  if(isClient()&&typeof window.home==='function')setTimeout(()=>{try{window.home()}catch(e){}},80);
 })();

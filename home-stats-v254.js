@@ -160,7 +160,7 @@
     if(host.__homeStatsHtml!==html){host.innerHTML=html;host.__homeStatsHtml=html}
     const cards=[...root.children].filter(x=>x!==host&&x.classList?.contains('card'));
     const clientMode=isClientMode();
-    const anchor=clientMode?(cards[1]||cards[0]):(root.querySelector(':scope > .calendar-card')||cards[0]);
+    const anchor=clientMode?(root.querySelector(':scope > .client-plan-card-v255')||cards[1]||cards[0]):(root.querySelector(':scope > .calendar-card')||cards[0]);
     if(anchor){if(anchor.nextElementSibling!==host)anchor.after(host)}else if(root.firstElementChild!==host)root.prepend(host);
     requestAnimationFrame(()=>{const h=document.getElementById('homeHeatWrap');if(h)h.scrollLeft=h.scrollWidth});
   }
