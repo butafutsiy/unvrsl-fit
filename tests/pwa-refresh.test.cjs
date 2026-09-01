@@ -21,15 +21,14 @@ test('manifest has a stable GitHub Pages identity and installable PNG icons',()=
 
 test('iOS uses a PNG touch icon and a versioned service worker',()=>{
   const html=read('index.html');
-  assert.match(html,/apple-touch-icon[^>]+apple-touch-icon\.png\?v=251/);
-  assert.match(html,/serviceWorker\.register\('\.\/sw\.js\?v=251'/);
+  assert.match(html,/apple-touch-icon[^>]+apple-touch-icon\.png\?v=252/);
+  assert.match(html,/serviceWorker\.register\('\.\/sw\.js\?v=252'/);
   assert.match(html,/updateViaCache:'none'/);
 });
 
-test('service worker update cannot be blocked by one failed optional asset',()=>{
+test('service worker clears old app caches and uses the network only',()=>{
   const source=read('sw.js');
-  assert.match(source,/Promise\.allSettled/);
-  assert.doesNotMatch(source,/cache\.addAll/);
-  assert.match(source,/event\.request\.mode==='navigate'/);
+  assert.match(source,/key\.startsWith\(CACHE_PREFIX\)/);
   assert.match(source,/fetch\(event\.request,\{cache:'no-store'\}\)/);
+  assert.doesNotMatch(source,/cache\.put|cache\.add|caches\.match|caches\.open/);
 });

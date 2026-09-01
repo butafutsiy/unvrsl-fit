@@ -131,18 +131,6 @@
     try{trainerClientDetail=window.trainerClientDetail}catch(e){}
   }
 
-  async function renderOwnProgress(){
-    if(!cloud||!cloud.user)return;
-    if(cloud.profile&&cloud.profile.role==='trainer')return;
-    if(typeof trainerIsTrainer==='function'&&trainerIsTrainer())return;
-    const root=document.getElementById('stats');if(!root||root.querySelector('.own-body-progress'))return;
-    const metrics=await fetchProgress(cloud.user.id);const box=document.createElement('div');box.className='own-body-progress';box.innerHTML=progressHtml(metrics,'Вес и обхваты');root.appendChild(box);
-  }
-
-  const baseStats=window.statsPage;
-  if(typeof baseStats==='function'){
-    window.statsPage=function(){const r=baseStats.apply(this,arguments);setTimeout(renderOwnProgress,0);return r};
-    try{statsPage=window.statsPage}catch(e){}
-  }
-  setTimeout(renderOwnProgress,1000);
+  // Personal weight progress belongs to Home. This module only augments the
+  // trainer's client detail and must not append another renderer to #stats.
 })();

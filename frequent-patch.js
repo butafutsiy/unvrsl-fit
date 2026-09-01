@@ -121,5 +121,7 @@ setTimeout(()=>{
   .then(()=>loadExternalScript('workout-template-ux-v2.js'))
   .then(()=>loadExternalScript('client-program-picker.js'))
   .then(()=>loadExternalScript('cardio-exercise-library.js'))
+  .then(()=>loadExternalScript('stats-authority-v252.js'))
+  .then(()=>loadExternalScript('trainer-shell-v252.js'))
   .catch(e=>console.warn('post-load modules',e));
 },0);
