@@ -26,7 +26,7 @@
   function E(v){return typeof W.esc==='function'?W.esc(String(v??'')):String(v??'')}
 
   function series(){
-    const merged=typeof W.unvrslStatsSessions208==='function'?W.unvrslStatsSessions208():(st.sessions||[]),map=new Map(),sessions=[...(merged||[])].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||(+a.started||0)-(+b.started||0));
+    const merged=typeof W.unvrslStatsSessions254==='function'?W.unvrslStatsSessions254():(st.sessions||[]),map=new Map(),sessions=[...(merged||[])].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||(+a.started||0)-(+b.started||0));
     sessions.forEach(s=>{
       const perSession=new Map();
       (s.ex||[]).forEach(e=>{

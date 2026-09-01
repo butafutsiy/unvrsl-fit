@@ -105,11 +105,12 @@
     document.body.appendChild(clientFinal);
   }
 
-  // Preserve the legacy OG visual styles without creating a second loading cover.
-  window.__unvrslSkipLegacyBootCover=true;
-
-  const legacy=document.createElement('script');
-  legacy.src='og-style-legacy-v157.js';
-  legacy.async=false;
-  document.head.appendChild(legacy);
+  // Canonical exercise-detail styling. No legacy boot cover or renderer is executed.
+  if(!document.querySelector('script[data-unvrsl-og-enhance-v254]')){
+    const enhance=document.createElement('script');
+    enhance.src='og-enhance-v254.js';
+    enhance.async=false;
+    enhance.dataset.unvrslOgEnhanceV254='1';
+    document.head.appendChild(enhance);
+  }
 })();

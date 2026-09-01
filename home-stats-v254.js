@@ -1,23 +1,45 @@
 'use strict';
 (()=>{
-  if(window.__unvrslHomeStatsV2)return;
-  window.__unvrslHomeStatsV2=true;
+  if(window.__unvrslHomeStatsV254)return;
+  window.__unvrslHomeStatsV254=true;
 
   const css=document.createElement('style');
-  css.id='home-stats-v2-style';
+  css.id='home-stats-v254-style';
   css.textContent=`
-    #home .home-stats-v2{margin-top:12px}
-    #home .home-stats-v2 .sd2-card{margin:12px 0}
-    #home .home-stats-v2 .sd2-card:first-child{margin-top:0}
-    #home .home-stats-v2 .sd2-card:last-child{margin-bottom:0}
-    #home .home-stats-v2 .sd2-heat-wrap{overscroll-behavior-x:contain}
-    #home .home-stats-v2 .sd2-current{font-size:46px}
-    #home .home-stats-v2 .sd2-weight-actions{flex-wrap:wrap;justify-content:flex-end}
-    #home .home-stats-v2 .sd2-goal-link,#home .home-stats-v2 .sd2-write{touch-action:manipulation}
+    #home .home-stats-v254{margin-top:12px}
+    #home .home-stats-v254 .sd2-card{background:#1c1c1f;border:1px solid #26272c;border-radius:23px;padding:17px;margin:12px 0;overflow:hidden}
+    #home .home-stats-v254 .sd2-card:first-child{margin-top:0}
+    #home .home-stats-v254 .sd2-card:last-child{margin-bottom:0}
+    #home .home-stats-v254 .sd2-card-title{color:#aaaab0;font-size:14px;line-height:1.35;margin-bottom:14px}
+    #home .home-stats-v254 .sd2-heat-wrap{overflow-x:auto;padding-bottom:3px;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+    #home .home-stats-v254 .sd2-heat{display:grid;grid-template-rows:repeat(7,10px);grid-auto-flow:column;grid-auto-columns:10px;gap:4px;width:max-content;min-width:100%}
+    #home .home-stats-v254 .sd2-cell{width:10px;height:10px;border-radius:3px;background:#2c2c31}
+    #home .home-stats-v254 .sd2-cell.l1{background:color-mix(in srgb,var(--green) 28%,#2c2c31)}
+    #home .home-stats-v254 .sd2-cell.l2{background:color-mix(in srgb,var(--green) 46%,#2c2c31)}
+    #home .home-stats-v254 .sd2-cell.l3{background:color-mix(in srgb,var(--green) 68%,#2c2c31)}
+    #home .home-stats-v254 .sd2-cell.l4{background:var(--green)}
+    #home .home-stats-v254 .sd2-legend{display:flex;justify-content:flex-end;align-items:center;gap:5px;color:#77777d;font-size:11px;margin-top:11px}
+    #home .home-stats-v254 .sd2-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+    #home .home-stats-v254 .sd2-weight-head{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    #home .home-stats-v254 .sd2-weight-label{font-size:15px;color:#9b9ba1}
+    #home .home-stats-v254 .sd2-weight-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-end}
+    #home .home-stats-v254 .sd2-goal-link,#home .home-stats-v254 .sd2-write{border:0;background:transparent;padding:0;font-size:16px;touch-action:manipulation}
+    #home .home-stats-v254 .sd2-goal-link{color:#ffd60a}#home .home-stats-v254 .sd2-write{color:var(--green)}
+    #home .home-stats-v254 .sd2-current-row{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:18px 0 5px}
+    #home .home-stats-v254 .sd2-current{font-size:46px;line-height:1;font-weight:900;letter-spacing:-1.5px}
+    #home .home-stats-v254 .sd2-current small{font-size:20px;color:#a4a4aa;font-weight:700}
+    #home .home-stats-v254 .sd2-last-date{color:#6f6f76;font-size:14px}
+    #home .home-stats-v254 .sd2-goal-copy{color:#ffd60a;font-size:15px;margin:8px 0 14px}
+    #home .home-stats-v254 .sd2-seg{display:grid;grid-template-columns:repeat(4,1fr);background:#3a3a3f;border-radius:12px;padding:2px;margin:12px 0 6px}
+    #home .home-stats-v254 .sd2-seg button{border:0;background:transparent;color:#aaaab0;padding:9px 4px;border-radius:10px;font-size:14px}
+    #home .home-stats-v254 .sd2-seg button.on{background:#202023;color:#fff}
+    #home .home-stats-v254 .sd2-chart{display:block;width:100%;height:auto;margin-top:8px;overflow:visible}
+    #home .home-stats-v254 .sd2-axis{font-size:9px;fill:#77777e}#home .home-stats-v254 .sd2-date{font-size:9px;fill:#6f6f76}
+    #home .home-stats-v254 .sd2-empty{color:#85858b;padding:6px 0}
     @media(max-width:390px){
-      #home .home-stats-v2 .sd2-current{font-size:41px}
-      #home .home-stats-v2 .sd2-weight-actions{gap:10px}
-      #home .home-stats-v2 .sd2-goal-link,#home .home-stats-v2 .sd2-write{font-size:15px}
+      #home .home-stats-v254 .sd2-current{font-size:41px}
+      #home .home-stats-v254 .sd2-weight-actions{gap:10px}
+      #home .home-stats-v254 .sd2-goal-link,#home .home-stats-v254 .sd2-write{font-size:15px}
     }
   `;
   document.head.appendChild(css);
@@ -97,20 +119,43 @@
     const a=weights(),last=a.length?a[a.length-1]:null,g=goal(),diff=last&&g?+(g-last.v).toFixed(1):null;
     let copy='';if(last&&g)copy=diff===0?`◎ Цель ${fmt(g)} кг · достигнута`:diff>0?`◎ Цель ${fmt(g)} кг · набрать ${fmt(Math.abs(diff))} кг`:`◎ Цель ${fmt(g)} кг · снизить ${fmt(Math.abs(diff))} кг`;
     const d=last?parseDate(last.d):null,dateText=d?`${['Вс','Пн','Вт','Ср','Чт','Пт','Сб'][d.getDay()]}, ${d.getDate()} ${['янв.','февр.','мар.','апр.','мая','июн.','июл.','авг.','сент.','окт.','нояб.','дек.'][d.getMonth()]}`:'';
-    return `<div class="sd2-card"><div class="sd2-weight-head"><div class="sd2-weight-label">Вес тела</div><div class="sd2-weight-actions"><button class="sd2-goal-link" onclick="statsGoalSheet()">◎ ${g?fmt(g):'Цель'}</button><button class="sd2-write" onclick="statsWeightSheet()">＋ Записать</button></div></div><div class="sd2-current-row"><div class="sd2-current">${last?fmt(last.v):'—'} <small>кг</small></div><div class="sd2-last-date">${dateText}</div></div>${copy?`<div class="sd2-goal-copy">${copy}</div>`:''}<div class="sd2-seg">${[['1m','1М'],['3m','3М'],['1y','1Г'],['all','Все']].map(([k,l])=>`<button class="${range===k?'on':''}" onclick="homeStatsWeightRange('${k}')">${l}</button>`).join('')}</div>${chartHtml()}</div>`;
+    return `<div class="sd2-card"><div class="sd2-weight-head"><div class="sd2-weight-label">Вес тела</div><div class="sd2-weight-actions"><button class="sd2-goal-link" onclick="homeStatsGoalSheet()">◎ ${g?fmt(g):'Цель'}</button><button class="sd2-write" onclick="homeStatsWeightSheet()">＋ Записать</button></div></div><div class="sd2-current-row"><div class="sd2-current">${last?fmt(last.v):'—'} <small>кг</small></div><div class="sd2-last-date">${dateText}</div></div>${copy?`<div class="sd2-goal-copy">${copy}</div>`:''}<div class="sd2-seg">${[['1m','1М'],['3m','3М'],['1y','1Г'],['all','Все']].map(([k,l])=>`<button class="${range===k?'on':''}" onclick="homeStatsWeightRange('${k}')">${l}</button>`).join('')}</div>${chartHtml()}</div>`;
   }
+
+  window.homeStatsWeightSheet=function(){
+    const a=weights(),last=a.length?a.at(-1).v:'';
+    modal(`<div class="sheet-grabber"></div><h2>Записать вес</h2><div class="field"><label>Дата</label><input id="homeStatsWeightDate" type="date" value="${isoDate(new Date())}"></div><div class="field"><label>Вес, кг</label><input id="homeStatsWeightValue" type="number" inputmode="decimal" min="30" max="350" step="0.1" value="" placeholder="${last?fmt(last):'Например, 75.5'}"></div><button class="btn primary full" onclick="homeStatsSaveWeight()">Сохранить</button>`);
+  };
+  window.homeStatsSaveWeight=async function(){
+    const d=document.getElementById('homeStatsWeightDate')?.value||isoDate(new Date()),v=num(String(document.getElementById('homeStatsWeightValue')?.value||'').replace(',','.'));
+    if(!v||v<30||v>350)return toast('Проверь вес');
+    const now=Date.now();st.bw=Array.isArray(st.bw)?st.bw:[];const i=st.bw.findIndex(x=>x.d===d),row={d,w:+v.toFixed(1),t:now,updatedAt:now};
+    if(i>=0)st.bw[i]=row;else st.bw.push(row);st.bw.sort((a,b)=>a.d.localeCompare(b.d));
+    st.deletedBodyweights=(Array.isArray(st.deletedBodyweights)?st.deletedBodyweights:[]).filter(x=>String(x?.d||x||'').slice(0,10)!==d);save();
+    if(window.cloud?.client&&window.cloud?.user){const r=await window.cloud.client.from('bodyweights').upsert({user_id:window.cloud.user.id,measure_date:d,weight_kg:+v.toFixed(1)},{onConflict:'user_id,measure_date'});if(r.error)console.warn('home weight save',r.error)}
+    cache.loaded=false;closeModal();await renderHomeProgress(true);toast('Вес записан');
+  };
+  window.homeStatsGoalSheet=function(){
+    const g=goal();modal(`<div class="sheet-grabber"></div><h2>Цель по весу</h2><div class="field"><label>Целевой вес, кг</label><input id="homeStatsGoal" type="number" inputmode="decimal" min="30" max="350" step="0.1" value="${g||''}" placeholder="Например, 100"></div><button class="btn primary full" onclick="homeStatsSaveGoal()">Сохранить</button>`);
+  };
+  window.homeStatsSaveGoal=async function(){
+    const v=num(String(document.getElementById('homeStatsGoal')?.value||'').replace(',','.'));if(!v||v<30||v>350)return toast('Проверь целевой вес');
+    st.weightGoalKg=+v.toFixed(1);save();
+    if(window.cloud?.client&&window.cloud?.user){const r=await window.cloud.client.from('profiles').update({target_weight_kg:+v.toFixed(1),updated_at:new Date().toISOString()}).eq('id',window.cloud.user.id);if(r.error)console.warn('home goal save',r.error)}
+    cache.goal=+v.toFixed(1);cache.loaded=false;closeModal();await renderHomeProgress(true);toast('Цель сохранена');
+  };
 
   function removeOldHomeWeight(root){
     [...root.children].forEach(el=>{
-      if(el.classList?.contains('home-stats-v2'))return;
+      if(el.classList?.contains('home-stats-v254'))return;
       if(el.classList?.contains('dash-weight-card'))el.remove();
       else if(el.classList?.contains('card')&&/^\s*Вес тела/i.test((el.textContent||'').trim()))el.remove();
     });
   }
 
   function insertHost(root){
-    let host=root.querySelector(':scope > .home-stats-v2');
-    if(!host){host=document.createElement('div');host.className='home-stats-v2';}
+    let host=root.querySelector(':scope > .home-stats-v254');
+    if(!host){host=document.createElement('div');host.className='home-stats-v254';}
     const html=heatmapHtml()+weightHtml();
     if(host.__homeStatsHtml!==html){host.innerHTML=html;host.__homeStatsHtml=html}
     const cards=[...root.children].filter(x=>x!==host&&x.classList?.contains('card'));
@@ -134,20 +179,11 @@
   window.homeProgressRefresh=renderHomeProgress;
   window.homeStatsWeightRange=function(k){range=k;renderHomeProgress(false)};
 
-  function installSaveHooks(){
-    if(typeof window.statsSaveWeight==='function'&&!window.statsSaveWeight.__homeRefresh){
-      const base=window.statsSaveWeight;const wrapped=async function(){const r=await base.apply(this,arguments);cache.loaded=false;await renderHomeProgress(true);return r};wrapped.__homeRefresh=true;window.statsSaveWeight=wrapped;try{statsSaveWeight=wrapped}catch(e){}
-    }
-    if(typeof window.statsSaveGoal==='function'&&!window.statsSaveGoal.__homeRefresh){
-      const base=window.statsSaveGoal;const wrapped=async function(){const r=await base.apply(this,arguments);cache.loaded=false;await renderHomeProgress(true);return r};wrapped.__homeRefresh=true;window.statsSaveGoal=wrapped;try{statsSaveGoal=wrapped}catch(e){}
-    }
-  }
-
   function installHomeWrap(){
-    const cur=window.home;if(typeof cur!=='function'||cur.__homeStatsV2)return;
-    const base=cur;const wrapped=function(){const r=base.apply(this,arguments);setTimeout(()=>renderHomeProgress(false),0);return r};wrapped.__homeStatsV2=true;window.home=wrapped;try{home=wrapped}catch(e){}
+    const cur=window.home;if(typeof cur!=='function'||cur.__homeStatsV254)return;
+    const base=cur;const wrapped=function(){const r=base.apply(this,arguments);setTimeout(()=>renderHomeProgress(false),0);return r};wrapped.__homeStatsV254=true;window.home=wrapped;try{home=wrapped}catch(e){}
   }
 
-  installSaveHooks();installHomeWrap();
-  [40,350,1000,2200].forEach(t=>setTimeout(()=>{installSaveHooks();installHomeWrap();if(document.getElementById('home')?.classList.contains('active'))renderHomeProgress(false)},t));
+  installHomeWrap();
+  [40,350,1000,2200].forEach(t=>setTimeout(()=>{installHomeWrap();if(document.getElementById('home')?.classList.contains('active'))renderHomeProgress(false)},t));
 })();

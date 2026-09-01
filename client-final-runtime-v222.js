@@ -10,8 +10,8 @@
   let clientReady=false;
   let legacyCleanup=null;
 
-  if(!document.getElementById('client-final-runtime-v253-style')){
-    const style=document.createElement('style');style.id='client-final-runtime-v253-style';style.textContent=`
+  if(!document.getElementById('client-final-runtime-v254-style')){
+    const style=document.createElement('style');style.id='client-final-runtime-v254-style';style.textContent=`
       body.unvrsl-client .client-progress-card{padding:17px!important}
       body.unvrsl-client .client-progress-card .title{font-size:22px!important}
       body.unvrsl-client .client-progress-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
@@ -69,7 +69,7 @@
   window.unvrslCleanupLegacyClientWeightV236=cleanupLegacyClientWeight;
 
   function script(src){
-    if(window.unvrslScriptRetiredV253?.(src))return Promise.resolve({retired:true,src});
+    if(window.unvrslScriptRetiredV254?.(src)||window.unvrslScriptRetiredV253?.(src))return Promise.resolve({retired:true,src});
     if(loaded.has(src)||document.querySelector(`script[src="${src}"],script[src="./${src}"]`))return Promise.resolve();
     loaded.add(src);
     return new Promise(resolve=>{const s=document.createElement('script');s.src=src;s.async=false;s.dataset.clientFinal='1';s.onload=resolve;s.onerror=resolve;document.body.appendChild(s)});

@@ -82,24 +82,7 @@
   }
   `;document.head.appendChild(s);
 
-  function parseLocalDate(v){try{return typeof parseDate==='function'?parseDate(v):new Date(v+'T12:00:00')}catch(e){return new Date(v+'T12:00:00')}}
-  function compactWeightChart(homeMode){
-    const a=(st?.bw||[]).slice(-8);if(a.length<2)return `<div class="muted" style="margin-top:10px;font-size:12px">${homeMode?'Добавь ещё одну запись, чтобы появился график.':'Добавь минимум две записи.'}</div>`;
-    const vals=a.map(x=>Number(x.w)).filter(Number.isFinite);if(vals.length<2)return'';
-    const mn=Math.min(...vals),mx=Math.max(...vals),pad=Math.max(1,(mx-mn)*.22);
-    let bottom=Math.floor((mn-pad)*2)/2,top=Math.ceil((mx+pad)*2)/2;if(top-bottom<3)top=bottom+3;
-    const mid=(top+bottom)/2,W=360,H=132,L=8,R=30,T=9,B=24,pw=W-L-R,ph=H-T-B;
-    const x=i=>L+(a.length===1?0:i*pw/(a.length-1)),y=v=>T+(top-v)/(top-bottom)*ph;
-    const pts=a.map((p,i)=>`${x(i).toFixed(1)},${y(Number(p.w)).toFixed(1)}`).join(' '),base=T+ph;
-    const gid=homeMode?'cwHome':'cwStats';
-    const dateIdx=a.length<=4?a.map((_,i)=>i):[0,Math.round((a.length-1)/3),Math.round((a.length-1)*2/3),a.length-1];
-    const dateHtml=[...new Set(dateIdx)].map(i=>{const d=parseLocalDate(a[i].d);const lab=`${d.getDate()} ${new Intl.DateTimeFormat('ru-RU',{month:'short'}).format(d).replace('.','')}`;return `<text class="cw-date" x="${x(i)}" y="${H-4}" text-anchor="${i===0?'start':i===a.length-1?'end':'middle'}">${lab}</text>`}).join('');
-    const lines=[top,mid,bottom].map(v=>`<line class="cw-grid" x1="${L}" x2="${W-R+4}" y1="${y(v)}" y2="${y(v)}"/><text class="cw-axis" x="${W-1}" y="${y(v)+3}" text-anchor="end">${v.toFixed(v%1?1:0)}</text>`).join('');
-    return `<svg class="compact-weight-chart" viewBox="0 0 ${W} ${H}" aria-label="График веса"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--green)" stop-opacity=".24"/><stop offset="1" stop-color="var(--green)" stop-opacity="0"/></linearGradient></defs>${lines}<polygon points="${x(0)},${base} ${pts} ${x(a.length-1)},${base}" fill="url(#${gid})"/><polyline class="cw-line" points="${pts}"/>${a.map((p,i)=>`<circle class="cw-dot" cx="${x(i)}" cy="${y(Number(p.w))}" r="3.4"/>`).join('')}${dateHtml}</svg>`;
-  }
-  window.weightChart=compactWeightChart;try{weightChart=compactWeightChart}catch(e){}
-
   function ensureNavLabels(){document.querySelectorAll('.nav button[data-p]').forEach(b=>{if(!b.getAttribute('aria-label')){const m={home:'Главная',plan:'План',programs:'Программы',start:'Старт',stats:'Статистика',exercises:'Упражнения',clients:'Клиенты'};b.setAttribute('aria-label',m[b.dataset.p]||'')}})}
   ensureNavLabels();
-  setTimeout(()=>{ensureNavLabels();try{if(typeof home==='function')home();if(typeof statsPage==='function')statsPage()}catch(e){console.warn('density ui refresh',e)}},80);
+  setTimeout(ensureNavLabels,80);
 })();

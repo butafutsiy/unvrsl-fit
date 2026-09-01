@@ -96,6 +96,3 @@
   function install(){patchTabSwitch();patchClientsPage();apply()}
   [0,100,350,900,1800,3200].forEach(t=>setTimeout(install,t));
 })();
-
-// Trainer gets the same personal workout journal/profile layer in their own Plan tab.
-try{if(typeof loadExternalScript==='function')loadExternalScript('trainer-self-plan-v110.js').catch(e=>console.warn('trainer self plan',e))}catch(e){}
