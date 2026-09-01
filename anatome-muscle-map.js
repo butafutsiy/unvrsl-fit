@@ -205,8 +205,8 @@
   function cardHtml(){return `<div id="anatomeMuscleCard" class="sd2-card anatome-card"><div class="anatome-head"><div><div class="anatome-title">Нагрузка по мышцам</div><div class="anatome-sub">Последние ${periodDays} дн.</div></div><div class="anatome-seg"><button data-days="7" class="${periodDays===7?'on':''}">7 дн.</button><button data-days="28" class="${periodDays===28?'on':''}">28 дн.</button></div></div><div class="anatome-body"><div class="anatome-figure"><div class="anatome-loading">Строю карту…</div></div><div class="anatome-top"></div></div><div class="anatome-foot">Визуализация: Anatome · интенсивность рассчитана UNVRSL FIT по выполненным подходам, включая вспомогательную нагрузку.</div></div>`}
 
   function bindCard(card){
-    if(!card||card.dataset.anatomeBound==='253')return false;
-    card.dataset.anatomeBound='253';
+    if(!card||card.dataset.anatomeBound==='254')return false;
+    card.dataset.anatomeBound='254';
     card.querySelectorAll('[data-days]').forEach(btn=>btn.addEventListener('click',()=>{
       const d=Number(btn.dataset.days);if(![7,28].includes(d)||d===periodDays)return;periodDays=d;
       card.querySelectorAll('[data-days]').forEach(b=>b.classList.toggle('on',Number(b.dataset.days)===d));
@@ -225,8 +225,8 @@
     if(bindCard(card))renderCard(card);return card;
   }
 
-  window.anatomeMuscleCardHtmlV253=cardHtml;
-  window.anatomeMountCardV253=mount;
+  window.anatomeMuscleCardHtmlV254=cardHtml;
+  window.anatomeMountCardV254=mount;
 
   const root=document.getElementById('stats');
   if(root){new MutationObserver(()=>queueMicrotask(mount)).observe(root,{childList:true});mount()}

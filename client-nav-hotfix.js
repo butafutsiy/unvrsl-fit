@@ -80,7 +80,7 @@
 
   function scrubInheritedWeight(state){
     if(!isClient()||!state)return;
-    const cards=[...document.querySelectorAll('#home .home-stats-v2 .sd2-card')];
+    const cards=[...document.querySelectorAll('#home .home-stats-v254 .sd2-card')];
     const card=cards.find(x=>x.querySelector('.sd2-weight-label'));if(!card)return;
     if(!state.hasWeight){
       const cur=card.querySelector('.sd2-current');if(cur)cur.innerHTML='— <small>кг</small>';

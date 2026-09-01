@@ -32,7 +32,7 @@
     }catch(e){console.warn('bodyweight history load',e);rows=localRows()}
     finally{loading=false}
   }
-  function weightCards(){return [...document.querySelectorAll('#home .sd2-card,#stats .sd2-card')].filter(x=>x.querySelector('.sd2-weight-label')||/^\s*Вес тела/i.test((x.textContent||'').trim()))}
+  function weightCards(){return [...document.querySelectorAll('#home .sd2-card')].filter(x=>x.querySelector('.sd2-weight-label')||/^\s*Вес тела/i.test((x.textContent||'').trim()))}
   function selectedRow(){return rows.find(x=>x.d===selected)||null}
   function applySelection(){
     const x=selectedRow();
@@ -74,7 +74,6 @@
   function localDelete(date){if(!window.st)return;const now=Date.now();window.st.bw=(Array.isArray(window.st.bw)?window.st.bw:[]).filter(x=>String(x.d||'').slice(0,10)!==date);const deleted=Array.isArray(window.st.deletedBodyweights)?window.st.deletedBodyweights:[];window.st.deletedBodyweights=deleted.filter(x=>String(x?.d||x||'').slice(0,10)!==date);window.st.deletedBodyweights.push({d:date,at:now});try{window.save?.()}catch(_){}}
   async function refreshSurfaces(){
     try{if(typeof window.homeProgressRefresh==='function')await window.homeProgressRefresh(true)}catch(e){console.warn('home weight refresh',e)}
-    try{if(typeof window.statsProgressRefresh==='function')await window.statsProgressRefresh(true)}catch(e){console.warn('stats weight refresh',e)}
     render();
     try{if(document.getElementById('plan')?.classList.contains('active'))window.clientCleanPlanPage?.()}catch(_){ }
   }

@@ -81,5 +81,4 @@
     scheduleClientPanes();
   }
   [0,250,900,2200].forEach(t=>setTimeout(patchClients,t));
-  setTimeout(()=>{try{if(typeof home==='function')home();if(typeof statsPage==='function')statsPage()}catch(e){console.warn('mobile final refresh',e)}},120);
 })();
