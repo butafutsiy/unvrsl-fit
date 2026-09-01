@@ -81,13 +81,13 @@ customCatalog=function(){
 };
 
 let cloudModulesLoading=false,cloudModulesLoaded=false;
-function loadExternalScript(src){return new Promise((resolve,reject)=>{const key=String(src).replace(/^\.\//,'');if(document.querySelector(`script[data-unvrsl-src="${src}"],script[data-unvrsl-src="${key}"],script[data-dyn="${src}"],script[data-dyn="./${key}"]`))return resolve();const s=document.createElement('script');s.src=src;s.async=false;s.dataset.unvrslSrc=key;s.onload=resolve;s.onerror=reject;document.body.appendChild(s)})}
+function loadExternalScript(src){return new Promise((resolve,reject)=>{if(window.unvrslScriptRetiredV253?.(src))return resolve({retired:true,src});const key=String(src).replace(/^\.\//,'');if(document.querySelector(`script[data-unvrsl-src="${src}"],script[data-unvrsl-src="${key}"],script[data-dyn="${src}"],script[data-dyn="./${key}"]`))return resolve();const s=document.createElement('script');s.src=src;s.async=false;s.dataset.unvrslSrc=key;s.onload=resolve;s.onerror=reject;document.body.appendChild(s)})}
 window.loadExternalScript=loadExternalScript;
 async function loadCloudModules(){
  if(cloudModulesLoaded||cloudModulesLoading)return;cloudModulesLoading=true;
  try{
   if(!window.supabase)await loadExternalScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-  for(const src of ['cloud-config.js','cloud.js','auth-ux.js','auth-handoff.js','trainer-style.js','trainer.js','trainer-nav-patch.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js','client-link.js','auth-password.js','checkin.js','checkin-singleton-fix.js','offline-clients.js','offline-create-measures.js','online-progress.js','client-ui-fix.js','client-experience-v2.js','trainer-plan-controls.js','trainer-client-detail-v2.js','trainer-tap-fix.js','trainer-direct-ui.js'])await loadExternalScript(src);
+  for(const src of ['cloud-config.js','cloud.js','auth-ux.js','auth-handoff.js','trainer-style.js','trainer.js','trainer-nav-patch.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js','client-link.js','auth-password.js','checkin.js','checkin-singleton-fix.js','offline-clients.js','offline-create-measures.js','online-progress.js','client-ui-fix.js','trainer-plan-controls.js','trainer-tap-fix.js','trainer-direct-ui.js'])await loadExternalScript(src);
   cloudModulesLoaded=true;
  }catch(e){console.warn('UNVRSL cloud modules',e)}finally{cloudModulesLoading=false}
 }
@@ -121,7 +121,7 @@ setTimeout(()=>{
   .then(()=>loadExternalScript('workout-template-ux-v2.js'))
   .then(()=>loadExternalScript('client-program-picker.js'))
   .then(()=>loadExternalScript('cardio-exercise-library.js'))
-  .then(()=>loadExternalScript('stats-authority-v252.js'))
+  .then(()=>loadExternalScript('stats-authority-v253.js'))
   .then(()=>loadExternalScript('trainer-shell-v252.js'))
   .catch(e=>console.warn('post-load modules',e));
 },0);

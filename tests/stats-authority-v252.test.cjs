@@ -21,11 +21,11 @@ test('statistics renderers do not contain body-weight UI',()=>{
 test('final statistics authority loads after both async module chains',()=>{
   const loader=read('frequent-patch.js');
   const settled=loader.indexOf('Promise.allSettled([templateChain,programChain,cloudChain,uiChain])');
-  const authority=loader.indexOf("loadExternalScript('stats-authority-v252.js')");
+  const authority=loader.indexOf("loadExternalScript('stats-authority-v253.js')");
   const postLoad=loader.indexOf("loadExternalScript('cardio-exercise-library.js')");
   const trainerShell=loader.indexOf("loadExternalScript('trainer-shell-v252.js')");
   assert.ok(settled>=0&&postLoad>settled&&authority>postLoad&&trainerShell>authority);
-  assert.match(read('stats-authority-v252.js'),/window\.statsPage=canonicalStatsPage/);
+  assert.match(read('stats-authority-v253.js'),/window\.statsPage=canonicalStatsPage/);
 });
 
 test('trainer shell uses one role predicate and restores both trainer tabs',()=>{
@@ -40,9 +40,23 @@ test('trainer shell uses one role predicate and restores both trainer tabs',()=>
   assert.match(shell,/renderTrainerPage\(p\)/);
 });
 
-test('v252 service worker removes old app caches and never writes responses',()=>{
+test('v253 service worker removes old app caches and never writes responses',()=>{
   const sw=read('sw.js');
   assert.match(sw,/key\.startsWith\(CACHE_PREFIX\)/);
   assert.match(sw,/fetch\(event\.request,\{cache:'no-store'\}\)/);
   assert.doesNotMatch(sw,/cache\.put|caches\.match|caches\.open/);
+});
+
+test('Anatomy is owned by the final Statistics renderer and legacy maps stay disabled',()=>{
+  const dashboard=read('stats-dashboard-v2.js');
+  const anatomy=read('anatome-muscle-map.js');
+  const cleanup=read('stats-cleanup.js');
+  const authority=read('stats-authority-v253.js');
+  assert.match(dashboard,/anatomeMuscleCardHtmlV253/);
+  assert.match(anatomy,/window\.anatomeMountCardV253=mount/);
+  assert.match(anatomy,/root\.querySelector\('\.sd2-grid'\)/);
+  assert.match(cleanup,/\.stats-muscle-week,\.stats-last-session-v104-wrap/);
+  assert.doesNotMatch(cleanup,/ensureMuscleMap|statsIntegrityPatch/);
+  assert.match(authority,/r\.querySelector\('#anatomeMuscleCard'\)/);
+  assert.match(authority,/\.stats-muscle-week,\.stats-last-session-v104-wrap/);
 });
