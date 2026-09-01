@@ -204,17 +204,29 @@
 
   function cardHtml(){return `<div id="anatomeMuscleCard" class="sd2-card anatome-card"><div class="anatome-head"><div><div class="anatome-title">Нагрузка по мышцам</div><div class="anatome-sub">Последние ${periodDays} дн.</div></div><div class="anatome-seg"><button data-days="7" class="${periodDays===7?'on':''}">7 дн.</button><button data-days="28" class="${periodDays===28?'on':''}">28 дн.</button></div></div><div class="anatome-body"><div class="anatome-figure"><div class="anatome-loading">Строю карту…</div></div><div class="anatome-top"></div></div><div class="anatome-foot">Визуализация: Anatome · интенсивность рассчитана UNVRSL FIT по выполненным подходам, включая вспомогательную нагрузку.</div></div>`}
 
-  function mount(){
-    const root=document.getElementById('stats');if(!root||root.querySelector('#anatomeMuscleCard'))return;
-    const anchor=root.querySelector('#sd2HeatWrap')?.closest('.sd2-card');if(!anchor)return;
-    const wrap=document.createElement('div');wrap.innerHTML=cardHtml();const card=wrap.firstElementChild;anchor.insertAdjacentElement('afterend',card);
+  function bindCard(card){
+    if(!card||card.dataset.anatomeBound==='253')return false;
+    card.dataset.anatomeBound='253';
     card.querySelectorAll('[data-days]').forEach(btn=>btn.addEventListener('click',()=>{
       const d=Number(btn.dataset.days);if(![7,28].includes(d)||d===periodDays)return;periodDays=d;
       card.querySelectorAll('[data-days]').forEach(b=>b.classList.toggle('on',Number(b.dataset.days)===d));
-      card.querySelector('.anatome-figure').innerHTML='<div class="anatome-loading">Пересчитываю…</div>';renderCard(card);
+      const figure=card.querySelector('.anatome-figure');if(figure)figure.innerHTML='<div class="anatome-loading">Пересчитываю…</div>';renderCard(card);
     }));
-    renderCard(card);
+    return true;
   }
+
+  function mount(){
+    const root=document.getElementById('stats');if(!root)return null;
+    let card=root.querySelector('#anatomeMuscleCard');
+    if(!card){
+      const anchor=root.querySelector('.sd2-grid')||root.querySelector('.sd2-head');if(!anchor)return null;
+      const wrap=document.createElement('div');wrap.innerHTML=cardHtml();card=wrap.firstElementChild;anchor.insertAdjacentElement('afterend',card);
+    }
+    if(bindCard(card))renderCard(card);return card;
+  }
+
+  window.anatomeMuscleCardHtmlV253=cardHtml;
+  window.anatomeMountCardV253=mount;
 
   const root=document.getElementById('stats');
   if(root){new MutationObserver(()=>queueMicrotask(mount)).observe(root,{childList:true});mount()}

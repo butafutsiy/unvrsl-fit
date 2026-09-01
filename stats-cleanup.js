@@ -37,6 +37,7 @@
       const text=(card.textContent||'').trim();
       if(/^Активность\s*—\s*последние 12 месяцев/i.test(text))card.remove();
     });
+    root.querySelectorAll('.stats-muscle-week,.stats-last-session-v104-wrap,.profile-card-head,.profile-overview,.own-body-progress').forEach(el=>el.remove());
   }
 
   function decorateMetrics(root){
@@ -51,21 +52,6 @@
     });
   }
 
-  function ensureMuscleMap(root){
-    if(typeof window.advMuscleMapHtml!=='function')return;
-    let wrap=root.querySelector('.stats-muscle-week');
-    if(!wrap){
-      wrap=document.createElement('div');wrap.className='stats-muscle-week';
-      wrap.innerHTML='<div class="section">НАГРУЗКА ЗА 7 ДНЕЙ</div><div class="card stats-muscle-week-card"></div>';
-    }
-    const card=wrap.querySelector('.stats-muscle-week-card');
-    const html=window.advMuscleMapHtml();
-    if(card&&card.innerHTML!==html)card.innerHTML=html;
-    const anchor=root.querySelector('.stats-last-session-v104-wrap')||root.querySelector('.sd2-grid');
-    if(anchor&&wrap.previousElementSibling!==anchor)anchor.insertAdjacentElement('afterend',wrap);
-    else if(!wrap.isConnected)root.appendChild(wrap);
-  }
-
   function patchStats(){
     const root=document.getElementById('stats');
     if(!root||!root.classList.contains('stats-v2')||patching)return;
@@ -73,8 +59,7 @@
     try{
       removeLegacyCards(root);
       decorateMetrics(root);
-      if(typeof window.statsIntegrityPatch==='function')window.statsIntegrityPatch();
-      ensureMuscleMap(root);
+      window.anatomeMountCardV253?.();
     }finally{patching=false}
   }
   window.statsCleanupPatch=patchStats;
@@ -100,10 +85,6 @@
   installObserver();queuePatch();
 
   setTimeout(()=>{
-    if(!window.__unvrslStatsIntegrityV104){
-      if(typeof window.loadExternalScript==='function')window.loadExternalScript('stats-integrity-v104.js').then(()=>queuePatch()).catch(e=>console.warn('stats integrity',e));
-      else{const s=document.createElement('script');s.src='./stats-integrity-v104.js';s.onload=queuePatch;document.head.appendChild(s)}
-    }
     if(!window.__clientJournal107){
       if(typeof window.loadExternalScript==='function')window.loadExternalScript('client-journal-profile-v107.js').catch(e=>console.warn('client journal/profile',e));
       else{const s=document.createElement('script');s.src='./client-journal-profile-v107.js';document.head.appendChild(s)}
