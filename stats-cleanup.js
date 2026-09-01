@@ -13,7 +13,7 @@
     #stats.stats-v2 .stats-icon-workout{color:#0a84ff;background:rgba(10,132,255,.12)}
     #stats.stats-v2 .stats-icon-month{color:#64d2ff;background:rgba(100,210,255,.11)}
     #stats.stats-v2 .stats-icon-streak{color:#ff453a;background:rgba(255,69,58,.11)}
-    #stats.stats-v2 .stats-icon-weight{color:#ffd60a;background:rgba(255,214,10,.10)}
+    #stats.stats-v2 .stats-icon-rpe{color:#ffd60a;background:rgba(255,214,10,.10)}
     #stats.stats-v2 .sd2-metric-label>span:last-child{line-height:1.1}
     #stats.stats-v2 .sd2-grid{margin-bottom:16px}
     #stats.stats-v2 .stats-muscle-week{margin-top:8px}
@@ -26,14 +26,13 @@
     workout:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4M6 8v8M18 8v8M21 10v4M6 12h12"/></svg>',
     month:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 10h18"/></svg>',
     streak:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 3.5c.7 3.2-1.8 4.4-1.8 6.4 0 1.2.8 2 1.9 2.6-.1-2.3 1.4-3.6 2.7-5.1 2.2 1.9 3.7 4.4 3.7 7.1A8 8 0 0 1 4 14.5c0-3.9 2.5-6.1 5.1-8.7.1 2.2 1.1 3.7 2.2 4.7.5-2.2.5-4.3 2.2-7Z"/></svg>',
-    weight:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 9a3 3 0 0 1 6 0M12 9l2-2"/></svg>'
+    rpe:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 12l4-4M7 17h10"/></svg>'
   };
 
   let patching=false,queued=false;
 
   function removeLegacyCards(root){
-    // Weight is part of the final statistics screen and must never be removed here.
-    // Only the old 12-month heatmap is hidden from the compact final layout.
+    // The compact final layout uses the muscle-load map instead of the old heatmap.
     [...root.querySelectorAll(':scope > .sd2-card')].forEach(card=>{
       const text=(card.textContent||'').trim();
       if(/^Активность\s*—\s*последние 12 месяцев/i.test(text))card.remove();
@@ -42,7 +41,7 @@
 
   function decorateMetrics(root){
     const metrics=[...root.querySelectorAll('.sd2-grid .sd2-metric')];
-    const defs=[['workout','stats-icon-workout'],['month','stats-icon-month'],['streak','stats-icon-streak'],['weight','stats-icon-weight']];
+    const defs=[['workout','stats-icon-workout'],['month','stats-icon-month'],['streak','stats-icon-streak'],['rpe','stats-icon-rpe']];
     metrics.forEach((card,i)=>{
       const label=card.querySelector('.sd2-metric-label');if(!label)return;
       const first=label.firstElementChild;if(!first)return;

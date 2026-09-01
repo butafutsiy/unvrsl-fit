@@ -17,7 +17,10 @@ if(typeof _modeCloudEnsureProfile==='function')window.cloudEnsureProfile=async f
     const q=await cloud.client.from('profiles').update({role:'trainer',updated_at:new Date().toISOString()}).eq('id',cloud.user.id).select().single();
     if(q.data)cloud.profile=q.data;
   }
-  if(masterTrainerEmail())ensureMasterTrainerPlan();
+  if(masterTrainerEmail()){
+    ensureMasterTrainerPlan();
+    if(typeof window.refreshTrainerNav==='function')window.refreshTrainerNav();
+  }
   return cloud.profile||p;
 };
 
