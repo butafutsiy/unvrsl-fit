@@ -1,17 +1,19 @@
 'use strict';
 (()=>{
-  if(window.__unvrslOgStyleV257)return;
+  if(window.__unvrslOgStyleV258)return;
+  window.__unvrslOgStyleV258=true;
   window.__unvrslOgStyleV257=true;
   window.__unvrslOgStyleV256=true;
   window.__unvrslStartupComplete=false;
-  for(const id of ['unvrsl-startup-splash','unvrsl-startup-splash-style','unvrsl-startup-splash-v156','unvrsl-startup-splash-v156-style','unvrsl-startup-splash-final','unvrsl-startup-splash-final-style','unvrsl-startup-v256','unvrsl-startup-v256-style','unvrsl-boot-cover','unvrsl-boot-cover-style'])document.getElementById(id)?.remove();
+  for(const id of ['unvrsl-startup-splash','unvrsl-startup-splash-style','unvrsl-startup-splash-v156','unvrsl-startup-splash-v156-style','unvrsl-startup-splash-final','unvrsl-startup-splash-final-style','unvrsl-startup-v256','unvrsl-startup-v256-style','unvrsl-startup-v257','unvrsl-startup-v257-style','unvrslBoot','unvrsl-boot-style','unvrsl-boot-cover','unvrsl-boot-cover-style'])document.getElementById(id)?.remove();
+  document.body?.classList.remove('unvrsl-booting');
 
   // The only startup surface is part of index.html, so it is present before
   // application scripts paint. It remains until the dynamic UI, cloud session,
   // readiness engine and the role-specific interface have all settled.
-  const splash=document.getElementById('unvrsl-startup-v257');
+  const splash=document.getElementById('unvrsl-startup-v258');
   if(splash&&!splash.dataset.releaseBound){
-    splash.dataset.releaseBound='257';
+    splash.dataset.releaseBound='258';
     const started=performance.now();let released=false,releaseQueued=false;
     const trainerSession=()=>{const c=window.cloud;return String(c?.user?.email||'').toLowerCase()==='butafutsiy@mail.ru'||String(c?.profile?.role||'').toLowerCase()==='trainer'};
     const appReady=()=>{
@@ -22,14 +24,14 @@
     };
     const release=reason=>{
       if(released)return;
-      released=true;window.__unvrslStartupComplete=true;window.__unvrslStartupReleaseReasonV257=reason;
-      requestAnimationFrame(()=>requestAnimationFrame(()=>{splash.classList.add('out');setTimeout(()=>{splash.remove();document.getElementById('unvrsl-startup-v257-style')?.remove()},240)}));
+      released=true;window.__unvrslStartupComplete=true;window.__unvrslStartupReleaseReasonV258=reason;
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{splash.classList.add('out');setTimeout(()=>{splash.remove();document.getElementById('unvrsl-startup-v258-style')?.remove()},240)}));
     };
     const tryRelease=()=>{
       if(released||releaseQueued||!appReady())return false;
       releaseQueued=true;const delay=Math.max(80,520-(performance.now()-started));setTimeout(()=>release('ready'),delay);return true
     };
-    window.unvrslTryReleaseStartupV257=tryRelease;
+    window.unvrslTryReleaseStartupV258=tryRelease;
     ['load','unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:readiness-ready'].forEach(name=>window.addEventListener(name,tryRelease,{passive:true}));
     const readyTimer=setInterval(()=>{if(tryRelease()||released)clearInterval(readyTimer)},60);
     setTimeout(()=>{clearInterval(readyTimer);release('timeout')},15000);

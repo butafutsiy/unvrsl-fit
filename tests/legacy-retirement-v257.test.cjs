@@ -11,7 +11,7 @@ const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 test('v257 retirement guard loads before every application module',()=>{
   const html=read('index.html');
   const first=html.match(/<script src="([^"]+)"/);
-  assert.equal(first?.[1],'legacy-retirement-v257.js');
+  assert.equal(first?.[1],'legacy-retirement-v257.js?v=258');
 });
 
 test('active loaders refuse retired scripts and use only canonical Statistics modules',()=>{

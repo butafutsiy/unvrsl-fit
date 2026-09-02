@@ -47,7 +47,7 @@ test('trainer shell uses one role predicate and restores both trainer tabs',()=>
   assert.match(shell,/renderTrainerPage\(p\)/);
 });
 
-test('v257 service worker removes old app caches and never writes responses',()=>{
+test('v258 service worker removes old app caches and never writes responses',()=>{
   const sw=read('sw.js');
   assert.match(sw,/key\.startsWith\(CACHE_PREFIX\)/);
   assert.match(sw,/fetch\(event\.request,\{cache:'no-store'\}\)/);

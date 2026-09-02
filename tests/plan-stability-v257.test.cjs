@@ -8,10 +8,14 @@ const root=path.join(__dirname,'..');
 const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 
 test('startup has one static owner and waits for the complete application',()=>{
-  const html=read('index.html'),style=read('og-style.js'),retirement=read('legacy-retirement-v257.js');
-  assert.equal((html.match(/id="unvrsl-startup-v257"/g)||[]).length,1);
-  assert.equal((html.match(/id="unvrsl-startup-v257-style"/g)||[]).length,1);
-  assert.match(html,/og-style\.js\?v=257/);
+  const html=read('index.html'),style=read('og-style.js'),retirement=read('legacy-retirement-v257.js'),weekOne=read('plan-w1.js');
+  assert.equal((html.match(/id="unvrsl-startup-v258"/g)||[]).length,1);
+  assert.equal((html.match(/id="unvrsl-startup-v258-style"/g)||[]).length,1);
+  assert.match(html,/og-style\.js\?v=258/);
+  assert.match(html,/@keyframes unvrslStartupBlinkV258/);
+  assert.match(html,/\.u-brand\{font:900 42px\/\.95/);
+  assert.match(html,/plan-w1\.js\?v=258/);
+  assert.doesNotMatch(weekOne,/unvrslBoot|unvrsl-booting|createElement\('div'\)|unvrslBootPulse/);
   assert.doesNotMatch(html,/controllerchange|location\.reload\(\)/);
   assert.doesNotMatch(style,/new MutationObserver|unvrslFinalPulse|createElement\('div'\)/);
   assert.match(style,/__unvrslDynamicModulesReadyV257/);
@@ -19,6 +23,7 @@ test('startup has one static owner and waits for the complete application',()=>{
   assert.match(style,/client-runtime-ready-v257/);
   assert.match(style,/release\('timeout'\)/);
   assert.match(retirement,/unvrsl-startup-splash-final/);
+  assert.match(retirement,/#unvrslBoot/);
 });
 
 test('trainer Plan owns its old journal style and renders only on demand',()=>{
