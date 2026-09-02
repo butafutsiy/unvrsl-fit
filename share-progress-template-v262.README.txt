@@ -1,0 +1,1 @@
+Temporary integration note for share-progress-template-v262.js. The script provides three share modes: compact, progress, and record, with adaptive metrics based on the completed session. It should be loaded after the workout/share logic and wired into the existing share button.
