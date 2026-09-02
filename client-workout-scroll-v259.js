@@ -18,6 +18,36 @@
     body.${ROOT_CLASS} #start.page.active *{touch-action:auto!important}
     body.${ROOT_CLASS} #timer.show{touch-action:auto!important}
     body.${ROOT_CLASS} #modal:not(.show){display:none!important;pointer-events:none!important}
+
+    /* v262: recommendation is a full-width, stable row inside the exercise header grid. */
+    #start .exercise .te200-rec,
+    #start .exercise .te200-auto{
+      grid-column:1 / -1!important;
+      width:100%!important;
+      max-width:none!important;
+      min-width:0!important;
+      box-sizing:border-box!important;
+    }
+    #start .exercise .te200-rec{
+      display:grid!important;
+      grid-template-columns:minmax(0,1fr) auto!important;
+      align-items:center!important;
+      gap:12px!important;
+      min-height:84px!important;
+      margin:9px 0 4px!important;
+      padding:13px 14px!important;
+      border-radius:18px!important;
+      overflow:visible!important;
+      contain:layout!important;
+    }
+    #start .exercise .te200-rec .te200-rec-main{min-width:0!important;width:100%!important}
+    #start .exercise .te200-rec b{font-size:13.5px!important;line-height:1.25!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+    #start .exercise .te200-rec span{font-size:11.5px!important;line-height:1.3!important;margin-top:5px!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important}
+    #start .exercise .te200-rec button{min-width:104px!important;min-height:46px!important;padding:10px 13px!important;border-radius:14px!important;white-space:nowrap!important;align-self:center!important}
+    @media(max-width:380px){
+      #start .exercise .te200-rec{grid-template-columns:minmax(0,1fr) 96px!important;gap:9px!important;padding:12px!important}
+      #start .exercise .te200-rec button{min-width:96px!important;padding:9px 10px!important;font-size:11.5px!important}
+    }
   `;
   D.head?.appendChild(style);
 
@@ -56,21 +86,81 @@
     return on;
   }
 
+  /* Keep recommendation nodes alive while startPage rebuilds the workout DOM.
+     This removes the frame where the block vanished and the page height changed. */
+  function recommendationSnapshot(){
+    const root=D.getElementById('start');
+    if(!root||!workoutActive())return[];
+    const cards=[...root.querySelectorAll('.exercise')];
+    return cards.map((card,index)=>{
+      const node=card.querySelector('.te200-rec,.te200-auto');
+      return node?{index,node}:null;
+    }).filter(Boolean);
+  }
+  function restoreRecommendations(snapshot){
+    if(!snapshot?.length)return;
+    const root=D.getElementById('start');
+    if(!root)return;
+    const cards=[...root.querySelectorAll('.exercise')];
+    snapshot.forEach(({index,node})=>{
+      const card=cards[index];
+      if(!card||card.querySelector('.te200-rec,.te200-auto'))return;
+      const anchor=card.querySelector('.exname')||card.firstElementChild;
+      anchor?.insertAdjacentElement('afterend',node);
+    });
+  }
+  function installStableStartPage(){
+    let base=null;
+    try{if(typeof startPage==='function')base=startPage}catch(_){ }
+    if(!base)base=W.startPage;
+    if(typeof base!=='function'||base.__uScrollStableRecommendations)return false;
+    const wrapped=function(){
+      const snapshot=recommendationSnapshot();
+      const result=base.apply(this,arguments);
+      restoreRecommendations(snapshot);
+      removeExerciseHeaderRpe();
+      return result;
+    };
+    wrapped.__uScrollStableRecommendations=true;
+    W.startPage=wrapped;
+    try{startPage=wrapped}catch(_){ }
+    return true;
+  }
+
   let restoreSeq=0;
   function currentScrollY(){return W.scrollY||D.documentElement?.scrollTop||D.body?.scrollTop||0}
+  function setAnchor(button){
+    const root=D.getElementById('start'),card=button?.closest?.('.exercise'),row=button?.closest?.('.setrow');
+    if(!root||!card||!row)return null;
+    const cards=[...root.querySelectorAll('.exercise')],rows=[...card.querySelectorAll('.setrow')];
+    const ei=cards.indexOf(card),si=rows.indexOf(row);
+    if(ei<0||si<0)return null;
+    return{ei,si,top:row.getBoundingClientRect().top};
+  }
+  function restoreAnchor(anchor,fallbackY){
+    if(anchor){
+      const root=D.getElementById('start'),card=root?.querySelectorAll('.exercise')?.[anchor.ei],row=card?.querySelectorAll('.setrow')?.[anchor.si];
+      if(row){
+        const delta=row.getBoundingClientRect().top-anchor.top;
+        if(Math.abs(delta)>.5){W.scrollBy(0,delta);return}
+      }
+    }
+    const now=currentScrollY();
+    if(Math.abs(now-fallbackY)>1)W.scrollTo(0,fallbackY);
+  }
   function preserveScrollAfterSetToggle(button){
     if(!workoutActive())return;
-    const y=currentScrollY(),seq=++restoreSeq;
+    const y=currentScrollY(),anchor=setAnchor(button),seq=++restoreSeq;
     button?.blur?.();
     const restore=()=>{
       if(seq!==restoreSeq||!workoutActive())return;
-      const now=currentScrollY();
-      if(Math.abs(now-y)>1)W.scrollTo(0,y);
+      restoreAnchor(anchor,y);
     };
     queueMicrotask(restore);
     requestAnimationFrame(()=>{restore();requestAnimationFrame(restore)});
     setTimeout(restore,40);
     setTimeout(restore,100);
+    setTimeout(restore,180);
   }
 
   D.addEventListener('click',event=>{
@@ -82,8 +172,12 @@
   const start=D.getElementById('start'),modal=D.getElementById('modal');
   if(start)observer?.observe(start,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
   if(modal)observer?.observe(modal,{attributes:true,attributeFilter:['class']});
-  W.addEventListener?.('unvrsl:cloud-modules-settled',sync);
-  W.addEventListener?.('unvrsl:modules-ready',sync);
-  D.addEventListener?.('visibilitychange',()=>{if(!D.hidden)sync()},{passive:true});
-  sync();[100,400,1200,3000].forEach(ms=>setTimeout(sync,ms));
+  W.addEventListener?.('unvrsl:cloud-modules-settled',()=>{installStableStartPage();sync()});
+  W.addEventListener?.('unvrsl:modules-ready',()=>{installStableStartPage();sync()});
+  D.addEventListener?.('visibilitychange',()=>{if(!D.hidden){installStableStartPage();sync()}},{passive:true});
+  installStableStartPage();
+  sync();
+  let wrapChecks=0;
+  const wrapTimer=setInterval(()=>{installStableStartPage();if(++wrapChecks>40)clearInterval(wrapTimer)},250);
+  [100,400,1200,3000].forEach(ms=>setTimeout(()=>{installStableStartPage();sync()},ms));
 })();
