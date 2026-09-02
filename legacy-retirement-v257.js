@@ -2,6 +2,7 @@
 (()=>{
   if(window.__unvrslLegacyRetirementV257)return;
   window.__unvrslLegacyRetirementV257=true;
+  window.__unvrslLegacyRetirementV260=true;
   window.__unvrslLegacyRetirementV256=true;
   window.__unvrslLegacyRetirementV255=true;
   window.__unvrslLegacyRetirementV254=true;
@@ -78,6 +79,7 @@
     const sheet=document.getElementById('sheet');
     if(sheet?.querySelector('.tcv3-head'))sheet.querySelectorAll('.trainer-remove-programs-block,.trainer-live-programs,.trainer-program-control-v2').forEach(el=>el.remove());
   }
+  window.unvrslLegacyCleanV260=clean;
   function schedule(){if(queued)return;queued=true;requestAnimationFrame(clean)}
   function install(){
     for(const id of ['home','stats','sheet']){

@@ -61,6 +61,7 @@
       }
     }finally{syncing=false}
   }
+  window.unvrslTrainerShellSyncV260=syncShell;
   function schedule(renderActive=false){
     if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;syncShell(renderActive)})
   }

@@ -8,10 +8,10 @@ const vm=require('node:vm');
 const root=path.join(__dirname,'..');
 const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 
-test('v257 retirement guard loads before every application module',()=>{
+test('v260 retirement guard loads before every application module',()=>{
   const html=read('index.html');
   const first=html.match(/<script src="([^"]+)"/);
-  assert.equal(first?.[1],'legacy-retirement-v257.js?v=258');
+  assert.equal(first?.[1],'legacy-retirement-v257.js?v=260');
 });
 
 test('active loaders refuse retired scripts and use only canonical Statistics modules',()=>{
@@ -73,7 +73,7 @@ test('client Home and Plan have one canonical owner',()=>{
   const journal=read('client-journal-profile-v107.js');
   assert.doesNotMatch(runtime,/function renderClientPlan\s*\(/);
   assert.match(runtime,/canonicalClientPlan\.__clientPlanAuthorityV255/);
-  assert.match(runtime,/await script\('client-program-picker\.js\?v=257'\)[\s\S]*await script\('client-journal-profile-v107\.js\?v=257'\)/);
+  assert.match(runtime,/await script\('client-program-picker\.js\?v=260'\)[\s\S]*await script\('client-journal-profile-v107\.js\?v=260'\)/);
   assert.match(picker,/clientPlanPageV3\.__clientPlanV255=true/);
   assert.match(picker,/clientPlanProfileV255/);
   assert.match(journal,/client-plan-history-v256/);

@@ -2,6 +2,7 @@
 (()=>{
   if(window.__unvrslClientRuntimeV257)return;
   window.__unvrslClientRuntimeV257=true;
+  window.__unvrslClientRuntimeV260=true;
   window.__unvrslClientRuntimeV256=true;
   window.__unvrslClientRuntimeV255=true;
   // Cached loaders may still look for the old marker. Keep it locked so a
@@ -242,17 +243,17 @@
     clientBooting=(async()=>{
       await cleanupLegacyClientWeight();
       await hydrateAssignments();
-      await script('client-program-picker.js?v=257');
-      await script('client-journal-profile-v107.js?v=257');
+      await script('client-program-picker.js?v=260');
+      await script('client-journal-profile-v107.js?v=260');
       installPlanGuard();installSettings();installCanonicalClientHome();
       if(document.getElementById('plan')?.classList.contains('active'))canonicalClientPlan();
       if(document.getElementById('home')?.classList.contains('active'))renderCanonicalClientHome();
       await settleClientHome();
-      clientReady=true;document.body?.classList.add('client-runtime-ready-v255','client-runtime-ready-v256','client-runtime-ready-v257');
+      clientReady=true;document.body?.classList.add('client-runtime-ready-v255','client-runtime-ready-v256','client-runtime-ready-v257','client-runtime-ready-v260');
       setTimeout(()=>window.clientPlanHistoryRefresh107?.(),0);
-      window.dispatchEvent(new CustomEvent('unvrsl:client-ready',{detail:{release:257}}));
+      window.dispatchEvent(new CustomEvent('unvrsl:client-ready',{detail:{release:260}}));
       return true;
-    })().catch(e=>{console.warn('client runtime v257',e);return false}).finally(()=>{window.__unvrslClientRuntimeSettledV257=true;window.dispatchEvent(new CustomEvent('unvrsl:client-settled',{detail:{ready:clientReady}}));clientBooting=null});
+    })().catch(e=>{console.warn('client runtime v260',e);return false}).finally(()=>{window.__unvrslClientRuntimeSettledV257=true;window.__unvrslClientRuntimeSettledV260=true;window.dispatchEvent(new CustomEvent('unvrsl:client-settled',{detail:{ready:clientReady,release:260}}));clientBooting=null});
     return clientBooting;
   }
 

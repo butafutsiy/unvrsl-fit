@@ -1,4 +1,20 @@
 'use strict';
+(()=>{
+ const sources=[
+  'cloud-config.js','cloud.js?v=260','auth-ux.js','auth-handoff.js','trainer-style.js','trainer.js','trainer-nav-patch.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js?v=260','client-link.js','auth-password.js','checkin.js','checkin-singleton-fix.js','offline-clients.js','offline-create-measures.js','online-progress.js','client-ui-fix.js?v=260','trainer-plan-controls.js','trainer-tap-fix.js','trainer-direct-ui.js',
+  'popular-programs.js','female-program-templates.js','anton-gorkusha-plan.js','anton-plan-rules.js','program-management-patch.js','start-program-picker.js',
+  'wake-lock.js','workout-duration.js','cardio-timer.js','advanced-training.js','profile-strength-core-v248.js','premium-ui.js','stable-ui.js','mockup-ui.js','density-ui.js','mobile-final-fix.js','sheet-swipe.js','stats-dashboard-v254.js','home-stats-v254.js','stats-cleanup-v254.js',
+  'client-nav-hotfix.js','clients-action-layout.js','program-delete-fix.js','requested-cleanup-v2.js','program-delete-persistence-v3.js','adaptive-effort-v2.js','workout-template-ux-v2.js','cardio-exercise-library.js','trainer-self-plan-v110.js?v=260','stats-authority-v254.js','trainer-shell-v252.js','client-workout-scroll-v259.js?v=260',
+  'client-final-runtime-v222.js?v=260','client-program-picker.js?v=260','client-journal-profile-v107.js?v=260','og-enhance-v254.js?v=260','training-engine-v200.js?v=260','readiness-questionnaire-v227.js?v=260','exact-plan-fix-v228.js?v=260'
+ ];
+ const seen=new Set();
+ for(const href of sources){
+  const file=String(href).split(/[?#]/)[0];
+  if(seen.has(href)||window.unvrslScriptRetiredV257?.(file))continue;seen.add(href);
+  const link=document.createElement('link');link.rel='preload';link.as='script';link.href=href;link.fetchPriority='high';link.dataset.unvrslPreloadV260='1';document.head.appendChild(link)
+ }
+ window.__unvrslCanonicalPreloadsV260=Object.freeze([...seen]);
+})();
 function exerciseUseCount(ex){const sid=String(ex?.rawId||ex?.sourceId||''),target=baseExerciseName(ex?.custom?ex.n:ruExerciseName(ex?.n||'')).toLowerCase();let n=0;st.sessions.forEach(s=>s.ex.forEach(e=>{const sourceMatch=sid&&String(e.sourceId||'')===sid,nameMatch=baseExerciseName(e.n).toLowerCase()===target;if(sourceMatch||nameMatch)n+=e.set.filter(x=>x.ok).length}));return n}
 renderBodyFilters=function(){const el=$('#bodyFilters');if(!el)return;const parts=['all','favorites','frequent','recent','upper legs','chest','back','shoulders','upper arms','lower legs','waist','cardio'];el.innerHTML=parts.map(bp=>`<button class="filterchip ${exBody===bp?'on':''}" onclick="setExerciseBody('${bp}')">${bp==='all'?'Все':bp==='favorites'?'★ Избранные':bp==='frequent'?'Частые':bp==='recent'?'Недавние':BP_RU[bp]||bp}</button>`).join('')}
 const _renderExerciseResultsFrequent=renderExerciseResults;
@@ -87,9 +103,9 @@ async function loadCloudModules(){
  if(cloudModulesLoaded||cloudModulesLoading)return;cloudModulesLoading=true;
  try{
   if(!window.supabase)await loadExternalScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-  for(const src of ['cloud-config.js','cloud.js?v=257','auth-ux.js','auth-handoff.js','trainer-style.js','trainer.js','trainer-nav-patch.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js?v=257','client-link.js','auth-password.js','checkin.js','checkin-singleton-fix.js','offline-clients.js','offline-create-measures.js','online-progress.js','client-ui-fix.js?v=259','trainer-plan-controls.js','trainer-tap-fix.js','trainer-direct-ui.js'])await loadExternalScript(src);
+  for(const src of ['cloud-config.js','cloud.js?v=260','auth-ux.js','auth-handoff.js','trainer-style.js','trainer.js','trainer-nav-patch.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js?v=260','client-link.js','auth-password.js','checkin.js','checkin-singleton-fix.js','offline-clients.js','offline-create-measures.js','online-progress.js','client-ui-fix.js?v=260','trainer-plan-controls.js','trainer-tap-fix.js','trainer-direct-ui.js'])await loadExternalScript(src);
   cloudModulesLoaded=true;
- }catch(e){console.warn('UNVRSL cloud modules',e)}finally{cloudModulesLoading=false;window.__unvrslCloudModulesSettledV257=true;window.dispatchEvent(new CustomEvent('unvrsl:cloud-modules-settled',{detail:{loaded:cloudModulesLoaded}}))}
+ }catch(e){console.warn('UNVRSL cloud modules',e)}finally{cloudModulesLoading=false;window.__unvrslCloudModulesSettledV257=true;window.__unvrslCloudModulesSettledV260=true;window.dispatchEvent(new CustomEvent('unvrsl:cloud-modules-settled',{detail:{loaded:cloudModulesLoaded,release:260}}))}
 }
 setTimeout(()=>{
  renderBodyFilters();renderExerciseResults();
@@ -120,11 +136,11 @@ setTimeout(()=>{
   .then(()=>loadExternalScript('adaptive-effort-v2.js'))
   .then(()=>loadExternalScript('workout-template-ux-v2.js'))
   .then(()=>loadExternalScript('cardio-exercise-library.js'))
-  .then(()=>loadExternalScript('trainer-self-plan-v110.js?v=257'))
+  .then(()=>loadExternalScript('trainer-self-plan-v110.js?v=260'))
   .then(()=>loadExternalScript('stats-authority-v254.js'))
   .then(()=>loadExternalScript('trainer-shell-v252.js'))
-  .then(()=>loadExternalScript('client-workout-scroll-v259.js?v=259'))
+  .then(()=>loadExternalScript('client-workout-scroll-v259.js?v=260'))
   .catch(e=>console.warn('post-load modules',e))
-  .finally(()=>{window.__unvrslDynamicModulesReadyV257=true;window.dispatchEvent(new CustomEvent('unvrsl:modules-ready',{detail:{release:257}}))});
+  .finally(()=>{window.__unvrslDynamicModulesReadyV257=true;window.__unvrslDynamicModulesReadyV260=true;window.dispatchEvent(new CustomEvent('unvrsl:modules-ready',{detail:{release:260}}))});
  window.__unvrslDynamicModulesPromiseV257=postChain;
 },0);

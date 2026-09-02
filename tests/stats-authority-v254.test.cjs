@@ -31,7 +31,7 @@ test('final Statistics authority loads after all asynchronous module chains',()=
   const trainerShell=loader.indexOf("loadExternalScript('trainer-shell-v252.js')");
   assert.ok(settled>=0&&postLoad>settled&&authority>postLoad&&trainerShell>authority);
   assert.match(read('stats-authority-v254.js'),/window\.statsPage=canonicalStatsPage/);
-  assert.equal((loader.match(/trainer-self-plan-v110\.js/g)||[]).length,1);
+  assert.equal((loader.match(/loadExternalScript\('trainer-self-plan-v110\.js\?v=260'\)/g)||[]).length,1);
   assert.doesNotMatch(read('clients-action-layout.js'),/loadExternalScript\('trainer-self-plan-v110\.js'\)/);
 });
 
@@ -47,7 +47,7 @@ test('trainer shell uses one role predicate and restores both trainer tabs',()=>
   assert.match(shell,/renderTrainerPage\(p\)/);
 });
 
-test('v259 service worker removes old app caches and never writes responses',()=>{
+test('v260 service worker removes old app caches and never writes responses',()=>{
   const sw=read('sw.js');
   assert.match(sw,/key\.startsWith\(CACHE_PREFIX\)/);
   assert.match(sw,/fetch\(event\.request,\{cache:'no-store'\}\)/);
