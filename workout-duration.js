@@ -1,5 +1,7 @@
 'use strict';
 let unvrslDurationTimer=null;
+let unvrslDurationObserver=null;
+let unvrslDurationRenderQueued=false;
 
 function unvrslDurationText(ms){
   const total=Math.max(0,Math.floor((Number(ms)||0)/1000));
@@ -15,7 +17,7 @@ function unvrslWorkoutDuration(session){
 }
 
 function unvrslRenderWorkoutDuration(){
-  const session=typeof st==='object'?st.current:null;
+  const session=typeof st==='object'?st.current:(window.st?.current||null);
   if(!session)return;
   const head=document.querySelector('#start .workout-head');
   if(!head)return;
@@ -25,10 +27,24 @@ function unvrslRenderWorkoutDuration(){
     row.className='workout-duration-row';
     row.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:11px;border-top:1px solid #343438';
     row.innerHTML='<span class="muted small">⏱ Длительность тренировки</span><b id="workoutDuration" style="font-size:20px;font-variant-numeric:tabular-nums">00:00</b>';
+  }
+  const restRow=head.querySelector('.rest-v2-total');
+  if(restRow){
+    if(restRow.nextElementSibling!==row)restRow.insertAdjacentElement('afterend',row);
+  }else if(row.parentElement!==head){
     head.appendChild(row);
   }
   const el=row.querySelector('#workoutDuration');
   if(el)el.textContent=unvrslDurationText(unvrslWorkoutDuration(session));
+}
+
+function unvrslQueueDurationRender(){
+  if(unvrslDurationRenderQueued)return;
+  unvrslDurationRenderQueued=true;
+  queueMicrotask(()=>{
+    unvrslDurationRenderQueued=false;
+    unvrslRenderWorkoutDuration();
+  });
 }
 
 function unvrslStartDurationTimer(){
@@ -38,11 +54,28 @@ function unvrslStartDurationTimer(){
 }
 
 const _durationStartPage=window.startPage;
-if(typeof _durationStartPage==='function')window.startPage=function(){
-  const r=_durationStartPage.apply(this,arguments);
-  setTimeout(unvrslRenderWorkoutDuration,0);
-  return r;
-};
+if(typeof _durationStartPage==='function'&&!_durationStartPage.__durationStable){
+  const wrapped=function(){
+    const r=_durationStartPage.apply(this,arguments);
+    // Restore in the same JS turn, before the browser paints the rebuilt page.
+    unvrslRenderWorkoutDuration();
+    unvrslQueueDurationRender();
+    return r;
+  };
+  wrapped.__durationStable=true;
+  window.startPage=wrapped;
+  try{startPage=wrapped}catch(e){}
+}
+
+function unvrslObserveDuration(){
+  const root=document.getElementById('start');
+  if(!root||typeof MutationObserver!=='function')return;
+  unvrslDurationObserver?.disconnect();
+  unvrslDurationObserver=new MutationObserver(()=>{
+    if((typeof st==='object'?st.current:window.st?.current)&&root.classList.contains('active'))unvrslQueueDurationRender();
+  });
+  unvrslDurationObserver.observe(root,{childList:true,subtree:true});
+}
 
 const _durationSummary=window.summary;
 if(typeof _durationSummary==='function')window.summary=function(session){
@@ -62,6 +95,7 @@ if(typeof _durationSummary==='function')window.summary=function(session){
 
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)unvrslRenderWorkoutDuration()});
 window.addEventListener('focus',unvrslRenderWorkoutDuration);
+unvrslObserveDuration();
 unvrslStartDurationTimer();
 
 // Rest timer UI is kept separate so the workout-duration clock and the
