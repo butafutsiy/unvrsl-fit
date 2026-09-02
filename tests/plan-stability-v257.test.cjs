@@ -12,7 +12,7 @@ test('startup has one static owner and reveals only the final v260 interface',()
   const html=read('index.html'),style=read('og-style.js'),boot=read('startup-orchestrator-v260.js'),retirement=read('legacy-retirement-v257.js'),weekOne=read('plan-w1.js');
   assert.equal((html.match(/id="unvrsl-startup-v258"/g)||[]).length,1);
   assert.equal((html.match(/id="unvrsl-startup-v258-style"/g)||[]).length,1);
-  assert.match(html,/startup-orchestrator-v260\.js\?v=260/);
+  assert.match(html,/startup-orchestrator-v260\.js\?v=261/);
   assert.match(html,/og-style\.js\?v=260/);
   assert.match(html,/@keyframes unvrslStartupBlinkV258/);
   assert.match(html,/\.u-brand\{font:900 42px\/\.95/);
@@ -55,7 +55,7 @@ test('v260 queues boot renders and paints once after every canonical owner is re
   const context={
     console,Promise,CustomEvent:class{constructor(name,init){this.type=name;this.detail=init?.detail}},
     __unvrslDynamicModulesReadyV260:false,__unvrslReadinessStackReadyV260:false,__unvrslCloudModulesSettledV260:false,
-    __unvrslStatsAuthorityV254:false,__unvrslTrainerShellV252:false,__unvrslClientWorkoutScrollV259:false,
+    __unvrslStatsAuthorityV254:false,__unvrslTrainerShellV252:false,__unvrslClientWorkoutScrollV261:false,
     cloud:{initSettled:false,user:null,profile:null},render:()=>renders++,
     requestAnimationFrame:fn=>fn(),setTimeout:fn=>{fn();return 1},setInterval:()=>7,clearInterval:id=>{if(id===7)intervalCleared++},
     addEventListener:()=>{},dispatchEvent:()=>{},
@@ -67,7 +67,7 @@ test('v260 queues boot renders and paints once after every canonical owner is re
   context.window=context;
   vm.runInNewContext(read('startup-orchestrator-v260.js'),context);
   context.render();assert.equal(renders,0);
-  Object.assign(context,{__unvrslDynamicModulesReadyV260:true,__unvrslReadinessStackReadyV260:true,__unvrslCloudModulesSettledV260:true,__unvrslStatsAuthorityV254:true,__unvrslTrainerShellV252:true,__unvrslClientWorkoutScrollV259:true});
+  Object.assign(context,{__unvrslDynamicModulesReadyV260:true,__unvrslReadinessStackReadyV260:true,__unvrslCloudModulesSettledV260:true,__unvrslStatsAuthorityV254:true,__unvrslTrainerShellV252:true,__unvrslClientWorkoutScrollV261:true});
   context.cloud.initSettled=true;
   await context.unvrslTryFinalizeStartupV260();
   assert.equal(renders,1);

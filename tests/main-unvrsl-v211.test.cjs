@@ -150,30 +150,30 @@ test('client workout rerender keeps the visible exercise anchored',()=>{
 });
 
 test('Samsung client workout keeps native one-finger scrolling',()=>{
-  let touchMove=null,touchOptions=null;
+  const listeners=[];
   const htmlClasses=new Set(),bodyClasses=new Set();
-  const makeClassList=set=>({contains:name=>set.has(name),toggle:(name,on)=>on?set.add(name):set.delete(name)});
+  const makeClassList=set=>({contains:name=>set.has(name),toggle:(name,on)=>on?set.add(name):set.delete(name),remove:name=>set.delete(name)});
   const start={classList:{contains:name=>name==='active'}};
   const modal={classList:{contains:()=>false},style:{}};
   const sheet={style:{transform:'translate3d(0,20px,0)'}};
+  let scrollStyle='';
   const context={
     console,setTimeout:()=>0,MutationObserver:class{observe(){}},
     cloud:{user:{id:'client'},profile:{role:'client'}},addEventListener:()=>{},
     document:{
-      hidden:false,createElement:()=>({}),head:{appendChild:()=>{}},documentElement:{classList:makeClassList(htmlClasses)},body:{classList:makeClassList(bodyClasses)},
+      hidden:false,createElement:()=>({}),head:{appendChild:node=>{scrollStyle=node.textContent}},documentElement:{classList:makeClassList(htmlClasses)},body:{classList:makeClassList(bodyClasses)},
       getElementById:id=>id==='start'?start:id==='modal'?modal:id==='sheet'?sheet:null,
-      addEventListener:(name,fn,options)=>{if(name==='touchmove'){touchMove=fn;touchOptions=options}}
+      addEventListener:(name,fn,options)=>listeners.push({name,fn,options})
     }
   };
   context.window=context;
   vm.runInNewContext(fs.readFileSync(require.resolve('../client-workout-scroll-v259.js'),'utf8'),context);
-  assert.ok(htmlClasses.has('unvrsl-client-workout-scroll-v259'));
-  assert.ok(bodyClasses.has('unvrsl-client-workout-scroll-v259'));
-  assert.deepEqual(JSON.parse(JSON.stringify(touchOptions)),{capture:true,passive:true});
-  let stopped=0,prevented=0;
-  touchMove({target:{closest:selector=>selector==='#start.page.active'},stopImmediatePropagation:()=>stopped++,preventDefault:()=>prevented++});
-  assert.equal(stopped,1);
-  assert.equal(prevented,0);
+  assert.ok(htmlClasses.has('unvrsl-client-workout-scroll-v261'));
+  assert.ok(bodyClasses.has('unvrsl-client-workout-scroll-v261'));
+  assert.equal(listeners.some(x=>x.name==='touchmove'),false);
+  assert.match(scrollStyle,/overflow-y:auto!important/);
+  assert.match(scrollStyle,/#start\.page\.active \*\{touch-action:auto!important\}/);
+  assert.doesNotMatch(scrollStyle,/pan-y|pinch-zoom/);
   assert.equal(modal.style.pointerEvents,'none');
   assert.equal(sheet.style.transform,'');
 });

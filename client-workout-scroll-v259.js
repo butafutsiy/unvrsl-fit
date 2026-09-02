@@ -1,20 +1,22 @@
 'use strict';
 (()=>{
-  const W=window,D=document,ROOT_CLASS='unvrsl-client-workout-scroll-v259';
-  if(W.__unvrslClientWorkoutScrollV259)return;W.__unvrslClientWorkoutScrollV259=true;
+  const W=window,D=document,ROOT_CLASS='unvrsl-client-workout-scroll-v261';
+  if(W.__unvrslClientWorkoutScrollV261)return;
+  W.__unvrslClientWorkoutScrollV261=true;
+  W.__unvrslClientWorkoutScrollV259=true;
+
+  D.getElementById('unvrsl-client-workout-scroll-v259-style')?.remove();
+  D.documentElement?.classList?.remove('unvrsl-client-workout-scroll-v259');
+  D.body?.classList?.remove('unvrsl-client-workout-scroll-v259');
 
   const style=D.createElement('style');
-  style.id='unvrsl-client-workout-scroll-v259-style';
+  style.id='unvrsl-client-workout-scroll-v261-style';
   style.textContent=`
-    html.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:pan-y pinch-zoom!important;overscroll-behavior-y:auto!important}
-    body.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:visible!important;touch-action:pan-y pinch-zoom!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch}
-    body.${ROOT_CLASS} #start.page.active,
-    body.${ROOT_CLASS} #start.page.active .workout-head,
-    body.${ROOT_CLASS} #start.page.active .exercise,
-    body.${ROOT_CLASS} #start.page.active .setrow,
-    body.${ROOT_CLASS} #start.page.active input,
-    body.${ROOT_CLASS} #start.page.active button{touch-action:pan-y pinch-zoom!important}
-    body.${ROOT_CLASS} #start.page.active{overflow:visible!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch}
+    html.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:auto!important;overscroll-behavior-y:auto!important}
+    body.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:visible!important;touch-action:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch}
+    body.${ROOT_CLASS} #start.page.active{overflow:visible!important;touch-action:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch}
+    body.${ROOT_CLASS} #start.page.active *{touch-action:auto!important}
+    body.${ROOT_CLASS} #timer.show{touch-action:auto!important}
     body.${ROOT_CLASS} #modal:not(.show){display:none!important;pointer-events:none!important}
   `;
   D.head?.appendChild(style);
@@ -40,13 +42,6 @@
     }
     return on;
   }
-
-  // A passive capture listener neutralizes cached legacy document handlers
-  // that call preventDefault(), while leaving the browser's native pan intact.
-  D.addEventListener?.('touchmove',event=>{
-    if(!active()||!event.target?.closest?.('#start.page.active'))return;
-    event.stopImmediatePropagation?.();
-  },{capture:true,passive:true});
 
   const observer=typeof MutationObserver==='function'?new MutationObserver(sync):null;
   const start=D.getElementById('start'),modal=D.getElementById('modal');
