@@ -1,20 +1,21 @@
 'use strict';
 (()=>{
-  const W=window,D=document,ROOT_CLASS='unvrsl-client-workout-scroll-v265';
-  if(W.__unvrslClientWorkoutScrollV265)return;
+  const W=window,D=document,ROOT_CLASS='unvrsl-client-workout-scroll-v266';
+  if(W.__unvrslClientWorkoutScrollV266)return;
+  W.__unvrslClientWorkoutScrollV266=true;
   W.__unvrslClientWorkoutScrollV265=true;
   W.__unvrslClientWorkoutScrollV264=true;
   W.__unvrslClientWorkoutScrollV263=true;
   W.__unvrslClientWorkoutScrollV261=true;
   W.__unvrslClientWorkoutScrollV259=true;
 
-  ['259','261','263','264'].forEach(v=>D.getElementById(`unvrsl-client-workout-scroll-v${v}-style`)?.remove());
-  const oldClasses=['unvrsl-client-workout-scroll-v259','unvrsl-client-workout-scroll-v261','unvrsl-client-workout-scroll-v263','unvrsl-client-workout-scroll-v264'];
+  ['259','261','263','264','265'].forEach(v=>D.getElementById(`unvrsl-client-workout-scroll-v${v}-style`)?.remove());
+  const oldClasses=['unvrsl-client-workout-scroll-v259','unvrsl-client-workout-scroll-v261','unvrsl-client-workout-scroll-v263','unvrsl-client-workout-scroll-v264','unvrsl-client-workout-scroll-v265'];
   D.documentElement?.classList?.remove(...oldClasses);
   D.body?.classList?.remove(...oldClasses);
 
   const style=D.createElement('style');
-  style.id='unvrsl-client-workout-scroll-v265-style';
+  style.id='unvrsl-client-workout-scroll-v266-style';
   style.textContent=`
     html.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:auto!important;overscroll-behavior-y:auto!important}
     body.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:visible!important;touch-action:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch}
@@ -40,7 +41,17 @@
     return W.cloud?.profile?.role!=='trainer';
   }
   function workoutActive(){return !!D.getElementById('start')?.classList?.contains('active')}
+  function hasCurrentWorkout(){return !!(W.st?.current&&!W.st.current.ended)}
   function active(){return isClient()&&workoutActive()}
+
+  function removeInactiveTrainingUi(){
+    if(hasCurrentWorkout())return false;
+    const root=D.getElementById('start');
+    if(!root)return false;
+    root.querySelectorAll('.te200-readiness,.te200-rec,.te200-auto,.smart-suggest,.u177-rec,.wr180,.wr185').forEach(x=>x.remove());
+    delete root.dataset.te200Sig;
+    return true;
+  }
 
   function removeExerciseHeaderRpe(){
     const root=D.getElementById('start');
@@ -56,13 +67,18 @@
   function queueCleanup(){
     if(cleanupQueued)return;
     cleanupQueued=true;
-    requestAnimationFrame(()=>{cleanupQueued=false;removeExerciseHeaderRpe()});
+    requestAnimationFrame(()=>{
+      cleanupQueued=false;
+      removeInactiveTrainingUi();
+      removeExerciseHeaderRpe();
+    });
   }
 
   function sync(){
     const on=active();
     D.documentElement?.classList?.toggle(ROOT_CLASS,on);
     D.body?.classList?.toggle(ROOT_CLASS,on);
+    removeInactiveTrainingUi();
     if(on){
       const modal=D.getElementById('modal');
       if(modal&&!modal.classList.contains('show')){
@@ -78,7 +94,7 @@
 
   function trainingUiStateSignature(){
     const cur=W.st?.current;
-    if(!cur)return'';
+    if(!cur||cur.ended)return'';
     return JSON.stringify([
       cur.id||'',cur.trainingWeightPolicy214||'',!!cur.trainingReadinessDone,!!cur.readinessAdjusted,cur.readiness?.score??null,
       (cur.ex||[]).map(ex=>[ex?.sourceId||'',ex?.n||'',ex?.programWeightMode||'',ex?.weightDecision||'',(ex?.set||[]).map(s=>[Number(s?.programW)||0,Number(s?.recommendedW)||0,Number(s?.plannedW)||0,Number(s?.w)||0])])
@@ -86,7 +102,7 @@
   }
 
   function snapshotTrainingUi(){
-    if(!workoutActive())return null;
+    if(!workoutActive()||!hasCurrentWorkout())return null;
     const root=D.getElementById('start');
     if(!root)return null;
     const readiness=root.querySelector('.te200-readiness');
@@ -100,6 +116,10 @@
   }
 
   function restoreTrainingUi(snapshot){
+    if(!hasCurrentWorkout()){
+      removeInactiveTrainingUi();
+      return;
+    }
     if(!snapshot||snapshot.signature!==trainingUiStateSignature()||!workoutActive())return;
     const root=D.getElementById('start');
     if(!root)return;
@@ -117,10 +137,6 @@
     removeExerciseHeaderRpe();
   }
 
-  /* The base toggleSet calls its lexical startPage directly, so wrapping
-     window.startPage is not enough. Capture these injected blocks before the
-     check button runs; restore them in a microtask after the inline handler and
-     its synchronous startPage rebuild, still before the browser paints. */
   D.addEventListener('click',event=>{
     if(!event.target?.closest?.('#start .check'))return;
     const snapshot=snapshotTrainingUi();
@@ -131,7 +147,10 @@
   const start=D.getElementById('start'),modal=D.getElementById('modal');
   const classObserver=typeof MutationObserver==='function'&&start?new MutationObserver(muts=>{
     if(muts.some(m=>m.type==='attributes'))sync();
-    if(muts.some(m=>m.type==='childList'))queueCleanup();
+    if(muts.some(m=>m.type==='childList')){
+      removeInactiveTrainingUi();
+      queueCleanup();
+    }
   }):null;
   classObserver?.observe(start,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
 
