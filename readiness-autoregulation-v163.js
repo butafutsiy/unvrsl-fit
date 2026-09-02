@@ -31,8 +31,9 @@
     document.body.appendChild(f)
   }
   function loadWorkoutShare(){
-    if(window.__unvrslShareProgressV262||document.querySelector('script[data-unvrsl-share-v262]'))return;
-    const x=document.createElement('script');x.src='share-progress-template-v262.js?v=262';x.async=false;x.dataset.unvrslShareV262='1';document.body.appendChild(x)
+    if(window.__unvrslShareProgressV263||document.querySelector('script[data-unvrsl-share-v263]'))return;
+    document.querySelectorAll('script[data-unvrsl-share-v262]').forEach(x=>x.remove());
+    const x=document.createElement('script');x.src='share-progress-template-v262.js?v=263';x.async=false;x.dataset.unvrslShareV263='1';document.body.appendChild(x)
   }
   load();
   loadQuestionnaire();
