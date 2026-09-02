@@ -1,20 +1,21 @@
 'use strict';
 (()=>{
-  const W=window,D=document,ROOT_CLASS='unvrsl-client-workout-scroll-v265';
-  if(W.__unvrslClientWorkoutScrollV265)return;
+  const W=window,D=document,ROOT_CLASS='unvrsl-client-workout-scroll-v266';
+  if(W.__unvrslClientWorkoutScrollV266)return;
+  W.__unvrslClientWorkoutScrollV266=true;
   W.__unvrslClientWorkoutScrollV265=true;
   W.__unvrslClientWorkoutScrollV264=true;
   W.__unvrslClientWorkoutScrollV263=true;
   W.__unvrslClientWorkoutScrollV261=true;
   W.__unvrslClientWorkoutScrollV259=true;
 
-  ['259','261','263','264'].forEach(v=>D.getElementById(`unvrsl-client-workout-scroll-v${v}-style`)?.remove());
-  const oldClasses=['unvrsl-client-workout-scroll-v259','unvrsl-client-workout-scroll-v261','unvrsl-client-workout-scroll-v263','unvrsl-client-workout-scroll-v264'];
+  ['259','261','263','264','265'].forEach(v=>D.getElementById(`unvrsl-client-workout-scroll-v${v}-style`)?.remove());
+  const oldClasses=['unvrsl-client-workout-scroll-v259','unvrsl-client-workout-scroll-v261','unvrsl-client-workout-scroll-v263','unvrsl-client-workout-scroll-v264','unvrsl-client-workout-scroll-v265'];
   D.documentElement?.classList?.remove(...oldClasses);
   D.body?.classList?.remove(...oldClasses);
 
   const style=D.createElement('style');
-  style.id='unvrsl-client-workout-scroll-v265-style';
+  style.id='unvrsl-client-workout-scroll-v266-style';
   style.textContent=`
     html.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:auto!important;overscroll-behavior-y:auto!important}
     body.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:visible!important;touch-action:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch}
@@ -42,6 +43,10 @@
   function workoutActive(){return !!D.getElementById('start')?.classList?.contains('active')}
   function active(){return isClient()&&workoutActive()}
 
+  function currentWorkout(){
+    try{return typeof st!=='undefined'?st?.current:null}catch(_){return null}
+  }
+
   function removeExerciseHeaderRpe(){
     const root=D.getElementById('start');
     if(!root)return;
@@ -52,11 +57,19 @@
     });
   }
 
+  function cleanupEmptyWorkoutArtifacts(){
+    const root=D.getElementById('start');
+    if(!root||root.querySelector('.exercise'))return;
+    const title=[...root.querySelectorAll('.title')].find(el=>(el.textContent||'').includes('Нет активной тренировки'));
+    if(!title)return;
+    root.querySelectorAll('.te200-readiness,.te200-rec,.te200-auto').forEach(el=>el.remove());
+  }
+
   let cleanupQueued=false;
   function queueCleanup(){
     if(cleanupQueued)return;
     cleanupQueued=true;
-    requestAnimationFrame(()=>{cleanupQueued=false;removeExerciseHeaderRpe()});
+    requestAnimationFrame(()=>{cleanupQueued=false;removeExerciseHeaderRpe();cleanupEmptyWorkoutArtifacts()});
   }
 
   function sync(){
@@ -76,57 +89,57 @@
     return on;
   }
 
-  function trainingUiStateSignature(){
-    const cur=W.st?.current;
-    if(!cur)return'';
-    return JSON.stringify([
-      cur.id||'',cur.trainingWeightPolicy214||'',!!cur.trainingReadinessDone,!!cur.readinessAdjusted,cur.readiness?.score??null,
-      (cur.ex||[]).map(ex=>[ex?.sourceId||'',ex?.n||'',ex?.programWeightMode||'',ex?.weightDecision||'',(ex?.set||[]).map(s=>[Number(s?.programW)||0,Number(s?.recommendedW)||0,Number(s?.plannedW)||0,Number(s?.w)||0])])
-    ]);
-  }
-
-  function snapshotTrainingUi(){
-    if(!workoutActive())return null;
-    const root=D.getElementById('start');
-    if(!root)return null;
-    const readiness=root.querySelector('.te200-readiness');
-    const exerciseNodes=[];
-    [...root.querySelectorAll('.exercise')].forEach((card,index)=>{
-      const node=card.querySelector('.te200-rec,.te200-auto');
-      if(node)exerciseNodes.push({index,node});
-    });
-    if(!readiness&&!exerciseNodes.length)return null;
-    return{signature:trainingUiStateSignature(),readiness,exerciseNodes};
-  }
-
-  function restoreTrainingUi(snapshot){
-    if(!snapshot||snapshot.signature!==trainingUiStateSignature()||!workoutActive())return;
-    const root=D.getElementById('start');
-    if(!root)return;
-    if(snapshot.readiness&&!root.querySelector('.te200-readiness')){
-      const head=root.querySelector('.workout-head')||root.firstElementChild;
-      head?.insertAdjacentElement('afterend',snapshot.readiness);
+  function patchSetUi(ei,si){
+    const cur=currentWorkout();
+    if(!cur)return;
+    const ex=cur.ex?.[Number(ei)],set=ex?.set?.[Number(si)];
+    const cards=[...D.querySelectorAll('#start .exercise')];
+    const card=cards[Number(ei)];
+    const btn=card?.querySelectorAll('.check')?.[Number(si)];
+    if(btn&&set){
+      btn.classList.toggle('done',!!set.ok);
+      btn.textContent=set.ok?'✓':'○';
     }
-    const cards=[...root.querySelectorAll('.exercise')];
-    snapshot.exerciseNodes.forEach(({index,node})=>{
-      const card=cards[index];
-      if(!card||card.querySelector('.te200-rec,.te200-auto'))return;
-      const anchor=card.querySelector('.exname')||card.firstElementChild;
-      anchor?.insertAdjacentElement('afterend',node);
-    });
-    removeExerciseHeaderRpe();
+    let doneCount=0,totalCount=0;
+    (cur.ex||[]).forEach(e=>(e.set||[]).forEach(s=>{totalCount++;if(s?.ok)doneCount++}));
+    const pct=totalCount?Math.round(doneCount/totalCount*100):0;
+    const head=D.querySelector('#start .workout-head');
+    const pctChip=head?.querySelector('.chip');
+    if(pctChip)pctChip.textContent=`${pct}%`;
+    const bar=head?.querySelector('.progress i');
+    if(bar)bar.style.width=`${pct}%`;
   }
 
-  /* The base toggleSet calls its lexical startPage directly, so wrapping
-     window.startPage is not enough. Capture these injected blocks before the
-     check button runs; restore them in a microtask after the inline handler and
-     its synchronous startPage rebuild, still before the browser paints. */
-  D.addEventListener('click',event=>{
-    if(!event.target?.closest?.('#start .check'))return;
-    const snapshot=snapshotTrainingUi();
-    if(!snapshot)return;
-    queueMicrotask(()=>restoreTrainingUi(snapshot));
-  },true);
+  /* Set completion used to call startPage(), rebuilding the entire workout and
+     physically removing readiness/recommendation nodes for ~300-700 ms. Keep
+     the existing toggleSet behavior (including timer/toasts from wrappers), but
+     temporarily suppress only that full render. Then patch the changed button
+     and progress in-place. */
+  function installStableToggleSet(){
+    const current=W.toggleSet;
+    if(typeof current!=='function'||current.__unvrslNoWorkoutRebuildV266)return false;
+    const wrapped=function(ei,si){
+      const winStart=W.startPage;
+      let lexicalStart=winStart;
+      try{if(typeof startPage==='function')lexicalStart=startPage}catch(_){ }
+      const noRender=function(){};
+      try{W.startPage=noRender}catch(_){ }
+      try{startPage=noRender}catch(_){ }
+      try{
+        return current.apply(this,arguments);
+      }finally{
+        try{W.startPage=winStart}catch(_){ }
+        try{startPage=lexicalStart}catch(_){ }
+        patchSetUi(ei,si);
+        removeExerciseHeaderRpe();
+      }
+    };
+    wrapped.__unvrslNoWorkoutRebuildV266=true;
+    wrapped.__unvrslNoWorkoutRebuildBase=current;
+    try{W.toggleSet=wrapped}catch(_){ }
+    try{toggleSet=wrapped}catch(_){ }
+    return true;
+  }
 
   const start=D.getElementById('start'),modal=D.getElementById('modal');
   const classObserver=typeof MutationObserver==='function'&&start?new MutationObserver(muts=>{
@@ -138,11 +151,12 @@
   const modalObserver=typeof MutationObserver==='function'&&modal?new MutationObserver(sync):null;
   modalObserver?.observe(modal,{attributes:true,attributeFilter:['class']});
 
-  W.addEventListener?.('unvrsl:cloud-modules-settled',sync);
-  W.addEventListener?.('unvrsl:modules-ready',sync);
-  W.addEventListener?.('unvrsl:training-engine-ready',sync);
-  D.addEventListener?.('visibilitychange',()=>{if(!D.hidden)sync()},{passive:true});
+  W.addEventListener?.('unvrsl:cloud-modules-settled',()=>{installStableToggleSet();sync()});
+  W.addEventListener?.('unvrsl:modules-ready',()=>{installStableToggleSet();sync()});
+  W.addEventListener?.('unvrsl:training-engine-ready',()=>{installStableToggleSet();sync()});
+  D.addEventListener?.('visibilitychange',()=>{if(!D.hidden){installStableToggleSet();sync()}},{passive:true});
 
+  installStableToggleSet();
   sync();
-  [100,400,900,1600,3000].forEach(ms=>setTimeout(sync,ms));
+  [100,400,900,1600,3000].forEach(ms=>setTimeout(()=>{installStableToggleSet();sync()},ms));
 })();
