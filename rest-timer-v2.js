@@ -5,6 +5,7 @@
   const TOTAL_KEY='unvrsl-rest-total-ms',ACTIVE_KEY='unvrsl-rest-active-start',WORKOUT_KEY='unvrsl-rest-workout-id';
   let id=null,end=Number(sessionStorage.getItem(KEY)||0),currentLabel=sessionStorage.getItem(LABEL_KEY)||'Отдых между подходами';
   let totalMs=Number(sessionStorage.getItem(TOTAL_KEY)||0),activeStarted=Number(sessionStorage.getItem(ACTIVE_KEY)||0),trackedWorkoutId=sessionStorage.getItem(WORKOUT_KEY)||'';
+  let headQueued=false,headObserver=null;
 
   const style=document.createElement('style');
   style.id='unvrsl-rest-timer-v2-style';
@@ -36,9 +37,7 @@
   function syncWorkout(){
     const wid=currentWorkoutId();
     if(!wid)return '';
-    if(trackedWorkoutId!==wid){
-      trackedWorkoutId=wid;totalMs=0;activeStarted=0;saveTotals();
-    }
+    if(trackedWorkoutId!==wid){trackedWorkoutId=wid;totalMs=0;activeStarted=0;saveTotals()}
     return wid;
   }
   function activeRestMs(now=Date.now()){
@@ -66,12 +65,25 @@
     const root=document.getElementById('start'),head=root?.querySelector('.workout-head');
     if(!root||!head)return;
     const wid=syncWorkout();
-    let row=head.querySelector('.rest-v2-live');
+    let row=head.querySelector('.rest-v2-total');
     if(!wid){row?.remove();return}
-    if(!row){row=document.createElement('div');row.className='rest-v2-live rest-v2-total';row.innerHTML='<span data-rest-live-label>⏱ Общий отдых</span><b data-rest-live>00:00</b>';head.appendChild(row)}
+    if(!row){row=document.createElement('div');row.className='rest-v2-live rest-v2-total';row.innerHTML='<span data-rest-live-label>⏱ Общий отдых</span><b data-rest-live>00:00</b>'}
+    const duration=head.querySelector('.workout-duration-row');
+    if(duration){if(row.nextElementSibling!==duration)head.insertBefore(row,duration)}else if(row.parentElement!==head)head.appendChild(row);
     row.className='rest-v2-live rest-v2-total';
     const label=row.querySelector('[data-rest-live-label]');if(label)label.textContent='⏱ Общий отдых';
     const b=row.querySelector('[data-rest-live]');if(b)b.textContent=text(Math.floor(totalRestMs()/1000));
+  }
+  function queueHead(){
+    if(headQueued)return;
+    headQueued=true;
+    queueMicrotask(()=>{headQueued=false;headTotal()});
+  }
+  function observeHead(){
+    const root=document.getElementById('start');if(!root||typeof MutationObserver!=='function')return;
+    headObserver?.disconnect();
+    headObserver=new MutationObserver(()=>{if(state()?.current&&root.classList.contains('active'))queueHead()});
+    headObserver.observe(root,{childList:true,subtree:true});
   }
   function done(){
     const work=isWork();stop(false);
@@ -80,60 +92,49 @@
     try{if(typeof toast==='function')toast(work?'Рабочий интервал закончен':'Отдых закончен')}catch(e){}
   }
   function tickV2(){
-    const sec=secondsLeft(),el=build();
-    if(!el)return;
-    updateLabel(el);
-    const out=el.querySelector('#tt');if(out)out.textContent=text(sec);
-    headTotal();
-    if(sec<=0&&end>0)done();
+    const sec=secondsLeft(),el=build();if(!el)return;
+    updateLabel(el);const out=el.querySelector('#tt');if(out)out.textContent=text(sec);headTotal();if(sec<=0&&end>0)done();
   }
   function start(sec,label){
     sec=Math.round(Number(sec)||0);if(sec<=0)return;
-    syncWorkout();
-    if(activeStarted)commitActiveRest();
-    currentLabel=String(label||'Отдых между подходами');
-    if(id)clearInterval(id);
-    const now=Date.now();end=now+sec*1000;
-    if(!isWork())activeStarted=now;else activeStarted=0;
+    syncWorkout();if(activeStarted)commitActiveRest();currentLabel=String(label||'Отдых между подходами');if(id)clearInterval(id);
+    const now=Date.now();end=now+sec*1000;if(!isWork())activeStarted=now;else activeStarted=0;
     sessionStorage.setItem(KEY,String(end));sessionStorage.setItem(LABEL_KEY,currentLabel);saveTotals();
-    const el=build();el?.classList.add('show');
-    tickV2();id=setInterval(tickV2,250);
+    const el=build();el?.classList.add('show');tickV2();id=setInterval(tickV2,250);
   }
-  function add(sec){
-    if(!end||secondsLeft()<=0)return start(sec,currentLabel);
-    end+=sec*1000;sessionStorage.setItem(KEY,String(end));tickV2();
-  }
+  function add(sec){if(!end||secondsLeft()<=0)return start(sec,currentLabel);end+=sec*1000;sessionStorage.setItem(KEY,String(end));tickV2()}
   function stop(clear=true){
-    if(id)clearInterval(id);id=null;
-    if(activeStarted)commitActiveRest(Math.min(Date.now(),end||Date.now()));
-    end=0;sessionStorage.removeItem(KEY);sessionStorage.removeItem(LABEL_KEY);
-    build()?.classList.remove('show');currentLabel='Отдых между подходами';headTotal();
+    if(id)clearInterval(id);id=null;if(activeStarted)commitActiveRest(Math.min(Date.now(),end||Date.now()));
+    end=0;sessionStorage.removeItem(KEY);sessionStorage.removeItem(LABEL_KEY);build()?.classList.remove('show');currentLabel='Отдых между подходами';headTotal();
   }
 
   window.timer=start;window.add30=()=>add(30);window.stopTimer=stop;
   try{timer=start;add30=window.add30;stopTimer=stop}catch(e){}
 
   function restore(){
-    syncWorkout();
-    currentLabel=sessionStorage.getItem(LABEL_KEY)||currentLabel||'Отдых между подходами';build();
-    end=Number(sessionStorage.getItem(KEY)||end||0);
-    totalMs=Number(sessionStorage.getItem(TOTAL_KEY)||totalMs||0);
-    activeStarted=Number(sessionStorage.getItem(ACTIVE_KEY)||activeStarted||0);
+    syncWorkout();currentLabel=sessionStorage.getItem(LABEL_KEY)||currentLabel||'Отдых между подходами';build();
+    end=Number(sessionStorage.getItem(KEY)||end||0);totalMs=Number(sessionStorage.getItem(TOTAL_KEY)||totalMs||0);activeStarted=Number(sessionStorage.getItem(ACTIVE_KEY)||activeStarted||0);
     if(end>Date.now()){
       if(!isWork()&&!activeStarted){activeStarted=Date.now();saveTotals()}
-      build()?.classList.add('show');
-      if(id)clearInterval(id);id=setInterval(tickV2,250);tickV2();
+      build()?.classList.add('show');if(id)clearInterval(id);id=setInterval(tickV2,250);tickV2();
     }else{
       if(end>0&&activeStarted)commitActiveRest(end);
       end=0;activeStarted=0;sessionStorage.removeItem(KEY);sessionStorage.removeItem(LABEL_KEY);sessionStorage.removeItem(ACTIVE_KEY);build()?.classList.remove('show');currentLabel='Отдых между подходами';headTotal();
     }
   }
   const oldStartPage=window.startPage;
-  if(typeof oldStartPage==='function'&&!oldStartPage.__restTimerV2){
-    const wrapped=function(){const r=oldStartPage.apply(this,arguments);requestAnimationFrame(()=>{headTotal();if(end>Date.now())tickV2()});return r};
-    wrapped.__restTimerV2=true;window.startPage=wrapped;try{startPage=wrapped}catch(e){}
+  if(typeof oldStartPage==='function'&&!oldStartPage.__restTimerStable){
+    const wrapped=function(){
+      const r=oldStartPage.apply(this,arguments);
+      // Recreate the persistent total row before the browser paints.
+      headTotal();queueHead();
+      if(end>Date.now())tickV2();
+      return r;
+    };
+    wrapped.__restTimerStable=true;wrapped.__restTimerV2=true;window.startPage=wrapped;try{startPage=wrapped}catch(e){}
   }
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)restore()});
   window.addEventListener('focus',restore);
+  observeHead();
   setTimeout(restore,0);
 })();
