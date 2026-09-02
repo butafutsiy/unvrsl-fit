@@ -1,16 +1,18 @@
 'use strict';
 (()=>{
-  const W=window,D=document,ROOT_CLASS='unvrsl-client-workout-scroll-v261';
-  if(W.__unvrslClientWorkoutScrollV261)return;
+  const W=window,D=document,ROOT_CLASS='unvrsl-client-workout-scroll-v263';
+  if(W.__unvrslClientWorkoutScrollV263)return;
+  W.__unvrslClientWorkoutScrollV263=true;
   W.__unvrslClientWorkoutScrollV261=true;
   W.__unvrslClientWorkoutScrollV259=true;
 
   D.getElementById('unvrsl-client-workout-scroll-v259-style')?.remove();
-  D.documentElement?.classList?.remove('unvrsl-client-workout-scroll-v259');
-  D.body?.classList?.remove('unvrsl-client-workout-scroll-v259');
+  D.getElementById('unvrsl-client-workout-scroll-v261-style')?.remove();
+  D.documentElement?.classList?.remove('unvrsl-client-workout-scroll-v259','unvrsl-client-workout-scroll-v261');
+  D.body?.classList?.remove('unvrsl-client-workout-scroll-v259','unvrsl-client-workout-scroll-v261');
 
   const style=D.createElement('style');
-  style.id='unvrsl-client-workout-scroll-v261-style';
+  style.id='unvrsl-client-workout-scroll-v263-style';
   style.textContent=`
     html.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:auto!important;overscroll-behavior-y:auto!important}
     body.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:visible!important;touch-action:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch}
@@ -19,7 +21,7 @@
     body.${ROOT_CLASS} #timer.show{touch-action:auto!important}
     body.${ROOT_CLASS} #modal:not(.show){display:none!important;pointer-events:none!important}
 
-    /* v262: recommendation is a full-width, stable row inside the exercise header grid. */
+    /* Stable recommendation geometry. No JS moves these nodes after a set click. */
     #start .exercise .te200-rec,
     #start .exercise .te200-auto{
       grid-column:1 / -1!important;
@@ -38,7 +40,6 @@
       padding:13px 14px!important;
       border-radius:18px!important;
       overflow:visible!important;
-      contain:layout!important;
     }
     #start .exercise .te200-rec .te200-rec-main{min-width:0!important;width:100%!important}
     #start .exercise .te200-rec b{font-size:13.5px!important;line-height:1.25!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
@@ -69,6 +70,13 @@
     });
   }
 
+  let cleanupQueued=false;
+  function queueCleanup(){
+    if(cleanupQueued)return;
+    cleanupQueued=true;
+    requestAnimationFrame(()=>{cleanupQueued=false;removeExerciseHeaderRpe()});
+  }
+
   function sync(){
     const on=active();
     D.documentElement?.classList?.toggle(ROOT_CLASS,on);
@@ -82,102 +90,27 @@
         if(sheet)sheet.style.transform='';
       }
     }
-    removeExerciseHeaderRpe();
+    queueCleanup();
     return on;
   }
 
-  /* Keep recommendation nodes alive while startPage rebuilds the workout DOM.
-     This removes the frame where the block vanished and the page height changed. */
-  function recommendationSnapshot(){
-    const root=D.getElementById('start');
-    if(!root||!workoutActive())return[];
-    const cards=[...root.querySelectorAll('.exercise')];
-    return cards.map((card,index)=>{
-      const node=card.querySelector('.te200-rec,.te200-auto');
-      return node?{index,node}:null;
-    }).filter(Boolean);
-  }
-  function restoreRecommendations(snapshot){
-    if(!snapshot?.length)return;
-    const root=D.getElementById('start');
-    if(!root)return;
-    const cards=[...root.querySelectorAll('.exercise')];
-    snapshot.forEach(({index,node})=>{
-      const card=cards[index];
-      if(!card||card.querySelector('.te200-rec,.te200-auto'))return;
-      const anchor=card.querySelector('.exname')||card.firstElementChild;
-      anchor?.insertAdjacentElement('afterend',node);
-    });
-  }
-  function installStableStartPage(){
-    let base=null;
-    try{if(typeof startPage==='function')base=startPage}catch(_){ }
-    if(!base)base=W.startPage;
-    if(typeof base!=='function'||base.__uScrollStableRecommendations)return false;
-    const wrapped=function(){
-      const snapshot=recommendationSnapshot();
-      const result=base.apply(this,arguments);
-      restoreRecommendations(snapshot);
-      removeExerciseHeaderRpe();
-      return result;
-    };
-    wrapped.__uScrollStableRecommendations=true;
-    W.startPage=wrapped;
-    try{startPage=wrapped}catch(_){ }
-    return true;
-  }
+  /* v263 intentionally has NO click-time scrollTo/scrollBy correction.
+     The browser keeps the finger/viewport position natively. Repeated manual
+     corrections were the remaining source of the visible bounce on set taps. */
 
-  let restoreSeq=0;
-  function currentScrollY(){return W.scrollY||D.documentElement?.scrollTop||D.body?.scrollTop||0}
-  function setAnchor(button){
-    const root=D.getElementById('start'),card=button?.closest?.('.exercise'),row=button?.closest?.('.setrow');
-    if(!root||!card||!row)return null;
-    const cards=[...root.querySelectorAll('.exercise')],rows=[...card.querySelectorAll('.setrow')];
-    const ei=cards.indexOf(card),si=rows.indexOf(row);
-    if(ei<0||si<0)return null;
-    return{ei,si,top:row.getBoundingClientRect().top};
-  }
-  function restoreAnchor(anchor,fallbackY){
-    if(anchor){
-      const root=D.getElementById('start'),card=root?.querySelectorAll('.exercise')?.[anchor.ei],row=card?.querySelectorAll('.setrow')?.[anchor.si];
-      if(row){
-        const delta=row.getBoundingClientRect().top-anchor.top;
-        if(Math.abs(delta)>.5){W.scrollBy(0,delta);return}
-      }
-    }
-    const now=currentScrollY();
-    if(Math.abs(now-fallbackY)>1)W.scrollTo(0,fallbackY);
-  }
-  function preserveScrollAfterSetToggle(button){
-    if(!workoutActive())return;
-    const y=currentScrollY(),anchor=setAnchor(button),seq=++restoreSeq;
-    button?.blur?.();
-    const restore=()=>{
-      if(seq!==restoreSeq||!workoutActive())return;
-      restoreAnchor(anchor,y);
-    };
-    queueMicrotask(restore);
-    requestAnimationFrame(()=>{restore();requestAnimationFrame(restore)});
-    setTimeout(restore,40);
-    setTimeout(restore,100);
-    setTimeout(restore,180);
-  }
-
-  D.addEventListener('click',event=>{
-    const button=event.target?.closest?.('#start .check');
-    if(button)preserveScrollAfterSetToggle(button);
-  },true);
-
-  const observer=typeof MutationObserver==='function'?new MutationObserver(sync):null;
   const start=D.getElementById('start'),modal=D.getElementById('modal');
-  if(start)observer?.observe(start,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
-  if(modal)observer?.observe(modal,{attributes:true,attributeFilter:['class']});
-  W.addEventListener?.('unvrsl:cloud-modules-settled',()=>{installStableStartPage();sync()});
-  W.addEventListener?.('unvrsl:modules-ready',()=>{installStableStartPage();sync()});
-  D.addEventListener?.('visibilitychange',()=>{if(!D.hidden){installStableStartPage();sync()}},{passive:true});
-  installStableStartPage();
+  const classObserver=typeof MutationObserver==='function'&&start?new MutationObserver(muts=>{
+    if(muts.some(m=>m.type==='attributes'))sync();
+    if(muts.some(m=>m.type==='childList'))queueCleanup();
+  }):null;
+  classObserver?.observe(start,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
+
+  const modalObserver=typeof MutationObserver==='function'&&modal?new MutationObserver(sync):null;
+  modalObserver?.observe(modal,{attributes:true,attributeFilter:['class']});
+
+  W.addEventListener?.('unvrsl:cloud-modules-settled',sync);
+  W.addEventListener?.('unvrsl:modules-ready',sync);
+  D.addEventListener?.('visibilitychange',()=>{if(!D.hidden)sync()},{passive:true});
   sync();
-  let wrapChecks=0;
-  const wrapTimer=setInterval(()=>{installStableStartPage();if(++wrapChecks>40)clearInterval(wrapTimer)},250);
-  [100,400,1200,3000].forEach(ms=>setTimeout(()=>{installStableStartPage();sync()},ms));
+  [100,400,1200,3000].forEach(ms=>setTimeout(sync,ms));
 })();
