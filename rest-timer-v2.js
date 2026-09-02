@@ -5,7 +5,6 @@
   const TOTAL_KEY='unvrsl-rest-total-ms',ACTIVE_KEY='unvrsl-rest-active-start',WORKOUT_KEY='unvrsl-rest-workout-id';
   let id=null,end=Number(sessionStorage.getItem(KEY)||0),currentLabel=sessionStorage.getItem(LABEL_KEY)||'Отдых между подходами';
   let totalMs=Number(sessionStorage.getItem(TOTAL_KEY)||0),activeStarted=Number(sessionStorage.getItem(ACTIVE_KEY)||0),trackedWorkoutId=sessionStorage.getItem(WORKOUT_KEY)||'';
-  let headQueued=false,headObserver=null;
 
   const style=document.createElement('style');
   style.id='unvrsl-rest-timer-v2-style';
@@ -70,20 +69,8 @@
     if(!row){row=document.createElement('div');row.className='rest-v2-live rest-v2-total';row.innerHTML='<span data-rest-live-label>⏱ Общий отдых</span><b data-rest-live>00:00</b>'}
     const duration=head.querySelector('.workout-duration-row');
     if(duration){if(row.nextElementSibling!==duration)head.insertBefore(row,duration)}else if(row.parentElement!==head)head.appendChild(row);
-    row.className='rest-v2-live rest-v2-total';
-    const label=row.querySelector('[data-rest-live-label]');if(label)label.textContent='⏱ Общий отдых';
-    const b=row.querySelector('[data-rest-live]');if(b)b.textContent=text(Math.floor(totalRestMs()/1000));
-  }
-  function queueHead(){
-    if(headQueued)return;
-    headQueued=true;
-    queueMicrotask(()=>{headQueued=false;headTotal()});
-  }
-  function observeHead(){
-    const root=document.getElementById('start');if(!root||typeof MutationObserver!=='function')return;
-    headObserver?.disconnect();
-    headObserver=new MutationObserver(()=>{if(state()?.current&&root.classList.contains('active'))queueHead()});
-    headObserver.observe(root,{childList:true,subtree:true});
+    const label=row.querySelector('[data-rest-live-label]');if(label&&label.textContent!=='⏱ Общий отдых')label.textContent='⏱ Общий отдых';
+    const b=row.querySelector('[data-rest-live]'),value=text(Math.floor(totalRestMs()/1000));if(b&&b.textContent!==value)b.textContent=value;
   }
   function done(){
     const work=isWork();stop(false);
@@ -123,18 +110,16 @@
     }
   }
   const oldStartPage=window.startPage;
-  if(typeof oldStartPage==='function'&&!oldStartPage.__restTimerStable){
+  if(typeof oldStartPage==='function'&&!oldStartPage.__restTimerStableSafe){
     const wrapped=function(){
       const r=oldStartPage.apply(this,arguments);
-      // Recreate the persistent total row before the browser paints.
-      headTotal();queueHead();
+      headTotal();
       if(end>Date.now())tickV2();
       return r;
     };
-    wrapped.__restTimerStable=true;wrapped.__restTimerV2=true;window.startPage=wrapped;try{startPage=wrapped}catch(e){}
+    wrapped.__restTimerStableSafe=true;wrapped.__restTimerV2=true;window.startPage=wrapped;try{startPage=wrapped}catch(e){}
   }
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)restore()});
   window.addEventListener('focus',restore);
-  observeHead();
   setTimeout(restore,0);
 })();
