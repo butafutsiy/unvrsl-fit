@@ -1,14 +1,14 @@
 'use strict';
 (()=>{
- const W=window,REV=257;
- if(W.__unvrslTrainingEngineV257)return;
+ const W=window,REV=259;
+ if(W.__unvrslTrainingEngineV259)return;
  let STATE=W.st||null;
  try{if(typeof st!=='undefined')STATE=st}catch(_){}
  if(!STATE)return;
- W.st=STATE;W.__unvrslTrainingEngineV257=true;W.__unvrslTrainingEngineV200=true;
+ W.st=STATE;W.__unvrslTrainingEngineV259=true;W.__unvrslTrainingEngineV257=true;W.__unvrslTrainingEngineV200=true;W.__unvrslRecommendationMathOwner='training-load-model-v258';
  const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
  const UNVRSL=W.UNVRSL_METHOD_V211||null;
- const num=v=>N(v)??0,mean=a=>{a=(a||[]).filter(Number.isFinite);return a.length?a.reduce((s,x)=>s+x,0)/a.length:null},median=a=>{a=(a||[]).filter(Number.isFinite).sort((x,y)=>x-y);if(!a.length)return null;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2},clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ const num=v=>N(v)??0,mean=a=>{a=(a||[]).filter(Number.isFinite);return a.length?a.reduce((s,x)=>s+x,0)/a.length:null},clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const base=n=>{try{return W.baseExerciseName?W.baseExerciseName(n):String(n||'').replace(/\s+—\s+.*$/,'').trim()}catch(_){return String(n||'')}};
  const same=(e,n,id)=>(id&&String(e?.sourceId||'')===String(id))||base(e?.n).toLowerCase()===base(n).toLowerCase();
  const key=e=>e?.sourceId?`id:${e.sourceId}`:`n:${base(e?.n).toLowerCase()}`;
@@ -54,25 +54,11 @@
   const w=N(cur.w);if(!(w>=1&&w<=8)||!cur.c)return false;
   return(cur.ex||[]).some(ex=>ex?.mode!=='cardio'&&!!builtInSource(ex,cur))
  }
- function effort(x){let rpe=N(x?.rpe),rir=N(x?.rir);if(rir==null&&rpe!=null)rir=10-rpe;if(rpe==null&&rir!=null)rpe=10-rir;return rpe==null?null:{rpe,rir:clamp(rir,0,10)}}
- function rowsFrom(s,ex){const out=[];(s?.ex||[]).forEach(e=>{if(!same(e,ex.n,ex.sourceId))return;(e.set||[]).forEach(x=>{const actual=effort(x),w=N(x?.w),r=N(x?.r),fallbackRpe=target(e,x,s),ef=actual||{rpe:fallbackRpe,rir:clamp(10-fallbackRpe,0,10)};if(x?.ok&&w>0&&r>0)out.push({w,r,rpe:ef.rpe,rir:ef.rir,date:s.date||'',estimatedRpe:!actual})})});return out}
- function localHistory(ex,cur){const ss=W.st?.sessions||[];for(let i=ss.length-1;i>=0;i--){const s=ss[i];if(String(s?.id||'')===String(cur.id||'')||!s?.ended)continue;const r=rowsFrom(s,ex);if(r.length)return r}return[]}
- async function history(ex,cur){const local=localHistory(ex,cur);if(local.length)return local;try{if(!W.cloud?.client||!W.cloud?.user?.id)return[];const q=await W.cloud.client.from('workouts').select('payload,workout_date').eq('user_id',W.cloud.user.id).order('workout_date',{ascending:false}).limit(50);if(q.error)return[];for(const row of q.data||[]){const p=row.payload||{};if(String(p.id||'')===String(cur.id||'')||!p?.ended)continue;const r=rowsFrom(p,ex);if(r.length)return r}}catch(e){console.warn('v214 history',e)}return[]}
- function e1rm(rows){let a=(rows||[]).map(x=>x.w*(1+(x.r+x.rir)/30)).filter(x=>x>0);if(!a.length)return null;const m=mean(a);if(a.length>=3){const kept=a.filter(x=>x>=m*.82&&x<=m*1.18);if(kept.length>=2)a=kept}return mean(a)}
  function step(ex,rows=[]){let s=2.5;try{s=Number(W.loadStepFor?.(base(ex.n),ex.sourceId||null))||s}catch(_){}const m=mean(rows.map(x=>x.w))||0;if(m>0&&m<=6)s=Math.min(s,.5);else if(m>0&&m<=12)s=Math.min(s,1);else if(m>0&&m<=22)s=Math.min(s,2);return s}
  function round(v,s){return Math.max(s,Math.round(v/s)*s)}
- function limitedWeight(v,rows,stp){const previous=median((rows||[]).map(x=>x.w).filter(x=>x>0));if(!(v>0))return null;if(!(previous>0))return round(v,stp);return round(clamp(v,previous*.90,previous*1.075),stp)}
  function method(src,ex){return String(src?.method||ex?.method||'STANDARD').trim().toUpperCase()||'STANDARD'}
- function target(ex,set,cur){return [N(set?.targetRpe),N(ex?.targetRpe),N(ex?.rpeTarget),N(ex?.target),N(ex?.rpe),N(cur?.target),8].find(x=>x!=null&&x>0)||8}
  function occurrenceIndex(ex,cur){const a=(cur.ex||[]).filter(x=>same(x,ex.n,ex.sourceId));const i=a.indexOf(ex);return i<0?0:i}
  function sourceWeight(src,ex,setIndex,cur){const sets=src?.sets||[];if(!sets.length)return 0;if((ex.set||[]).length>1)return num(sets[setIndex]?.w??sets.at(-1)?.w);const i=occurrenceIndex(ex,cur),m=method(src,ex),count=(cur.ex||[]).filter(x=>same(x,ex.n,ex.sourceId)).length;if(m==='UNVRSL'&&count>sets.length){const map=sets.length>=3?[0,1,0,1,0,1,2,2]:sets.length===2?[0,1,0,1,0,1,1,1]:[0,0,0,0,0,0,0,0];return num(sets[map[i]??map.at(-1)]?.w)}return num(sets[i]?.w??sets.at(-1)?.w)}
- async function harmonizeUnvrsl(cur){
-  if(!isOwnerEightWeekPlan(cur)||!UNVRSL?.aggregateRecommendation)return;const seen=new Set();
-  for(const ex of cur.ex||[]){const k=key(ex);if(seen.has(k))continue;seen.add(k);const group=groupIndices(cur,k).map(i=>cur.ex[i]),isUnvrsl=group.some(item=>item?.trainingEstimate200?.method==='UNVRSL');if(!isUnvrsl||!group.every(item=>item?.programWeightMode==='prescribed'))continue;
-   const rows=await history(ex,cur);if(!rows.length)continue;const flattened=group.flatMap(item=>(item.set||[]).map(set=>({exercise:item,set}))),stp=step(ex,rows),result=UNVRSL.aggregateRecommendation(rows,flattened.map(item=>num(item.set.programW)||num(item.set.w)),flattened.map(item=>num(item.set.r)),flattened.map(item=>target(item.exercise,item.set,cur)),stp);if(!result)continue;
-   flattened.forEach((item,index)=>{if(result.weights[index]>0)item.set.recommendedW=result.weights[index]});group.forEach(item=>{item.trainingEstimate200={...(item.trainingEstimate200||{}),e1rm:result.estimatedMax,method:'UNVRSL',averageWeight:result.averageWeight,averageReps:result.averageReps,averageRpe:result.averageRpe,recommendedAverage:result.desiredAverage}})
-  }
- }
  async function prepare(cur){
   if(!cur)return false;const p=program(cur);if((cur.programId||cur.planId)&&!p)return false;
   const ownerPlan=isOwnerEightWeekPlan(cur);cur.trainingWeightPolicy214=ownerPlan?'recommendation':'autoweight';
@@ -85,29 +71,26 @@
    const launch=(ex.set||[]).map(s=>s.launchWeightCaptured206?num(s.launchW):([s.programW,s.plannedW,s.w].map(num).find(x=>x>0)||0)),sets=ex.set||[];
    const sourceWeights=sets.map((s,i)=>src?sourceWeight(src,ex,i,cur):0);
    const seeds=sets.map((s,i)=>sourceWeights[i]>0?sourceWeights[i]:num(launch[i]));
-   // Weight ownership is decided per exercise. A prescribed program weight
-   // stays manual; autoweight is used only when the program has no load.
-   const mode=ownerPlan||sourceWeights.some(x=>x>0)?'prescribed':'adaptive';ex.programWeightMode=mode;delete ex.recommendation194;delete ex.engine196Recommendation;delete ex.progression187;
+   const mode=ownerPlan||sourceWeights.some(x=>x>0)?'prescribed':'adaptive';
+   ex.programWeightMode=mode;delete ex.recommendation194;delete ex.engine196Recommendation;delete ex.progression187;
+   const activeMethod=method(src,ex);
    if(mode==='adaptive'){
-    adaptive++;sets.forEach((s,i)=>{s.programW=0;delete s.recommendedW;if(!s.ok&&!s.manualOverride){const start=num(seeds[i]);s.w=start;s.plannedW=start;s.baselineW=start;s.baselineSource=start>0?'autoweight_seed':'adaptive_pending'}})
+    adaptive++;
+    sets.forEach((s,i)=>{s.programW=0;delete s.recommendedW;if(!s.ok&&!s.manualOverride){const start=num(seeds[i]);s.w=start;s.plannedW=start;s.baselineW=start;s.baselineSource=start>0?'autoweight_seed':'adaptive_pending'}});
+    ex.weightDecision=sets.some(s=>num(s.plannedW)>0)?'adaptive_seed':'calibration'
    }else{
-    prescribed++;sets.forEach((s,i)=>{s.programW=num(seeds[i]);delete s.recommendedW;if(!s.ok&&!s.manualOverride){s.w=num(s.programW);s.plannedW=s.w;s.baselineW=s.w;s.baselineSource='program'}})
+    prescribed++;
+    sets.forEach((s,i)=>{s.programW=num(seeds[i]);delete s.recommendedW;if(!s.ok&&!s.manualOverride){s.w=num(s.programW);s.plannedW=s.w;s.baselineW=s.w;s.baselineSource='program'}});
+    ex.weightDecision='program'
    }
-   const rows=await history(ex,cur),cap=e1rm(rows),stp=step(ex,rows);
-   if(cap>0){
-    const activeMethod=method(src,ex),unvrslResult=activeMethod==='UNVRSL'&&UNVRSL?.aggregateRecommendation?UNVRSL.aggregateRecommendation(rows,sets.map(s=>num(s.programW)||num(s.plannedW)||num(s.w)),sets.map(s=>num(s.r)),sets.map(s=>target(ex,s,cur)),stp):null;
-    const calculated=unvrslResult?.weights||sets.map(s=>{const reps=num(s.r);if(reps<=0)return null;const rir=clamp(10-target(ex,s,cur),0,10);return limitedWeight(cap/(1+(reps+rir)/30),rows,stp)});
-    if(activeMethod==='STANDARD'){
-     const stable=limitedWeight(median(calculated),rows,stp);sets.forEach((s,i)=>{if(calculated[i]>0&&stable>0)s.recommendedW=stable})
-    }else sets.forEach((s,i)=>{if(calculated[i]>0)s.recommendedW=calculated[i]});
-    ex.trainingEstimate200={e1rm:+cap.toFixed(1),sourceDate:rows[0]?.date||'',previousWeight:median(rows.map(x=>x.w).filter(x=>x>0)),mode,method:activeMethod,changeFloor:-.10,changeCeiling:.075,...(unvrslResult?{averageWeight:unvrslResult.averageWeight,averageReps:unvrslResult.averageReps,averageRpe:unvrslResult.averageRpe,recommendedAverage:unvrslResult.desiredAverage}:null)}
-   }
-   if(mode==='adaptive'){
-    if(cap>0){sets.forEach(s=>{if(s.ok||s.manualOverride||num(s.recommendedW)<=0)return;s.w=num(s.recommendedW);s.plannedW=s.w;s.baselineW=s.w;s.baselineSource='adaptive_previous_workout'});ex.weightDecision='adaptive_auto'}
-    else ex.weightDecision=sets.some(s=>num(s.plannedW)>0)?'adaptive_seed':'calibration'
-   }else ex.weightDecision='program';
+   ex.trainingEstimate200={...(ex.trainingEstimate200||{}),mode,method:activeMethod,mathOwner:'training-load-model-v258'}
   }
-  if(unresolved)return false;await harmonizeUnvrsl(cur);if(cur.trainingReadinessDone)(cur.ex||[]).forEach(ex=>(ex.set||[]).forEach(s=>{if(!s.ok&&!s.manualOverride&&num(s.plannedW)>0)s.w=todayWeight(s.plannedW,ex,cur)}));cur.trainingWeightPolicy214=ownerPlan?'recommendation':adaptive&&prescribed?'mixed':prescribed?'recommendation':'autoweight';cur.trainingEngineRevision=REV;cur.trainingEngineVersion=REV;cur.trainingPreparedAt=new Date().toISOString();cur.trainingTrace200={adaptive,prescribed,policy:cur.trainingWeightPolicy214};try{W.save?.();W.startPage?.()}catch(_){}return true
+  if(unresolved)return false;
+  if(cur.trainingReadinessDone)(cur.ex||[]).forEach(ex=>(ex.set||[]).forEach(s=>{if(!s.ok&&!s.manualOverride&&num(s.plannedW)>0)s.w=todayWeight(s.plannedW,ex,cur)}));
+  cur.trainingWeightPolicy214=ownerPlan?'recommendation':adaptive&&prescribed?'mixed':prescribed?'recommendation':'autoweight';
+  cur.trainingEngineRevision=REV;cur.trainingEngineVersion=REV;cur.trainingPreparedAt=new Date().toISOString();cur.trainingMathOwner='training-load-model-v258';cur.trainingTrace200={adaptive,prescribed,policy:cur.trainingWeightPolicy214,mathOwner:cur.trainingMathOwner};
+  try{W.save?.();if(W.trainingLoadModel258?.run)await W.trainingLoadModel258.run(true);W.startPage?.()}catch(e){console.warn('training engine v259 prepare',e)}
+  return true
  }
  function groupIndices(cur,k){const a=[];(cur.ex||[]).forEach((e,i)=>{if(key(e)===k)a.push(i)});return a}
  function fmtWeights(a){const vals=(a||[]).map(x=>num(x)).filter(x=>x>0),unique=[];vals.forEach(x=>{if(!unique.some(y=>Math.abs(y-x)<.001))unique.push(x)});if(!unique.length)return'—';return unique.map(x=>String(x).replace('.',',')).join(' / ')}
@@ -135,7 +118,7 @@
    const cur=W.st?.current;if(!cur||cur===p.before){pendingStart=p;document.documentElement?.classList?.remove('te200-preparing');return}
    captureLaunchWeights(cur);attachReadiness(cur,d,adjust);try{W.save?.();W.modal?.(preparingMarkup())}catch(_){}
    busy=true;last=String(cur.id||'');
-   try{await prepare(cur);enhanceDom()}catch(e){console.warn('v214 prepare before reveal',e);W.toast?.('Не удалось подготовить веса')}finally{busy=false;document.documentElement?.classList?.remove('te200-preparing');try{W.closeModal?.()}catch(_){}}
+   try{await prepare(cur);enhanceDom()}catch(e){console.warn('v259 prepare before reveal',e);W.toast?.('Не удалось подготовить веса')}finally{busy=false;document.documentElement?.classList?.remove('te200-preparing');try{W.closeModal?.()}catch(_){}}
    setTimeout(tick,0);return
   }
   const cur=W.st?.current;if(!cur)return;lockLegacy(cur);attachReadiness(cur,d,adjust);(cur.ex||[]).forEach(ex=>{(ex.set||[]).forEach(s=>{if(s.ok||s.manualOverride||num(s.plannedW)<=0)return;s.w=todayWeight(s.plannedW,ex,cur)})});try{W.save?.();W.startPage?.();W.closeModal?.()}catch(_){}setTimeout(enhanceDom,0);if(adjust)W.toast?.(readinessText(d).label)
@@ -160,5 +143,5 @@
  W.trainingApplyRecommendation200=applyRecommendation;W.trainingRestoreProgram200=restoreProgram;W.trainingShowReadiness200=showReadiness;W.trainingConfirmReadiness200=confirm;W.trainingUpdateReadiness200=updateReadiness;W.trainingEngine200Tick=tick;
  const oldApply=W.applySuggestion;W.applySuggestion=function(){if(W.st?.current?.id){W.toast?.(isOwnerEightWeekPlan(W.st.current)?'Используй рекомендацию над упражнением':'Автовес уже применяется автоматически');return}return typeof oldApply==='function'?oldApply.apply(this,arguments):undefined};try{applySuggestion=W.applySuggestion}catch(_){}
  installStartHooks();setInterval(tick,300);[0,80,250,700,1500,3000].forEach(t=>setTimeout(tick,t));
- W.dispatchEvent?.(new CustomEvent('unvrsl:training-engine-ready',{detail:{release:257}}));
+ W.dispatchEvent?.(new CustomEvent('unvrsl:training-engine-ready',{detail:{release:259,mathOwner:'training-load-model-v258'}}));
 })();
