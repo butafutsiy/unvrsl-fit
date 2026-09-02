@@ -87,7 +87,7 @@ async function loadCloudModules(){
  if(cloudModulesLoaded||cloudModulesLoading)return;cloudModulesLoading=true;
  try{
   if(!window.supabase)await loadExternalScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-  for(const src of ['cloud-config.js','cloud.js?v=257','auth-ux.js','auth-handoff.js','trainer-style.js','trainer.js','trainer-nav-patch.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js?v=257','client-link.js','auth-password.js','checkin.js','checkin-singleton-fix.js','offline-clients.js','offline-create-measures.js','online-progress.js','client-ui-fix.js','trainer-plan-controls.js','trainer-tap-fix.js','trainer-direct-ui.js'])await loadExternalScript(src);
+  for(const src of ['cloud-config.js','cloud.js?v=257','auth-ux.js','auth-handoff.js','trainer-style.js','trainer.js','trainer-nav-patch.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js?v=257','client-link.js','auth-password.js','checkin.js','checkin-singleton-fix.js','offline-clients.js','offline-create-measures.js','online-progress.js','client-ui-fix.js?v=259','trainer-plan-controls.js','trainer-tap-fix.js','trainer-direct-ui.js'])await loadExternalScript(src);
   cloudModulesLoaded=true;
  }catch(e){console.warn('UNVRSL cloud modules',e)}finally{cloudModulesLoading=false;window.__unvrslCloudModulesSettledV257=true;window.dispatchEvent(new CustomEvent('unvrsl:cloud-modules-settled',{detail:{loaded:cloudModulesLoaded}}))}
 }
@@ -123,6 +123,7 @@ setTimeout(()=>{
   .then(()=>loadExternalScript('trainer-self-plan-v110.js?v=257'))
   .then(()=>loadExternalScript('stats-authority-v254.js'))
   .then(()=>loadExternalScript('trainer-shell-v252.js'))
+  .then(()=>loadExternalScript('client-workout-scroll-v259.js?v=259'))
   .catch(e=>console.warn('post-load modules',e))
   .finally(()=>{window.__unvrslDynamicModulesReadyV257=true;window.dispatchEvent(new CustomEvent('unvrsl:modules-ready',{detail:{release:257}}))});
  window.__unvrslDynamicModulesPromiseV257=postChain;

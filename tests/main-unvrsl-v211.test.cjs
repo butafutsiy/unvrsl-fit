@@ -149,6 +149,35 @@ test('client workout rerender keeps the visible exercise anchored',()=>{
   assert.deepEqual(JSON.parse(JSON.stringify(moves)),[{top:600,left:0,behavior:'auto'}]);
 });
 
+test('Samsung client workout keeps native one-finger scrolling',()=>{
+  let touchMove=null,touchOptions=null;
+  const htmlClasses=new Set(),bodyClasses=new Set();
+  const makeClassList=set=>({contains:name=>set.has(name),toggle:(name,on)=>on?set.add(name):set.delete(name)});
+  const start={classList:{contains:name=>name==='active'}};
+  const modal={classList:{contains:()=>false},style:{}};
+  const sheet={style:{transform:'translate3d(0,20px,0)'}};
+  const context={
+    console,setTimeout:()=>0,MutationObserver:class{observe(){}},
+    cloud:{user:{id:'client'},profile:{role:'client'}},addEventListener:()=>{},
+    document:{
+      hidden:false,createElement:()=>({}),head:{appendChild:()=>{}},documentElement:{classList:makeClassList(htmlClasses)},body:{classList:makeClassList(bodyClasses)},
+      getElementById:id=>id==='start'?start:id==='modal'?modal:id==='sheet'?sheet:null,
+      addEventListener:(name,fn,options)=>{if(name==='touchmove'){touchMove=fn;touchOptions=options}}
+    }
+  };
+  context.window=context;
+  vm.runInNewContext(fs.readFileSync(require.resolve('../client-workout-scroll-v259.js'),'utf8'),context);
+  assert.ok(htmlClasses.has('unvrsl-client-workout-scroll-v259'));
+  assert.ok(bodyClasses.has('unvrsl-client-workout-scroll-v259'));
+  assert.deepEqual(JSON.parse(JSON.stringify(touchOptions)),{capture:true,passive:true});
+  let stopped=0,prevented=0;
+  touchMove({target:{closest:selector=>selector==='#start.page.active'},stopImmediatePropagation:()=>stopped++,preventDefault:()=>prevented++});
+  assert.equal(stopped,1);
+  assert.equal(prevented,0);
+  assert.equal(modal.style.pointerEvents,'none');
+  assert.equal(sheet.style.transform,'');
+});
+
 test('start picker opens the workout preview before beginning the session',()=>{
   const calls=[];
   const context={
