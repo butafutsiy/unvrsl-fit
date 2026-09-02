@@ -1,7 +1,8 @@
 'use strict';
 (()=>{
-  const W=window,D=document,ROOT_CLASS='unvrsl-client-workout-scroll-v266';
-  if(W.__unvrslClientWorkoutScrollV266)return;
+  const W=window,D=document,ROOT_CLASS='unvrsl-client-workout-scroll-v267';
+  if(W.__unvrslClientWorkoutScrollV267)return;
+  W.__unvrslClientWorkoutScrollV267=true;
   W.__unvrslClientWorkoutScrollV266=true;
   W.__unvrslClientWorkoutScrollV265=true;
   W.__unvrslClientWorkoutScrollV264=true;
@@ -9,13 +10,13 @@
   W.__unvrslClientWorkoutScrollV261=true;
   W.__unvrslClientWorkoutScrollV259=true;
 
-  ['259','261','263','264','265'].forEach(v=>D.getElementById(`unvrsl-client-workout-scroll-v${v}-style`)?.remove());
-  const oldClasses=['unvrsl-client-workout-scroll-v259','unvrsl-client-workout-scroll-v261','unvrsl-client-workout-scroll-v263','unvrsl-client-workout-scroll-v264','unvrsl-client-workout-scroll-v265'];
+  ['259','261','263','264','265','266'].forEach(v=>D.getElementById(`unvrsl-client-workout-scroll-v${v}-style`)?.remove());
+  const oldClasses=['unvrsl-client-workout-scroll-v259','unvrsl-client-workout-scroll-v261','unvrsl-client-workout-scroll-v263','unvrsl-client-workout-scroll-v264','unvrsl-client-workout-scroll-v265','unvrsl-client-workout-scroll-v266'];
   D.documentElement?.classList?.remove(...oldClasses);
   D.body?.classList?.remove(...oldClasses);
 
   const style=D.createElement('style');
-  style.id='unvrsl-client-workout-scroll-v266-style';
+  style.id='unvrsl-client-workout-scroll-v267-style';
   style.textContent=`
     html.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:auto!important;overscroll-behavior-y:auto!important}
     body.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:visible!important;touch-action:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch}
@@ -89,17 +90,28 @@
     return on;
   }
 
-  function patchSetUi(ei,si){
+  function setButtonState(btn,set){
+    if(!btn||!set)return;
+    btn.classList.toggle('done',!!set.ok);
+    btn.textContent=set.ok?'✓':'○';
+    btn.setAttribute('aria-pressed',set.ok?'true':'false');
+  }
+
+  function syncAllCheckButtons(){
     const cur=currentWorkout();
     if(!cur)return;
-    const ex=cur.ex?.[Number(ei)],set=ex?.set?.[Number(si)];
-    const cards=[...D.querySelectorAll('#start .exercise')];
-    const card=cards[Number(ei)];
-    const btn=card?.querySelectorAll('.check')?.[Number(si)];
-    if(btn&&set){
-      btn.classList.toggle('done',!!set.ok);
-      btn.textContent=set.ok?'✓':'○';
-    }
+    D.querySelectorAll('#start .check').forEach(btn=>{
+      const attr=btn.getAttribute('onclick')||'';
+      const m=attr.match(/toggleSet\(\s*(\d+)\s*,\s*(\d+)\s*\)/);
+      if(!m)return;
+      const set=cur.ex?.[Number(m[1])]?.set?.[Number(m[2])];
+      if(set)setButtonState(btn,set);
+    });
+  }
+
+  function patchProgress(){
+    const cur=currentWorkout();
+    if(!cur)return;
     let doneCount=0,totalCount=0;
     (cur.ex||[]).forEach(e=>(e.set||[]).forEach(s=>{totalCount++;if(s?.ok)doneCount++}));
     const pct=totalCount?Math.round(doneCount/totalCount*100):0;
@@ -110,14 +122,29 @@
     if(bar)bar.style.width=`${pct}%`;
   }
 
-  /* Set completion used to call startPage(), rebuilding the entire workout and
-     physically removing readiness/recommendation nodes for ~300-700 ms. Keep
-     the existing toggleSet behavior (including timer/toasts from wrappers), but
-     temporarily suppress only that full render. Then patch the changed button
-     and progress in-place. */
+  let clickedCheck=null;
+  D.addEventListener('click',event=>{
+    const btn=event.target?.closest?.('#start .check');
+    if(btn)clickedCheck=btn;
+  },true);
+
+  function patchSetUi(ei,si){
+    const cur=currentWorkout();
+    const set=cur?.ex?.[Number(ei)]?.set?.[Number(si)];
+    if(clickedCheck&&set)setButtonState(clickedCheck,set);
+    clickedCheck=null;
+    syncAllCheckButtons();
+    patchProgress();
+  }
+
+  /* Keep the workout DOM mounted when a set is completed. The base toggleSet
+     still handles state, timers and any wrappers, while only its full startPage
+     repaint is suppressed. Then synchronize every visible check button from
+     its real inline toggleSet(ei,si) mapping, which also works for grouped
+     UNVRSL/SLDR rows where visual card indexes differ from exercise indexes. */
   function installStableToggleSet(){
     const current=W.toggleSet;
-    if(typeof current!=='function'||current.__unvrslNoWorkoutRebuildV266)return false;
+    if(typeof current!=='function'||current.__unvrslNoWorkoutRebuildV267)return false;
     const wrapped=function(ei,si){
       const winStart=W.startPage;
       let lexicalStart=winStart;
@@ -134,7 +161,7 @@
         removeExerciseHeaderRpe();
       }
     };
-    wrapped.__unvrslNoWorkoutRebuildV266=true;
+    wrapped.__unvrslNoWorkoutRebuildV267=true;
     wrapped.__unvrslNoWorkoutRebuildBase=current;
     try{W.toggleSet=wrapped}catch(_){ }
     try{toggleSet=wrapped}catch(_){ }
