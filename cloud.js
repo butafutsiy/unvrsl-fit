@@ -1,19 +1,20 @@
 'use strict';
 const CLOUD_KEY='unvrsl-fit-cloud-config-v1';
-const cloud={client:null,user:null,profile:null,ready:false,invite:null};
+const cloud={client:null,user:null,profile:null,ready:false,invite:null,initSettled:false};
 window.cloud=cloud;
+function cloudInitSettledV257(){cloud.initSettled=true;window.__unvrslCloudInitSettledV257=true;window.dispatchEvent(new CustomEvent('unvrsl:cloud-ready',{detail:{user:!!cloud.user,role:cloud.profile?.role||null}}))}
 function cloudConfig(){let local={};try{local=JSON.parse(localStorage.getItem(CLOUD_KEY)||'{}')}catch(e){}const base=window.UNVRSL_CLOUD||{};return{url:local.url||base.url||'',anonKey:local.anonKey||base.anonKey||''}}
 function cloudConfigured(){const c=cloudConfig();return /^https:\/\//.test(c.url)&&c.anonKey.length>20}
 async function cloudInit(){
   cloud.invite=new URLSearchParams(location.search).get('invite')||null;
-  if(!cloudConfigured()||!window.supabase?.createClient){cloud.ready=false;setTimeout(()=>{if(cloud.invite)inviteNeedsCloudSheet()},500);return}
+  if(!cloudConfigured()||!window.supabase?.createClient){cloud.ready=false;setTimeout(()=>{if(cloud.invite)inviteNeedsCloudSheet()},500);cloudInitSettledV257();return}
   try{
     const c=cloudConfig();cloud.client=window.supabase.createClient(c.url,c.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});cloud.ready=true;
     const {data}=await cloud.client.auth.getSession();cloud.user=data?.session?.user||null;
     if(cloud.user)await cloudEnsureProfile();
     cloud.client.auth.onAuthStateChange(async(_event,session)=>{cloud.user=session?.user||null;cloud.profile=null;if(cloud.user)await cloudEnsureProfile();renderCloudAffordances();if(cloud.invite)showInviteSheet()});
     renderCloudAffordances();if(cloud.invite)showInviteSheet();
-  }catch(e){console.warn('UNVRSL cloud init',e);cloud.ready=false}
+  }catch(e){console.warn('UNVRSL cloud init',e);cloud.ready=false}finally{cloudInitSettledV257()}
 }
 async function cloudEnsureProfile(){if(!cloud.client||!cloud.user)return null;let {data,error}=await cloud.client.from('profiles').select('*').eq('id',cloud.user.id).maybeSingle();if(error)console.warn(error);if(!data){const display=(cloud.user.user_metadata?.full_name||cloud.user.email?.split('@')[0]||'Пользователь');const ins=await cloud.client.from('profiles').insert({id:cloud.user.id,display_name:display,role:'client'}).select().single();data=ins.data}cloud.profile=data||null;return cloud.profile}
 function cloudStatusLabel(){if(!cloudConfigured())return'Не подключено';if(!cloud.user)return'Войти';return cloud.profile?.display_name||'Аккаунт'}
@@ -43,7 +44,7 @@ if(typeof _cloudFinish==='function')window.finish=function(){const snapshot=st.c
 function inviteNeedsCloudSheet(){modal(`<div class="sheet-grabber"></div><h2>Вам отправили программу</h2><div class="muted">Чтобы принять её и синхронизировать результаты с тренером, нужно подключить облачную часть UNVRSL FIT.</div><button class="btn primary full" onclick="cloudSetupSheet()">Настроить</button>`)}
 async function showInviteSheet(){if(!cloud.invite)return;if(!cloud.ready)return inviteNeedsCloudSheet();let info=null;try{const r=await cloud.client.rpc('preview_plan_invite',{p_token:cloud.invite});info=r.data}catch(e){}const title=info?.title||'Тренировочная программа',trainer=info?.trainer||'Тренер';if(!cloud.user)return modal(`<div class="sheet-grabber"></div><h2>${esc(title)}</h2><div class="muted">${esc(trainer)} приглашает тебя добавить программу.</div><button class="btn primary full" onclick="cloudAccountSheet()">Войти и добавить</button>`);modal(`<div class="sheet-grabber"></div><h2>${esc(title)}</h2><div class="muted">Тренер: ${esc(trainer)}</div><button class="btn primary full" onclick="cloudAcceptInvite()">Добавить в мой план</button>`)}
 async function cloudAcceptInvite(){if(!cloud.user)return cloudAccountSheet();const {data,error}=await cloud.client.rpc('accept_plan_invite',{p_token:cloud.invite});if(error)return alert('Не удалось принять программу: '+error.message);if(!data)return alert('Приглашение недействительно или истекло');st.remotePlans=Array.isArray(st.remotePlans)?st.remotePlans:[];const obj={id:data.plan_id,title:data.title,version:data.version,trainer:data.trainer,trainerId:data.trainer_id,snapshot:data.snapshot};const i=st.remotePlans.findIndex(x=>x.id===obj.id);if(i>=0)st.remotePlans[i]=obj;else st.remotePlans.push(obj);save();history.replaceState({},'',location.pathname);cloud.invite=null;closeModal();render();toast('Программа добавлена')}
-setTimeout(cloudInit,0);
+setTimeout(()=>{window.__unvrslCloudInitPromiseV257=cloudInit()},0);
 
 // Crash-safe local persistence is loaded separately so completed sessions and an active workout survive app updates/reloads.
 (()=>{if(document.querySelector('script[data-unvrsl-persistence]'))return;const s=document.createElement('script');s.src='./persistence-safety.js?v=100';s.dataset.unvrslPersistence='1';document.head.appendChild(s)})();

@@ -24,7 +24,7 @@ self.addEventListener('fetch',event=>{
   // Supabase/API/CDN responses are never stored in the PWA cache.
   if(url.origin!==self.location.origin)return;
 
-  // v256 intentionally disables application response caching. This prevents
+  // v257 intentionally disables application response caching. This prevents
   // old and new UI modules from being mixed after an update.
   event.respondWith(fetch(event.request,{cache:'no-store'}))
 });

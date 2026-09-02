@@ -1,11 +1,11 @@
 'use strict';
 (()=>{
- const W=window,REV=214;
- if(W.__unvrslTrainingEngineV200)return;
+ const W=window,REV=257;
+ if(W.__unvrslTrainingEngineV257)return;
  let STATE=W.st||null;
  try{if(typeof st!=='undefined')STATE=st}catch(_){}
  if(!STATE)return;
- W.st=STATE;W.__unvrslTrainingEngineV200=true;
+ W.st=STATE;W.__unvrslTrainingEngineV257=true;W.__unvrslTrainingEngineV200=true;
  const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
  const UNVRSL=W.UNVRSL_METHOD_V211||null;
  const num=v=>N(v)??0,mean=a=>{a=(a||[]).filter(Number.isFinite);return a.length?a.reduce((s,x)=>s+x,0)/a.length:null},median=a=>{a=(a||[]).filter(Number.isFinite).sort((x,y)=>x-y);if(!a.length)return null;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2},clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -160,4 +160,5 @@
  W.trainingApplyRecommendation200=applyRecommendation;W.trainingRestoreProgram200=restoreProgram;W.trainingShowReadiness200=showReadiness;W.trainingConfirmReadiness200=confirm;W.trainingUpdateReadiness200=updateReadiness;W.trainingEngine200Tick=tick;
  const oldApply=W.applySuggestion;W.applySuggestion=function(){if(W.st?.current?.id){W.toast?.(isOwnerEightWeekPlan(W.st.current)?'Используй рекомендацию над упражнением':'Автовес уже применяется автоматически');return}return typeof oldApply==='function'?oldApply.apply(this,arguments):undefined};try{applySuggestion=W.applySuggestion}catch(_){}
  installStartHooks();setInterval(tick,300);[0,80,250,700,1500,3000].forEach(t=>setTimeout(tick,t));
+ W.dispatchEvent?.(new CustomEvent('unvrsl:training-engine-ready',{detail:{release:257}}));
 })();

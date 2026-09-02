@@ -1,6 +1,7 @@
 'use strict';
 (()=>{
-  if(window.__unvrslClientRuntimeV256||window.__unvrslClientRuntimeV255)return;
+  if(window.__unvrslClientRuntimeV257)return;
+  window.__unvrslClientRuntimeV257=true;
   window.__unvrslClientRuntimeV256=true;
   window.__unvrslClientRuntimeV255=true;
   // Cached loaders may still look for the old marker. Keep it locked so a
@@ -14,9 +15,8 @@
   let clientReady=false,clientBooting=null;
   let legacyCleanup=null;
 
-  if(!document.getElementById('client-runtime-v255-style')){
-    const style=document.createElement('style');style.id='client-runtime-v255-style';style.textContent=`
-      body.unvrsl-client #home>.client-plan-card-v255{margin-top:12px!important}
+  if(!document.getElementById('client-runtime-v257-style')){
+    const style=document.createElement('style');style.id='client-runtime-v257-style';style.textContent=`
       body.unvrsl-client #plan>.client-plan-loading-v255{min-height:180px;display:grid;align-content:center;text-align:center}
       body.unvrsl-client #plan>.client-plan-loading-v255 .title{margin-bottom:8px}
       body.unvrsl-client .client-streak-v255 .streak-meta{line-height:1.35}
@@ -29,6 +29,12 @@
   function isTrainer(){const c=cloudState();return String(c?.user?.email||'').toLowerCase()===MASTER||String(c?.profile?.role||'').toLowerCase()==='trainer'}
   function isClient(){const c=cloudState();return !!c?.user&&!isTrainer()}
   function saveState(){try{if(typeof save==='function')save()}catch(_){}}
+  function cleanClientCalendarPlans(s){
+    if(!s?.calendarPlans||typeof s.calendarPlans!=='object'||Array.isArray(s.calendarPlans))return false;
+    const active=new Set((s.programs||[]).filter(p=>p?.clientAssignmentActive).map(p=>String(p.id||''))),entries=Object.entries(s.calendarPlans);let changed=false;
+    entries.forEach(([date,entry])=>{if(entry?.kind==='builtin'||(entry?.kind==='program'&&!active.has(String(entry.programId||'')))){delete s.calendarPlans[date];changed=true}});
+    return changed
+  }
 
   function isLegacyWeight(x){
     return String(x?.d||x?.measure_date||'').slice(0,10)===LEGACY_WEIGHT_DATE&&Number(x?.w??x?.weight_kg)===LEGACY_WEIGHT_VALUE
@@ -73,7 +79,7 @@
   window.unvrslCleanupLegacyClientWeightV236=cleanupLegacyClientWeight;
 
   function script(src){
-    if(window.unvrslScriptRetiredV256?.(src)||window.unvrslScriptRetiredV255?.(src)||window.unvrslScriptRetiredV254?.(src)||window.unvrslScriptRetiredV253?.(src))return Promise.resolve({retired:true,src});
+    if(window.unvrslScriptRetiredV257?.(src)||window.unvrslScriptRetiredV256?.(src)||window.unvrslScriptRetiredV255?.(src)||window.unvrslScriptRetiredV254?.(src)||window.unvrslScriptRetiredV253?.(src))return Promise.resolve({retired:true,src});
     if(loaded.has(src)||document.querySelector(`script[src="${src}"],script[src="./${src}"]`))return Promise.resolve();
     loaded.add(src);
     return new Promise(resolve=>{const s=document.createElement('script');s.src=src;s.async=false;s.dataset.clientFinal='1';s.onload=resolve;s.onerror=resolve;document.body.appendChild(s)});
@@ -104,6 +110,7 @@
       });
       // A client may keep local history, but only active trainer assignments are eligible for Plan/Start.
       s.programs.forEach(p=>{if(p?.cloudPlanId&&p?.trainerId)p.clientAssignmentActive=active.has(String(p.cloudPlanId))});
+      cleanClientCalendarPlans(s);
       saveState();
     }catch(e){console.warn('client assignment hydrate v222',e)}
   }
@@ -137,7 +144,7 @@
     const weekDone=sessions.filter(x=>{const d=new Date(`${String(x?.date||'').slice(0,10)}T12:00:00`);return d>=monday&&d<end}).length;
     let planned=0;for(let i=0;i<7;i++){const d=new Date(monday);d.setDate(d.getDate()+i);if(planForDate(d))planned++}
     let streak=0;try{streak=typeof window.streakWeeks==='function'?window.streakWeeks():0}catch(_){}
-    return `<div class="card streak client-streak-v255"><div class="fire">🔥</div><div class="grow"><b>серия: ${streak} нед.</b><div class="streak-meta">${weekDone} / ${planned} на этой неделе · всего тренировок: ${sessions.length}</div></div><button onclick="nav('plan')" style="font-size:28px" aria-label="Открыть план">▣</button></div>`
+    return `<div class="card streak client-streak-v255"><div class="fire">🔥</div><div class="grow"><b>серия: ${streak} нед.</b><div class="streak-meta">${weekDone} / ${planned} на этой неделе · всего тренировок: ${sessions.length}</div></div></div>`
   }
   function refreshClientHomeExtras(){
     if(!isClient()||!document.getElementById('home')?.classList.contains('active'))return;
@@ -145,19 +152,25 @@
     try{if(typeof window.homeProgressRefresh==='function')window.homeProgressRefresh(false)}catch(_){ }
     try{window.calendarPlannerDecorateV234?.()}catch(_){ }
   }
+  async function settleClientHome(){
+    if(!document.getElementById('home')?.classList.contains('active'))return;
+    const tasks=[];
+    try{if(typeof window.renderClientCheckinCard==='function')tasks.push(Promise.resolve(window.renderClientCheckinCard()))}catch(_){ }
+    try{if(typeof window.homeProgressRefresh==='function')tasks.push(Promise.resolve(window.homeProgressRefresh(true)))}catch(_){ }
+    await Promise.allSettled(tasks);try{window.calendarPlannerDecorateV234?.()}catch(_){ }
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))
+  }
   function renderCanonicalClientHome(){
     if(!isClient())return;
     document.body?.classList.add('unvrsl-client');
     const root=document.getElementById('home');if(!root)return;
-    const p=assigned()[0];
-    const s=appState(),signature=JSON.stringify([String(cloudState()?.user?.id||''),String(p?.id||''),String(p?.name||''),p?.weeks?.length||0,isoDay(mondayFor(currentViewDate())),s.sessions?.length||0,s.calendarPlans||{}]);
-    if(root.dataset.clientHomeSignature===signature&&root.querySelector('.client-plan-card-v255')&&root.querySelector('.calendar-card')){
+    const s=appState(),signature=JSON.stringify([String(cloudState()?.user?.id||''),isoDay(mondayFor(currentViewDate())),s.sessions?.length||0,s.calendarPlans||{}]);
+    if(root.dataset.clientHomeSignatureV257===signature&&root.querySelector('.calendar-card')){
       refreshClientHomeExtras();return;
     }
     const y=root.classList.contains('active')?(window.scrollY||document.documentElement?.scrollTop||0):0;
-    const plan=p?`<div class="title" style="margin-top:6px">${esc2(p.name||'Тренировочная программа')}</div><div class="muted" style="margin-top:6px">${p.weeks?.length||0} нед. · тренер: ${esc2(p.trainerName||'назначен')}</div><button class="btn primary full" style="margin-top:16px" onclick="nav('plan')">Открыть план</button>`:'<div class="title" style="margin-top:6px">План пока не назначен</div><div class="muted" style="margin-top:8px">Когда тренер назначит программу, она появится здесь автоматически.</div>';
-    root.innerHTML=`${clientCalendarHtml()}<div class="card client-plan-card-v255"><div class="muted">МОЙ ПЛАН</div>${plan}</div>${clientStreakHtml()}`;
-    root.dataset.clientHomeSignature=signature;
+    root.innerHTML=`${clientCalendarHtml()}${clientStreakHtml()}`;
+    root.dataset.clientHomeSignatureV257=signature;
     if(y>0)window.scrollTo({top:y,left:0,behavior:'auto'});
     [0,160,700].forEach(t=>setTimeout(refreshClientHomeExtras,t));
   }
@@ -171,7 +184,7 @@
       wrapped.__clientHomeAuthorityV255=true;window.home=wrapped;try{home=wrapped}catch(_){ }
     }
     const root=document.getElementById('home');
-    if(root?.classList.contains('active')&&!root.querySelector('.client-plan-card-v255'))renderCanonicalClientHome();
+    if(root?.classList.contains('active')&&!root.querySelector('.calendar-card'))renderCanonicalClientHome();
   }
   function canonicalClientPlan(){
     if(!isClient())return;
@@ -229,15 +242,17 @@
     clientBooting=(async()=>{
       await cleanupLegacyClientWeight();
       await hydrateAssignments();
-      await script('client-program-picker.js?v=256');
-      await script('client-journal-profile-v107.js?v=256');
+      await script('client-program-picker.js?v=257');
+      await script('client-journal-profile-v107.js?v=257');
       installPlanGuard();installSettings();installCanonicalClientHome();
-      clientReady=true;document.body?.classList.add('client-runtime-ready-v255','client-runtime-ready-v256');
       if(document.getElementById('plan')?.classList.contains('active'))canonicalClientPlan();
       if(document.getElementById('home')?.classList.contains('active'))renderCanonicalClientHome();
+      await settleClientHome();
+      clientReady=true;document.body?.classList.add('client-runtime-ready-v255','client-runtime-ready-v256','client-runtime-ready-v257');
       setTimeout(()=>window.clientPlanHistoryRefresh107?.(),0);
+      window.dispatchEvent(new CustomEvent('unvrsl:client-ready',{detail:{release:257}}));
       return true;
-    })().catch(e=>{console.warn('client runtime v255',e);return false}).finally(()=>{clientBooting=null});
+    })().catch(e=>{console.warn('client runtime v257',e);return false}).finally(()=>{window.__unvrslClientRuntimeSettledV257=true;window.dispatchEvent(new CustomEvent('unvrsl:client-settled',{detail:{ready:clientReady}}));clientBooting=null});
     return clientBooting;
   }
 

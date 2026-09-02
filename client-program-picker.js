@@ -1,14 +1,16 @@
 'use strict';
 (()=>{
-  if(window.__unvrslClientProgramPicker)return;window.__unvrslClientProgramPicker=true;
+  if(window.__unvrslClientProgramPickerV257)return;window.__unvrslClientProgramPickerV257=true;window.__unvrslClientProgramPicker=true;
 
   const style=document.createElement('style');style.id='client-program-picker-style';style.textContent=`
     .client-program-strip{display:flex;gap:10px;overflow-x:auto;padding:2px 1px 10px;scrollbar-width:none}.client-program-strip::-webkit-scrollbar{display:none}
     .client-program-choice{min-width:215px;flex:0 0 auto;text-align:left;background:#1f1f22;border:1px solid #35353a;border-radius:20px;padding:14px 15px}
     .client-program-choice.on{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset;background:#20272a}
     .client-program-choice b{display:block;font-size:16px;line-height:1.2}.client-program-choice span{display:block;color:#8e8e93;font-size:12px;margin-top:5px}
-    .client-program-badge{display:inline-flex!important;width:auto!important;padding:4px 8px;border-radius:999px;background:#2c2c30;color:#a8a8ad!important;font-size:10px!important;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin:0 0 7px!important}
+    .client-program-badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}.client-program-badge{display:inline-flex!important;width:auto!important;padding:4px 8px;border-radius:999px;background:#2c2c30;color:#a8a8ad!important;font-size:10px!important;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin:0!important}
     .client-program-badge.primary{background:rgba(48,209,88,.14);color:#30d158!important}
+    .client-program-badge.autoweight{background:rgba(10,132,255,.16);color:#64b5ff!important}.client-program-badge.prescribed{background:rgba(255,159,10,.14);color:#ffb340!important}.client-program-badge.mixed{background:rgba(191,90,242,.14);color:#d89cff!important}
+    .client-program-group+.client-program-group{margin-top:4px}.client-program-group>.section{margin-top:16px}.client-plan-weight-note{margin-top:6px;line-height:1.4}.client-plan-mode{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
     .client-plan-day{padding:15px 0;border-bottom:1px solid #303034}.client-plan-day:last-child{border-bottom:0}
     .client-plan-head{margin-bottom:12px}.client-plan-primary-actions{display:flex;gap:8px;margin:8px 0 12px}.client-plan-primary-actions .btn{flex:1}
     .client-plan-profile-actions-v255{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}
@@ -82,6 +84,14 @@
     });
     const seen=new Set();return out.filter(x=>{if(seen.has(x.key))return false;seen.add(x.key);return true});
   }
+  function weightInfo(program){
+    const classify=window.unvrslProgramWeightLabelV257;
+    return typeof classify==='function'?classify(program):{group:'autoweight',mode:'autoweight',badge:'Автовес',detail:'Вес рассчитывается автоматически'}
+  }
+  function badges(program,primary=false){
+    const info=weightInfo(program);
+    return `<span class="client-program-badges">${primary?'<span class="client-program-badge primary">Основная</span>':''}<span class="client-program-badge ${info.mode}">${escx(info.badge)}</span></span>`
+  }
   function ensurePrimary(){
     const ps=allClientPrograms();
     if(!ps.length){delete st.clientPrimaryProgramKey;delete st.clientPlanViewKey;return null}
@@ -115,7 +125,7 @@
     }
     const primary=ensurePrimary();let p=findProgram(picker.key)||primary;if(!p)p=ps[0];picker.key=p.key;
     const w=Math.max(1,Math.min(weekCount(p),picker.week||savedWeek(p)));picker.week=w;
-    const cards=ps.map(x=>`<button class="client-program-choice ${x.key===p.key?'on':''}" onclick="clientSelectStartProgram('${encodeURIComponent(x.key)}')"><span class="client-program-badge ${x.key===primary?.key?'primary':''}">${x.key===primary?.key?'Основная':'Программа'}</span><b>${escx(x.name)}</b><span>${weekCount(x)} нед.</span></button>`).join('');
+    const cards=ps.map(x=>`<button class="client-program-choice ${x.key===p.key?'on':''}" onclick="clientSelectStartProgram('${encodeURIComponent(x.key)}')">${badges(x,x.key===primary?.key)}<b>${escx(x.name)}</b><span>${weekCount(x)} нед. · ${escx(weightInfo(x).detail)}</span></button>`).join('');
     const weeks=Array.from({length:weekCount(p)},(_,i)=>i+1).map(n=>`<button class="weekbtn ${n===w?'on':''}" onclick="clientSelectStartWeek(${n})">W${n}</button>`).join('');
     const days=weekDays(p,w-1).map((d,di)=>`<div class="client-plan-day row between"><div class="grow"><b>${escx(d.name)}</b><div class="muted small">RPE ${d.rpe} · ${d.count} упражнений</div></div><button class="btn tiny primary" data-client-start-day="${di}">Старт</button></div>`).join('')||'<div class="card muted">В этой неделе тренировок нет.</div>';
     const html=`<div class="row between"><h2>Выбрать тренировку</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="section" style="margin-top:16px">ПРОГРАММА</div><div class="client-program-strip">${cards}</div><div class="muted small" style="margin:4px 0 9px">Выбрано: <b style="color:var(--text)">${escx(p.name)}</b></div><div id="clientPickerWeeks" class="weekbar">${weeks}</div><div id="clientPickerDays">${days}</div>`;
@@ -159,9 +169,12 @@
     }
     const primary=ensurePrimary();let p=findProgram(st.clientPlanViewKey)||primary||ps[0];st.clientPlanViewKey=p.key;
     const w=savedWeek(p),days=weekDays(p,w-1);
-    const cards=ps.map(x=>`<button class="client-program-choice ${x.key===p.key?'on':''}" onclick="clientPlanSelectProgram('${encodeURIComponent(x.key)}')"><span class="client-program-badge ${x.key===primary?.key?'primary':''}">${x.key===primary?.key?'Основная':'Программа'}</span><b>${escx(x.name)}</b><span>${weekCount(x)} нед.</span></button>`).join('');
+    const card=x=>`<button class="client-program-choice ${x.key===p.key?'on':''}" onclick="clientPlanSelectProgram('${encodeURIComponent(x.key)}')">${badges(x,x.key===primary?.key)}<b>${escx(x.name)}</b><span>${weekCount(x)} нед. · ${escx(weightInfo(x).detail)}</span></button>`;
+    const fixed=ps.filter(x=>weightInfo(x).group==='prescribed'),automatic=ps.filter(x=>weightInfo(x).group==='autoweight');
+    const programGroups=`${fixed.length?`<div class="client-program-group"><div class="section">С ЗАДАННЫМИ ВЕСАМИ</div><div class="client-program-strip">${fixed.map(card).join('')}</div></div>`:''}${automatic.length?`<div class="client-program-group"><div class="section">АВТОВЕС</div><div class="client-program-strip">${automatic.map(card).join('')}</div></div>`:''}`;
     const weeks=Array.from({length:weekCount(p)},(_,i)=>i+1).map(n=>`<button class="weekbtn ${n===w?'on':''}" onclick="clientPlanSelectWeek(${n})">W${n}</button>`).join('');
-    root.innerHTML=`${profile}<div class="section">МОИ ПРОГРАММЫ</div><div class="client-program-strip">${cards}</div><div class="card client-plan-head"><div class="row between"><div class="grow"><div class="muted small">${p.key===primary?.key?'ОСНОВНАЯ ПРОГРАММА':'ВЫБРАННАЯ ПРОГРАММА'}</div><div class="title" style="margin-top:5px">${escx(p.name)}</div></div>${p.key===primary?.key?'<span class="chip green">Основная</span>':''}</div>${p.key!==primary?.key?`<div class="client-plan-primary-actions"><button class="btn" onclick="setClientPrimaryProgram('${encodeURIComponent(p.key)}')">Сделать основной</button></div>`:''}</div><div class="section">ТРЕНИРОВОЧНЫЙ ЦИКЛ</div><div id="clientPlanWeeks" class="weekbar">${weeks}</div><div class="card"><div class="title">Неделя ${w}</div></div>${days.map((d,di)=>`<div class="card routine client-plan-day"><div class="row between"><div class="grow"><h3>${escx(d.name)}</h3><div class="chips"><span class="chip">${d.count} упражнений</span><span class="chip">RPE ${d.rpe}</span></div></div><button class="btn primary" data-client-plan-start="${di}">Старт</button></div></div>`).join('')||'<div class="card muted">В этой неделе тренировок нет.</div>'}`;
+    const selectedWeight=weightInfo(p);
+    root.innerHTML=`${profile}${programGroups}<div class="card client-plan-head"><div class="row between"><div class="grow"><div class="muted small">${p.key===primary?.key?'ОСНОВНАЯ ПРОГРАММА':'ВЫБРАННАЯ ПРОГРАММА'}</div><div class="title" style="margin-top:5px">${escx(p.name)}</div><div class="muted small client-plan-weight-note">${escx(selectedWeight.detail)}</div></div><div class="client-plan-mode">${p.key===primary?.key?'<span class="chip green">Основная</span>':''}<span class="chip">${escx(selectedWeight.badge)}</span></div></div>${p.key!==primary?.key?`<div class="client-plan-primary-actions"><button class="btn" onclick="setClientPrimaryProgram('${encodeURIComponent(p.key)}')">Сделать основной</button></div>`:''}</div><div class="section">ТРЕНИРОВОЧНЫЙ ЦИКЛ</div><div id="clientPlanWeeks" class="weekbar">${weeks}</div><div class="card"><div class="title">Неделя ${w}</div></div>${days.map((d,di)=>`<div class="card routine client-plan-day"><div class="row between"><div class="grow"><h3>${escx(d.name)}</h3><div class="chips"><span class="chip">${d.count} упражнений</span><span class="chip">RPE ${d.rpe}</span></div></div><button class="btn primary" data-client-plan-start="${di}">Старт</button></div></div>`).join('')||'<div class="card muted">В этой неделе тренировок нет.</div>'}`;
     root.querySelectorAll('[data-client-plan-start]').forEach(btn=>btn.onclick=()=>{const d=weekDays(p,w-1)[Number(btn.dataset.clientPlanStart)];if(d)d.start()});
     finishPlanRender(root);
   }

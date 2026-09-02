@@ -1,6 +1,7 @@
 'use strict';
 (()=>{
-  if(window.__unvrslCalendarPlannerV234)return;
+  if(window.__unvrslCalendarPlannerV257)return;
+  window.__unvrslCalendarPlannerV257=true;
   window.__unvrslCalendarPlannerV234=true;
   const W=window,BUILTIN='__builtin_cycle__',ui={date:null,pid:null,week:1};
   const S=()=>{try{return typeof st!=='undefined'?st:W.st}catch(_){return W.st}};
@@ -55,18 +56,20 @@
   function normalized(entry,key){
     if(!entry||entry.removed)return null;
     if(entry.kind==='builtin'){
+      if(clientMode())return null;
       const r=routines().find(x=>Number(x.w)===Number(entry.week)&&String(x.c)===String(entry.code));
       return r?{...r,__calendar:{kind:'builtin',source:'manual',date:key,week:Number(entry.week),code:String(entry.code)}}:null
     }
     if(entry.kind==='program'){
       const p=programById(entry.programId),d=p?.weeks?.[Number(entry.weekIndex)]?.days?.[Number(entry.dayIndex)];
-      return p&&d?{w:Number(entry.weekIndex)+1,c:d.name||`День ${Number(entry.dayIndex)+1}`,t:p.name||'Программа',e:d.ex||[],__calendar:{kind:'program',source:'manual',date:key,programId:String(p.id),weekIndex:Number(entry.weekIndex),dayIndex:Number(entry.dayIndex)}}:null
+      return p&&d&&activeAssignment(p)?{w:Number(entry.weekIndex)+1,c:d.name||`День ${Number(entry.dayIndex)+1}`,t:p.name||'Программа',e:d.ex||[],__calendar:{kind:'program',source:'manual',date:key,programId:String(p.id),weekIndex:Number(entry.weekIndex),dayIndex:Number(entry.dayIndex)}}:null
     }
     return null
   }
   function planForDate(value){
     const key=dateKey(value),entry=entryFor(key);
     if(entry)return normalized(entry,key);
+    if(clientMode())return null;
     const base=originalFor(dateValue(key));
     return base?{...base,__calendar:{kind:'builtin',source:'cycle',date:key,week:Number(base.w),code:String(base.c)}}:null
   }
@@ -87,7 +90,7 @@
   W.calendarPlannerPreviewDateV234=token=>previewPlan(planForDate(decodeURIComponent(String(token||''))));
 
   W.calendarPlannerOpenDayV234=token=>{
-    const key=decodeURIComponent(String(token||'')),plan=planForDate(key),entry=entryFor(key),base=originalFor(dateValue(key)),completed=(S().sessions||[]).filter(s=>String(s?.date||'').slice(0,10)===key).length;
+    const key=decodeURIComponent(String(token||'')),plan=planForDate(key),entry=entryFor(key),base=clientMode()?null:originalFor(dateValue(key)),completed=(S().sessions||[]).filter(s=>String(s?.date||'').slice(0,10)===key).length;
     const planHtml=plan?`<div class="cp234-card"><div class="cp234-kicker">${plan.__calendar?.source==='cycle'?'По тренировочному циклу':'Добавлено вручную'}</div><div class="cp234-title">${escx(planTitle(plan))}</div><div class="cp234-meta">${plan.w?`Неделя ${plan.w}`:'Запланировано'}${completed?` · выполнено: ${completed}`:''}</div><div class="cp234-actions"><button class="btn primary" onclick="calendarPlannerPreviewDateV234('${encodeURIComponent(key)}')">Посмотреть</button><button class="btn cp234-danger" onclick="calendarPlannerDeleteV234('${encodeURIComponent(key)}')">Удалить</button></div></div>`:`<div class="cp234-card"><div class="cp234-kicker">Свободный день</div><div class="cp234-title">Тренировка не запланирована</div>${completed?`<div class="cp234-meta">Выполненных тренировок: ${completed}</div>`:''}</div>`;
     const restore=base&&entry?`<button class="btn full" style="margin-top:9px" onclick="calendarPlannerRestoreV234('${encodeURIComponent(key)}')">Вернуть по тренировочному циклу</button>`:'';
     W.modal?.(`<div class="sheet-grabber"></div><div class="cp234-head"><div><h2>${escx(dateTitle(key))}</h2><div class="muted">Планирование тренировки</div></div><button class="btn cp234-close" onclick="closeModal()">×</button></div>${planHtml}<button class="btn primary full" style="margin-top:12px" onclick="calendarPlannerAddV234('${encodeURIComponent(key)}')">${plan?'Изменить тренировку':'＋ Добавить тренировку'}</button>${restore}`)
@@ -102,7 +105,7 @@
   W.calendarPlannerRestoreV234=token=>{const key=decodeURIComponent(String(token||''));delete calendar()[key];refresh();W.closeModal?.();W.toast?.('План тренировки восстановлен')};
 
   function defaultWeek(p,key){
-    if(p?.builtin){const base=originalFor(dateValue(key));return Math.max(1,Math.min(8,Number(base?.w||S().week||1)))}
+    if(p?.builtin){const base=clientMode()?null:originalFor(dateValue(key));return Math.max(1,Math.min(8,Number(base?.w||S().week||1)))}
     const saved=Number(S().primaryProgramWeeks?.[p.id]||S().startProgramWeeks?.[p.id]||1);return Math.max(1,Math.min(p?.weeks||1,saved||1))
   }
   function pickerMarkup(){
@@ -118,7 +121,7 @@
   W.calendarPlannerAddV234=token=>{ui.date=decodeURIComponent(String(token||''));const ps=programs(),entry=entryFor(ui.date);ui.pid=entry?.kind==='program'?String(entry.programId):entry?.kind==='builtin'?BUILTIN:String(S().primaryProgramId||'');const p=ps.find(x=>x.id===ui.pid)||ps[0];ui.week=entry?.kind==='program'?Number(entry.weekIndex)+1:entry?.kind==='builtin'?Number(entry.week):defaultWeek(p,ui.date);renderPicker()};
   W.calendarPlannerChooseProgramV234=token=>{ui.pid=decodeURIComponent(String(token||''));ui.week=defaultWeek(programs().find(x=>x.id===ui.pid),ui.date);renderPicker()};
   W.calendarPlannerChooseWeekV234=week=>{ui.week=Number(week)||1;renderPicker()};
-  W.calendarPlannerAssignBuiltinV234=(week,token)=>{const key=ui.date,code=decodeURIComponent(String(token||''));calendar()[key]={kind:'builtin',week:Number(week),code,updatedAt:Date.now()};refresh();W.closeModal?.();W.toast?.('Тренировка добавлена в календарь')};
+  W.calendarPlannerAssignBuiltinV234=(week,token)=>{if(clientMode())return;const key=ui.date,code=decodeURIComponent(String(token||''));calendar()[key]={kind:'builtin',week:Number(week),code,updatedAt:Date.now()};refresh();W.closeModal?.();W.toast?.('Тренировка добавлена в календарь')};
   W.calendarPlannerAssignProgramV234=(token,weekIndex,dayIndex)=>{const key=ui.date,pid=decodeURIComponent(String(token||''));calendar()[key]={kind:'program',programId:pid,weekIndex:Number(weekIndex),dayIndex:Number(dayIndex),updatedAt:Date.now()};refresh();W.closeModal?.();W.toast?.('Тренировка добавлена в календарь')};
 
   function decorate(){

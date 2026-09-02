@@ -7,14 +7,17 @@ const path=require('node:path');
 const root=path.join(__dirname,'..');
 const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 
-test('startup has one static owner and never reloads the page',()=>{
-  const html=read('index.html'),style=read('og-style.js'),retirement=read('legacy-retirement-v256.js');
-  assert.equal((html.match(/id="unvrsl-startup-v256"/g)||[]).length,1);
-  assert.equal((html.match(/id="unvrsl-startup-v256-style"/g)||[]).length,1);
-  assert.match(html,/og-style\.js\?v=256/);
+test('startup has one static owner and waits for the complete application',()=>{
+  const html=read('index.html'),style=read('og-style.js'),retirement=read('legacy-retirement-v257.js');
+  assert.equal((html.match(/id="unvrsl-startup-v257"/g)||[]).length,1);
+  assert.equal((html.match(/id="unvrsl-startup-v257-style"/g)||[]).length,1);
+  assert.match(html,/og-style\.js\?v=257/);
   assert.doesNotMatch(html,/controllerchange|location\.reload\(\)/);
   assert.doesNotMatch(style,/new MutationObserver|unvrslFinalPulse|createElement\('div'\)/);
-  assert.match(style,/setTimeout\(release,1800\)/);
+  assert.match(style,/__unvrslDynamicModulesReadyV257/);
+  assert.match(style,/__unvrslReadinessStackReadyV257/);
+  assert.match(style,/client-runtime-ready-v257/);
+  assert.match(style,/release\('timeout'\)/);
   assert.match(retirement,/unvrsl-startup-splash-final/);
 });
 
@@ -28,7 +31,7 @@ test('trainer Plan owns its old journal style and renders only on demand',()=>{
   assert.doesNotMatch(trainer,/\[200,700,1600,3000[^\n]*renderSelf/);
   const adaptive=loader.indexOf("loadExternalScript('adaptive-effort-v2.js')");
   const cardio=loader.indexOf("loadExternalScript('cardio-exercise-library.js')");
-  const owner=loader.indexOf("loadExternalScript('trainer-self-plan-v110.js?v=256')");
+  const owner=loader.indexOf("loadExternalScript('trainer-self-plan-v110.js?v=257')");
   const stats=loader.indexOf("loadExternalScript('stats-authority-v254.js')");
   assert.ok(adaptive>=0&&cardio>adaptive&&owner>cardio&&stats>owner);
   assert.equal((loader.match(/trainer-self-plan-v110\.js/g)||[]).length,1);

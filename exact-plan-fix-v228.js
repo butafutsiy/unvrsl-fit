@@ -1,6 +1,7 @@
 'use strict';
 (()=>{
-  if(window.__unvrslExactPlanFixV230)return;
+  if(window.__unvrslExactPlanFixV257)return;
+  window.__unvrslExactPlanFixV257=true;
   window.__unvrslExactPlanFixV230=true;
   const W=window;
   const n=v=>{const x=Number(v);return Number.isFinite(x)?x:0};
@@ -75,16 +76,18 @@
   function restoreFallback(cur){
     let changed=0;
     (cur.ex||[]).forEach(ex=>{
+      if(ex?.programWeightMode==='adaptive')return;
       let hasPlan=false;
       (ex.set||[]).forEach(s=>{
         if(!s||s.ok||s.manualOverride)return;
-        const program=n(s.programW),launch=s.launchWeightCaptured206?n(s.launchW):0,plan=program>0?program:(launch>0?launch:(n(s.plannedW)||n(s.baselineW)||n(s.w)));
-        if(plan>0){s.programW=program>0?program:plan;s.plannedW=plan;s.baselineW=plan;s.w=plan;s.baselineSource='program_fallback';hasPlan=true;changed++}
+        const program=n(s.programW);
+        if(program>0){s.plannedW=program;s.baselineW=program;s.w=program;s.baselineSource='program_fallback';hasPlan=true;changed++}
       });
       if(hasPlan){ex.weightDecision='program';ex.programWeightMode='prescribed'}
     });
     return changed;
   }
+  W.unvrslRestoreExactPlanV257=restore;
 
   function restore(cur){
     if(!cur)return false;

@@ -49,9 +49,9 @@ if(typeof _modeQuick==='function')window.quick=function(){if(unvrslTrainerMode()
 
 function clientCleanHome(){
   const root=$('#home');if(!root)return;
-  const ps=assignedClientPrograms(),p=ps[0],w=latestW();
+  const w=latestW();
   if(!cloud?.user){root.innerHTML=`<div class="card"><div class="muted">UNVRSL FIT</div><div class="title" style="margin-top:6px">Твои тренировки — только твои</div><div class="muted" style="margin-top:8px">Войди в аккаунт. До назначения тренером здесь не будет чужих или демонстрационных программ.</div><button class="btn primary full" style="margin-top:16px" onclick="cloudAccountSheet()">Войти</button></div>`;return}
-  root.innerHTML=`<div class="card"><div class="muted">МОЙ ПЛАН</div>${p?`<div class="title" style="margin-top:6px">${esc(p.name)}</div><div class="muted" style="margin-top:6px">${p.weeks?.length||0} нед. · тренер: ${esc(p.trainerName||'назначен')}</div><button class="btn primary full" style="margin-top:16px" onclick="openClientProgram('${p.id}')">Открыть план</button>`:`<div class="title" style="margin-top:6px">План пока не назначен</div><div class="muted" style="margin-top:8px">Когда тренер отправит программу, она появится здесь автоматически.</div>`}</div><div class="card"><div class="weight-top"><div><div class="muted">Вес тела</div><div class="big">${w??'—'}${w?' <span class="muted" style="font-size:20px">кг</span>':''}</div></div><div class="weight-actions"><button onclick="weight()">＋ Записать</button></div></div>${weightChart(true)}</div><div class="card"><div class="row between"><div><div class="muted">Выполнено тренировок</div><div class="title">${st.sessions?.length||0}</div></div><button class="btn" onclick="nav('stats')">Статистика</button></div></div>`;
+  root.innerHTML=`<div class="card"><div class="weight-top"><div><div class="muted">Вес тела</div><div class="big">${w??'—'}${w?' <span class="muted" style="font-size:20px">кг</span>':''}</div></div><div class="weight-actions"><button onclick="weight()">＋ Записать</button></div></div>${weightChart(true)}</div><div class="card"><div class="row between"><div><div class="muted">Выполнено тренировок</div><div class="title">${st.sessions?.length||0}</div></div><button class="btn" onclick="nav('stats')">Статистика</button></div></div>`;
 }
 
 function clientCleanPlanPage(){
