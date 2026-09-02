@@ -1,7 +1,5 @@
 'use strict';
 let unvrslDurationTimer=null;
-let unvrslDurationObserver=null;
-let unvrslDurationRenderQueued=false;
 
 function unvrslDurationText(ms){
   const total=Math.max(0,Math.floor((Number(ms)||0)/1000));
@@ -38,15 +36,6 @@ function unvrslRenderWorkoutDuration(){
   if(el)el.textContent=unvrslDurationText(unvrslWorkoutDuration(session));
 }
 
-function unvrslQueueDurationRender(){
-  if(unvrslDurationRenderQueued)return;
-  unvrslDurationRenderQueued=true;
-  queueMicrotask(()=>{
-    unvrslDurationRenderQueued=false;
-    unvrslRenderWorkoutDuration();
-  });
-}
-
 function unvrslStartDurationTimer(){
   if(unvrslDurationTimer)clearInterval(unvrslDurationTimer);
   unvrslRenderWorkoutDuration();
@@ -54,27 +43,15 @@ function unvrslStartDurationTimer(){
 }
 
 const _durationStartPage=window.startPage;
-if(typeof _durationStartPage==='function'&&!_durationStartPage.__durationStable){
+if(typeof _durationStartPage==='function'&&!_durationStartPage.__durationStableSafe){
   const wrapped=function(){
     const r=_durationStartPage.apply(this,arguments);
-    // Restore in the same JS turn, before the browser paints the rebuilt page.
     unvrslRenderWorkoutDuration();
-    unvrslQueueDurationRender();
     return r;
   };
-  wrapped.__durationStable=true;
+  wrapped.__durationStableSafe=true;
   window.startPage=wrapped;
   try{startPage=wrapped}catch(e){}
-}
-
-function unvrslObserveDuration(){
-  const root=document.getElementById('start');
-  if(!root||typeof MutationObserver!=='function')return;
-  unvrslDurationObserver?.disconnect();
-  unvrslDurationObserver=new MutationObserver(()=>{
-    if((typeof st==='object'?st.current:window.st?.current)&&root.classList.contains('active'))unvrslQueueDurationRender();
-  });
-  unvrslDurationObserver.observe(root,{childList:true,subtree:true});
 }
 
 const _durationSummary=window.summary;
@@ -95,7 +72,6 @@ if(typeof _durationSummary==='function')window.summary=function(session){
 
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)unvrslRenderWorkoutDuration()});
 window.addEventListener('focus',unvrslRenderWorkoutDuration);
-unvrslObserveDuration();
 unvrslStartDurationTimer();
 
 // Rest timer UI is kept separate so the workout-duration clock and the
