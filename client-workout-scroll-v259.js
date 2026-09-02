@@ -1,18 +1,20 @@
 'use strict';
 (()=>{
-  const W=window,D=document,ROOT_CLASS='unvrsl-client-workout-scroll-v263';
-  if(W.__unvrslClientWorkoutScrollV263)return;
+  const W=window,D=document,ROOT_CLASS='unvrsl-client-workout-scroll-v264';
+  if(W.__unvrslClientWorkoutScrollV264)return;
+  W.__unvrslClientWorkoutScrollV264=true;
   W.__unvrslClientWorkoutScrollV263=true;
   W.__unvrslClientWorkoutScrollV261=true;
   W.__unvrslClientWorkoutScrollV259=true;
 
   D.getElementById('unvrsl-client-workout-scroll-v259-style')?.remove();
   D.getElementById('unvrsl-client-workout-scroll-v261-style')?.remove();
-  D.documentElement?.classList?.remove('unvrsl-client-workout-scroll-v259','unvrsl-client-workout-scroll-v261');
-  D.body?.classList?.remove('unvrsl-client-workout-scroll-v259','unvrsl-client-workout-scroll-v261');
+  D.getElementById('unvrsl-client-workout-scroll-v263-style')?.remove();
+  D.documentElement?.classList?.remove('unvrsl-client-workout-scroll-v259','unvrsl-client-workout-scroll-v261','unvrsl-client-workout-scroll-v263');
+  D.body?.classList?.remove('unvrsl-client-workout-scroll-v259','unvrsl-client-workout-scroll-v261','unvrsl-client-workout-scroll-v263');
 
   const style=D.createElement('style');
-  style.id='unvrsl-client-workout-scroll-v263-style';
+  style.id='unvrsl-client-workout-scroll-v264-style';
   style.textContent=`
     html.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:auto!important;overscroll-behavior-y:auto!important}
     body.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:visible!important;touch-action:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch}
@@ -21,7 +23,13 @@
     body.${ROOT_CLASS} #timer.show{touch-action:auto!important}
     body.${ROOT_CLASS} #modal:not(.show){display:none!important;pointer-events:none!important}
 
-    /* Stable recommendation geometry. No JS moves these nodes after a set click. */
+    /* Fixed geometry for dynamic training-engine elements. */
+    #start .te200-readiness{
+      width:100%!important;
+      min-height:58px!important;
+      box-sizing:border-box!important;
+      margin:10px 0 4px!important;
+    }
     #start .exercise .te200-rec,
     #start .exercise .te200-auto{
       grid-column:1 / -1!important;
@@ -30,6 +38,7 @@
       min-width:0!important;
       box-sizing:border-box!important;
     }
+    #start .exercise .te200-auto{min-height:42px!important}
     #start .exercise .te200-rec{
       display:grid!important;
       grid-template-columns:minmax(0,1fr) auto!important;
@@ -94,10 +103,78 @@
     return on;
   }
 
-  /* v263 intentionally has NO click-time scrollTo/scrollBy correction.
-     The browser keeps the finger/viewport position natively. Repeated manual
-     corrections were the remaining source of the visible bounce on set taps. */
+  /* Training-engine rebuilds #start after a set is checked. Its readiness and
+     recommendation blocks are injected afterwards, which briefly changes page
+     height. Preserve the exact DOM nodes only when training weights/state did
+     not change. A set's `ok` flag is deliberately excluded from this signature. */
+  function trainingUiStateSignature(){
+    const cur=W.st?.current;
+    if(!cur)return'';
+    return JSON.stringify([
+      cur.id||'',
+      cur.trainingWeightPolicy214||'',
+      !!cur.trainingReadinessDone,
+      !!cur.readinessAdjusted,
+      cur.readiness?.score??null,
+      (cur.ex||[]).map(ex=>[
+        ex?.sourceId||'',ex?.n||'',ex?.programWeightMode||'',ex?.weightDecision||'',
+        (ex?.set||[]).map(s=>[Number(s?.programW)||0,Number(s?.recommendedW)||0,Number(s?.plannedW)||0,Number(s?.w)||0])
+      ])
+    ]);
+  }
 
+  function snapshotTrainingUi(){
+    if(!workoutActive())return null;
+    const root=D.getElementById('start');
+    if(!root)return null;
+    const readiness=root.querySelector('.te200-readiness');
+    const cards=[...root.querySelectorAll('.exercise')];
+    const exerciseNodes=[];
+    cards.forEach((card,index)=>{
+      const node=card.querySelector('.te200-rec,.te200-auto');
+      if(node)exerciseNodes.push({index,node});
+    });
+    if(!readiness&&!exerciseNodes.length)return null;
+    return{signature:trainingUiStateSignature(),readiness,exerciseNodes};
+  }
+
+  function restoreTrainingUi(snapshot){
+    if(!snapshot||snapshot.signature!==trainingUiStateSignature()||!workoutActive())return;
+    const root=D.getElementById('start');
+    if(!root)return;
+
+    if(snapshot.readiness&&!root.querySelector('.te200-readiness')){
+      const head=root.querySelector('.workout-head')||root.firstElementChild;
+      head?.insertAdjacentElement('afterend',snapshot.readiness);
+    }
+
+    const cards=[...root.querySelectorAll('.exercise')];
+    snapshot.exerciseNodes.forEach(({index,node})=>{
+      const card=cards[index];
+      if(!card||card.querySelector('.te200-rec,.te200-auto'))return;
+      const anchor=card.querySelector('.exname')||card.firstElementChild;
+      anchor?.insertAdjacentElement('afterend',node);
+    });
+  }
+
+  function installStableStartPage(){
+    const current=W.startPage;
+    if(typeof current!=='function'||current.__unvrslStableTrainingUiV264)return false;
+    const wrapped=function(){
+      const snapshot=snapshotTrainingUi();
+      const result=current.apply(this,arguments);
+      restoreTrainingUi(snapshot);
+      removeExerciseHeaderRpe();
+      return result;
+    };
+    wrapped.__unvrslStableTrainingUiV264=true;
+    wrapped.__unvrslStableTrainingUiBase=current;
+    W.startPage=wrapped;
+    try{startPage=wrapped}catch(_){ }
+    return true;
+  }
+
+  /* No click-time scrollTo/scrollBy correction. The viewport remains native. */
   const start=D.getElementById('start'),modal=D.getElementById('modal');
   const classObserver=typeof MutationObserver==='function'&&start?new MutationObserver(muts=>{
     if(muts.some(m=>m.type==='attributes'))sync();
@@ -108,9 +185,12 @@
   const modalObserver=typeof MutationObserver==='function'&&modal?new MutationObserver(sync):null;
   modalObserver?.observe(modal,{attributes:true,attributeFilter:['class']});
 
-  W.addEventListener?.('unvrsl:cloud-modules-settled',sync);
-  W.addEventListener?.('unvrsl:modules-ready',sync);
-  D.addEventListener?.('visibilitychange',()=>{if(!D.hidden)sync()},{passive:true});
+  W.addEventListener?.('unvrsl:cloud-modules-settled',()=>{installStableStartPage();sync()});
+  W.addEventListener?.('unvrsl:modules-ready',()=>{installStableStartPage();sync()});
+  W.addEventListener?.('unvrsl:training-engine-ready',installStableStartPage);
+  D.addEventListener?.('visibilitychange',()=>{if(!D.hidden){installStableStartPage();sync()}},{passive:true});
+
+  installStableStartPage();
   sync();
-  [100,400,1200,3000].forEach(ms=>setTimeout(sync,ms));
+  [100,400,900,1600,3000].forEach(ms=>setTimeout(()=>{installStableStartPage();sync()},ms));
 })();
