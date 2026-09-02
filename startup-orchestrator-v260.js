@@ -4,6 +4,15 @@
   if(W.__unvrslStartupOrchestratorV260)return;W.__unvrslStartupOrchestratorV260=true;
   W.__unvrslStartupComplete=false;
 
+  // Load the v258 math layer independently from the workout UI. It waits for
+  // the canonical training engine and only updates weight data, never rebuilds
+  // the workout page or intercepts set check buttons.
+  function loadTrainingLoadModel(){
+    if(W.__unvrslTrainingLoadModelV258||D.querySelector('script[data-unvrsl-load-model-v258]'))return;
+    const s=D.createElement('script');s.src='training-load-model-v258.js?v=258';s.async=false;s.dataset.unvrslLoadModelV258='1';s.onerror=()=>console.warn('UNVRSL load model v258 failed to load');D.body?.appendChild(s)
+  }
+  loadTrainingLoadModel();
+
   // app.js paints a harmless base DOM once. Every later full render is queued
   // until all canonical owners, cloud data and the current role are settled.
   const baseRender=W.render;
@@ -69,5 +78,7 @@
   }
   W.unvrslTryFinalizeStartupV260=finalize;
   for(const name of ['load','unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:client-settled','unvrsl:readiness-ready'])W.addEventListener?.(name,finalize,{passive:true});
+  for(const name of ['unvrsl:modules-ready','unvrsl:training-engine-ready','unvrsl:app-ready'])W.addEventListener?.(name,loadTrainingLoadModel,{passive:true});
+  [400,1200,3000].forEach(ms=>setTimeout(loadTrainingLoadModel,ms));
   const poll=setInterval(finalize,80);finalize();
 })();
