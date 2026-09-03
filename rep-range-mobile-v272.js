@@ -1,8 +1,8 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=272;
-  if(W.__unvrslRepRangeMobileV272)return;
-  W.__unvrslRepRangeMobileV272=true;
+  const W=window,D=document,REV=275;
+  if(W.__unvrslRepRangeMobileV275)return;
+  W.__unvrslRepRangeMobileV275=true;
 
   const SPECIAL=/UNVRSL|SLDR|\bDS\b|FST-7/i;
   const routines=()=>W.UNVRSL_ROUTINES||[];
@@ -11,11 +11,11 @@
   const finite=v=>Number.isFinite(Number(v));
 
   function ensureRangeEngine(){
-    if(W.__unvrslBuiltInPlanRepRangesAppliedV267)return;
-    if(D.getElementById('unvrsl-range-engine-v272'))return;
+    if(W.__unvrslBuiltInPlanRepRangesAppliedV267||W.__unvrslBuiltInPlanRepRangesV267)return;
+    if(D.getElementById('unvrsl-range-engine-v275'))return;
     const s=D.createElement('script');
-    s.id='unvrsl-range-engine-v272';
-    s.src='built-in-plan-rep-ranges-v267.js?v=272';
+    s.id='unvrsl-range-engine-v275';
+    s.src='built-in-plan-rep-ranges-v267.js?v=275';
     s.async=false;
     (D.head||D.documentElement).appendChild(s);
   }
@@ -36,15 +36,19 @@
     const t=rangeFor(src);if(!root||!t||t.lo===t.hi)return;
     const full=root.textContent||'';
     if(full.includes(`×${t.label}`)||full.includes(`x${t.label}`))return;
-    const base=src.sd?Number(src.rMin)/2:Number(src.rMin);
+    const candidates=[];
+    if(finite(src.r))candidates.push(src.sd?Number(src.r)/2:Number(src.r));
+    if(finite(src.rMin))candidates.push(src.sd?Number(src.rMin)/2:Number(src.rMin));
     const walker=D.createTreeWalker(root,NodeFilter.SHOW_TEXT);
     let node;
     while((node=walker.nextNode())){
       const text=node.nodeValue||'';
-      const re=new RegExp(`([×x]\\s*)${String(base).replace('.','\\.')}(?!\\s*[–-]\\s*\\d)`);
-      if(re.test(text)){
-        node.nodeValue=text.replace(re,`$1${t.label}`);
-        return;
+      for(const base of candidates){
+        const re=new RegExp(`([×x]\\s*)${String(base).replace('.','\\.')}(?!\\s*[–-]\\s*\\d)`);
+        if(re.test(text)){
+          node.nodeValue=text.replace(re,`$1${t.label}`);
+          return;
+        }
       }
     }
   }
@@ -66,14 +70,17 @@
 
   function patchPreview(){
     let cur=null;try{cur=typeof preview==='function'?preview:W.preview}catch(_){cur=W.preview}
-    if(typeof cur!=='function'||cur.__repRangeMobile272)return false;
+    if(typeof cur!=='function'||cur.__repRangeMobile275)return false;
     const wrapped=function(w,c){
       const out=cur.apply(this,arguments);
-      [0,30,100].forEach(ms=>setTimeout(()=>decoratePreview(w,c),ms));
+      // Base preview renders synchronously. Replace its rep text in the same
+      // call so the user never sees the legacy single-number prescription.
+      decoratePreview(w,c);
+      [30,100].forEach(ms=>setTimeout(()=>decoratePreview(w,c),ms));
       return out;
     };
-    wrapped.__repRangeMobile272=true;
-    wrapped.__repRangeMobile272Base=cur;
+    wrapped.__repRangeMobile275=true;
+    wrapped.__repRangeMobile275Base=cur;
     W.preview=wrapped;try{preview=wrapped}catch(_){ }
     return true;
   }
@@ -97,15 +104,10 @@
           if(set.r!==''){set.r='';stateChanged=true}
           inp.value='';
         }
-        if(inp.dataset.repRange272!=='1'){
-          inp.dataset.repRange272='1';
-          inp.addEventListener('input',()=>{
-            set.__repManualV272=true;
-          });
-          inp.addEventListener('change',()=>{
-            set.__repManualV272=true;
-            setTimeout(saver,0);
-          });
+        if(inp.dataset.repRange275!=='1'){
+          inp.dataset.repRange275='1';
+          inp.addEventListener('input',()=>{set.__repManualV272=true});
+          inp.addEventListener('change',()=>{set.__repManualV272=true;setTimeout(saver,0)});
         }
       });
     });
@@ -115,7 +117,7 @@
   function install(){
     ensureRangeEngine();
     patchPreview();
-    if(W.__unvrslBuiltInPlanRepRangesAppliedV267)decorateStart();
+    if(W.__unvrslBuiltInPlanRepRangesAppliedV267||W.__unvrslBuiltInPlanRepRangesV267)decorateStart();
   }
 
   const start=D.getElementById('start');
@@ -135,5 +137,5 @@
   }
 
   install();
-  [50,120,250,500,900,1500,2500,4000].forEach(ms=>setTimeout(install,ms));
+  [50,120,250,500,900,1500].forEach(ms=>setTimeout(install,ms));
 })();
