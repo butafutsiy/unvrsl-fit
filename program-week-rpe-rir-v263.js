@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=264,TRAINER='Семён';
+  const W=window,D=document,REV=265,TRAINER='Семён';
   if(W.__unvrslProgramWeekRpeRirV263)return;
   W.__unvrslProgramWeekRpeRirV263=true;
 
@@ -91,11 +91,12 @@
     if(D.getElementById('program-week-rpe-rir-v263-style'))return;
     const s=D.createElement('style');s.id='program-week-rpe-rir-v263-style';s.textContent=`
       .wr264-box{margin-top:12px;padding-top:12px;border-top:1px solid #303034}.wr264-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}.wr264-head b{font-size:14px}.wr264-rir{font-size:12px;font-weight:800;color:var(--green)}
-      .wr264-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.wr264-grid .field{margin:0}.wr264-wide{grid-column:1/-1}.wr264-help{margin-top:8px;color:#85858b;font-size:11px;line-height:1.4}.wr264-focus{margin-top:9px}.wr264-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.wr264-actions .btn{width:100%}
+      .wr264-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.wr264-grid .field{margin:0}.wr264-wide{grid-column:1/-1}.wr264-help{margin-top:8px;color:#85858b;font-size:11px;line-height:1.4}.wr264-focus{margin-top:9px}.wr264-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.wr264-actions .btn{width:100%;touch-action:manipulation}
       .wr264-methods{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.wr264-method{padding:5px 8px;border-radius:999px;background:#29292d;color:#d8d8dc;font-size:11px;font-weight:800}.wr264-method.off{color:#838389}
       .wr264-client{margin:9px 0 13px;padding:12px 13px;border-radius:16px;background:#1a1a1d;border:1px solid #303034}.wr264-client-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.wr264-client-title{font-size:14px;font-weight:850}.wr264-client-pct{color:var(--green);font-size:13px;font-weight:850;white-space:nowrap}
       .wr264-client-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.wr264-client-chip{display:inline-flex;padding:5px 8px;border-radius:999px;background:#29292d;color:#d3d3d7;font-size:11px;font-weight:800}.wr264-focus-text{margin-top:8px;color:#a3a3a8;font-size:11px;line-height:1.35}.wr264-trainer{margin-top:8px;color:#8e8e93;font-size:11px;font-weight:700}
-      .wr264-ex-note{margin:8px 0 10px;padding:10px 11px;border-radius:14px;background:#1a1a1d;border:1px solid #303034}.wr264-ex-line{font-size:11px;color:#9a9aa0;line-height:1.4}.wr264-ex-line b{color:#dddde1}.wr264-auto-btn{margin-top:8px;width:100%}
+      .wr264-ex-note{margin:8px 0 10px;padding:10px 11px;border-radius:14px;background:#1a1a1d;border:1px solid #303034}.wr264-ex-line{font-size:11px;color:#9a9aa0;line-height:1.4}.wr264-ex-line b{color:#dddde1}.wr264-auto-btn{margin-top:8px;width:100%;touch-action:manipulation}
+      .pi261-preset,.pi261-week button{touch-action:manipulation}
       @media(max-width:390px){.wr264-grid{grid-template-columns:1fr 1fr}.wr264-actions{grid-template-columns:1fr}}
     `;D.head?.appendChild(s)
   }
@@ -124,10 +125,13 @@
 
   function bindIntensityButtons(card,p,wi){
     card.querySelectorAll('.pi261-preset').forEach(btn=>{
-      btn.removeAttribute('onclick');btn.onclick=e=>{e.preventDefault();e.stopPropagation();const nums=(btn.textContent||'').match(/[\d,.]+/g)||[];if(nums.length<2)return;const lo=N(nums[0]),hi=N(nums[1]),match=Object.entries(CYCLE).find(([,x])=>x.pct[0]===lo&&x.pct[1]===hi);if(match)applyCycleToEditor(Number(match[0]));else{setValue('pi261Min',lo);setValue('pi261Max',hi)}}
+      btn.removeAttribute('onclick');
+      if(btn.dataset.wr265Bound==='1')return;
+      btn.dataset.wr265Bound='1';
+      btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const nums=(btn.textContent||'').match(/[\d,.]+/g)||[];if(nums.length<2)return;const lo=N(nums[0]),hi=N(nums[1]),match=Object.entries(CYCLE).find(([,x])=>x.pct[0]===lo&&x.pct[1]===hi);if(match)applyCycleToEditor(Number(match[0]));else{setValue('pi261Min',lo);setValue('pi261Max',hi)}},{passive:false})
     });
-    const saveBtn=[...card.querySelectorAll('button')].find(b=>(b.textContent||'').includes('Сохранить интенсивность')||(b.getAttribute('onclick')||'').includes('programWeekIntensitySaveV261'));
-    if(saveBtn){saveBtn.removeAttribute('onclick');saveBtn.textContent='Сохранить профиль недели';saveBtn.onclick=e=>{e.preventDefault();e.stopPropagation();saveProfile(p,wi)}}
+    const saveBtn=[...card.querySelectorAll('button')].find(b=>(b.textContent||'').includes('Сохранить интенсивность')||(b.textContent||'').includes('Сохранить профиль недели')||(b.getAttribute('onclick')||'').includes('programWeekIntensitySaveV261'));
+    if(saveBtn){saveBtn.removeAttribute('onclick');saveBtn.textContent='Сохранить профиль недели';if(saveBtn.dataset.wr265Bound!=='1'){saveBtn.dataset.wr265Bound='1';saveBtn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();saveProfile(p,wi)},{passive:false})}}
   }
 
   function readMethods(box,pr){const raw=String(box?.dataset.methods||'').split(',').map(x=>x.trim()).filter(Boolean);return raw.length?raw:(pr?.methods||[])}
@@ -157,8 +161,14 @@
   function injectEditor(){
     ensureStyle();const {p,wi,w}=currentEditorContext(),card=D.querySelector('#sheet .pi261-week');if(!p||!w||!card)return;
     ensureProgramDefaults(p,false);const pr=weekProfile(p,wi,true);if(!pr)return;
-    populateEditorFromProfile(pr);card.querySelector('.wr264-box')?.remove();card.querySelector('.wr263-box')?.remove();
-    const box=D.createElement('div');box.className='wr264-box';box.dataset.methods=(pr.methods||[]).join(',');box.innerHTML=`
+    const editorKey=`${String(p.id)}|${wi}`;
+    const existing=card.querySelector('.wr264-box');
+    if(existing&&existing.dataset.editorKey===editorKey){
+      bindIntensityButtons(card,p,wi);syncRirPreview();return
+    }
+    populateEditorFromProfile(pr);
+    existing?.remove();card.querySelector('.wr263-box')?.remove();
+    const box=D.createElement('div');box.className='wr264-box';box.dataset.editorKey=editorKey;box.dataset.methods=(pr.methods||[]).join(',');box.innerHTML=`
       <div class="wr264-head"><b>RPE / RIR недели</b><span id="wr264Rir" class="wr264-rir">RIR ${fmt(pr.rirHigh)}→${fmt(pr.rirLow)}</span></div>
       <div class="wr264-grid"><div class="field"><label>RPE от</label><input id="wr264RpeMin" inputmode="decimal" min="1" max="10" step="0.5" value="${pr.rpeMin??''}"></div><div class="field"><label>RPE до</label><input id="wr264RpeMax" inputmode="decimal" min="1" max="10" step="0.5" value="${pr.rpeMax??''}"></div></div>
       <div class="wr264-help">RIR считается автоматически: RIR = 10 − RPE. Конкретная нагрузка проверяется вместе с повторами и % e1RM.</div>
@@ -168,7 +178,8 @@
       <div class="wr264-actions"><button class="btn" type="button" data-wr264-week>Вернуть W${pr.week} по схеме</button><button class="btn" type="button" data-wr264-cycle>Применить W1–W8</button></div>`;
     const toggle=card.querySelector('.pi261-toggle');if(toggle)toggle.insertAdjacentElement('beforebegin',box);else card.appendChild(box);
     field('wr264RpeMin')?.addEventListener('input',syncRirPreview);field('wr264RpeMax')?.addEventListener('input',syncRirPreview);
-    box.querySelector('[data-wr264-week]')?.addEventListener('click',()=>applyCycleToEditor(pr.week));box.querySelector('[data-wr264-cycle]')?.addEventListener('click',()=>applyWholeCycle(p));
+    box.querySelector('[data-wr264-week]')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();applyCycleToEditor(pr.week)},{passive:false});
+    box.querySelector('[data-wr264-cycle]')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();applyWholeCycle(p)},{passive:false});
     bindIntensityButtons(card,p,wi);syncRirPreview()
   }
 
@@ -190,7 +201,7 @@
     if(!ctx.existing)applyExerciseDefaults(ctx.defaults);
     D.querySelector('.wr264-ex-note')?.remove();const host=input.closest('.method-builder-grid')||input.closest('.field');if(!host)return;
     const note=D.createElement('div');note.className='wr264-ex-note';note.innerHTML=`<div class="wr264-ex-line"><b>W${ctx.pr.week}</b> · ${fmt(ctx.pr.intensityMin)}–${fmt(ctx.pr.intensityMax)}% · RPE ${fmt(ctx.pr.rpeMin)}–${fmt(ctx.pr.rpeMax)} · RIR ${fmt(ctx.pr.rirHigh)}→${fmt(ctx.pr.rirLow)}</div><div class="wr264-ex-line">Темп ${escHtml(ctx.pr.tempo)} · отдых ${ctx.kind==='isolation'?`${ctx.pr.isolationRestMin}–${ctx.pr.isolationRestMax}`:`${ctx.pr.baseRestMin}–${ctx.pr.baseRestMax}`} сек · ${ctx.kind==='isolation'?'изоляция':'база'}</div><div id="wr264ExerciseRelation" class="wr264-ex-line" style="margin-top:5px"></div><button type="button" class="btn tiny wr264-auto-btn">↻ Подставить по неделе</button>`;
-    host.insertAdjacentElement('afterend',note);note.querySelector('button')?.addEventListener('click',()=>applyExerciseDefaults(ctx.defaults));field('pmRpe')?.addEventListener('input',updateExerciseRelation);field('pmReps')?.addEventListener('input',updateExerciseRelation);updateExerciseRelation()
+    host.insertAdjacentElement('afterend',note);note.querySelector('button')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();applyExerciseDefaults(ctx.defaults)},{passive:false});field('pmRpe')?.addEventListener('input',updateExerciseRelation);field('pmReps')?.addEventListener('input',updateExerciseRelation);updateExerciseRelation()
   }
 
   function patchExerciseForm(){
