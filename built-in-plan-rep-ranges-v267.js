@@ -1,9 +1,11 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=267;
+  const W=window,REV=267;
   if(W.__unvrslBuiltInPlanRepRangesV267)return;
   W.__unvrslBuiltInPlanRepRangesV267=true;
 
+  // Special methods keep their existing prescription exactly as authored.
+  // This patch changes repetition ranges only for the built-in 8-week plan.
   const SPECIAL=/UNVRSL|SLDR|\bDS\b|FST-7/i;
   const R={
     1:{
@@ -32,7 +34,7 @@
       'Жим гантелей на наклонной':[15,20],'Разводка / бабочка':[15,20],'Жим гантелей сидя':[15,20],'Кроссовер':[15,20],'EZ / скамья Скотта':[15,20],'Молотковые сгибания с канатом':[15,20],'Отжимания с дополнительным весом':[12,15],
       'Тяга штанги в наклоне':[12,15],'Тяга Т-грифа':[15,20],'Верхний блок':[15,20],'Нижний блок':[15,20],'Жим плеч в тренажёре':[15,18],'Французский жим EZ':[15,20],'Канат на трицепс':[15,20],'Гиперэкстензия с диском':[20,25],
       'Румынская тяга':[12,15],'Ягодичный мост':[15,20],'Выпады назад':[30,40],'Зашагивания':[30,40],
-      'Армейский жим':[12,15],'Разгибание гантели из-за головы':[15,20],'Сгибание гантелей с супинацией':[15,20],'Канат на трицепс':[15,20],'Молотковые сгибания':[15,20],'Французский жим с гантелями':[15,20]
+      'Армейский жим':[12,15],'Разгибание гантели из-за головы':[15,20],'Сгибание гантелей с супинацией':[15,20],'Молотковые сгибания':[15,20],'Французский жим с гантелями':[15,20]
     },
     5:{
       'Жим ногами':[5,7],'Сведение ног':[10,12],'Икры':[10,12],
@@ -122,20 +124,8 @@
     };
     wrapped.__bir267=true;wrapped.__bir267Base=cur;W.preview=wrapped;try{preview=wrapped}catch(_){ }return true
   }
-  function patchBuiltInCopy(){
-    let cur=null;try{cur=typeof builtInGroupToProgramExercise==='function'?builtInGroupToProgramExercise:W.builtInGroupToProgramExercise}catch(_){cur=W.builtInGroupToProgramExercise}
-    if(typeof cur!=='function'||cur.__bir267)return false;
-    const wrapped=function(r,g){
-      const out=cur.apply(this,arguments),entries=g?.entries||[],first=entries[0]||{};
-      if(out?.method==='STANDARD'&&Number.isFinite(Number(first.rMin))&&Number.isFinite(Number(first.rMax))){
-        out.repMin=Number(first.rMin);out.repMax=Number(first.rMax);out.repRange=out.repMin===out.repMax?String(out.repMin):`${out.repMin}-${out.repMax}`;out.repRangeRevision=REV;
-        (out.sets||[]).forEach(set=>{set.r=out.repMin;set.rMin=out.repMin;set.rMax=out.repMax;set.targetRepMin=out.repMin;set.targetRepMax=out.repMax})
-      }
-      return out
-    };
-    wrapped.__bir267=true;wrapped.__bir267Base=cur;W.builtInGroupToProgramExercise=wrapped;try{builtInGroupToProgramExercise=wrapped}catch(_){ }return true
-  }
-  function install(){applyRanges();patchSession();patchPreview();patchBuiltInCopy()}
-  install();[50,150,400,900,1800,3200].forEach(ms=>setTimeout(install,ms));setInterval(()=>{patchBuiltInCopy()},1600);
+
+  function install(){applyRanges();patchSession();patchPreview()}
+  install();[50,150,400,900,1800,3200].forEach(ms=>setTimeout(install,ms));
   for(const ev of ['unvrsl:modules-ready','unvrsl:app-ready'])W.addEventListener?.(ev,install,{passive:true});
 })();
