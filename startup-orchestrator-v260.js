@@ -18,7 +18,11 @@
     if(W.__unvrslTrainerClientProgramEditV262||D.querySelector('script[data-unvrsl-trainer-client-edit-v262]'))return;
     const s=D.createElement('script');s.src='trainer-client-program-edit-v262.js?v=262';s.async=false;s.dataset.unvrslTrainerClientEditV262='1';s.onerror=()=>console.warn('UNVRSL trainer client program edit v262 failed to load');D.body?.appendChild(s)
   }
-  loadTrainingLoadModel();loadProgramIntensity();loadTrainerClientProgramEdit();
+  function loadProgramWeekRpeRir(){
+    if(W.__unvrslProgramWeekRpeRirV263||D.querySelector('script[data-unvrsl-week-rpe-rir-v263]'))return;
+    const s=D.createElement('script');s.src='program-week-rpe-rir-v263.js?v=263';s.async=false;s.dataset.unvrslWeekRpeRirV263='1';s.onerror=()=>console.warn('UNVRSL week RPE RIR v263 failed to load');D.body?.appendChild(s)
+  }
+  loadTrainingLoadModel();loadProgramIntensity();loadTrainerClientProgramEdit();loadProgramWeekRpeRir();
 
   // app.js paints a harmless base DOM once. Every later full render is queued
   // until all canonical owners, cloud data and the current role are settled.
@@ -86,8 +90,9 @@
   for(const name of ['unvrsl:modules-ready','unvrsl:training-engine-ready','unvrsl:app-ready']){
     W.addEventListener?.(name,loadTrainingLoadModel,{passive:true});
     W.addEventListener?.(name,loadProgramIntensity,{passive:true});
-    W.addEventListener?.(name,loadTrainerClientProgramEdit,{passive:true})
+    W.addEventListener?.(name,loadTrainerClientProgramEdit,{passive:true});
+    W.addEventListener?.(name,loadProgramWeekRpeRir,{passive:true})
   }
-  [400,1200,3000].forEach(ms=>{setTimeout(loadTrainingLoadModel,ms);setTimeout(loadProgramIntensity,ms);setTimeout(loadTrainerClientProgramEdit,ms)});
+  [400,1200,3000].forEach(ms=>{setTimeout(loadTrainingLoadModel,ms);setTimeout(loadProgramIntensity,ms);setTimeout(loadTrainerClientProgramEdit,ms);setTimeout(loadProgramWeekRpeRir,ms)});
   const poll=setInterval(finalize,80);finalize();
 })();
