@@ -1,4 +1,5 @@
 const CACHE_PREFIX='unvrsl-fit-';
+const REP_RANGE_SCRIPT='<script src="rep-range-mobile-v272.js?v=272"></script>';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
@@ -20,11 +21,24 @@ self.addEventListener('message',event=>{
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;
   const url=new URL(event.request.url);
-
-  // Supabase/API/CDN responses are never stored in the PWA cache.
   if(url.origin!==self.location.origin)return;
 
-  // v261 intentionally disables application response caching. This prevents
-  // old and new UI modules from being mixed after an update.
-  event.respondWith(fetch(event.request,{cache:'no-store'}))
+  if(event.request.mode==='navigate'){
+    event.respondWith((async()=>{
+      const res=await fetch(event.request,{cache:'no-store'});
+      const type=res.headers.get('content-type')||'';
+      if(!res.ok||!type.includes('text/html'))return res;
+      let html=await res.text();
+      if(!html.includes('rep-range-mobile-v272.js')){
+        html=html.includes('</body>')?html.replace('</body>',`${REP_RANGE_SCRIPT}</body>`):`${html}${REP_RANGE_SCRIPT}`;
+      }
+      const headers=new Headers(res.headers);
+      headers.delete('content-length');
+      headers.delete('content-encoding');
+      return new Response(html,{status:res.status,statusText:res.statusText,headers});
+    })());
+    return;
+  }
+
+  event.respondWith(fetch(event.request,{cache:'no-store'}));
 });
