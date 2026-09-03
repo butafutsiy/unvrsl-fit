@@ -67,6 +67,12 @@
     const {p,wi}=currentEditorContext(),card=D.querySelector('#sheet .pi261-week');if(!p||!card)return;
     card.querySelector('.wr263-box')?.remove();
     const pr=weekProfile(p,wi,true);if(!pr)return;
+    if(isEightWeek(p)&&pr.intensityMin!=null&&pr.intensityMax!=null){
+      const min=card.querySelector('#pi261Min'),max=card.querySelector('#pi261Max'),band=card.querySelector('.pi261-band');
+      if(min&&N(min.value)==null)min.value=pr.intensityMin;
+      if(max&&N(max.value)==null)max.value=pr.intensityMax;
+      if(band&&(band.textContent||'').trim()==='Не задана')band.textContent=`${fmt(pr.intensityMin)}–${fmt(pr.intensityMax)}%`
+    }
     const box=D.createElement('div');box.className='wr263-box';box.innerHTML=`
       <div class="wr263-head"><b>RPE / RIR недели</b><span id="wr263Rir" class="wr263-rir">RIR ${fmt(pr.rirHigh)}→${fmt(pr.rirLow)}</span></div>
       <div class="wr263-grid">
@@ -76,12 +82,6 @@
       <div class="wr263-help">RIR связан автоматически: RIR = 10 − RPE. Интенсивность недели задаёт коридор % e1RM, а конкретная связка с RPE/RIR проверяется вместе с количеством повторений.</div>
       ${isEightWeek(p)?'<button class="btn wr263-cycle" type="button" onclick="programApplyEightWeekLoadCycleV263()">Применить схему W1–W8</button>':''}`;
     const toggle=card.querySelector('.pi261-toggle');if(toggle)toggle.insertAdjacentElement('beforebegin',box);else card.appendChild(box);
-  }
-
-  function persistRpeFromEditor(){
-    const {p,wi,w}=currentEditorContext();if(!p||!w)return false;
-    let a=N(D.getElementById('wr263RpeMin')?.value),b=N(D.getElementById('wr263RpeMax')?.value);if(a==null||b==null)return false;
-    a=clamp(a,1,10);b=clamp(b,1,10);w.rpeMin=Math.min(a,b);w.rpeMax=Math.max(a,b);w.rirMin=Math.max(0,10-w.rpeMax);w.rirMax=Math.max(0,10-w.rpeMin);w.loadProfileRevision=REV;p.updated=Date.now();saveState();return true
   }
 
   function patchSave(){
