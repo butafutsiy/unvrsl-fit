@@ -32,7 +32,7 @@
   }
   function loadBuiltInPlanRepUi(){
     if(W.__unvrslBuiltInPlanRepUiV269||D.querySelector('script[data-unvrsl-built-in-rep-ui-v269]'))return;
-    const s=D.createElement('script');s.src='built-in-plan-rep-ui-v269.js?v=269';s.async=false;s.dataset.unvrslBuiltInRepUiV269='1';s.onerror=()=>console.warn('UNVRSL built-in rep range UI v269 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');s.src='built-in-plan-rep-ui-v269.js?v=270';s.async=false;s.dataset.unvrslBuiltInRepUiV269='1';s.onerror=()=>console.warn('UNVRSL built-in rep range UI v269 failed to load');D.body?.appendChild(s)
   }
   function loadProgramWeekRepGuidance(){
     if(W.__unvrslProgramWeekRepGuidanceV268||D.querySelector('script[data-unvrsl-week-rep-guidance-v268]'))return;
