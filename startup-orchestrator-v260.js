@@ -4,14 +4,17 @@
   if(W.__unvrslStartupOrchestratorV260)return;W.__unvrslStartupOrchestratorV260=true;
   W.__unvrslStartupComplete=false;
 
-  // Load the v258 math layer independently from the workout UI. It waits for
-  // the canonical training engine and only updates weight data, never rebuilds
-  // the workout page or intercepts set check buttons.
+  // Load the canonical math layer independently from the workout UI. It waits
+  // for the training engine and updates weight data without rebuilding pages.
   function loadTrainingLoadModel(){
     if(W.__unvrslTrainingLoadModelV258||D.querySelector('script[data-unvrsl-load-model-v258]'))return;
-    const s=D.createElement('script');s.src='training-load-model-v258.js?v=258';s.async=false;s.dataset.unvrslLoadModelV258='1';s.onerror=()=>console.warn('UNVRSL load model v258 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');s.src='training-load-model-v258.js?v=260';s.async=false;s.dataset.unvrslLoadModelV258='1';s.onerror=()=>console.warn('UNVRSL load model v258 failed to load');D.body?.appendChild(s)
   }
-  loadTrainingLoadModel();
+  function loadProgramIntensity(){
+    if(W.__unvrslProgramIntensityAutoWeightV261||D.querySelector('script[data-unvrsl-program-intensity-v261]'))return;
+    const s=D.createElement('script');s.src='program-intensity-autoweight-v261.js?v=261';s.async=false;s.dataset.unvrslProgramIntensityV261='1';s.onerror=()=>console.warn('UNVRSL program intensity v261 failed to load');D.body?.appendChild(s)
+  }
+  loadTrainingLoadModel();loadProgramIntensity();
 
   // app.js paints a harmless base DOM once. Every later full render is queued
   // until all canonical owners, cloud data and the current role are settled.
@@ -52,8 +55,6 @@
     try{W.statsEnsureCanonicalV254?.()}catch(_){ }
     try{W.unvrslLegacyCleanV260?.()}catch(_){ }
     await frames();
-    // Flush zero-delay decorators created by the one final render while the
-    // application shell is still invisible behind the startup surface.
     await new Promise(resolve=>setTimeout(resolve,90));
     try{W.unvrslTrainerShellSyncV260?.(false)}catch(_){ }
     try{W.unvrslLegacyCleanV260?.()}catch(_){ }
@@ -78,7 +79,10 @@
   }
   W.unvrslTryFinalizeStartupV260=finalize;
   for(const name of ['load','unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:client-settled','unvrsl:readiness-ready'])W.addEventListener?.(name,finalize,{passive:true});
-  for(const name of ['unvrsl:modules-ready','unvrsl:training-engine-ready','unvrsl:app-ready'])W.addEventListener?.(name,loadTrainingLoadModel,{passive:true});
-  [400,1200,3000].forEach(ms=>setTimeout(loadTrainingLoadModel,ms));
+  for(const name of ['unvrsl:modules-ready','unvrsl:training-engine-ready','unvrsl:app-ready']){
+    W.addEventListener?.(name,loadTrainingLoadModel,{passive:true});
+    W.addEventListener?.(name,loadProgramIntensity,{passive:true})
+  }
+  [400,1200,3000].forEach(ms=>{setTimeout(loadTrainingLoadModel,ms);setTimeout(loadProgramIntensity,ms)});
   const poll=setInterval(finalize,80);finalize();
 })();
