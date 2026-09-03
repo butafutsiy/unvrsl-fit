@@ -26,7 +26,11 @@
     if(W.__unvrslProgramRepRangeV266||D.querySelector('script[data-unvrsl-program-rep-range-v266]'))return;
     const s=D.createElement('script');s.src='program-rep-range-v266.js?v=266';s.async=false;s.dataset.unvrslProgramRepRangeV266='1';s.onerror=()=>console.warn('UNVRSL program rep range v266 failed to load');D.body?.appendChild(s)
   }
-  loadTrainingLoadModel();loadProgramIntensity();loadTrainerClientProgramEdit();loadProgramWeekRpeRir();loadProgramRepRange();
+  function loadBuiltInPlanRepRanges(){
+    if(W.__unvrslBuiltInPlanRepRangesV267||D.querySelector('script[data-unvrsl-built-in-ranges-v267]'))return;
+    const s=D.createElement('script');s.src='built-in-plan-rep-ranges-v267.js?v=267';s.async=false;s.dataset.unvrslBuiltInRangesV267='1';s.onerror=()=>console.warn('UNVRSL built-in plan rep ranges v267 failed to load');D.body?.appendChild(s)
+  }
+  loadTrainingLoadModel();loadProgramIntensity();loadTrainerClientProgramEdit();loadProgramWeekRpeRir();loadProgramRepRange();loadBuiltInPlanRepRanges();
 
   // app.js paints a harmless base DOM once. Every later full render is queued
   // until all canonical owners, cloud data and the current role are settled.
@@ -96,8 +100,9 @@
     W.addEventListener?.(name,loadProgramIntensity,{passive:true});
     W.addEventListener?.(name,loadTrainerClientProgramEdit,{passive:true});
     W.addEventListener?.(name,loadProgramWeekRpeRir,{passive:true});
-    W.addEventListener?.(name,loadProgramRepRange,{passive:true})
+    W.addEventListener?.(name,loadProgramRepRange,{passive:true});
+    W.addEventListener?.(name,loadBuiltInPlanRepRanges,{passive:true})
   }
-  [400,1200,3000].forEach(ms=>{setTimeout(loadTrainingLoadModel,ms);setTimeout(loadProgramIntensity,ms);setTimeout(loadTrainerClientProgramEdit,ms);setTimeout(loadProgramWeekRpeRir,ms);setTimeout(loadProgramRepRange,ms)});
+  [400,1200,3000].forEach(ms=>{setTimeout(loadTrainingLoadModel,ms);setTimeout(loadProgramIntensity,ms);setTimeout(loadTrainerClientProgramEdit,ms);setTimeout(loadProgramWeekRpeRir,ms);setTimeout(loadProgramRepRange,ms);setTimeout(loadBuiltInPlanRepRanges,ms)});
   const poll=setInterval(finalize,80);finalize();
 })();
