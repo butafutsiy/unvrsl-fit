@@ -20,9 +20,13 @@
   }
   function loadProgramWeekRpeRir(){
     if(W.__unvrslProgramWeekRpeRirV263||D.querySelector('script[data-unvrsl-week-rpe-rir-v263]'))return;
-    const s=D.createElement('script');s.src='program-week-rpe-rir-v263.js?v=263';s.async=false;s.dataset.unvrslWeekRpeRirV263='1';s.onerror=()=>console.warn('UNVRSL week RPE RIR v263 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');s.src='program-week-rpe-rir-v263.js?v=266';s.async=false;s.dataset.unvrslWeekRpeRirV263='1';s.onerror=()=>console.warn('UNVRSL week RPE RIR v263 failed to load');D.body?.appendChild(s)
   }
-  loadTrainingLoadModel();loadProgramIntensity();loadTrainerClientProgramEdit();loadProgramWeekRpeRir();
+  function loadProgramRepRange(){
+    if(W.__unvrslProgramRepRangeV266||D.querySelector('script[data-unvrsl-program-rep-range-v266]'))return;
+    const s=D.createElement('script');s.src='program-rep-range-v266.js?v=266';s.async=false;s.dataset.unvrslProgramRepRangeV266='1';s.onerror=()=>console.warn('UNVRSL program rep range v266 failed to load');D.body?.appendChild(s)
+  }
+  loadTrainingLoadModel();loadProgramIntensity();loadTrainerClientProgramEdit();loadProgramWeekRpeRir();loadProgramRepRange();
 
   // app.js paints a harmless base DOM once. Every later full render is queued
   // until all canonical owners, cloud data and the current role are settled.
@@ -91,8 +95,9 @@
     W.addEventListener?.(name,loadTrainingLoadModel,{passive:true});
     W.addEventListener?.(name,loadProgramIntensity,{passive:true});
     W.addEventListener?.(name,loadTrainerClientProgramEdit,{passive:true});
-    W.addEventListener?.(name,loadProgramWeekRpeRir,{passive:true})
+    W.addEventListener?.(name,loadProgramWeekRpeRir,{passive:true});
+    W.addEventListener?.(name,loadProgramRepRange,{passive:true})
   }
-  [400,1200,3000].forEach(ms=>{setTimeout(loadTrainingLoadModel,ms);setTimeout(loadProgramIntensity,ms);setTimeout(loadTrainerClientProgramEdit,ms);setTimeout(loadProgramWeekRpeRir,ms)});
+  [400,1200,3000].forEach(ms=>{setTimeout(loadTrainingLoadModel,ms);setTimeout(loadProgramIntensity,ms);setTimeout(loadTrainerClientProgramEdit,ms);setTimeout(loadProgramWeekRpeRir,ms);setTimeout(loadProgramRepRange,ms)});
   const poll=setInterval(finalize,80);finalize();
 })();
