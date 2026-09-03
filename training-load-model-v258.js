@@ -1,7 +1,8 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=258,LAMBDA=.65;
-  if(W.__unvrslTrainingLoadModelV258)return;
+  const W=window,D=document,REV=260,LAMBDA=.65;
+  if(W.__unvrslTrainingLoadModelV260)return;
+  W.__unvrslTrainingLoadModelV260=true;
   W.__unvrslTrainingLoadModelV258=true;
 
   const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
@@ -55,6 +56,20 @@
     return isAssisted(ex)?Math.max(0,bw-load):Math.max(0,load-bw)
   }
 
+  function repsReliability(v){
+    const r=Math.max(1,num(v)||1);
+    if(r<=5)return 1;
+    if(r<=8)return .95;
+    if(r<=12)return .85;
+    if(r<=15)return .72;
+    if(r<=20)return .58;
+    return .45
+  }
+  function repRpeIntensity(reps,rpe){
+    const r=Math.max(1,num(reps)||1),rp=N(rpe)??8,rir=clamp(10-rp,0,10);
+    return 1/(1+(r+rir)/30)
+  }
+
   function rowsFromSession(s,ex){
     const out=[];
     (s?.ex||[]).forEach(e=>{
@@ -66,7 +81,7 @@
         if(rpe==null&&rir!=null)rpe=10-rir;
         if(rpe==null){rpe=target(e,x,s);rir=clamp(10-rpe,0,10);estimated=true}
         rir=clamp(rir??(10-rpe),0,10);
-        out.push({w,r,rpe,rir,date:s.date||s.workout_date||'',estimatedRpe:estimated,sessionId:String(s.id||s.sessionId||s.date||s.workout_date||'')})
+        out.push({w,r,rpe,rir,date:s.date||s.workout_date||'',week:N(s?.w),estimatedRpe:estimated,sessionId:String(s.id||s.sessionId||s.date||s.workout_date||'')})
       })
     });
     return out
@@ -102,14 +117,16 @@
     (history||[]).forEach((item,index)=>{
       const vals=item.rows.map(r=>rowE1rm(r,ex)).filter(x=>x>0),e=median(vals);if(!(e>0))return;
       const actual=item.rows.filter(r=>!r.estimatedRpe).length/item.rows.length;
-      sessions.push({e,quality:.55+.45*actual,recency:LAMBDA**index,rows:item.rows})
+      const repQuality=mean(item.rows.map(r=>repsReliability(r.r)))||.5;
+      const quality=(.55+.45*actual)*(.72+.28*repQuality);
+      sessions.push({e,quality,recency:LAMBDA**index,rows:item.rows})
     });
     if(!sessions.length)return null;
     let es=sessions.map(x=>x.e),m=median(es);
     let kept=sessions.filter(x=>x.e>=m*.82&&x.e<=m*1.18);if(!kept.length)kept=sessions;
     const den=kept.reduce((s,x)=>s+x.quality*x.recency,0),cap=kept.reduce((s,x)=>s+x.e*x.quality*x.recency,0)/(den||1);
     const cv=cap>0?sd(kept.map(x=>x.e))/cap:1,actualRatio=mean(kept.map(x=>x.quality))||0;
-    let confidence='низкая';if(kept.length>=3&&cv<=.07&&actualRatio>=.75)confidence='высокая';else if(kept.length>=2&&cv<=.12)confidence='средняя';
+    let confidence='низкая';if(kept.length>=3&&cv<=.07&&actualRatio>=.72)confidence='высокая';else if(kept.length>=2&&cv<=.12)confidence='средняя';
     return{e1rm:cap,sessions:kept.length,cv,confidence,rows:kept.flatMap(x=>x.rows),lastRows:history?.[0]?.rows||[]}
   }
 
@@ -118,31 +135,44 @@
     const w=N(cur?.w);if(!(w>=1&&w<=8)||!cur?.c)return false;
     try{return (W.UNVRSL_ROUTINES||[]).some(r=>Number(r?.w)===w&&String(r?.c||'')===String(cur.c||''))}catch(_){return false}
   }
+  function currentWeekBand(cur){return ownerCycle(cur)&&WEEK[Number(cur?.w)]?WEEK[Number(cur.w)]:null}
   function previousWeight(est){return median((est?.lastRows||est?.rows||[]).map(x=>x.w).filter(x=>x>0))}
   function previousRpe(est){const actual=(est?.lastRows||[]).filter(x=>!x.estimatedRpe&&N(x.rpe)!=null);return mean((actual.length?actual:(est?.lastRows||[])).map(x=>N(x.rpe)).filter(Number.isFinite))}
   function previousReps(est){return mean((est?.lastRows||[]).map(x=>N(x.r)).filter(Number.isFinite))}
 
+  function effectiveIntensity(ex,set,cur,est){
+    const reps=Math.max(1,num(set?.r)||previousReps(est)||8),rpe=target(ex,set,cur),repPct=repRpeIntensity(reps,rpe),band=currentWeekBand(cur);
+    if(!band)return{reps,rpe,repPct,effectivePct:repPct,band:null,compatible:true,weekWeight:0};
+    const [lo,hi]=band,compatible=repPct>=lo&&repPct<=hi;
+    if(compatible)return{reps,rpe,repPct,effectivePct:repPct,band,compatible:true,weekWeight:1};
+    let weekWeight=reps<=3?.80:reps<=5?.65:reps<=8?.40:reps<=12?.20:.10;
+    if(Number(cur?.w)===4||Number(cur?.w)===6)weekWeight=Math.max(weekWeight,.70);
+    const weekAnchor=clamp(repPct,lo,hi),effectivePct=repPct*(1-weekWeight)+weekAnchor*weekWeight;
+    return{reps,rpe,repPct,effectivePct,band,compatible:false,weekWeight}
+  }
+
   function compoundWeight(ex,set,cur,est,programW,stp){
-    const reps=Math.max(1,num(set?.r)||previousReps(est)||8),rpe=target(ex,set,cur),rir=clamp(10-rpe,0,10);
-    let raw=est.e1rm/(1+(reps+rir)/30);
+    const profile=effectiveIntensity(ex,set,cur,est);
+    let raw=est.e1rm*profile.effectivePct;
     const prev=previousWeight(est);
     if(prev>0)raw=clamp(raw,prev*.925,prev*1.05);
     if(programW>0){raw=clamp(raw,programW*.925,programW*1.05);if(ownerCycle(cur)&&(Number(cur.w)===4||Number(cur.w)===6))raw=Math.min(raw,programW)}
-    if(ownerCycle(cur)&&WEEK[Number(cur.w)]){const [,hi]=WEEK[Number(cur.w)],cap=est.e1rm*hi;raw=Math.min(raw,cap)}
+    if(profile.band){const [lo,hi]=profile.band;raw=Math.min(raw,est.e1rm*hi);if(profile.reps<=5&&Number(cur?.w)!==4&&Number(cur?.w)!==6)raw=Math.max(raw,est.e1rm*lo*.97)}
     return round(raw,stp)
   }
   function isolationWeight(ex,set,cur,est,programW,stp){
     const prev=previousWeight(est)||programW||num(set?.w),pr=previousRpe(est),reps=previousReps(est),goal=target(ex,set,cur),goalReps=num(set?.r)||reps||10;
     if(!(prev>0))return null;let raw=prev;
-    if(pr!=null&&pr<=goal-.75&&reps>=goalReps)raw=prev+stp;
+    const heavy=ownerCycle(cur)&&(Number(cur?.w)===5||Number(cur?.w)===7),deload=ownerCycle(cur)&&(Number(cur?.w)===4||Number(cur?.w)===6),easyThreshold=heavy?.5:.75;
+    if(!deload&&pr!=null&&pr<=goal-easyThreshold&&reps>=goalReps)raw=prev+stp;
     else if(pr!=null&&pr>=goal+1)raw=Math.max(stp,prev-stp);
     if(programW>0)raw=clamp(raw,programW-stp,programW+stp);
-    if(ownerCycle(cur)&&(Number(cur.w)===4||Number(cur.w)===6)&&programW>0)raw=Math.min(raw,programW);
+    if(deload&&programW>0)raw=Math.min(raw,programW);
     return round(raw,stp)
   }
   function bodyweightWeight(ex,set,cur,est,programW,stp){
-    const reps=Math.max(1,num(set?.r)||previousReps(est)||6),rpe=target(ex,set,cur),rir=clamp(10-rpe,0,10),today=cur?.date||new Date().toISOString().slice(0,10);
-    const sys=est.e1rm/(1+(reps+rir)/30),extra=externalLoad(sys,ex,today),prev=previousWeight(est);
+    const profile=effectiveIntensity(ex,set,cur,est),today=cur?.date||new Date().toISOString().slice(0,10);
+    const sys=est.e1rm*profile.effectivePct,extra=externalLoad(sys,ex,today),prev=previousWeight(est);
     let raw=extra;if(prev>=0)raw=clamp(raw,Math.max(0,prev-2*stp),prev+2*stp);if(programW>0)raw=clamp(raw,Math.max(0,programW-2*stp),programW+2*stp);
     return round(raw,stp)
   }
@@ -153,8 +183,8 @@
   }
 
   function confidenceMeta(ex,cur,est){
-    const band=ownerCycle(cur)&&WEEK[Number(cur.w)]?`${Math.round(WEEK[Number(cur.w)][0]*100)}–${Math.round(WEEK[Number(cur.w)][1]*100)}%`:null;
-    return{modelVersion:REV,kind:exerciseKind(ex),confidence:est?.confidence||'низкая',historySessions:est?.sessions||0,historyCv:est?.cv!=null?+est.cv.toFixed(3):null,weekBand:band}
+    const band=currentWeekBand(cur)?`${Math.round(currentWeekBand(cur)[0]*100)}–${Math.round(currentWeekBand(cur)[1]*100)}%`:null;
+    return{modelVersion:REV,kind:exerciseKind(ex),confidence:est?.confidence||'низкая',historySessions:est?.sessions||0,historyCv:est?.cv!=null?+est.cv.toFixed(3):null,weekBand:band,intensityAware:true}
   }
 
   function exerciseGroups(cur){
@@ -177,7 +207,10 @@
 
     flat.forEach((x,i)=>{
       const v=N(values[i]);if(v==null||v<0)return;const prescribed=x.ex.programWeightMode==='prescribed';x.set.recommendedW=v;
-      if(!prescribed&&!x.set.ok&&!x.set.manualOverride){x.set.plannedW=v;x.set.baselineW=v;x.set.baselineSource='adaptive_load_model_v258';const f=cur?.trainingReadinessDone&&cur?.readinessAdjusted?num(cur?.readiness?.factor)||1:1;x.set.w=round(v*f,stp)}
+      const kind=exerciseKind(x.ex),profile=(kind==='compound'||kind==='bodyweight')?effectiveIntensity(x.ex,x.set,cur,est):null;
+      if(profile)x.set.trainingIntensity260={reps:profile.reps,targetRpe:profile.rpe,repRpePct:+(profile.repPct*100).toFixed(1),effectivePct:+(profile.effectivePct*100).toFixed(1),weekBand:profile.band?profile.band.map(v=>Math.round(v*100)):null,compatible:profile.compatible,weekWeight:+profile.weekWeight.toFixed(2)};
+      else x.set.trainingIntensity260={reps:num(x.set.r),targetRpe:target(x.ex,x.set,cur),model:kind==='isolation'?'double_progression':'method'};
+      if(!prescribed&&!x.set.ok&&!x.set.manualOverride){x.set.plannedW=v;x.set.baselineW=v;x.set.baselineSource='adaptive_load_model_v260';const f=cur?.trainingReadinessDone&&cur?.readinessAdjusted?num(cur?.readiness?.factor)||1:1;x.set.w=round(v*f,stp)}
     });
     group.items.forEach(({ex})=>{if(ex.programWeightMode!=='prescribed')ex.weightDecision=values.some(v=>v!=null)?'adaptive_auto':'calibration';ex.trainingEstimate200={...(ex.trainingEstimate200||{}),e1rm:+est.e1rm.toFixed(1),previousWeight:previousWeight(est),...confidenceMeta(ex,cur,est)}});
     return true
@@ -190,7 +223,7 @@
   function invalidateUi(cur){const root=D.getElementById('start');if(root)delete root.dataset.te200Sig;patchWorkoutInputs(cur);try{W.trainingEngine200Tick?.()}catch(_){} }
 
   let running=false,lastSig='',lastId='';
-  function signature(cur){return JSON.stringify([cur?.id||'',cur?.trainingPreparedAt||'',cur?.trainingReadinessDone?num(cur?.readiness?.factor)||1:1,(cur?.ex||[]).map(ex=>[key(ex),ex.programWeightMode,(ex.set||[]).map(s=>[num(s.programW),num(s.r),target(ex,s,cur)])]),(W.st?.sessions||[]).length])}
+  function signature(cur){return JSON.stringify([cur?.id||'',cur?.trainingPreparedAt||'',cur?.trainingReadinessDone?num(cur?.readiness?.factor)||1:1,Number(cur?.w)||0,(cur?.ex||[]).map(ex=>[key(ex),ex.programWeightMode,(ex.set||[]).map(s=>[num(s.programW),num(s.r),target(ex,s,cur)])]),(W.st?.sessions||[]).length])}
   async function run(force=false){
     const cur=W.st?.current;if(!cur?.id||cur.ended||!W.__unvrslTrainingEngineV257)return false;
     const sig=signature(cur);if(!force&&sig===lastSig&&String(cur.id)===lastId)return false;if(running)return false;running=true;
@@ -199,12 +232,12 @@
       for(const group of groups){if(await calculateGroup(group,cur))changed=true}
       if(changed){cur.trainingLoadModelRevision=REV;cur.trainingLoadModelAt=new Date().toISOString();try{W.save?.()}catch(_){}invalidateUi(cur)}
       lastSig=sig;lastId=String(cur.id);return changed
-    }catch(e){console.warn('UNVRSL load model v258',e);return false}finally{running=false}
+    }catch(e){console.warn('UNVRSL load model v260',e);return false}finally{running=false}
   }
 
-  function wrapReadinessConfirm(){const fn=W.trainingConfirmReadiness200;if(typeof fn!=='function'||fn.__unvrslLoadModelV258)return;const wrapped=async function(){const r=await fn.apply(this,arguments);await run(true);return r};wrapped.__unvrslLoadModelV258=true;wrapped.__unvrslLoadModelBase=fn;W.trainingConfirmReadiness200=wrapped;try{trainingConfirmReadiness200=wrapped}catch(_){}}
+  function wrapReadinessConfirm(){const fn=W.trainingConfirmReadiness200;if(typeof fn!=='function'||fn.__unvrslLoadModelV260)return;const wrapped=async function(){const r=await fn.apply(this,arguments);await run(true);return r};wrapped.__unvrslLoadModelV260=true;wrapped.__unvrslLoadModelV258=true;wrapped.__unvrslLoadModelBase=fn;W.trainingConfirmReadiness200=wrapped;try{trainingConfirmReadiness200=wrapped}catch(_){}}
   function boot(){wrapReadinessConfirm();run(false)}
-  W.trainingLoadModel258={run,exerciseKind,version:REV};
+  W.trainingLoadModel258={run,exerciseKind,repRpeIntensity,effectiveIntensity,version:REV};
   ['unvrsl:training-engine-ready','unvrsl:modules-ready','unvrsl:app-ready','unvrsl:cloud-modules-settled'].forEach(name=>W.addEventListener?.(name,boot,{passive:true}));
   D.addEventListener?.('visibilitychange',()=>{if(!D.hidden)boot()},{passive:true});
   setInterval(boot,1200);[0,200,600,1500,3000].forEach(ms=>setTimeout(boot,ms));
