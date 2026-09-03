@@ -1,5 +1,6 @@
-const SW_RELEASE='v274-cache-reset';
-const REP_RANGE_SCRIPT='<script src="rep-range-mobile-v272.js?v=274"></script>';
+const SW_RELEASE='v275-range-first';
+const RANGE_ENGINE='<script src="built-in-plan-rep-ranges-v267.js?v=275"></script>';
+const RANGE_UI='<script src="rep-range-mobile-v272.js?v=275"></script>';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
@@ -7,16 +8,10 @@ self.addEventListener('install',event=>{
 
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
-    // The app intentionally does not use Cache Storage anymore. Remove every
-    // legacy cache so old HTML/plan/modules cannot be mixed with the live app.
     const keys=await caches.keys();
     await Promise.all(keys.map(key=>caches.delete(key)));
     try{await self.registration.navigationPreload?.enable()}catch(_){ }
     await self.clients.claim();
-
-    // One cache-busted navigation makes an already-installed PWA move to the
-    // fresh shell immediately after this worker takes control. localStorage,
-    // IndexedDB and workout history are not touched.
     const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
     await Promise.all(clients.map(client=>{
       try{
@@ -45,9 +40,18 @@ self.addEventListener('fetch',event=>{
       const type=res.headers.get('content-type')||'';
       if(!res.ok||!type.includes('text/html'))return res;
       let html=await res.text();
-      if(!html.includes('rep-range-mobile-v272.js?v=274')){
-        html=html.includes('</body>')?html.replace('</body>',`${REP_RANGE_SCRIPT}</body>`):`${html}${REP_RANGE_SCRIPT}`;
+
+      // The range model must exist before app.js captures ROUTINES/rmap.
+      // Then patch preview immediately after app.js, in the same parser turn.
+      const appTag='<script src="app.js"></script>';
+      const freshAppTag=`${RANGE_ENGINE}<script src="app.js?v=275"></script>${RANGE_UI}`;
+      if(html.includes(appTag))html=html.replace(appTag,freshAppTag);
+      else if(html.includes('<script src="app.js?v=275"></script>')&&!html.includes('rep-range-mobile-v272.js?v=275')){
+        html=html.replace('<script src="app.js?v=275"></script>',`${RANGE_ENGINE}<script src="app.js?v=275"></script>${RANGE_UI}`);
+      }else if(!html.includes('rep-range-mobile-v272.js?v=275')){
+        html=html.includes('</body>')?html.replace('</body>',`${RANGE_ENGINE}${RANGE_UI}</body>`):`${html}${RANGE_ENGINE}${RANGE_UI}`;
       }
+
       const headers=new Headers(res.headers);
       headers.delete('content-length');
       headers.delete('content-encoding');
