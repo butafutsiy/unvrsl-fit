@@ -3,15 +3,20 @@
   if(window.__unvrslMobileFinalFix)return;window.__unvrslMobileFinalFix=true;
 
   const s=document.createElement('style');s.id='unvrsl-mobile-final-fix';s.textContent=`
-    /* iPhone bottom bar: safe area stays outside the bar instead of making the bar huge */
-    body{padding-bottom:92px!important}
-    .nav{left:8px!important;right:8px!important;bottom:calc(env(safe-area-inset-bottom) + 5px)!important;height:64px!important;min-height:64px!important;padding:7px 4px 5px!important;border-radius:20px!important;align-items:center!important}
+    /* iPhone bottom bar: keep navigation anchored to the visual viewport. */
+    body{padding-bottom:calc(104px + env(safe-area-inset-bottom))!important}
+    .nav{position:fixed!important;left:8px!important;right:8px!important;top:auto!important;bottom:calc(env(safe-area-inset-bottom) + 5px)!important;height:64px!important;min-height:64px!important;padding:7px 4px 5px!important;border-radius:20px!important;align-items:center!important;z-index:120!important;margin:0!important;will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden}
     .nav button{height:48px!important;min-height:48px!important;padding:2px 0 0!important;align-self:center!important;justify-content:center!important}
     .nav button::after{height:9px!important;line-height:9px!important;margin-top:2px!important;font-size:8.5px!important}
     .nav .ico{height:20px!important;margin:0 auto 2px!important}
     .nav .ico svg{width:20px!important;height:20px!important}
     .nav .start .ico{width:46px!important;height:46px!important;margin:-24px auto 2px!important;box-shadow:0 0 0 5px rgba(13,14,16,.97),0 7px 20px color-mix(in srgb,var(--green),transparent 70%)!important}
     .nav .start .ico svg{width:23px!important;height:23px!important}
+
+    /* Workout content always remains scrollable above fixed controls. */
+    #start.page.active{padding-bottom:calc(132px + env(safe-area-inset-bottom))!important}
+    body:has(#timer.show) #start.page.active{padding-bottom:calc(260px + env(safe-area-inset-bottom))!important}
+    #timer.show{position:fixed!important;bottom:calc(82px + env(safe-area-inset-bottom))!important;z-index:110!important}
 
     /* Streak action: remove the old square glyph */
     #home .streak>button{font-size:0!important;width:38px!important;height:38px!important;min-width:38px!important;padding:0!important;border-radius:50%!important;background:#25262a!important;border:1px solid #34363b!important;display:grid!important;place-items:center!important;color:var(--green)!important}
@@ -23,10 +28,14 @@
     #clients #onlineClientsPane,#clients #offlineClientsPane{min-width:0!important;width:100%!important}
     #clients>.card:first-child{padding-bottom:15px!important}
 
+    @media(max-width:760px){
+      .nav{left:7px!important;right:7px!important;transform:none!important}
+    }
     @media(max-width:430px){
       .nav{left:7px!important;right:7px!important;height:62px!important;min-height:62px!important;padding-top:6px!important;padding-bottom:4px!important}
       .nav button{height:46px!important;min-height:46px!important}
       .nav .start .ico{width:44px!important;height:44px!important;margin-top:-23px!important}
+      #timer.show{bottom:calc(78px + env(safe-area-inset-bottom))!important}
     }
   `;document.head.appendChild(s);
 
