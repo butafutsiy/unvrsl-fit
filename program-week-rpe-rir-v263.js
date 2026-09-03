@@ -1,18 +1,18 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=265,TRAINER='Семён';
+  const W=window,D=document,REV=266,TRAINER='Семён';
   if(W.__unvrslProgramWeekRpeRirV263)return;
   W.__unvrslProgramWeekRpeRirV263=true;
 
   const CYCLE=Object.freeze({
-    1:{pct:[70,75],rpe:[6,8],tempo:'3-1-2',baseRest:[120,180],isoRest:[60,90],methods:[],focus:'Техника, базовый объём'},
-    2:{pct:[75,80],rpe:[7,8],tempo:'3-1-2',baseRest:[120,180],isoRest:[60,90],methods:[],focus:'Рабочий объём'},
-    3:{pct:[80,85],rpe:[8,9],tempo:'2-0-2',baseRest:[90,150],isoRest:[45,75],methods:['UNVRSL','DS'],focus:'Механика и метаболика'},
-    4:{pct:[60,65],rpe:[4,6],tempo:'2-0-2',baseRest:[60,90],isoRest:[30,60],methods:['SLDR','FST-7'],focus:'Плотность и памп'},
-    5:{pct:[85,88],rpe:[8,9],tempo:'2-0-2',baseRest:[120,180],isoRest:[60,90],methods:['UNVRSL','DS'],focus:'Тяжёлый стимул'},
-    6:{pct:[60,65],rpe:[4,6],tempo:'3-1-2',baseRest:[60,90],isoRest:[30,60],methods:['SLDR','FST-7'],focus:'Разгрузка и памп'},
-    7:{pct:[88,90],rpe:[8.5,9.5],tempo:'2-0-1 / 2-0-X',baseRest:[180,240],isoRest:[90,120],methods:[],focus:'Сила'},
-    8:{pct:[90,100],rpe:[9,10],tempo:'2-0-X',baseRest:[240,360],isoRest:[90,120],methods:['TEST'],focus:'Контроль результатов',test:true}
+    1:{pct:[70,75],rpe:[6,8],tempo:'3-1-2',baseRest:[120,180],isoRest:[60,90],focus:'Техника, базовый объём'},
+    2:{pct:[75,80],rpe:[7,8],tempo:'3-1-2',baseRest:[120,180],isoRest:[60,90],focus:'Рабочий объём'},
+    3:{pct:[80,85],rpe:[8,9],tempo:'2-0-2',baseRest:[90,150],isoRest:[45,75],focus:'Механика и метаболика'},
+    4:{pct:[60,65],rpe:[4,6],tempo:'2-0-2',baseRest:[60,90],isoRest:[30,60],focus:'Плотность и памп'},
+    5:{pct:[85,88],rpe:[8,9],tempo:'2-0-2',baseRest:[120,180],isoRest:[60,90],focus:'Тяжёлый стимул'},
+    6:{pct:[60,65],rpe:[4,6],tempo:'3-1-2',baseRest:[60,90],isoRest:[30,60],focus:'Разгрузка и памп'},
+    7:{pct:[88,90],rpe:[8.5,9.5],tempo:'2-0-1 / 2-0-X',baseRest:[180,240],isoRest:[90,120],focus:'Сила'},
+    8:{pct:[90,100],rpe:[9,10],tempo:'2-0-X',baseRest:[240,360],isoRest:[90,120],focus:'Контроль результатов',test:true}
   });
 
   const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
@@ -41,7 +41,7 @@
     set('intensityMin',d.pct[0]);set('intensityMax',d.pct[1]);set('useIntensity',true);
     set('rpeMin',d.rpe[0]);set('rpeMax',d.rpe[1]);set('rirMin',Math.max(0,10-d.rpe[1]));set('rirMax',Math.max(0,10-d.rpe[0]));
     set('tempo',d.tempo);set('baseRestMin',d.baseRest[0]);set('baseRestMax',d.baseRest[1]);set('isolationRestMin',d.isoRest[0]);set('isolationRestMax',d.isoRest[1]);
-    if(force||!Array.isArray(w.methods)){w.methods=[...d.methods];changed=true}
+    if(Object.prototype.hasOwnProperty.call(w,'methods')){delete w.methods;changed=true}
     set('focus',d.focus);set('testWeek',!!d.test);set('loadProfileRevision',REV);set('loadProfileAuto',true);
     if(changed)p.updated=Date.now();
     return changed
@@ -65,8 +65,7 @@
     return {
       week:wn,intensityMin,intensityMax,rpeMin,rpeMax,rirHigh,rirLow,
       tempo:String(w.tempo||d?.tempo||''),baseRestMin,baseRestMax,isolationRestMin,isolationRestMax,
-      methods:Array.isArray(w.methods)?w.methods:(d?.methods||[]),focus:String(w.focus||d?.focus||''),test:!!(w.testWeek??d?.test),
-      manual:w.loadProfileManual===true,useIntensity:w.useIntensity!==false
+      focus:String(w.focus||d?.focus||''),test:!!(w.testWeek??d?.test),manual:w.loadProfileManual===true,useIntensity:w.useIntensity!==false
     }
   }
   W.unvrslWeekLoadProfileV263=weekProfile;
@@ -76,15 +75,8 @@
     const s=String(ex?.n||'').toLowerCase();
     return /(разгибан|сгибан|подъем|подъём|мах|разведен|сведен|бицеп|трицеп|кроссов|икр|дельт)/.test(s)?'isolation':'compound'
   }
-  function defaultMethod(pr,kind){
-    const m=pr?.methods||[];
-    if(m.includes('TEST'))return 'STANDARD';
-    if(kind==='compound'){if(m.includes('UNVRSL'))return 'UNVRSL';if(m.includes('SLDR'))return 'SLDR'}
-    if(kind==='isolation'){if(m.includes('DS'))return 'DS';if(m.includes('FST-7'))return 'FST-7'}
-    return 'STANDARD'
-  }
   function profileDefaults(pr,kind){
-    return {rpe:pr?.rpeMin!=null&&pr?.rpeMax!=null?Math.round(((pr.rpeMin+pr.rpeMax)/2)*2)/2:8,tempo:pr?.tempo||'2-0-2',rest:mid(kind==='isolation'?[pr.isolationRestMin,pr.isolationRestMax]:[pr.baseRestMin,pr.baseRestMax])||90,method:defaultMethod(pr,kind)}
+    return {rpe:pr?.rpeMin!=null&&pr?.rpeMax!=null?Math.round(((pr.rpeMin+pr.rpeMax)/2)*2)/2:8,tempo:pr?.tempo||'2-0-2',rest:mid(kind==='isolation'?[pr.isolationRestMin,pr.isolationRestMax]:[pr.baseRestMin,pr.baseRestMax])||90}
   }
 
   function ensureStyle(){
@@ -92,7 +84,6 @@
     const s=D.createElement('style');s.id='program-week-rpe-rir-v263-style';s.textContent=`
       .wr264-box{margin-top:12px;padding-top:12px;border-top:1px solid #303034}.wr264-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}.wr264-head b{font-size:14px}.wr264-rir{font-size:12px;font-weight:800;color:var(--green)}
       .wr264-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.wr264-grid .field{margin:0}.wr264-wide{grid-column:1/-1}.wr264-help{margin-top:8px;color:#85858b;font-size:11px;line-height:1.4}.wr264-focus{margin-top:9px}.wr264-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.wr264-actions .btn{width:100%;touch-action:manipulation}
-      .wr264-methods{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.wr264-method{padding:5px 8px;border-radius:999px;background:#29292d;color:#d8d8dc;font-size:11px;font-weight:800}.wr264-method.off{color:#838389}
       .wr264-client{margin:9px 0 13px;padding:12px 13px;border-radius:16px;background:#1a1a1d;border:1px solid #303034}.wr264-client-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.wr264-client-title{font-size:14px;font-weight:850}.wr264-client-pct{color:var(--green);font-size:13px;font-weight:850;white-space:nowrap}
       .wr264-client-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.wr264-client-chip{display:inline-flex;padding:5px 8px;border-radius:999px;background:#29292d;color:#d3d3d7;font-size:11px;font-weight:800}.wr264-focus-text{margin-top:8px;color:#a3a3a8;font-size:11px;line-height:1.35}.wr264-trainer{margin-top:8px;color:#8e8e93;font-size:11px;font-weight:700}
       .wr264-ex-note{margin:8px 0 10px;padding:10px 11px;border-radius:14px;background:#1a1a1d;border:1px solid #303034}.wr264-ex-line{font-size:11px;color:#9a9aa0;line-height:1.4}.wr264-ex-line b{color:#dddde1}.wr264-auto-btn{margin-top:8px;width:100%;touch-action:manipulation}
@@ -117,11 +108,8 @@
 
   function applyCycleToEditor(weekNo){
     const d=CYCLE[Number(weekNo)];if(!d)return;
-    populateEditorFromProfile({intensityMin:d.pct[0],intensityMax:d.pct[1],rpeMin:d.rpe[0],rpeMax:d.rpe[1],tempo:d.tempo,baseRestMin:d.baseRest[0],baseRestMax:d.baseRest[1],isolationRestMin:d.isoRest[0],isolationRestMax:d.isoRest[1],focus:d.focus});
-    const box=D.querySelector('#sheet .wr264-box');if(box){box.dataset.methods=d.methods.join(',');const host=box.querySelector('.wr264-methods');if(host)host.innerHTML=methodMarkup(d.methods)}
+    populateEditorFromProfile({intensityMin:d.pct[0],intensityMax:d.pct[1],rpeMin:d.rpe[0],rpeMax:d.rpe[1],tempo:d.tempo,baseRestMin:d.baseRest[0],baseRestMax:d.baseRest[1],isolationRestMin:d.isoRest[0],isolationRestMax:d.isoRest[1],focus:d.focus})
   }
-
-  function methodMarkup(methods){return methods?.length?methods.map(m=>`<span class="wr264-method">${escHtml(m==='TEST'?'Тест':m)}</span>`).join(''):'<span class="wr264-method off">Без методов</span>'}
 
   function bindIntensityButtons(card,p,wi){
     card.querySelectorAll('.pi261-preset').forEach(btn=>{
@@ -134,7 +122,6 @@
     if(saveBtn){saveBtn.removeAttribute('onclick');saveBtn.textContent='Сохранить профиль недели';if(saveBtn.dataset.wr265Bound!=='1'){saveBtn.dataset.wr265Bound='1';saveBtn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();saveProfile(p,wi)},{passive:false})}}
   }
 
-  function readMethods(box,pr){const raw=String(box?.dataset.methods||'').split(',').map(x=>x.trim()).filter(Boolean);return raw.length?raw:(pr?.methods||[])}
   function saveProfile(p,wi){
     const w=p?.weeks?.[Number(wi)];if(!p||!w)return;
     let i1=N(field('pi261Min')?.value),i2=N(field('pi261Max')?.value),r1=N(field('wr264RpeMin')?.value),r2=N(field('wr264RpeMax')?.value);
@@ -146,7 +133,8 @@
     w.tempo=String(field('wr264Tempo')?.value||'').trim()||cycleFor(w,wi)?.tempo||'2-0-2';
     const br=normalizePair(field('wr264BaseRestMin')?.value,field('wr264BaseRestMax')?.value,cycleFor(w,wi)?.baseRest),ir=normalizePair(field('wr264IsoRestMin')?.value,field('wr264IsoRestMax')?.value,cycleFor(w,wi)?.isoRest);
     w.baseRestMin=Math.max(0,br[0]??0);w.baseRestMax=Math.max(w.baseRestMin,br[1]??w.baseRestMin);w.isolationRestMin=Math.max(0,ir[0]??0);w.isolationRestMax=Math.max(w.isolationRestMin,ir[1]??w.isolationRestMin);
-    const box=D.querySelector('#sheet .wr264-box'),pr=weekProfile(p,wi,true);w.methods=readMethods(box,pr);w.focus=String(field('wr264Focus')?.value||'').trim();w.testWeek=!!cycleFor(w,wi)?.test;w.loadProfileManual=true;w.loadProfileAuto=false;w.loadProfileRevision=REV;p.updated=Date.now();saveState();
+    if(Object.prototype.hasOwnProperty.call(w,'methods'))delete w.methods;
+    w.focus=String(field('wr264Focus')?.value||'').trim();w.testWeek=!!cycleFor(w,wi)?.test;w.loadProfileManual=true;w.loadProfileAuto=false;w.loadProfileRevision=REV;p.updated=Date.now();saveState();
     try{W.toast?.('Профиль недели сохранён')}catch(_){ }
     try{typeof renderProgramEditor==='function'&&renderProgramEditor()}catch(_){ }
   }
@@ -163,18 +151,16 @@
     ensureProgramDefaults(p,false);const pr=weekProfile(p,wi,true);if(!pr)return;
     const editorKey=`${String(p.id)}|${wi}`;
     const existing=card.querySelector('.wr264-box');
-    if(existing&&existing.dataset.editorKey===editorKey){
-      bindIntensityButtons(card,p,wi);syncRirPreview();return
-    }
+    if(existing&&existing.dataset.editorKey===editorKey){bindIntensityButtons(card,p,wi);syncRirPreview();return}
     populateEditorFromProfile(pr);
     existing?.remove();card.querySelector('.wr263-box')?.remove();
-    const box=D.createElement('div');box.className='wr264-box';box.dataset.editorKey=editorKey;box.dataset.methods=(pr.methods||[]).join(',');box.innerHTML=`
+    const box=D.createElement('div');box.className='wr264-box';box.dataset.editorKey=editorKey;box.innerHTML=`
       <div class="wr264-head"><b>RPE / RIR недели</b><span id="wr264Rir" class="wr264-rir">RIR ${fmt(pr.rirHigh)}→${fmt(pr.rirLow)}</span></div>
       <div class="wr264-grid"><div class="field"><label>RPE от</label><input id="wr264RpeMin" inputmode="decimal" min="1" max="10" step="0.5" value="${pr.rpeMin??''}"></div><div class="field"><label>RPE до</label><input id="wr264RpeMax" inputmode="decimal" min="1" max="10" step="0.5" value="${pr.rpeMax??''}"></div></div>
       <div class="wr264-help">RIR считается автоматически: RIR = 10 − RPE. Конкретная нагрузка проверяется вместе с повторами и % e1RM.</div>
       <div class="wr264-grid" style="margin-top:12px"><div class="field wr264-wide"><label>Темп недели</label><input id="wr264Tempo" value="${escHtml(pr.tempo)}"></div><div class="field"><label>Отдых база, от · сек</label><input id="wr264BaseRestMin" inputmode="numeric" value="${pr.baseRestMin??''}"></div><div class="field"><label>До · сек</label><input id="wr264BaseRestMax" inputmode="numeric" value="${pr.baseRestMax??''}"></div><div class="field"><label>Отдых изоляция, от · сек</label><input id="wr264IsoRestMin" inputmode="numeric" value="${pr.isolationRestMin??''}"></div><div class="field"><label>До · сек</label><input id="wr264IsoRestMax" inputmode="numeric" value="${pr.isolationRestMax??''}"></div></div>
-      <div class="wr264-focus"><b style="font-size:12px">Методы недели</b><div class="wr264-methods">${methodMarkup(pr.methods)}</div></div>
       <div class="field wr264-focus"><label>Фокус недели</label><input id="wr264Focus" value="${escHtml(pr.focus)}"></div>
+      <div class="wr264-help">Методы тренировки выбираются вручную в каждом упражнении и не зависят от недели.</div>
       <div class="wr264-actions"><button class="btn" type="button" data-wr264-week>Вернуть W${pr.week} по схеме</button><button class="btn" type="button" data-wr264-cycle>Применить W1–W8</button></div>`;
     const toggle=card.querySelector('.pi261-toggle');if(toggle)toggle.insertAdjacentElement('beforebegin',box);else card.appendChild(box);
     field('wr264RpeMin')?.addEventListener('input',syncRirPreview);field('wr264RpeMax')?.addEventListener('input',syncRirPreview);
@@ -194,13 +180,13 @@
     if(host)host.innerHTML=`RPE <b>${fmt(rpe)}</b> · RIR <b>${fmt(rir)}</b> · ${reps} повт. ≈ <b>${fmt(pct)}%</b> e1RM`
   }
   function applyExerciseDefaults(def){
-    if(!def)return;const m=field('pmMethod');if(m){m.value=def.method;try{typeof programMethodDefaults==='function'&&programMethodDefaults(def.method)}catch(_){ }}setValue('pmRpe',def.rpe);setValue('pmTempo',def.tempo);setValue('pmRest',def.rest);updateExerciseRelation()
+    if(!def)return;setValue('pmRpe',def.rpe);setValue('pmTempo',def.tempo);setValue('pmRest',def.rest);updateExerciseRelation()
   }
   function decorateExerciseForm(x){
     const input=field('pmRpe');if(!input)return;const ctx=exerciseEditorContext(x);if(!ctx.pr)return;
     if(!ctx.existing)applyExerciseDefaults(ctx.defaults);
     D.querySelector('.wr264-ex-note')?.remove();const host=input.closest('.method-builder-grid')||input.closest('.field');if(!host)return;
-    const note=D.createElement('div');note.className='wr264-ex-note';note.innerHTML=`<div class="wr264-ex-line"><b>W${ctx.pr.week}</b> · ${fmt(ctx.pr.intensityMin)}–${fmt(ctx.pr.intensityMax)}% · RPE ${fmt(ctx.pr.rpeMin)}–${fmt(ctx.pr.rpeMax)} · RIR ${fmt(ctx.pr.rirHigh)}→${fmt(ctx.pr.rirLow)}</div><div class="wr264-ex-line">Темп ${escHtml(ctx.pr.tempo)} · отдых ${ctx.kind==='isolation'?`${ctx.pr.isolationRestMin}–${ctx.pr.isolationRestMax}`:`${ctx.pr.baseRestMin}–${ctx.pr.baseRestMax}`} сек · ${ctx.kind==='isolation'?'изоляция':'база'}</div><div id="wr264ExerciseRelation" class="wr264-ex-line" style="margin-top:5px"></div><button type="button" class="btn tiny wr264-auto-btn">↻ Подставить по неделе</button>`;
+    const note=D.createElement('div');note.className='wr264-ex-note';note.innerHTML=`<div class="wr264-ex-line"><b>W${ctx.pr.week}</b> · ${fmt(ctx.pr.intensityMin)}–${fmt(ctx.pr.intensityMax)}% · RPE ${fmt(ctx.pr.rpeMin)}–${fmt(ctx.pr.rpeMax)} · RIR ${fmt(ctx.pr.rirHigh)}→${fmt(ctx.pr.rirLow)}</div><div class="wr264-ex-line">Темп ${escHtml(ctx.pr.tempo)} · отдых ${ctx.kind==='isolation'?`${ctx.pr.isolationRestMin}–${ctx.pr.isolationRestMax}`:`${ctx.pr.baseRestMin}–${ctx.pr.baseRestMax}`} сек · ${ctx.kind==='isolation'?'изоляция':'база'}</div><div id="wr264ExerciseRelation" class="wr264-ex-line" style="margin-top:5px"></div><button type="button" class="btn tiny wr264-auto-btn">↻ Подставить нагрузку недели</button>`;
     host.insertAdjacentElement('afterend',note);note.querySelector('button')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();applyExerciseDefaults(ctx.defaults)},{passive:false});field('pmRpe')?.addEventListener('input',updateExerciseRelation);field('pmReps')?.addEventListener('input',updateExerciseRelation);updateExerciseRelation()
   }
 
@@ -218,7 +204,7 @@
 
   function clientCard(pr){
     if(!pr)return null;const node=D.createElement('div');node.className='wr264-client';const pct=pr.test?'Тест':`${fmt(pr.intensityMin)}–${fmt(pr.intensityMax)}%`;
-    node.innerHTML=`<div class="wr264-client-top"><div class="wr264-client-title">W${pr.week} · нагрузка недели</div><div class="wr264-client-pct">${pct}</div></div><div class="wr264-client-chips"><span class="wr264-client-chip">RPE ${fmt(pr.rpeMin)}–${fmt(pr.rpeMax)}</span><span class="wr264-client-chip">RIR ${fmt(pr.rirHigh)}→${fmt(pr.rirLow)}</span><span class="wr264-client-chip">Темп ${escHtml(pr.tempo)}</span><span class="wr264-client-chip">База ${pr.baseRestMin}–${pr.baseRestMax}с</span><span class="wr264-client-chip">Изоляция ${pr.isolationRestMin}–${pr.isolationRestMax}с</span>${pr.methods?.length?`<span class="wr264-client-chip">${pr.methods.map(x=>x==='TEST'?'Тест':x).join(' + ')}</span>`:''}</div><div class="wr264-focus-text">${escHtml(pr.focus)}</div><div class="wr264-trainer">Тренер ${TRAINER}</div>`;return node
+    node.innerHTML=`<div class="wr264-client-top"><div class="wr264-client-title">W${pr.week} · нагрузка недели</div><div class="wr264-client-pct">${pct}</div></div><div class="wr264-client-chips"><span class="wr264-client-chip">RPE ${fmt(pr.rpeMin)}–${fmt(pr.rpeMax)}</span><span class="wr264-client-chip">RIR ${fmt(pr.rirHigh)}→${fmt(pr.rirLow)}</span><span class="wr264-client-chip">Темп ${escHtml(pr.tempo)}</span><span class="wr264-client-chip">База ${pr.baseRestMin}–${pr.baseRestMax}с</span><span class="wr264-client-chip">Изоляция ${pr.isolationRestMin}–${pr.isolationRestMax}с</span></div><div class="wr264-focus-text">${escHtml(pr.focus)}</div><div class="wr264-trainer">Тренер ${TRAINER}</div>`;return node
   }
   function selectedClientProgram(){
     const s=state(),key=String(s?.clientPlanViewKey||s?.clientPrimaryProgramKey||'');if(!key.startsWith('coach:'))return null;const p=(s?.programs||[]).find(x=>String(x?.id)===key.slice(6));if(!p)return null;const saved=Number(s?.clientProgramWeeks?.[key]||1),wi=Math.max(0,Math.min((p.weeks?.length||1)-1,saved-1));return {p,wi,profile:weekProfile(p,wi,true)}
@@ -234,7 +220,7 @@
   function annotateCurrent(){
     const s=state(),cur=s?.current;if(!cur?.programId)return;const p=program(cur.programId);if(!p)return;const wi=Math.max(0,Number(cur.programWeekNumber||cur.w||1)-1),pr=weekProfile(p,wi,true);if(!pr)return;
     const sig=[pr.week,pr.intensityMin,pr.intensityMax,pr.rpeMin,pr.rpeMax,pr.tempo,pr.baseRestMin,pr.baseRestMax,pr.isolationRestMin,pr.isolationRestMax].join('|');if(cur.weekLoadProfileSigV264===sig)return;
-    cur.weekLoadProfileSigV264=sig;cur.programWeekRpeMin=pr.rpeMin;cur.programWeekRpeMax=pr.rpeMax;cur.programWeekRirMin=pr.rirLow;cur.programWeekRirMax=pr.rirHigh;cur.programWeekTempo=pr.tempo;cur.programWeekBaseRestMin=pr.baseRestMin;cur.programWeekBaseRestMax=pr.baseRestMax;cur.programWeekIsolationRestMin=pr.isolationRestMin;cur.programWeekIsolationRestMax=pr.isolationRestMax;cur.programWeekMethods=[...(pr.methods||[])];cur.programWeekFocus=pr.focus;cur.programWeekLoadProfileRevision=REV;
+    cur.weekLoadProfileSigV264=sig;cur.programWeekRpeMin=pr.rpeMin;cur.programWeekRpeMax=pr.rpeMax;cur.programWeekRirMin=pr.rirLow;cur.programWeekRirMax=pr.rirHigh;cur.programWeekTempo=pr.tempo;cur.programWeekBaseRestMin=pr.baseRestMin;cur.programWeekBaseRestMax=pr.baseRestMax;cur.programWeekIsolationRestMin=pr.isolationRestMin;cur.programWeekIsolationRestMax=pr.isolationRestMax;delete cur.programWeekMethods;cur.programWeekFocus=pr.focus;cur.programWeekLoadProfileRevision=REV;
     if(!(N(cur.target)>0)&&pr.rpeMin!=null&&pr.rpeMax!=null)cur.target=Math.round(((pr.rpeMin+pr.rpeMax)/2)*2)/2;
     (cur.ex||[]).forEach(ex=>{const kind=exerciseKind(ex);if(!ex.tempo)ex.tempo=pr.tempo;if(!(N(ex.rest)>0))ex.rest=mid(kind==='isolation'?[pr.isolationRestMin,pr.isolationRestMax]:[pr.baseRestMin,pr.baseRestMax])||90});saveState()
   }
