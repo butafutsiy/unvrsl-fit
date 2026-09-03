@@ -93,24 +93,41 @@
   window.addEventListener('pageshow',schedule,{passive:true});
 })();
 
-// First script in index.html: the splash must never be able to cover the app forever,
-// even if a later startup owner or cloud module fails before it can release the gate.
+// This is the first external script in index.html. Never let the startup cover
+// become a dependency for entering the app. The shell is exposed immediately;
+// the orchestrator can continue settling cloud data and canonical owners later.
 (()=>{
-  if(window.__unvrslStartupHardFailsafeV272)return;
-  window.__unvrslStartupHardFailsafeV272=true;
-  setTimeout(()=>{
+  if(window.__unvrslStartupHardFailsafeV273)return;
+  window.__unvrslStartupHardFailsafeV273=true;
+
+  const expose=(reason)=>{
     const root=document.documentElement;
     const splash=document.getElementById('unvrsl-startup-v258');
-    if(!splash||root.classList.contains('unvrsl-app-ready-v260')||window.__unvrslStartupComplete)return;
+    root.classList.add('unvrsl-app-ready-v260');
+    document.body?.classList.add('unvrsl-app-ready-v260');
+    window.__unvrslStartupReleaseReasonV260=window.__unvrslStartupReleaseReasonV260||reason;
+    if(splash){
+      splash.classList.add('out');
+      splash.style.pointerEvents='none';
+      setTimeout(()=>{
+        splash.remove();
+        document.getElementById('unvrsl-startup-v258-style')?.remove();
+      },260);
+    }else{
+      document.getElementById('unvrsl-startup-v258-style')?.remove();
+    }
+  };
+
+  expose('immediate-shell');
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>expose('dom-ready-shell'),{once:true});
+  window.addEventListener('pageshow',()=>expose('pageshow-shell'),{passive:true});
+
+  setTimeout(()=>{
     try{
       const current=window.render;
       const base=current?.__unvrslBootRenderBaseV260||current;
-      if(typeof base==='function')base.call(window)
-    }catch(e){console.warn('UNVRSL first-stage startup failsafe',e)}
-    root.classList.add('unvrsl-app-ready-v260');
-    document.body?.classList.add('unvrsl-app-ready-v260');
-    window.__unvrslStartupReleaseReasonV260='hard-failsafe';
-    splash.classList.add('out');
-    setTimeout(()=>{splash.remove();document.getElementById('unvrsl-startup-v258-style')?.remove()},220)
-  },6000)
+      if(typeof base==='function')base.call(window);
+    }catch(e){console.warn('UNVRSL first-stage startup recovery',e)}
+    expose('hard-failsafe');
+  },1800);
 })();
