@@ -1,7 +1,8 @@
 'use strict';
 (()=>{
-  const W=window,D=document,ROOT_CLASS='unvrsl-client-workout-scroll-v267';
-  if(W.__unvrslClientWorkoutScrollV267)return;
+  const W=window,D=document,ROOT_CLASS='unvrsl-client-workout-scroll-v268',TIMER_CLASS='unvrsl-workout-timer-visible-v268';
+  if(W.__unvrslClientWorkoutScrollV268)return;
+  W.__unvrslClientWorkoutScrollV268=true;
   W.__unvrslClientWorkoutScrollV267=true;
   W.__unvrslClientWorkoutScrollV266=true;
   W.__unvrslClientWorkoutScrollV265=true;
@@ -10,19 +11,20 @@
   W.__unvrslClientWorkoutScrollV261=true;
   W.__unvrslClientWorkoutScrollV259=true;
 
-  ['259','261','263','264','265','266'].forEach(v=>D.getElementById(`unvrsl-client-workout-scroll-v${v}-style`)?.remove());
-  const oldClasses=['unvrsl-client-workout-scroll-v259','unvrsl-client-workout-scroll-v261','unvrsl-client-workout-scroll-v263','unvrsl-client-workout-scroll-v264','unvrsl-client-workout-scroll-v265','unvrsl-client-workout-scroll-v266'];
+  ['259','261','263','264','265','266','267'].forEach(v=>D.getElementById(`unvrsl-client-workout-scroll-v${v}-style`)?.remove());
+  const oldClasses=['unvrsl-client-workout-scroll-v259','unvrsl-client-workout-scroll-v261','unvrsl-client-workout-scroll-v263','unvrsl-client-workout-scroll-v264','unvrsl-client-workout-scroll-v265','unvrsl-client-workout-scroll-v266','unvrsl-client-workout-scroll-v267'];
   D.documentElement?.classList?.remove(...oldClasses);
-  D.body?.classList?.remove(...oldClasses);
+  D.body?.classList?.remove(...oldClasses,TIMER_CLASS);
 
   const style=D.createElement('style');
-  style.id='unvrsl-client-workout-scroll-v267-style';
+  style.id='unvrsl-client-workout-scroll-v268-style';
   style.textContent=`
     html.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:auto!important;overscroll-behavior-y:auto!important}
     body.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:visible!important;touch-action:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch}
-    body.${ROOT_CLASS} #start.page.active{overflow:visible!important;overflow-anchor:none!important;touch-action:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch}
+    body.${ROOT_CLASS} #start.page.active{overflow:visible!important;overflow-anchor:none!important;touch-action:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch;padding-bottom:calc(124px + env(safe-area-inset-bottom))!important}
+    body.${ROOT_CLASS}.${TIMER_CLASS} #start.page.active{padding-bottom:calc(258px + env(safe-area-inset-bottom))!important}
     body.${ROOT_CLASS} #start.page.active *{touch-action:auto!important}
-    body.${ROOT_CLASS} #timer.show{touch-action:auto!important}
+    body.${ROOT_CLASS} #timer.show{touch-action:auto!important;bottom:calc(78px + env(safe-area-inset-bottom))!important}
     body.${ROOT_CLASS} #modal:not(.show){display:none!important;pointer-events:none!important}
     #start .te200-readiness{width:100%!important;min-height:58px!important;box-sizing:border-box!important;margin:10px 0 4px!important}
     #start .exercise .te200-rec,#start .exercise .te200-auto{grid-column:1 / -1!important;width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important}
@@ -73,10 +75,18 @@
     requestAnimationFrame(()=>{cleanupQueued=false;removeExerciseHeaderRpe();cleanupEmptyWorkoutArtifacts()});
   }
 
+  function syncTimerClearance(on=active()){
+    const timer=D.getElementById('timer');
+    const visible=!!on&&!!timer?.classList?.contains('show');
+    D.body?.classList?.toggle(TIMER_CLASS,visible);
+    return visible;
+  }
+
   function sync(){
     const on=active();
     D.documentElement?.classList?.toggle(ROOT_CLASS,on);
     D.body?.classList?.toggle(ROOT_CLASS,on);
+    syncTimerClearance(on);
     if(on){
       const modal=D.getElementById('modal');
       if(modal&&!modal.classList.contains('show')){
@@ -135,6 +145,7 @@
     clickedCheck=null;
     syncAllCheckButtons();
     patchProgress();
+    syncTimerClearance(true);
   }
 
   /* Keep the workout DOM mounted when a set is completed. The base toggleSet
@@ -144,7 +155,7 @@
      UNVRSL/SLDR rows where visual card indexes differ from exercise indexes. */
   function installStableToggleSet(){
     const current=W.toggleSet;
-    if(typeof current!=='function'||current.__unvrslNoWorkoutRebuildV267)return false;
+    if(typeof current!=='function'||current.__unvrslNoWorkoutRebuildV268)return false;
     const wrapped=function(ei,si){
       const winStart=W.startPage;
       let lexicalStart=winStart;
@@ -161,14 +172,14 @@
         removeExerciseHeaderRpe();
       }
     };
-    wrapped.__unvrslNoWorkoutRebuildV267=true;
+    wrapped.__unvrslNoWorkoutRebuildV268=true;
     wrapped.__unvrslNoWorkoutRebuildBase=current;
     try{W.toggleSet=wrapped}catch(_){ }
     try{toggleSet=wrapped}catch(_){ }
     return true;
   }
 
-  const start=D.getElementById('start'),modal=D.getElementById('modal');
+  const start=D.getElementById('start'),modal=D.getElementById('modal'),timer=D.getElementById('timer');
   const classObserver=typeof MutationObserver==='function'&&start?new MutationObserver(muts=>{
     if(muts.some(m=>m.type==='attributes'))sync();
     if(muts.some(m=>m.type==='childList'))queueCleanup();
@@ -177,6 +188,9 @@
 
   const modalObserver=typeof MutationObserver==='function'&&modal?new MutationObserver(sync):null;
   modalObserver?.observe(modal,{attributes:true,attributeFilter:['class']});
+
+  const timerObserver=typeof MutationObserver==='function'&&timer?new MutationObserver(()=>syncTimerClearance()):null;
+  timerObserver?.observe(timer,{attributes:true,attributeFilter:['class']});
 
   W.addEventListener?.('unvrsl:cloud-modules-settled',()=>{installStableToggleSet();sync()});
   W.addEventListener?.('unvrsl:modules-ready',()=>{installStableToggleSet();sync()});
