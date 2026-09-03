@@ -7,3 +7,11 @@ window.UNVRSL_ROUTINES=(window.UNVRSL_ROUTINES||[]).concat([{"w":1,"c":"A1","t":
   s.async=false;
   (document.head||document.documentElement).appendChild(s);
 })();
+(()=>{
+  if(window.__unvrslClientWorkoutScrollLoaderV268)return;
+  window.__unvrslClientWorkoutScrollLoaderV268=true;
+  const s=document.createElement('script');
+  s.src='client-workout-scroll-v259.js?v=268';
+  s.async=false;
+  (document.head||document.documentElement).appendChild(s);
+})();
