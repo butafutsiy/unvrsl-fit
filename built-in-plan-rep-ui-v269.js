@@ -1,7 +1,8 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=270;
-  if(W.__unvrslBuiltInPlanRepUiV270)return;
+  const W=window,D=document,REV=271;
+  if(W.__unvrslBuiltInPlanRepUiV271)return;
+  W.__unvrslBuiltInPlanRepUiV271=true;
   W.__unvrslBuiltInPlanRepUiV270=true;
   W.__unvrslBuiltInPlanRepUiV269=true;
 
@@ -53,7 +54,7 @@
 
   function installEditSet(){
     let base=W.editSet;try{if(typeof editSet==='function')base=editSet}catch(_){ }
-    if(typeof base!=='function'||base.__bir270)return false;
+    if(typeof base!=='function'||base.__bir271)return false;
     const wrapped=function(ei,si,k,v){
       if(k==='r'){
         const set=state()?.current?.ex?.[ei]?.set?.[si];
@@ -61,7 +62,7 @@
       }
       return base.apply(this,arguments)
     };
-    wrapped.__bir270=true;wrapped.__bir269=true;wrapped.__bir270Base=base;W.editSet=wrapped;try{editSet=wrapped}catch(_){ }return true
+    wrapped.__bir271=true;wrapped.__bir270=true;wrapped.__bir269=true;wrapped.__bir271Base=base;W.editSet=wrapped;try{editSet=wrapped}catch(_){ }return true
   }
 
   function previewRoot(){
@@ -87,14 +88,14 @@
   function installPreview(){
     let current=W.preview;try{if(typeof preview==='function')current=preview}catch(_){ }
     if(typeof current!=='function')return false;
-    if(current.__bir270)return true;
-    const base=current.__bir269Base||current.__bir268Base||current;
+    if(current.__bir271)return true;
+    const base=current.__bir270Base||current.__bir269Base||current.__bir268Base||current;
     const wrapped=function(w,c){
       const r=routineFor(w,c),out=base.apply(this,arguments);
       if(r){requestAnimationFrame(()=>decoratePreview(r));setTimeout(()=>decoratePreview(r),60)}
       return out
     };
-    wrapped.__bir270=true;wrapped.__bir269=true;wrapped.__bir268=true;wrapped.__bir270Base=base;wrapped.__bir268Base=base;
+    wrapped.__bir271=true;wrapped.__bir270=true;wrapped.__bir269=true;wrapped.__bir268=true;wrapped.__bir271Base=base;wrapped.__bir268Base=base;
     W.preview=wrapped;try{preview=wrapped}catch(_){ }return true
   }
 
@@ -102,11 +103,11 @@
 
   function bindRangeInput(input,set,lo,hi){
     if(!input||hi<=lo)return;
-    const shown=label(lo,hi);input.dataset.bir270Range=shown;input.dataset.bir270Lo=String(lo);input.type='text';input.inputMode='numeric';
-    if(!input.__bir270Bound){
-      input.__bir270Bound=true;
-      input.addEventListener('focus',()=>{const rg=input.dataset.bir270Range;if(rg&&input.value===rg){input.value=String(Number.isFinite(Number(set?.r))?set.r:input.dataset.bir270Lo||'');setTimeout(()=>input.select?.(),0)}});
-      input.addEventListener('blur',()=>setTimeout(()=>{if(!set?.repManual&&!set?.ok&&input.dataset.bir270Range&&D.activeElement!==input)input.value=input.dataset.bir270Range},0))
+    const shown=label(lo,hi);input.dataset.bir271Range=shown;input.dataset.bir271Lo=String(lo);input.type='text';input.inputMode='numeric';
+    if(!input.__bir271Bound){
+      input.__bir271Bound=true;
+      input.addEventListener('focus',()=>{const rg=input.dataset.bir271Range;if(rg&&input.value===rg){input.value=String(Number.isFinite(Number(set?.r))?set.r:input.dataset.bir271Lo||'');setTimeout(()=>input.select?.(),0)}});
+      input.addEventListener('blur',()=>setTimeout(()=>{if(!set?.repManual&&!set?.ok&&input.dataset.bir271Range&&D.activeElement!==input)input.value=input.dataset.bir271Range},0))
     }
     if(!set?.repManual&&!set?.ok&&D.activeElement!==input&&input.value!==shown)input.value=shown
   }
@@ -129,16 +130,31 @@
         const next=`Рабочие подходы · ${shown} повт.${rest?` · ${rest}`:''}`;
         if(subtitle.textContent!==next)subtitle.textContent=next
       }else{
-        let tag=card.querySelector('.bir270-target');if(!tag){tag=D.createElement('div');tag.className='bir270-target muted';tag.style.cssText='margin-top:4px;font-size:14px';card.querySelector('.exname')?.insertAdjacentElement('afterend',tag)}if(tag&&tag.textContent!==`Цель ${shown} повт.`)tag.textContent=`Цель ${shown} повт.`
+        let tag=card.querySelector('.bir271-target');if(!tag){tag=D.createElement('div');tag.className='bir271-target muted';tag.style.cssText='margin-top:4px;font-size:14px';card.querySelector('.exname')?.insertAdjacentElement('afterend',tag)}if(tag&&tag.textContent!==`Цель ${shown} повт.`)tag.textContent=`Цель ${shown} повт.`
       }
       const head=card.querySelector('.sethead');if(head){const col=head.children?.[2];if(col&&col.textContent!==`повт. ${shown}`)col.textContent=`повт. ${shown}`}
       [...card.querySelectorAll('.setrow')].forEach((row,ri)=>{const set=ex?.set?.[ri];if(!set)return;bindRangeInput(findRepInput(row),set,rawLo,rawHi)})
     })
   }
 
+  function releaseStartupIfStuck(){
+    if(W.__unvrslStartupComplete)return;
+    const splash=D.getElementById('unvrsl-startup-v258');if(!splash)return;
+    try{
+      const gated=W.render,base=gated?.__unvrslBootRenderBaseV260;
+      if(typeof base==='function')base.call(W);else if(typeof gated==='function')gated.call(W)
+    }catch(e){console.warn('UNVRSL startup failsafe render',e)}
+    D.documentElement?.classList.add('unvrsl-app-ready-v260');
+    D.body?.classList.add('unvrsl-app-ready-v260');
+    W.__unvrslStartupReleaseReasonV260='failsafe';
+    splash.classList.add('out');
+    setTimeout(()=>{splash.remove();D.getElementById('unvrsl-startup-v258-style')?.remove()},180)
+  }
+
   let raf=0;const schedule=()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;decorateWorkout()})};
   function install(){normalizeRoutineData();hydrateCurrent();installEditSet();installPreview();schedule()}
   install();[50,120,250,500,900,1600,2800].forEach(ms=>setTimeout(install,ms));
+  setTimeout(releaseStartupIfStuck,3200);
   new MutationObserver(schedule).observe(D.documentElement,{subtree:true,childList:true});
   for(const ev of ['unvrsl:modules-ready','unvrsl:app-ready','unvrsl:training-engine-ready'])W.addEventListener?.(ev,install,{passive:true});
 })();
