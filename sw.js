@@ -1,4 +1,5 @@
 const CACHE_PREFIX='unvrsl-fit-';
+const SW_RELEASE='v272-startup-recovery';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
@@ -10,6 +11,15 @@ self.addEventListener('activate',event=>{
       .then(keys=>Promise.all(keys.filter(key=>key.startsWith(CACHE_PREFIX)).map(key=>caches.delete(key))))
       .then(()=>self.registration.navigationPreload?.enable().catch(()=>{}))
       .then(()=>self.clients.claim())
+      .then(()=>self.clients.matchAll({type:'window',includeUncontrolled:true}))
+      .then(clients=>Promise.all(clients.map(client=>{
+        try{
+          const url=new URL(client.url);
+          if(url.origin!==self.location.origin)return null;
+          url.searchParams.set('__unvrsl_refresh',Date.now().toString());
+          return client.navigate(url.href).catch(()=>null)
+        }catch(_){return null}
+      })))
   )
 });
 
@@ -24,7 +34,7 @@ self.addEventListener('fetch',event=>{
   // Supabase/API/CDN responses are never stored in the PWA cache.
   if(url.origin!==self.location.origin)return;
 
-  // v261 intentionally disables application response caching. This prevents
-  // old and new UI modules from being mixed after an update.
+  // Never mix application files from different releases. In particular,
+  // startup owners and index.html must always come from the network.
   event.respondWith(fetch(event.request,{cache:'no-store'}))
 });
