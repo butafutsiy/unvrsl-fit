@@ -32,7 +32,6 @@
   window.unvrslScriptRetiredV254=isRetired;
   window.unvrslScriptRetiredV253=isRetired;
 
-  // Block every superseded owner before any delayed loader can execute it.
   window.__unvrslLegacyRetirementV253=true;
   window.__unvrslStatsDashboardV2=true;
   window.__unvrslHomeStatsV2=true;
@@ -92,4 +91,26 @@
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
   window.addEventListener('pageshow',schedule,{passive:true});
+})();
+
+// First script in index.html: the splash must never be able to cover the app forever,
+// even if a later startup owner or cloud module fails before it can release the gate.
+(()=>{
+  if(window.__unvrslStartupHardFailsafeV272)return;
+  window.__unvrslStartupHardFailsafeV272=true;
+  setTimeout(()=>{
+    const root=document.documentElement;
+    const splash=document.getElementById('unvrsl-startup-v258');
+    if(!splash||root.classList.contains('unvrsl-app-ready-v260')||window.__unvrslStartupComplete)return;
+    try{
+      const current=window.render;
+      const base=current?.__unvrslBootRenderBaseV260||current;
+      if(typeof base==='function')base.call(window)
+    }catch(e){console.warn('UNVRSL first-stage startup failsafe',e)}
+    root.classList.add('unvrsl-app-ready-v260');
+    document.body?.classList.add('unvrsl-app-ready-v260');
+    window.__unvrslStartupReleaseReasonV260='hard-failsafe';
+    splash.classList.add('out');
+    setTimeout(()=>{splash.remove();document.getElementById('unvrsl-startup-v258-style')?.remove()},220)
+  },6000)
 })();
