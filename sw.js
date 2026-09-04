@@ -1,4 +1,4 @@
-const SW_RELEASE='v285-final-ghost-rep-ranges';
+const SW_RELEASE='v286-original-ghost-rep-inputs';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
