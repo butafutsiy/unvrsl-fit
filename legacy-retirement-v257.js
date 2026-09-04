@@ -1,7 +1,8 @@
-'use strict'; // Canonical retirement registry for release v292.
+'use strict'; // Canonical retirement registry for release v293 recommendation display gate.
 (()=>{
   if(window.__unvrslLegacyRetirementV257)return;
   window.__unvrslLegacyRetirementV257=true;
+  window.__unvrslLegacyRetirementV293=true;
   window.__unvrslLegacyRetirementV292=true;
   window.__unvrslLegacyRetirementV291=true;
   window.__unvrslLegacyRetirementV260=true;
@@ -26,12 +27,14 @@
   const names=new Set(retired);
   const file=src=>String(src||'').split(/[?#]/)[0].replace(/\\/g,'/').split('/').pop();
   const isRetired=src=>names.has(file(src));
-  window.UNVRSL_RETIRED_SCRIPTS_V292=Object.freeze(retired.slice());
-  window.UNVRSL_RETIRED_SCRIPTS_V291=window.UNVRSL_RETIRED_SCRIPTS_V292;
-  window.UNVRSL_RETIRED_SCRIPTS_V257=window.UNVRSL_RETIRED_SCRIPTS_V292;
-  window.UNVRSL_RETIRED_SCRIPTS_V256=window.UNVRSL_RETIRED_SCRIPTS_V292;
-  window.UNVRSL_RETIRED_SCRIPTS_V255=window.UNVRSL_RETIRED_SCRIPTS_V292;
-  window.UNVRSL_RETIRED_SCRIPTS_V254=window.UNVRSL_RETIRED_SCRIPTS_V292;
+  window.UNVRSL_RETIRED_SCRIPTS_V293=Object.freeze(retired.slice());
+  window.UNVRSL_RETIRED_SCRIPTS_V292=window.UNVRSL_RETIRED_SCRIPTS_V293;
+  window.UNVRSL_RETIRED_SCRIPTS_V291=window.UNVRSL_RETIRED_SCRIPTS_V293;
+  window.UNVRSL_RETIRED_SCRIPTS_V257=window.UNVRSL_RETIRED_SCRIPTS_V293;
+  window.UNVRSL_RETIRED_SCRIPTS_V256=window.UNVRSL_RETIRED_SCRIPTS_V293;
+  window.UNVRSL_RETIRED_SCRIPTS_V255=window.UNVRSL_RETIRED_SCRIPTS_V293;
+  window.UNVRSL_RETIRED_SCRIPTS_V254=window.UNVRSL_RETIRED_SCRIPTS_V293;
+  window.unvrslScriptRetiredV293=isRetired;
   window.unvrslScriptRetiredV292=isRetired;
   window.unvrslScriptRetiredV291=isRetired;
   window.unvrslScriptRetiredV257=isRetired;
@@ -42,6 +45,7 @@
 
   // One recommendation owner only. Old model/finalizer versions are permanently blocked.
   window.__unvrslCanonicalRecommendationOwner='training-load-model-v292';
+  window.__unvrslSmartRecommendationRetiredV293=true;
   window.__unvrslSmartRecommendationRetiredV292=true;
   window.__unvrslSmartRecommendationRetiredV291=true;
   window.__unvrslAdaptiveEffortV2=true;
@@ -80,22 +84,54 @@
     #stats .sd2-heat-wrap,#stats .sd2-card:has(.sd2-weight-head),
     #home > .card:has(> .weight-top),
     ${OLD_REC_SELECTOR}{display:none!important}
+    #start .te200-rec{display:none!important}
+    #start .te200-rec.unvrsl-v292-ready{display:flex!important}
   `;
   document.head.appendChild(style);
 
   const obsolete='#unvrsl-startup-splash,#unvrsl-startup-splash-v156,#unvrsl-startup-splash-final,#unvrsl-startup-v256,#unvrslBoot,#unvrsl-startup-splash-style,#unvrsl-startup-splash-v156-style,#unvrsl-startup-splash-final-style,#unvrsl-startup-v256-style,#unvrsl-boot-style,#unvrsl-boot-cover,#unvrsl-boot-cover-style,#stats .profile-card-head,#stats .profile-overview,#stats .own-body-progress,#stats .stats-muscle-week,#stats .stats-last-session-v104-wrap';
   const oldGlobals=['anatomeMuscleCardHtmlV253','anatomeMountCardV253','unvrslStatsSessions208','statsOpenWorkout208','statsWeightRange','statsWeightSheet','statsSaveWeight','statsGoalSheet','statsSaveGoal','statsEnsureCanonicalV253','clientPlanProfileInjectV222','clientPlanProfileRefresh198','clientPlanOpenProfile198','clientPlanMeasure198'];
-  let queued=false,lastLockedSession='';
+  let queued=false,lastLockedSession='',recGateSession='',recGateBaseAt='';
 
   function appState(){try{if(typeof st!=='undefined'){window.st=st;return st}}catch(_){ }return window.st||null}
   function removeHistory(root){const head=root?.querySelector('#statsWorkoutHistory208');if(!head)return;const card=head.nextElementSibling;if(card?.classList.contains('sd2-card'))card.remove();head.remove()}
   function retireGlobals(){oldGlobals.forEach(key=>{try{delete window[key]}catch(e){window[key]=undefined}})}
+
+  function resetPersistedRecommendation(cur){
+    const sid=String(cur?.id||'');if(!sid||sid===recGateSession)return false;
+    recGateSession=sid;recGateBaseAt=String(cur?.trainingLoadModelAt||'');cur.__recommendationGateBaseAtV293=recGateBaseAt;
+    let changed=false;
+    for(const k of ['trainingLoadModelRevision','trainingProgressionRevision','trainingProgressionAt']){if(Object.prototype.hasOwnProperty.call(cur,k)){delete cur[k];changed=true}}
+    (cur.ex||[]).forEach(ex=>{
+      for(const k of ['trainingProgression292','trainingProgression291','trainingProgression290']){if(Object.prototype.hasOwnProperty.call(ex,k)){delete ex[k];changed=true}}
+      (ex.set||[]).forEach(set=>{
+        if(!set?.ok&&Object.prototype.hasOwnProperty.call(set,'recommendedW')){delete set.recommendedW;changed=true}
+        for(const k of ['progressionGateV292','progressionGateV291','progressionGateV290','trainingIntensity292']){if(Object.prototype.hasOwnProperty.call(set,k)){delete set[k];changed=true}}
+      })
+    });
+    cur.recommendationDisplayGateV293='waiting_v292';
+    setTimeout(()=>{try{window.trainingLoadModel292?.run?.(true)}catch(_){ }},0);
+    return changed
+  }
+
+  function recommendationFresh(cur){
+    if(!cur||String(cur.id||'')!==recGateSession)return false;
+    if(Number(cur.trainingLoadModelRevision)!==292)return false;
+    const at=String(cur.trainingLoadModelAt||'');if(!at)return false;
+    return at!==String(cur.__recommendationGateBaseAtV293??recGateBaseAt??'')
+  }
+  function syncCanonicalRecommendationVisibility(){
+    const cur=appState()?.current,fresh=recommendationFresh(cur);
+    document.querySelectorAll('#start .te200-rec').forEach(el=>el.classList.toggle('unvrsl-v292-ready',fresh));
+    if(fresh&&cur)cur.recommendationDisplayGateV293='ready'
+  }
 
   function lockLegacyWeightState(){
     const s=appState();if(!s)return false;let changed=false;
     if(s.nextSuggestions&&typeof s.nextSuggestions==='object'&&Object.keys(s.nextSuggestions).length){s.nextSuggestions={};changed=true}
     const cur=s.current;if(!cur)return changed;
     const sid=String(cur.id||'');
+    if(resetPersistedRecommendation(cur))changed=true;
     if(cur.unvrslAdaptive174Applied!==true){cur.unvrslAdaptive174Applied=true;changed=true}
     if(cur.adaptiveEffortV2Applied!==true){cur.adaptiveEffortV2Applied=true;changed=true}
     if(cur.adaptiveDecision!=='engine292'){cur.adaptiveDecision='engine292';changed=true}
@@ -111,8 +147,6 @@
         for(const k of ['adaptiveSuggestedW','adaptiveRecommendation','recommendation194','engine196Recommendation']){
           if(Object.prototype.hasOwnProperty.call(set,k)){delete set[k];changed=true}
         }
-        // A persisted recommendation from an old runtime must never flash before v292 recalculates it.
-        if(set?.recommendedW!=null&&!set?.trainingIntensity292){delete set.recommendedW;changed=true}
         if(Object.prototype.hasOwnProperty.call(set,'progressionGateV290')){delete set.progressionGateV290;changed=true}
         if(Object.prototype.hasOwnProperty.call(set,'progressionGateV291')){delete set.progressionGateV291;changed=true}
       })
@@ -120,6 +154,7 @@
     if(cur.trainingMathOwner&&cur.trainingMathOwner!=='training-load-model-v292'){cur.trainingMathOwner='training-load-model-v292';changed=true}
     if(sid&&sid!==lastLockedSession)lastLockedSession=sid;
     if(changed){try{if(typeof save==='function')save();else window.save?.()}catch(_){ }}
+    syncCanonicalRecommendationVisibility();
     return changed
   }
 
@@ -145,16 +180,18 @@
     queued=false;retireGlobals();retireOldRecommendationApi();lockLegacyWeightState();document.body?.classList.remove('unvrsl-booting');document.querySelectorAll(obsolete).forEach(el=>el.remove());document.querySelectorAll(OLD_REC_SELECTOR).forEach(el=>el.remove());
     const stats=document.getElementById('stats');removeHistory(stats);if(stats){[...stats.querySelectorAll('.sd2-card')].forEach(card=>{const text=(card.textContent||'').trim();if(card.querySelector('.sd2-weight-head')||/^Активность\s*—\s*последние 12 месяцев/i.test(text))card.remove()})}
     const home=document.getElementById('home');[...(home?.children||[])].forEach(card=>{if(card.classList?.contains('card')&&card.querySelector(':scope > .weight-top'))card.remove()});
-    const sheet=document.getElementById('sheet');if(sheet?.querySelector('.tcv3-head'))sheet.querySelectorAll('.trainer-remove-programs-block,.trainer-live-programs,.trainer-program-control-v2').forEach(el=>el.remove())
+    const sheet=document.getElementById('sheet');if(sheet?.querySelector('.tcv3-head'))sheet.querySelectorAll('.trainer-remove-programs-block,.trainer-live-programs,.trainer-program-control-v2').forEach(el=>el.remove());
+    syncCanonicalRecommendationVisibility()
   }
-  window.unvrslLegacyCleanV292=clean;window.unvrslLegacyCleanV291=clean;window.unvrslLegacyCleanV260=clean;
-  window.unvrslLegacyWeightLockV292=lockLegacyWeightState;
+  window.unvrslLegacyCleanV293=clean;window.unvrslLegacyCleanV292=clean;window.unvrslLegacyCleanV291=clean;window.unvrslLegacyCleanV260=clean;
+  window.unvrslLegacyWeightLockV293=lockLegacyWeightState;window.unvrslLegacyWeightLockV292=lockLegacyWeightState;
+  window.unvrslRecommendationVisibilitySyncV293=syncCanonicalRecommendationVisibility;
   function schedule(){if(queued)return;queued=true;requestAnimationFrame(clean)}
   function install(){
-    for(const id of ['home','stats','sheet','start']){const node=document.getElementById(id);if(!node||node.__legacyRetirementV292Observer)continue;const observer=new MutationObserver(schedule);observer.observe(node,{childList:true,subtree:true});node.__legacyRetirementV292Observer=observer}
-    const body=document.body;if(body&&!body.__legacySplashRetirementV292Observer){const observer=new MutationObserver(schedule);observer.observe(body,{childList:true});body.__legacySplashRetirementV292Observer=observer}schedule()
+    for(const id of ['home','stats','sheet','start']){const node=document.getElementById(id);if(!node||node.__legacyRetirementV293Observer)continue;const observer=new MutationObserver(schedule);observer.observe(node,{childList:true,subtree:true});node.__legacyRetirementV293Observer=observer}
+    const body=document.body;if(body&&!body.__legacySplashRetirementV293Observer){const observer=new MutationObserver(schedule);observer.observe(body,{childList:true});body.__legacySplashRetirementV293Observer=observer}schedule()
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
   ['pageshow','unvrsl:modules-ready','unvrsl:training-engine-ready','unvrsl:app-ready','unvrsl:readiness-ready','unvrsl:cloud-modules-settled'].forEach(ev=>window.addEventListener(ev,schedule,{passive:true}));
-  [0,80,240,700,1200,2200,4000,7000].forEach(ms=>setTimeout(()=>{retireOldRecommendationApi();lockLegacyWeightState()},ms));
+  [0,40,80,160,240,400,700,1200,2200,4000,7000].forEach(ms=>setTimeout(()=>{retireOldRecommendationApi();lockLegacyWeightState();syncCanonicalRecommendationVisibility()},ms));
 })();
