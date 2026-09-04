@@ -1,4 +1,4 @@
-const SW_RELEASE='v292-legacy-recommendation-cleanup';
+const SW_RELEASE='v293-recommendation-display-gate';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
