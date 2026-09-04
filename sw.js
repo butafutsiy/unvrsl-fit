@@ -1,4 +1,4 @@
-const SW_RELEASE='v290-rep-progression-gate';
+const SW_RELEASE='v291-single-rec-fast-startup';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
