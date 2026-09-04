@@ -12,7 +12,7 @@
   }
   function loadProgramIntensity(){
     if(W.__unvrslProgramIntensityAutoWeightV261||D.querySelector('script[data-unvrsl-program-intensity-v261]'))return;
-    const s=D.createElement('script');s.src='program-intensity-autoweight-v261.js?v=261';s.async=false;s.dataset.unvrslProgramIntensityV261='1';s.onerror=()=>console.warn('UNVRSL program intensity v261 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');s.src='program-intensity-autoweight-v261.js?v=292';s.async=false;s.dataset.unvrslProgramIntensityV261='1';s.onerror=()=>console.warn('UNVRSL program intensity UI failed to load');D.body?.appendChild(s)
   }
   function loadTrainerClientProgramEdit(){
     if(W.__unvrslTrainerClientProgramEditV262||D.querySelector('script[data-unvrsl-trainer-client-edit-v262]'))return;
