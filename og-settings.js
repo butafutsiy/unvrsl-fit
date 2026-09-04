@@ -33,4 +33,18 @@ async function loadCloudModules(){
   for(const src of ['./trainer-style.js','./trainer.js','./progression.js','./cloud-patch.js'])await dynamicScript(src)
 }
 async function openCloudAccount(){await loadCloudModules();if(typeof cloudAccountSheet==='function')cloudAccountSheet();else toast('Облако пока недоступно')}
+
+// OG core owns the grouped workout data, but the compact preview is the UI authority.
+// Load it immediately after OG modules initialize; it replaces the preview function only,
+// never re-renders an already open sheet.
+(()=>{
+  if(window.__unvrslPreviewAuthorityLoaderV281)return;
+  window.__unvrslPreviewAuthorityLoaderV281=true;
+  const s=document.createElement('script');
+  s.src='./preview-authority-v281.js?v=281';
+  s.async=false;
+  s.dataset.unvrslPreviewAuthority='281';
+  document.body.appendChild(s);
+})();
+
 save();render();loadExerciseDB();
