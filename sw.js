@@ -1,4 +1,4 @@
-const SW_RELEASE='v286-original-ghost-rep-inputs';
+const SW_RELEASE='v287-native-rep-placeholders';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
