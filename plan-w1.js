@@ -38,3 +38,11 @@ window.UNVRSL_ROUTINES=(window.UNVRSL_ROUTINES||[]).concat([{"w":1,"c":"A1","t":
   s.async=false;
   (document.head||document.documentElement).appendChild(s);
 })();
+(()=>{
+  if(window.__unvrslWorkoutWeightIntegrityLoaderV279)return;
+  window.__unvrslWorkoutWeightIntegrityLoaderV279=true;
+  const s=document.createElement('script');
+  s.src='workout-weight-integrity-v279.js?v=279';
+  s.async=false;
+  (document.head||document.documentElement).appendChild(s);
+})();
