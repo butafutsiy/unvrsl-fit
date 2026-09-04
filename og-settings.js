@@ -47,15 +47,15 @@ async function openCloudAccount(){await loadCloudModules();if(typeof cloudAccoun
   document.body.appendChild(s);
 })();
 
-// Active-workout repetition ranges are display-only. This module never hooks preview,
-// session creation, weights or history.
+// Ghost repetition ranges in the rep inputs, matching the original mobile UX.
+// No preview hook and no card-index mapping.
 (()=>{
-  if(window.__unvrslActiveRepRangesLoaderV282)return;
-  window.__unvrslActiveRepRangesLoaderV282=true;
+  if(window.__unvrslRepRangeGhostLoaderV283)return;
+  window.__unvrslRepRangeGhostLoaderV283=true;
   const s=document.createElement('script');
-  s.src='./active-rep-ranges-v282.js?v=282';
+  s.src='./rep-range-ghost-v283.js?v=283';
   s.async=false;
-  s.dataset.unvrslActiveRepRanges='282';
+  s.dataset.unvrslRepRangeGhost='283';
   document.body.appendChild(s);
 })();
 
