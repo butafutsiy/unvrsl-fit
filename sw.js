@@ -1,4 +1,4 @@
-const SW_RELEASE='v289-prescription-bridge-v288';
+const SW_RELEASE='v290-rep-progression-gate';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
