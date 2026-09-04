@@ -7,8 +7,8 @@
   // Load the canonical math layer independently from the workout UI. It waits
   // for the training engine and updates weight data without rebuilding pages.
   function loadTrainingLoadModel(){
-    if(W.__unvrslTrainingLoadModelV258||D.querySelector('script[data-unvrsl-load-model-v258]'))return;
-    const s=D.createElement('script');s.src='training-load-model-v258.js?v=260';s.async=false;s.dataset.unvrslLoadModelV258='1';s.onerror=()=>console.warn('UNVRSL load model v258 failed to load');D.body?.appendChild(s)
+    if(W.__unvrslTrainingLoadModelV292||D.querySelector('script[data-unvrsl-load-model-v292]'))return;
+    const s=D.createElement('script');s.src='training-load-model-v292.js?v=292';s.async=false;s.dataset.unvrslLoadModelV292='1';s.onerror=()=>console.warn('UNVRSL load model v292 failed to load');D.body?.appendChild(s)
   }
   function loadProgramIntensity(){
     if(W.__unvrslProgramIntensityAutoWeightV261||D.querySelector('script[data-unvrsl-program-intensity-v261]'))return;
