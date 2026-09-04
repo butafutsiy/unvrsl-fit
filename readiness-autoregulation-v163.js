@@ -40,8 +40,9 @@
     const x=document.createElement('script');x.src='training-prescription-bridge-v288.js?v=288';x.async=false;x.dataset.unvrslPrescriptionBridgeV288='1';x.onload=()=>loadProgressionGate();x.onerror=()=>console.warn('UNVRSL prescription bridge v288 failed to load');document.body.appendChild(x)
   }
   function loadProgressionGate(){
-    if(window.__unvrslTrainingProgressionGateV290||document.querySelector('script[data-unvrsl-progression-gate-v290]'))return;
-    const x=document.createElement('script');x.src='training-progression-gate-v290.js?v=290';x.async=false;x.dataset.unvrslProgressionGateV290='1';x.onload=()=>window.unvrslTrainingProgressionSyncV290?.(true);x.onerror=()=>console.warn('UNVRSL progression gate v290 failed to load');document.body.appendChild(x)
+    if(window.__unvrslTrainingProgressionGateV291||document.querySelector('script[data-unvrsl-progression-gate-v291]'))return;
+    document.querySelectorAll('script[data-unvrsl-progression-gate-v290]').forEach(x=>x.remove());
+    const x=document.createElement('script');x.src='training-progression-gate-v291.js?v=291';x.async=false;x.dataset.unvrslProgressionGateV291='1';x.onload=()=>window.unvrslTrainingProgressionSyncV291?.(true);x.onerror=()=>console.warn('UNVRSL progression finalizer v291 failed to load');document.body.appendChild(x)
   }
   load();
   loadQuestionnaire();
