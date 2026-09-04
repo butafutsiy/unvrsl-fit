@@ -1,4 +1,4 @@
-const SW_RELEASE='v281-compact-preview';
+const SW_RELEASE='v282-active-rep-ranges';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
