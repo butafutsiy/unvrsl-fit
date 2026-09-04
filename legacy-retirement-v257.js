@@ -1,7 +1,8 @@
-'use strict'; // Canonical retirement registry for release v293 recommendation display gate.
+'use strict'; // Canonical retirement registry for release v295 recommendation compatibility overlay.
 (()=>{
   if(window.__unvrslLegacyRetirementV257)return;
   window.__unvrslLegacyRetirementV257=true;
+  window.__unvrslLegacyRetirementV295=true;
   window.__unvrslLegacyRetirementV293=true;
   window.__unvrslLegacyRetirementV292=true;
   window.__unvrslLegacyRetirementV291=true;
@@ -27,13 +28,15 @@
   const names=new Set(retired);
   const file=src=>String(src||'').split(/[?#]/)[0].replace(/\\/g,'/').split('/').pop();
   const isRetired=src=>names.has(file(src));
-  window.UNVRSL_RETIRED_SCRIPTS_V293=Object.freeze(retired.slice());
-  window.UNVRSL_RETIRED_SCRIPTS_V292=window.UNVRSL_RETIRED_SCRIPTS_V293;
-  window.UNVRSL_RETIRED_SCRIPTS_V291=window.UNVRSL_RETIRED_SCRIPTS_V293;
-  window.UNVRSL_RETIRED_SCRIPTS_V257=window.UNVRSL_RETIRED_SCRIPTS_V293;
-  window.UNVRSL_RETIRED_SCRIPTS_V256=window.UNVRSL_RETIRED_SCRIPTS_V293;
-  window.UNVRSL_RETIRED_SCRIPTS_V255=window.UNVRSL_RETIRED_SCRIPTS_V293;
-  window.UNVRSL_RETIRED_SCRIPTS_V254=window.UNVRSL_RETIRED_SCRIPTS_V293;
+  window.UNVRSL_RETIRED_SCRIPTS_V295=Object.freeze(retired.slice());
+  window.UNVRSL_RETIRED_SCRIPTS_V293=window.UNVRSL_RETIRED_SCRIPTS_V295;
+  window.UNVRSL_RETIRED_SCRIPTS_V292=window.UNVRSL_RETIRED_SCRIPTS_V295;
+  window.UNVRSL_RETIRED_SCRIPTS_V291=window.UNVRSL_RETIRED_SCRIPTS_V295;
+  window.UNVRSL_RETIRED_SCRIPTS_V257=window.UNVRSL_RETIRED_SCRIPTS_V295;
+  window.UNVRSL_RETIRED_SCRIPTS_V256=window.UNVRSL_RETIRED_SCRIPTS_V295;
+  window.UNVRSL_RETIRED_SCRIPTS_V255=window.UNVRSL_RETIRED_SCRIPTS_V295;
+  window.UNVRSL_RETIRED_SCRIPTS_V254=window.UNVRSL_RETIRED_SCRIPTS_V295;
+  window.unvrslScriptRetiredV295=isRetired;
   window.unvrslScriptRetiredV293=isRetired;
   window.unvrslScriptRetiredV292=isRetired;
   window.unvrslScriptRetiredV291=isRetired;
@@ -43,14 +46,36 @@
   window.unvrslScriptRetiredV254=isRetired;
   window.unvrslScriptRetiredV253=isRetired;
 
-  // One recommendation owner only. Old model/finalizer versions are permanently blocked.
-  window.__unvrslCanonicalRecommendationOwner='training-load-model-v292';
+  // One recommendation owner only. Legacy names stay only as compatibility aliases to v292.
+  const CANONICAL_OWNER='training-load-model-v292';
+  window.__unvrslCanonicalRecommendationOwner=CANONICAL_OWNER;
+  window.__unvrslSmartRecommendationRetiredV295=true;
   window.__unvrslSmartRecommendationRetiredV293=true;
   window.__unvrslSmartRecommendationRetiredV292=true;
   window.__unvrslSmartRecommendationRetiredV291=true;
   window.__unvrslAdaptiveEffortV2=true;
   window.__unvrslTrainingProgressionGateV290=true;
   window.__unvrslTrainingProgressionGateV291=true;
+
+  // Old code may still write/read the v258 owner/API. Make those names permanent aliases of v292.
+  // This is intentionally an API overlay, not DOM monkey-patching: old callers remain compatible,
+  // while there is only one mathematical implementation behind every recommendation call.
+  try{
+    Object.defineProperty(window,'__unvrslRecommendationMathOwner',{
+      configurable:true,
+      enumerable:true,
+      get:()=>CANONICAL_OWNER,
+      set:()=>{}
+    })
+  }catch(_){window.__unvrslRecommendationMathOwner=CANONICAL_OWNER}
+  try{
+    Object.defineProperty(window,'trainingLoadModel258',{
+      configurable:true,
+      enumerable:true,
+      get:()=>window.trainingLoadModel292||null,
+      set:value=>{if(value&&Number(value.version)===292&&!window.trainingLoadModel292)window.trainingLoadModel292=value}
+    })
+  }catch(_){ }
 
   // Block every superseded owner before any delayed loader can execute it.
   window.__unvrslLegacyRetirementV253=true;
@@ -140,9 +165,7 @@
       for(const k of ['recommendation194','engine196Recommendation','progression187','adaptiveEffort','trainingProgression290','trainingProgression291']){
         if(Object.prototype.hasOwnProperty.call(ex,k)){delete ex[k];changed=true}
       }
-      if(ex?.trainingEstimate200&&ex.trainingEstimate200.mathOwner&&ex.trainingEstimate200.mathOwner!=='training-load-model-v292'){
-        ex.trainingEstimate200.mathOwner='training-load-model-v292';changed=true
-      }
+      if(ex?.trainingEstimate200&&ex.trainingEstimate200.mathOwner!==CANONICAL_OWNER){ex.trainingEstimate200.mathOwner=CANONICAL_OWNER;changed=true}
       (ex.set||[]).forEach(set=>{
         for(const k of ['adaptiveSuggestedW','adaptiveRecommendation','recommendation194','engine196Recommendation']){
           if(Object.prototype.hasOwnProperty.call(set,k)){delete set[k];changed=true}
@@ -151,7 +174,8 @@
         if(Object.prototype.hasOwnProperty.call(set,'progressionGateV291')){delete set.progressionGateV291;changed=true}
       })
     });
-    if(cur.trainingMathOwner&&cur.trainingMathOwner!=='training-load-model-v292'){cur.trainingMathOwner='training-load-model-v292';changed=true}
+    if(cur.trainingMathOwner!==CANONICAL_OWNER){cur.trainingMathOwner=CANONICAL_OWNER;changed=true}
+    if(cur.trainingTrace200&&cur.trainingTrace200.mathOwner!==CANONICAL_OWNER){cur.trainingTrace200.mathOwner=CANONICAL_OWNER;changed=true}
     if(sid&&sid!==lastLockedSession)lastLockedSession=sid;
     if(changed){try{if(typeof save==='function')save();else window.save?.()}catch(_){ }}
     syncCanonicalRecommendationVisibility();
@@ -183,9 +207,9 @@
     const sheet=document.getElementById('sheet');if(sheet?.querySelector('.tcv3-head'))sheet.querySelectorAll('.trainer-remove-programs-block,.trainer-live-programs,.trainer-program-control-v2').forEach(el=>el.remove());
     syncCanonicalRecommendationVisibility()
   }
-  window.unvrslLegacyCleanV293=clean;window.unvrslLegacyCleanV292=clean;window.unvrslLegacyCleanV291=clean;window.unvrslLegacyCleanV260=clean;
-  window.unvrslLegacyWeightLockV293=lockLegacyWeightState;window.unvrslLegacyWeightLockV292=lockLegacyWeightState;
-  window.unvrslRecommendationVisibilitySyncV293=syncCanonicalRecommendationVisibility;
+  window.unvrslLegacyCleanV295=clean;window.unvrslLegacyCleanV293=clean;window.unvrslLegacyCleanV292=clean;window.unvrslLegacyCleanV291=clean;window.unvrslLegacyCleanV260=clean;
+  window.unvrslLegacyWeightLockV295=lockLegacyWeightState;window.unvrslLegacyWeightLockV293=lockLegacyWeightState;window.unvrslLegacyWeightLockV292=lockLegacyWeightState;
+  window.unvrslRecommendationVisibilitySyncV295=syncCanonicalRecommendationVisibility;window.unvrslRecommendationVisibilitySyncV293=syncCanonicalRecommendationVisibility;
   function schedule(){if(queued)return;queued=true;requestAnimationFrame(clean)}
   function install(){
     for(const id of ['home','stats','sheet','start']){const node=document.getElementById(id);if(!node||node.__legacyRetirementV293Observer)continue;const observer=new MutationObserver(schedule);observer.observe(node,{childList:true,subtree:true});node.__legacyRetirementV293Observer=observer}
