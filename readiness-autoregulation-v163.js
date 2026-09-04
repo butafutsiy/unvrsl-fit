@@ -6,13 +6,13 @@
   function mark(name){ready[name]=true;if(Object.values(ready).every(Boolean)){window.__unvrslReadinessStackReadyV257=true;window.__unvrslReadinessStackReadyV260=true;window.dispatchEvent(new CustomEvent('unvrsl:readiness-ready',{detail:{release:260}}))}}
   let attempts=0;
   function load(){
-    if(window.__unvrslTrainingEngineV257){mark('engine');return}
+    if(window.__unvrslTrainingEngineV257){mark('engine');loadPrescriptionBridge();return}
     if(attempts>=3)return;
     document.querySelectorAll('script[data-unvrsl-training-engine-v200]').forEach(x=>x.remove());
     const s=document.createElement('script');attempts++;
     s.src=attempts===1?'training-engine-v200.js?v=260':`training-engine-v200.js?v=260-${attempts}`;
     s.async=false;s.dataset.unvrslTrainingEngineV200='1';
-    s.onload=()=>{if(window.__unvrslTrainingEngineV257)mark('engine');else setTimeout(load,250)};
+    s.onload=()=>{if(window.__unvrslTrainingEngineV257){mark('engine');loadPrescriptionBridge()}else setTimeout(load,250)};
     s.onerror=()=>setTimeout(load,700);
     document.body.appendChild(s)
   }
@@ -35,8 +35,14 @@
     document.querySelectorAll('script[data-unvrsl-share-v262],script[data-unvrsl-share-v263]').forEach(x=>x.remove());
     const x=document.createElement('script');x.src='share-progress-template-v264.js?v=264';x.async=false;x.dataset.unvrslShareV264='1';document.body.appendChild(x)
   }
+  function loadPrescriptionBridge(){
+    if(window.__unvrslTrainingPrescriptionBridgeV288||document.querySelector('script[data-unvrsl-prescription-bridge-v288]'))return;
+    const x=document.createElement('script');x.src='training-prescription-bridge-v288.js?v=288';x.async=false;x.dataset.unvrslPrescriptionBridgeV288='1';x.onerror=()=>console.warn('UNVRSL prescription bridge v288 failed to load');document.body.appendChild(x)
+  }
   load();
   loadQuestionnaire();
   loadExactPlanFix();
   loadWorkoutShare();
+  loadPrescriptionBridge();
+  ['unvrsl:training-engine-ready','unvrsl:modules-ready','unvrsl:app-ready'].forEach(ev=>window.addEventListener(ev,loadPrescriptionBridge,{passive:true}));
 })();
