@@ -47,4 +47,16 @@ async function openCloudAccount(){await loadCloudModules();if(typeof cloudAccoun
   document.body.appendChild(s);
 })();
 
+// Active-workout repetition ranges are display-only. This module never hooks preview,
+// session creation, weights or history.
+(()=>{
+  if(window.__unvrslActiveRepRangesLoaderV282)return;
+  window.__unvrslActiveRepRangesLoaderV282=true;
+  const s=document.createElement('script');
+  s.src='./active-rep-ranges-v282.js?v=282';
+  s.async=false;
+  s.dataset.unvrslActiveRepRanges='282';
+  document.body.appendChild(s);
+})();
+
 save();render();loadExerciseDB();
