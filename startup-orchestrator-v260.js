@@ -1,22 +1,51 @@
 'use strict';
 (()=>{
-  const W=window,D=document,READY_CLASS='unvrsl-app-ready-v260',RELEASE=291;
-  if(W.__unvrslStartupOrchestratorV260)return;
-  W.__unvrslStartupOrchestratorV260=true;
-  W.__unvrslStartupOrchestratorV291=true;
+  const W=window,D=document,READY_CLASS='unvrsl-app-ready-v260';
+  if(W.__unvrslStartupOrchestratorV260)return;W.__unvrslStartupOrchestratorV260=true;
   W.__unvrslStartupComplete=false;
-  const started=performance.now();
 
+  // Load the canonical math layer independently from the workout UI. It waits
+  // for the training engine and updates weight data without rebuilding pages.
+  function loadTrainingLoadModel(){
+    if(W.__unvrslTrainingLoadModelV258||D.querySelector('script[data-unvrsl-load-model-v258]'))return;
+    const s=D.createElement('script');s.src='training-load-model-v258.js?v=260';s.async=false;s.dataset.unvrslLoadModelV258='1';s.onerror=()=>console.warn('UNVRSL load model v258 failed to load');D.body?.appendChild(s)
+  }
+  function loadProgramIntensity(){
+    if(W.__unvrslProgramIntensityAutoWeightV261||D.querySelector('script[data-unvrsl-program-intensity-v261]'))return;
+    const s=D.createElement('script');s.src='program-intensity-autoweight-v261.js?v=261';s.async=false;s.dataset.unvrslProgramIntensityV261='1';s.onerror=()=>console.warn('UNVRSL program intensity v261 failed to load');D.body?.appendChild(s)
+  }
+  function loadTrainerClientProgramEdit(){
+    if(W.__unvrslTrainerClientProgramEditV262||D.querySelector('script[data-unvrsl-trainer-client-edit-v262]'))return;
+    const s=D.createElement('script');s.src='trainer-client-program-edit-v262.js?v=262';s.async=false;s.dataset.unvrslTrainerClientEditV262='1';s.onerror=()=>console.warn('UNVRSL trainer client program edit v262 failed to load');D.body?.appendChild(s)
+  }
+  function loadProgramWeekRpeRir(){
+    if(W.__unvrslProgramWeekRpeRirV263||D.querySelector('script[data-unvrsl-week-rpe-rir-v263]'))return;
+    const s=D.createElement('script');s.src='program-week-rpe-rir-v263.js?v=266';s.async=false;s.dataset.unvrslWeekRpeRirV263='1';s.onerror=()=>console.warn('UNVRSL week RPE RIR v263 failed to load');D.body?.appendChild(s)
+  }
+  function loadProgramRepRange(){
+    if(W.__unvrslProgramRepRangeV266||D.querySelector('script[data-unvrsl-program-rep-range-v266]'))return;
+    const s=D.createElement('script');s.src='program-rep-range-v266.js?v=266';s.async=false;s.dataset.unvrslProgramRepRangeV266='1';s.onerror=()=>console.warn('UNVRSL program rep range v266 failed to load');D.body?.appendChild(s)
+  }
+  function loadBuiltInPlanRepRanges(){
+    if(W.__unvrslBuiltInPlanRepRangesV267||D.querySelector('script[data-unvrsl-built-in-ranges-v267]'))return;
+    const s=D.createElement('script');s.src='built-in-plan-rep-ranges-v267.js?v=267';s.async=false;s.dataset.unvrslBuiltInRangesV267='1';s.onerror=()=>console.warn('UNVRSL built-in plan rep ranges v267 failed to load');D.body?.appendChild(s)
+  }
+  function loadProgramWeekRepGuidance(){
+    if(W.__unvrslProgramWeekRepGuidanceV268||D.querySelector('script[data-unvrsl-week-rep-guidance-v268]'))return;
+    const s=D.createElement('script');s.src='program-week-rep-guidance-v268.js?v=268';s.async=false;s.dataset.unvrslWeekRepGuidanceV268='1';s.onerror=()=>console.warn('UNVRSL weekly rep guidance v268 failed to load');D.body?.appendChild(s)
+  }
+  loadTrainingLoadModel();loadProgramIntensity();loadTrainerClientProgramEdit();loadProgramWeekRpeRir();loadProgramRepRange();loadBuiltInPlanRepRanges();loadProgramWeekRepGuidance();
+
+  // app.js paints a harmless base DOM once. Every later full render is queued
+  // until all canonical owners, cloud data and the current role are settled.
   const baseRender=W.render;
-  let unlocked=false,pending=false,releasing=false,released=false;
+  let unlocked=false,pending=false,finalizing=false,released=false;
   if(typeof baseRender==='function'){
     const gated=function(){
       if(!unlocked){pending=true;return}
       return baseRender.apply(this,arguments)
     };
-    gated.__unvrslBootRenderGateV260=true;
-    gated.__unvrslBootRenderGateV291=true;
-    gated.__unvrslBootRenderBaseV260=baseRender;
+    gated.__unvrslBootRenderGateV260=true;gated.__unvrslBootRenderBaseV260=baseRender;
     W.render=gated;try{render=gated}catch(_){ }
   }
 
@@ -26,97 +55,59 @@
     try{return typeof W.unvrslTrainerMode==='function'&&W.unvrslTrainerMode()}catch(_){return false}
   };
   const client=()=>!!W.cloud?.user&&!trainer();
-  const elapsed=()=>performance.now()-started;
-  const frame=()=>new Promise(resolve=>requestAnimationFrame(resolve));
-
-  function baseUiExists(){
-    const app=D.querySelector('.app'),home=D.getElementById('home');
-    return !!app&&!!home&&typeof W.render==='function';
-  }
-  function roleSettled(){
+  function coreReady(){
     const c=W.cloud;
-    if(c?.initSettled||W.__unvrslCloudModulesSettledV260)return true;
-    // Local shell is already useful. Never hold a full-screen splash for slow network.
-    return elapsed()>=420;
+    if(D.readyState!=='complete'||!W.__unvrslDynamicModulesReadyV260||!W.__unvrslReadinessStackReadyV260)return false;
+    if(!W.__unvrslCloudModulesSettledV260||!c?.initSettled)return false;
+    if(!W.__unvrslStatsAuthorityV254||!W.__unvrslTrainerShellV252||!W.__unvrslClientWorkoutScrollV261)return false;
+    if(client()&&(!W.__unvrslClientRuntimeSettledV260||!D.body?.classList.contains('client-runtime-ready-v260')))return false;
+    return true
   }
-  function fastReady(force=false){
-    if(force)return baseUiExists();
-    if(!baseUiExists())return false;
-    if(elapsed()>=620)return true;
-    if(D.readyState!=='loading'&&roleSettled())return true;
-    if(roleSettled()&&elapsed()>=320)return true;
-    return false
-  }
-
-  async function paint(){
-    unlocked=true;W.__unvrslBootRenderUnlockedV260=true;W.__unvrslBootRenderUnlockedV291=true;
-    try{W.render?.()}catch(e){console.warn('UNVRSL fast final render v291',e)}
+  const frames=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  async function paintFinalInterface(){
+    unlocked=true;W.__unvrslBootRenderUnlockedV260=true;
+    try{W.render?.()}catch(e){console.warn('UNVRSL final render v260',e)}
     try{W.unvrslTrainerShellSyncV260?.(true)}catch(_){ }
     if(client()){
       try{W.clientCleanHome?.()}catch(_){ }
       if(D.getElementById('plan')?.classList.contains('active'))try{W.clientCleanPlanPage?.()}catch(_){ }
     }
-    try{W.unvrslLegacyCleanV291?.()}catch(_){try{W.unvrslLegacyCleanV260?.()}catch(__){ }}
-    await frame()
+    try{W.statsEnsureCanonicalV254?.()}catch(_){ }
+    try{W.unvrslLegacyCleanV260?.()}catch(_){ }
+    await frames();
+    await new Promise(resolve=>setTimeout(resolve,90));
+    try{W.unvrslTrainerShellSyncV260?.(false)}catch(_){ }
+    try{W.unvrslLegacyCleanV260?.()}catch(_){ }
+    await frames()
   }
-
-  async function release(force=false,reason='ready'){
-    if(released||releasing||!fastReady(force))return false;
-    releasing=true;
+  async function finalize(){
+    if(finalizing||released||!coreReady())return false;
+    finalizing=true;
     try{
-      await paint();
+      await paintFinalInterface();
       D.documentElement?.classList.add(READY_CLASS);
       D.body?.classList.add(READY_CLASS);
-      W.__unvrslStartupComplete=true;
-      W.__unvrslStartupReleaseReasonV260=reason;
-      W.__unvrslStartupReleaseReasonV291=reason;
+      W.__unvrslStartupComplete=true;W.__unvrslStartupReleaseReasonV260='ready';
       const splash=D.getElementById('unvrsl-startup-v258');
-      requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
         splash?.classList.add('out');
-        setTimeout(()=>{splash?.remove();D.getElementById('unvrsl-startup-v258-style')?.remove()},150)
-      });
-      released=true;clearInterval(poll);
-      W.dispatchEvent?.(new CustomEvent('unvrsl:app-ready',{detail:{release:RELEASE,queuedRender:pending,reason}}));
-      scheduleCanonicalTrainingModules();
+        setTimeout(()=>{splash?.remove();D.getElementById('unvrsl-startup-v258-style')?.remove()},240)
+      }));
+      released=true;clearInterval(poll);W.dispatchEvent?.(new CustomEvent('unvrsl:app-ready',{detail:{release:260,queuedRender:pending}}));
       return true
-    }finally{releasing=false}
+    }finally{finalizing=false}
   }
-  W.unvrslTryFinalizeStartupV260=()=>release(false,'ready');
-  W.unvrslTryFinalizeStartupV291=W.unvrslTryFinalizeStartupV260;
-
-  function addScript(src,flag,selector){
-    if(flag&&W[flag])return;
-    if(selector&&D.querySelector(selector))return;
-    const s=D.createElement('script');s.src=src;s.async=true;
-    if(selector){const attr=selector.match(/data-([^\]]+)/)?.[1]?.split('=')[0];if(attr)s.dataset[attr.replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]='1'}
-    s.onerror=()=>console.warn('UNVRSL deferred module failed',src);
-    D.body?.appendChild(s)
+  W.unvrslTryFinalizeStartupV260=finalize;
+  for(const name of ['load','unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:client-settled','unvrsl:readiness-ready'])W.addEventListener?.(name,finalize,{passive:true});
+  for(const name of ['unvrsl:modules-ready','unvrsl:training-engine-ready','unvrsl:app-ready']){
+    W.addEventListener?.(name,loadTrainingLoadModel,{passive:true});
+    W.addEventListener?.(name,loadProgramIntensity,{passive:true});
+    W.addEventListener?.(name,loadTrainerClientProgramEdit,{passive:true});
+    W.addEventListener?.(name,loadProgramWeekRpeRir,{passive:true});
+    W.addEventListener?.(name,loadProgramRepRange,{passive:true});
+    W.addEventListener?.(name,loadBuiltInPlanRepRanges,{passive:true});
+    W.addEventListener?.(name,loadProgramWeekRepGuidance,{passive:true})
   }
-  function loadTrainingLoadModel(){addScript('training-load-model-v258.js?v=260','__unvrslTrainingLoadModelV258','script[data-unvrsl-load-model-v258]')}
-  function loadProgramIntensity(){addScript('program-intensity-autoweight-v261.js?v=261','__unvrslProgramIntensityAutoWeightV261','script[data-unvrsl-program-intensity-v261]')}
-  function loadTrainerClientProgramEdit(){addScript('trainer-client-program-edit-v262.js?v=262','__unvrslTrainerClientProgramEditV262','script[data-unvrsl-trainer-client-edit-v262]')}
-  function loadProgramWeekRpeRir(){addScript('program-week-rpe-rir-v263.js?v=266','__unvrslProgramWeekRpeRirV263','script[data-unvrsl-week-rpe-rir-v263]')}
-  function loadProgramRepRange(){addScript('program-rep-range-v266.js?v=266','__unvrslProgramRepRangeV266','script[data-unvrsl-program-rep-range-v266]')}
-  function loadBuiltInPlanRepRanges(){addScript('built-in-plan-rep-ranges-v267.js?v=267','__unvrslBuiltInPlanRepRangesV267','script[data-unvrsl-built-in-ranges-v267]')}
-  function loadProgramWeekRepGuidance(){addScript('program-week-rep-guidance-v268.js?v=268','__unvrslProgramWeekRepGuidanceV268','script[data-unvrsl-week-rep-guidance-v268]')}
-  let trainingScheduled=false;
-  function scheduleCanonicalTrainingModules(){
-    if(trainingScheduled)return;trainingScheduled=true;
-    // Recommendation math is useful quickly, editor-only helpers can wait until after first paint.
-    setTimeout(loadTrainingLoadModel,0);
-    setTimeout(loadProgramIntensity,35);
-    const idle=cb=>typeof requestIdleCallback==='function'?requestIdleCallback(cb,{timeout:900}):setTimeout(cb,120);
-    idle(()=>{
-      loadProgramWeekRpeRir();loadProgramRepRange();loadBuiltInPlanRepRanges();loadProgramWeekRepGuidance();loadTrainerClientProgramEdit()
-    })
-  }
-
-  const events=['DOMContentLoaded','load','unvrsl:cloud-ready','unvrsl:cloud-modules-settled','unvrsl:client-ready','unvrsl:client-settled','unvrsl:modules-ready','unvrsl:readiness-ready'];
-  events.forEach(name=>W.addEventListener?.(name,()=>release(false,name),{passive:true}));
-  const poll=setInterval(()=>release(false,'poll'),45);
-  // Hard cap: the splash is cosmetic and must never wait for the whole application graph.
-  setTimeout(()=>release(true,'fast-cap'),650);
-  // If the browser is busy on a parser-blocking script, this fires as soon as the main thread is available.
-  setTimeout(()=>release(true,'fallback-cap'),1100);
-  release(false,'initial');
+  [400,1200,3000].forEach(ms=>{setTimeout(loadTrainingLoadModel,ms);setTimeout(loadProgramIntensity,ms);setTimeout(loadTrainerClientProgramEdit,ms);setTimeout(loadProgramWeekRpeRir,ms);setTimeout(loadProgramRepRange,ms);setTimeout(loadBuiltInPlanRepRanges,ms);setTimeout(loadProgramWeekRepGuidance,ms)});
+  const poll=setInterval(finalize,80);finalize();
 })();
