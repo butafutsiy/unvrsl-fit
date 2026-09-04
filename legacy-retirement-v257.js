@@ -1,7 +1,8 @@
-'use strict'; // Canonical retirement registry for release v291.
+'use strict'; // Canonical retirement registry for release v292.
 (()=>{
   if(window.__unvrslLegacyRetirementV257)return;
   window.__unvrslLegacyRetirementV257=true;
+  window.__unvrslLegacyRetirementV292=true;
   window.__unvrslLegacyRetirementV291=true;
   window.__unvrslLegacyRetirementV260=true;
   window.__unvrslLegacyRetirementV256=true;
@@ -16,7 +17,8 @@
     'startup-splash-v156.js','layout-fix.js','home-dashboard.js','body-sex-sync-v166.js',
     'progression-engine-v182.js','progression-engine-v184.js','progression-engine-v185.js','progression-engine-v186.js',
     'workout-recommendation-v177.js','workout-recommendation-v180.js','workout-recommendation-v185.js',
-    'adaptive-effort-safety-v170.js','adaptive-effort-v2.js','rpe-auto-progression.js','training-progression-gate-v290.js',
+    'adaptive-effort-safety-v170.js','adaptive-effort-v2.js','rpe-auto-progression.js',
+    'training-load-model-v258.js','training-progression-gate-v290.js','training-progression-gate-v291.js',
     'exercise-audit-v1.js','exercise-cleanup-v2.js','exercise-system-clean-v1.js','exercise-unified-v1.js',
     'exercise-tabs-v1.js','exercise-cardio-quality-v2.js','exercise-source-lock-v1.js','exercise-title-consistency-v3.js',
     'exercise-format-v5.js','exercise-cardio-fix-v6.js','ru-only.js'
@@ -24,11 +26,13 @@
   const names=new Set(retired);
   const file=src=>String(src||'').split(/[?#]/)[0].replace(/\\/g,'/').split('/').pop();
   const isRetired=src=>names.has(file(src));
-  window.UNVRSL_RETIRED_SCRIPTS_V291=Object.freeze(retired.slice());
-  window.UNVRSL_RETIRED_SCRIPTS_V257=window.UNVRSL_RETIRED_SCRIPTS_V291;
-  window.UNVRSL_RETIRED_SCRIPTS_V256=window.UNVRSL_RETIRED_SCRIPTS_V291;
-  window.UNVRSL_RETIRED_SCRIPTS_V255=window.UNVRSL_RETIRED_SCRIPTS_V291;
-  window.UNVRSL_RETIRED_SCRIPTS_V254=window.UNVRSL_RETIRED_SCRIPTS_V291;
+  window.UNVRSL_RETIRED_SCRIPTS_V292=Object.freeze(retired.slice());
+  window.UNVRSL_RETIRED_SCRIPTS_V291=window.UNVRSL_RETIRED_SCRIPTS_V292;
+  window.UNVRSL_RETIRED_SCRIPTS_V257=window.UNVRSL_RETIRED_SCRIPTS_V292;
+  window.UNVRSL_RETIRED_SCRIPTS_V256=window.UNVRSL_RETIRED_SCRIPTS_V292;
+  window.UNVRSL_RETIRED_SCRIPTS_V255=window.UNVRSL_RETIRED_SCRIPTS_V292;
+  window.UNVRSL_RETIRED_SCRIPTS_V254=window.UNVRSL_RETIRED_SCRIPTS_V292;
+  window.unvrslScriptRetiredV292=isRetired;
   window.unvrslScriptRetiredV291=isRetired;
   window.unvrslScriptRetiredV257=isRetired;
   window.unvrslScriptRetiredV256=isRetired;
@@ -36,11 +40,13 @@
   window.unvrslScriptRetiredV254=isRetired;
   window.unvrslScriptRetiredV253=isRetired;
 
-  // One final recommendation owner. v290 is permanently blocked.
-  window.__unvrslCanonicalRecommendationOwner='training-load-model-v258+progression-finalizer-v291';
+  // One recommendation owner only. Old model/finalizer versions are permanently blocked.
+  window.__unvrslCanonicalRecommendationOwner='training-load-model-v292';
+  window.__unvrslSmartRecommendationRetiredV292=true;
   window.__unvrslSmartRecommendationRetiredV291=true;
   window.__unvrslAdaptiveEffortV2=true;
   window.__unvrslTrainingProgressionGateV290=true;
+  window.__unvrslTrainingProgressionGateV291=true;
 
   // Block every superseded owner before any delayed loader can execute it.
   window.__unvrslLegacyRetirementV253=true;
@@ -80,50 +86,23 @@
   const oldGlobals=['anatomeMuscleCardHtmlV253','anatomeMountCardV253','unvrslStatsSessions208','statsOpenWorkout208','statsWeightRange','statsWeightSheet','statsSaveWeight','statsGoalSheet','statsSaveGoal','statsEnsureCanonicalV253','clientPlanProfileInjectV222','clientPlanProfileRefresh198','clientPlanOpenProfile198','clientPlanMeasure198'];
   let queued=false;
 
-  function removeHistory(root){
-    const head=root?.querySelector('#statsWorkoutHistory208');if(!head)return;
-    const card=head.nextElementSibling;if(card?.classList.contains('sd2-card'))card.remove();head.remove();
-  }
+  function removeHistory(root){const head=root?.querySelector('#statsWorkoutHistory208');if(!head)return;const card=head.nextElementSibling;if(card?.classList.contains('sd2-card'))card.remove();head.remove()}
   function retireGlobals(){oldGlobals.forEach(key=>{try{delete window[key]}catch(e){window[key]=undefined}})}
   function retireOldRecommendationApi(){
-    try{
-      if(typeof window.suggestionFor==='function'&&!window.suggestionFor.__unvrslRetiredV291){
-        const off=function(){return null};off.__unvrslRetiredV291=true;window.suggestionFor=off;
-        try{suggestionFor=off}catch(_){ }
-      }
-    }catch(_){ }
-    try{
-      if(typeof window.focusSuggestion==='function'&&!window.focusSuggestion.__unvrslRetiredV291){
-        const off=function(){return null};off.__unvrslRetiredV291=true;window.focusSuggestion=off;
-        try{focusSuggestion=off}catch(_){ }
-      }
-    }catch(_){ }
+    try{if(typeof window.suggestionFor==='function'&&!window.suggestionFor.__unvrslRetiredV292){const off=function(){return null};off.__unvrslRetiredV292=true;window.suggestionFor=off;try{suggestionFor=off}catch(_){ }}}catch(_){ }
+    try{if(typeof window.focusSuggestion==='function'&&!window.focusSuggestion.__unvrslRetiredV292){const off=function(){return null};off.__unvrslRetiredV292=true;window.focusSuggestion=off;try{focusSuggestion=off}catch(_){ }}}catch(_){ }
   }
   function clean(){
-    queued=false;retireGlobals();retireOldRecommendationApi();
-    document.body?.classList.remove('unvrsl-booting');
-    document.querySelectorAll(obsolete).forEach(el=>el.remove());
-    document.querySelectorAll(OLD_REC_SELECTOR).forEach(el=>el.remove());
-    const stats=document.getElementById('stats');removeHistory(stats);
-    if(stats){
-      [...stats.querySelectorAll('.sd2-card')].forEach(card=>{const text=(card.textContent||'').trim();if(card.querySelector('.sd2-weight-head')||/^Активность\s*—\s*последние 12 месяцев/i.test(text))card.remove()});
-    }
-    const home=document.getElementById('home');
-    [...(home?.children||[])].forEach(card=>{if(card.classList?.contains('card')&&card.querySelector(':scope > .weight-top'))card.remove()});
-    const sheet=document.getElementById('sheet');
-    if(sheet?.querySelector('.tcv3-head'))sheet.querySelectorAll('.trainer-remove-programs-block,.trainer-live-programs,.trainer-program-control-v2').forEach(el=>el.remove());
+    queued=false;retireGlobals();retireOldRecommendationApi();document.body?.classList.remove('unvrsl-booting');document.querySelectorAll(obsolete).forEach(el=>el.remove());document.querySelectorAll(OLD_REC_SELECTOR).forEach(el=>el.remove());
+    const stats=document.getElementById('stats');removeHistory(stats);if(stats){[...stats.querySelectorAll('.sd2-card')].forEach(card=>{const text=(card.textContent||'').trim();if(card.querySelector('.sd2-weight-head')||/^Активность\s*—\s*последние 12 месяцев/i.test(text))card.remove()})}
+    const home=document.getElementById('home');[...(home?.children||[])].forEach(card=>{if(card.classList?.contains('card')&&card.querySelector(':scope > .weight-top'))card.remove()});
+    const sheet=document.getElementById('sheet');if(sheet?.querySelector('.tcv3-head'))sheet.querySelectorAll('.trainer-remove-programs-block,.trainer-live-programs,.trainer-program-control-v2').forEach(el=>el.remove())
   }
-  window.unvrslLegacyCleanV291=clean;
-  window.unvrslLegacyCleanV260=clean;
+  window.unvrslLegacyCleanV292=clean;window.unvrslLegacyCleanV291=clean;window.unvrslLegacyCleanV260=clean;
   function schedule(){if(queued)return;queued=true;requestAnimationFrame(clean)}
   function install(){
-    for(const id of ['home','stats','sheet','start']){
-      const node=document.getElementById(id);if(!node||node.__legacyRetirementV291Observer)continue;
-      const observer=new MutationObserver(schedule);observer.observe(node,{childList:true,subtree:true});node.__legacyRetirementV291Observer=observer;
-    }
-    const body=document.body;
-    if(body&&!body.__legacySplashRetirementV291Observer){const observer=new MutationObserver(schedule);observer.observe(body,{childList:true});body.__legacySplashRetirementV291Observer=observer}
-    schedule();
+    for(const id of ['home','stats','sheet','start']){const node=document.getElementById(id);if(!node||node.__legacyRetirementV292Observer)continue;const observer=new MutationObserver(schedule);observer.observe(node,{childList:true,subtree:true});node.__legacyRetirementV292Observer=observer}
+    const body=document.body;if(body&&!body.__legacySplashRetirementV292Observer){const observer=new MutationObserver(schedule);observer.observe(body,{childList:true});body.__legacySplashRetirementV292Observer=observer}schedule()
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
   ['pageshow','unvrsl:modules-ready','unvrsl:training-engine-ready','unvrsl:app-ready'].forEach(ev=>window.addEventListener(ev,schedule,{passive:true}));
