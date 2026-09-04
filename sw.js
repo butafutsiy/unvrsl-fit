@@ -1,7 +1,5 @@
-const SW_RELEASE='v276-range-final';
-const RANGE_ENGINE='<script src="built-in-plan-rep-ranges-v267.js?v=276"></script>';
-const RANGE_UI='<script src="rep-range-mobile-v272.js?v=276"></script>';
-const RANGE_FINAL='<script src="rep-range-final-v276.js?v=276"></script>';
+const SW_RELEASE='v278-native-preview';
+const NATIVE_PREVIEW='<script src="native-preview-ranges-v278.js?v=278"></script>';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
@@ -42,15 +40,15 @@ self.addEventListener('fetch',event=>{
       if(!res.ok||!type.includes('text/html'))return res;
       let html=await res.text();
 
-      const appTag='<script src="app.js"></script>';
-      const freshAppTag=`${RANGE_ENGINE}<script src="app.js?v=276"></script>${RANGE_UI}${RANGE_FINAL}`;
-      if(html.includes(appTag))html=html.replace(appTag,freshAppTag);
-      else if(html.includes('<script src="app.js?v=275"></script>')){
-        html=html.replace('<script src="app.js?v=275"></script>',`${RANGE_ENGINE}<script src="app.js?v=276"></script>${RANGE_UI}${RANGE_FINAL}`);
-      }else if(html.includes('<script src="app.js?v=276"></script>')&&!html.includes('rep-range-final-v276.js?v=276')){
-        html=html.replace('<script src="app.js?v=276"></script>',`${RANGE_ENGINE}<script src="app.js?v=276"></script>${RANGE_UI}${RANGE_FINAL}`);
-      }else if(!html.includes('rep-range-final-v276.js?v=276')){
-        html=html.includes('</body>')?html.replace('</body>',`${RANGE_ENGINE}${RANGE_UI}${RANGE_FINAL}</body>`):`${html}${RANGE_ENGINE}${RANGE_UI}${RANGE_FINAL}`;
+      // Retire every alternate rep-range renderer. The only allowed change is
+      // a synchronous text replacement inside the original preview modal.
+      html=html
+        .replace(/<script[^>]+src=["'][^"']*built-in-plan-rep-ranges-v267\.js[^"']*["'][^>]*><\/script>/gi,'')
+        .replace(/<script[^>]+src=["'][^"']*rep-range-mobile-v272\.js[^"']*["'][^>]*><\/script>/gi,'')
+        .replace(/<script[^>]+src=["'][^"']*rep-range-final-v276\.js[^"']*["'][^>]*><\/script>/gi,'');
+
+      if(!html.includes('native-preview-ranges-v278.js')){
+        html=html.includes('</body>')?html.replace('</body>',`${NATIVE_PREVIEW}</body>`):`${html}${NATIVE_PREVIEW}`;
       }
 
       const headers=new Headers(res.headers);
