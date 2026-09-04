@@ -1,4 +1,4 @@
-const SW_RELEASE='v291-single-rec-fast-startup';
+const SW_RELEASE='v292-single-training-model';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
