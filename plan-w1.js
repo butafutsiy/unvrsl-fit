@@ -1,25 +1,10 @@
 window.UNVRSL_ROUTINES=(window.UNVRSL_ROUTINES||[]).concat([{"w":1,"c":"A1","t":"Квадрицепс + приводящие + икры","p":"3-1-2 | база 2–3м / изол. 60–90с","e":[{"n":"Аэробайк — W1","s":1,"m":7,"d":"План: 6–8 мин"},{"n":"Присед HB","s":4,"r":8,"w":150.0},{"n":"Жим ногами","s":4,"r":10,"w":300.0,"d":"Для диапазонов веса указаны по середине/верхней рабочей точке."},{"n":"Разгибание ног","s":3,"r":12,"w":75.0},{"n":"Сведение ног","s":3,"r":15,"w":65.0},{"n":"Икры","s":4,"r":15,"w":95.0}]},{"w":1,"c":"B","t":"Грудь + плечи + бицепс","p":"3-1-2 | база 2–3м / изол. 60–90с","e":[{"n":"Жим лёжа","s":4,"r":8,"w":110.0},{"n":"Жим гантелей на наклонной","s":4,"r":8,"w":40.0,"d":"Вес указан на одну гантель."},{"n":"Разводка / бабочка","s":3,"r":12,"w":17.0},{"n":"Жим гантелей сидя","s":4,"r":8,"w":32.0,"d":"Вес указан на одну гантель."},{"n":"Махи в стороны","s":3,"r":12,"w":13.0},{"n":"Кроссовер","s":3,"r":12,"w":37.5},{"n":"EZ / скамья Скотта","s":3,"r":10,"w":42.5},{"n":"Молотковые сгибания с канатом","s":3,"r":12,"w":37.5},{"n":"Отжимания с дополнительным весом","s":2,"r":15,"w":14.0,"bw":1,"d":"Повторы в плане — до максимума/субмаксимума; число в приложении — ориентир."}]},{"w":1,"c":"C","t":"Спина + задняя дельта + трицепс","p":"3-1-2 | база 2–3м / изол. 60–90с","e":[{"n":"Тяга штанги в наклоне","s":4,"r":8,"w":90.0,"d":"W8: тест 3–5ПМ или 3×5 100–105."},{"n":"Подтягивания с весом","s":4,"r":6,"w":15.0,"bw":1},{"n":"Тяга Т-грифа","s":3,"r":8,"w":85.0},{"n":"Верхний блок","s":3,"r":10,"w":75.0,"d":"W2 рабочая точка 79–80 кг."},{"n":"Нижний блок","s":3,"r":10,"w":70.0},{"n":"Жим плеч в тренажёре","s":3,"r":10,"w":75.0},{"n":"Задняя дельта","s":3,"r":12,"w":15.0},{"n":"Французский жим EZ","s":3,"r":10,"w":47.5},{"n":"Канат на трицепс","s":3,"r":12,"w":42.5},{"n":"Гиперэкстензия с диском","s":3,"r":15,"w":15.0,"bw":1}]},{"w":1,"c":"A2","t":"Бицепс бедра + ягодицы","p":"3-1-2 | база 2–3м / изол. 60–90с","e":[{"n":"Аэробайк A2 — W1","s":1,"m":6},{"n":"Румынская тяга","s":3,"r":10,"w":120.0,"d":"W8 рабочий диапазон 100–110."},{"n":"Ягодичный мост","s":3,"r":10,"w":115.0},{"n":"Сгибание ног лёжа","s":3,"r":12,"w":57.5},{"n":"Выпады назад","s":3,"r":16,"w":28.0,"sd":1,"d":"Повторы в приложении — суммарно на обе ноги."},{"n":"Зашагивания","s":3,"r":20,"w":22.0,"sd":1,"d":"Вес усреднён в пределах диапазона; повторы суммарно на обе ноги."},{"n":"Разведение ног","s":3,"r":20,"w":60.0}]},{"w":1,"c":"D","t":"Руки + армейский жим","p":"3-1-2 | база 2–3м / изол. 60–90с","e":[{"n":"Подъём штанги на бицепс","s":4,"r":8,"w":47.5},{"n":"Армейский жим","s":4,"r":6,"w":70.0},{"n":"Разгибание гантели из-за головы","s":3,"r":10,"w":30.0,"d":"Вес на одну гантель."},{"n":"Сгибание гантелей с супинацией","s":3,"r":12,"w":17.0,"d":"Вес на одну гантель."},{"n":"Канат на трицепс","s":3,"r":12,"w":42.5},{"n":"Молотковые сгибания","s":3,"r":12,"w":20.0,"d":"Вес на одну гантель."},{"n":"Сгибание рук в блоке","s":3,"r":15,"w":27.5},{"n":"Французский жим с гантелями","s":3,"r":10,"w":22.5,"d":"Вес на одну гантель."}]}]);
 (()=>{
-  if(window.__unvrslRepRangeBootstrapV274)return;
-  window.__unvrslRepRangeBootstrapV274=true;
-
-  const loadUi=()=>{
-    if(document.querySelector('script[data-unvrsl-rep-range-v274]'))return;
-    const u=document.createElement('script');
-    u.src='rep-range-mobile-v272.js?v=274';
-    u.async=false;
-    u.dataset.unvrslRepRangeV274='1';
-    (document.head||document.documentElement).appendChild(u);
-  };
-
-  if(window.__unvrslBuiltInPlanRepRangesAppliedV267){loadUi();return;}
-  if(document.querySelector('script[data-unvrsl-range-engine-v274]'))return;
+  if(window.__unvrslRepRangeDataLoaderV280)return;
+  window.__unvrslRepRangeDataLoaderV280=true;
   const s=document.createElement('script');
-  s.src='built-in-plan-rep-ranges-v267.js?v=274';
+  s.src='built-in-plan-rep-ranges-v267.js?v=280';
   s.async=false;
-  s.dataset.unvrslRangeEngineV274='1';
-  s.onload=loadUi;
-  s.onerror=loadUi;
   (document.head||document.documentElement).appendChild(s);
 })();
 (()=>{
@@ -27,14 +12,6 @@ window.UNVRSL_ROUTINES=(window.UNVRSL_ROUTINES||[]).concat([{"w":1,"c":"A1","t":
   window.__unvrslClientWorkoutScrollLoaderV274=true;
   const s=document.createElement('script');
   s.src='client-workout-scroll-v259.js?v=274';
-  s.async=false;
-  (document.head||document.documentElement).appendChild(s);
-})();
-(()=>{
-  if(window.__unvrslRepRangeFinalLoaderV276)return;
-  window.__unvrslRepRangeFinalLoaderV276=true;
-  const s=document.createElement('script');
-  s.src='rep-range-final-v276.js?v=276';
   s.async=false;
   (document.head||document.documentElement).appendChild(s);
 })();
