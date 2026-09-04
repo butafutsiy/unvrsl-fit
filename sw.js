@@ -1,4 +1,4 @@
-const SW_RELEASE='v292-single-owner-final';
+const SW_RELEASE='v292-legacy-recommendation-cleanup';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
