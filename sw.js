@@ -1,4 +1,4 @@
-const SW_RELEASE='v288-restored-ghost-rep-inputs';
+const SW_RELEASE='v289-prescription-bridge-v288';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
