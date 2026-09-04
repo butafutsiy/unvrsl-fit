@@ -10,6 +10,17 @@
     style.textContent='#start .te200-rec{display:none!important;visibility:hidden!important;pointer-events:none!important}';
     document.head.appendChild(style)
   }
+  document.querySelectorAll('#start .te200-rec').forEach(x=>x.remove());
+
+  // Hard DOM retirement: old training-engine can calculate support state, but it cannot insert its old recommendation UI.
+  if(!Element.prototype.__unvrslLegacyRecommendationInsertBlockedV294){
+    const nativeInsert=Element.prototype.insertAdjacentElement;
+    Element.prototype.insertAdjacentElement=function(position,element){
+      try{if(element?.classList?.contains('te200-rec'))return element}catch(_){ }
+      return nativeInsert.call(this,position,element)
+    };
+    Element.prototype.__unvrslLegacyRecommendationInsertBlockedV294=true
+  }
 
   function mark(name){ready[name]=true;if(Object.values(ready).every(Boolean)){window.__unvrslReadinessStackReadyV257=true;window.__unvrslReadinessStackReadyV260=true;window.dispatchEvent(new CustomEvent('unvrsl:readiness-ready',{detail:{release:294}}))}}
   let attempts=0;
