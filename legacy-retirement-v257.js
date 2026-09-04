@@ -16,7 +16,7 @@
     'startup-splash-v156.js','layout-fix.js','home-dashboard.js','body-sex-sync-v166.js',
     'progression-engine-v182.js','progression-engine-v184.js','progression-engine-v185.js','progression-engine-v186.js',
     'workout-recommendation-v177.js','workout-recommendation-v180.js','workout-recommendation-v185.js',
-    'adaptive-effort-safety-v170.js','adaptive-effort-v2.js','rpe-auto-progression.js',
+    'adaptive-effort-safety-v170.js','adaptive-effort-v2.js','rpe-auto-progression.js','training-progression-gate-v290.js',
     'exercise-audit-v1.js','exercise-cleanup-v2.js','exercise-system-clean-v1.js','exercise-unified-v1.js',
     'exercise-tabs-v1.js','exercise-cardio-quality-v2.js','exercise-source-lock-v1.js','exercise-title-consistency-v3.js',
     'exercise-format-v5.js','exercise-cardio-fix-v6.js','ru-only.js'
@@ -36,10 +36,11 @@
   window.unvrslScriptRetiredV254=isRetired;
   window.unvrslScriptRetiredV253=isRetired;
 
-  // One canonical recommendation owner only.
-  window.__unvrslCanonicalRecommendationOwner='training-load-model-v258+training-progression-gate-v290';
+  // One final recommendation owner. v290 is permanently blocked.
+  window.__unvrslCanonicalRecommendationOwner='training-load-model-v258+progression-finalizer-v291';
   window.__unvrslSmartRecommendationRetiredV291=true;
   window.__unvrslAdaptiveEffortV2=true;
+  window.__unvrslTrainingProgressionGateV290=true;
 
   // Block every superseded owner before any delayed loader can execute it.
   window.__unvrslLegacyRetirementV253=true;
@@ -126,5 +127,5 @@
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
   ['pageshow','unvrsl:modules-ready','unvrsl:training-engine-ready','unvrsl:app-ready'].forEach(ev=>window.addEventListener(ev,schedule,{passive:true}));
-  [0,30,80,160,320,700,1400,2800].forEach(ms=>setTimeout(retireOldRecommendationApi,ms));
+  [0,80,240,700].forEach(ms=>setTimeout(retireOldRecommendationApi,ms));
 })();
