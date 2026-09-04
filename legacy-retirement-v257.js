@@ -65,8 +65,9 @@
   const OLD_REC_SELECTOR=[
     '#start .smart-suggest','#start .u177-rec','#start .wr180','#start .wr185',
     '#start .adaptive-choice-btn','#start .adaptive-load-chip','#start .unvrsl-auto-load',
-    '#start .auto-progression','#start .adaptive-effort-card','#start .adaptive-rec',
-    '#start [data-adaptive-recommendation]','#start [data-legacy-recommendation]'
+    '#start .auto-progression:not(.focus-auto)','#start .adaptive-effort-card','#start .adaptive-rec',
+    '#start [data-adaptive-recommendation]','#start [data-legacy-recommendation]',
+    '#sheet .unvrsl174-rec'
   ].join(',');
 
   const style=document.createElement('style');
@@ -84,27 +85,76 @@
 
   const obsolete='#unvrsl-startup-splash,#unvrsl-startup-splash-v156,#unvrsl-startup-splash-final,#unvrsl-startup-v256,#unvrslBoot,#unvrsl-startup-splash-style,#unvrsl-startup-splash-v156-style,#unvrsl-startup-splash-final-style,#unvrsl-startup-v256-style,#unvrsl-boot-style,#unvrsl-boot-cover,#unvrsl-boot-cover-style,#stats .profile-card-head,#stats .profile-overview,#stats .own-body-progress,#stats .stats-muscle-week,#stats .stats-last-session-v104-wrap';
   const oldGlobals=['anatomeMuscleCardHtmlV253','anatomeMountCardV253','unvrslStatsSessions208','statsOpenWorkout208','statsWeightRange','statsWeightSheet','statsSaveWeight','statsGoalSheet','statsSaveGoal','statsEnsureCanonicalV253','clientPlanProfileInjectV222','clientPlanProfileRefresh198','clientPlanOpenProfile198','clientPlanMeasure198'];
-  let queued=false;
+  let queued=false,lastLockedSession='';
 
+  function appState(){try{if(typeof st!=='undefined'){window.st=st;return st}}catch(_){ }return window.st||null}
   function removeHistory(root){const head=root?.querySelector('#statsWorkoutHistory208');if(!head)return;const card=head.nextElementSibling;if(card?.classList.contains('sd2-card'))card.remove();head.remove()}
   function retireGlobals(){oldGlobals.forEach(key=>{try{delete window[key]}catch(e){window[key]=undefined}})}
+
+  function lockLegacyWeightState(){
+    const s=appState();if(!s)return false;let changed=false;
+    if(s.nextSuggestions&&typeof s.nextSuggestions==='object'&&Object.keys(s.nextSuggestions).length){s.nextSuggestions={};changed=true}
+    const cur=s.current;if(!cur)return changed;
+    const sid=String(cur.id||'');
+    if(cur.unvrslAdaptive174Applied!==true){cur.unvrslAdaptive174Applied=true;changed=true}
+    if(cur.adaptiveEffortV2Applied!==true){cur.adaptiveEffortV2Applied=true;changed=true}
+    if(cur.adaptiveDecision!=='engine292'){cur.adaptiveDecision='engine292';changed=true}
+    if(cur.adaptivePrompted!==true){cur.adaptivePrompted=true;changed=true}
+    (cur.ex||[]).forEach(ex=>{
+      for(const k of ['recommendation194','engine196Recommendation','progression187','adaptiveEffort','trainingProgression290','trainingProgression291']){
+        if(Object.prototype.hasOwnProperty.call(ex,k)){delete ex[k];changed=true}
+      }
+      if(ex?.trainingEstimate200&&ex.trainingEstimate200.mathOwner&&ex.trainingEstimate200.mathOwner!=='training-load-model-v292'){
+        ex.trainingEstimate200.mathOwner='training-load-model-v292';changed=true
+      }
+      (ex.set||[]).forEach(set=>{
+        for(const k of ['adaptiveSuggestedW','adaptiveRecommendation','recommendation194','engine196Recommendation']){
+          if(Object.prototype.hasOwnProperty.call(set,k)){delete set[k];changed=true}
+        }
+        // A persisted recommendation from an old runtime must never flash before v292 recalculates it.
+        if(set?.recommendedW!=null&&!set?.trainingIntensity292){delete set.recommendedW;changed=true}
+        if(Object.prototype.hasOwnProperty.call(set,'progressionGateV290')){delete set.progressionGateV290;changed=true}
+        if(Object.prototype.hasOwnProperty.call(set,'progressionGateV291')){delete set.progressionGateV291;changed=true}
+      })
+    });
+    if(cur.trainingMathOwner&&cur.trainingMathOwner!=='training-load-model-v292'){cur.trainingMathOwner='training-load-model-v292';changed=true}
+    if(sid&&sid!==lastLockedSession)lastLockedSession=sid;
+    if(changed){try{if(typeof save==='function')save();else window.save?.()}catch(_){ }}
+    return changed
+  }
+
+  function retireFunction(name,returnValue=null){
+    try{
+      const fn=window[name];if(typeof fn!=='function'||fn.__unvrslRetiredV292)return;
+      const off=function(){return returnValue};off.__unvrslRetiredV292=true;window[name]=off;
+      try{globalThis[name]=off}catch(_){ }
+    }catch(_){ }
+  }
   function retireOldRecommendationApi(){
-    try{if(typeof window.suggestionFor==='function'&&!window.suggestionFor.__unvrslRetiredV292){const off=function(){return null};off.__unvrslRetiredV292=true;window.suggestionFor=off;try{suggestionFor=off}catch(_){ }}}catch(_){ }
-    try{if(typeof window.focusSuggestion==='function'&&!window.focusSuggestion.__unvrslRetiredV292){const off=function(){return null};off.__unvrslRetiredV292=true;window.focusSuggestion=off;try{focusSuggestion=off}catch(_){ }}}catch(_){ }
+    retireFunction('suggestionFor',null);
+    retireFunction('applySuggestion',undefined);
+    retireFunction('applyAdaptiveLoads',0);
+    retireFunction('adaptiveChoiceSheet',undefined);
+    retireFunction('chooseAdaptiveMode',undefined);
+    // Legacy readiness from advanced-training must not change weights; current readiness lives in training-engine/questionnaire.
+    try{if(typeof window.advAskReadiness==='function'&&!window.advAskReadiness.__te205){const bypass=(fn,args)=>typeof fn==='function'?fn.apply(window,Array.isArray(args)?args:[]):undefined;bypass.__te205=true;window.advAskReadiness=bypass;try{advAskReadiness=bypass}catch(_){ }}}catch(_){ }
+    retireFunction('advConfirmReadiness',undefined);
+    retireFunction('advApplyReadinessToCurrent',false);
   }
   function clean(){
-    queued=false;retireGlobals();retireOldRecommendationApi();document.body?.classList.remove('unvrsl-booting');document.querySelectorAll(obsolete).forEach(el=>el.remove());document.querySelectorAll(OLD_REC_SELECTOR).forEach(el=>el.remove());
+    queued=false;retireGlobals();retireOldRecommendationApi();lockLegacyWeightState();document.body?.classList.remove('unvrsl-booting');document.querySelectorAll(obsolete).forEach(el=>el.remove());document.querySelectorAll(OLD_REC_SELECTOR).forEach(el=>el.remove());
     const stats=document.getElementById('stats');removeHistory(stats);if(stats){[...stats.querySelectorAll('.sd2-card')].forEach(card=>{const text=(card.textContent||'').trim();if(card.querySelector('.sd2-weight-head')||/^Активность\s*—\s*последние 12 месяцев/i.test(text))card.remove()})}
     const home=document.getElementById('home');[...(home?.children||[])].forEach(card=>{if(card.classList?.contains('card')&&card.querySelector(':scope > .weight-top'))card.remove()});
     const sheet=document.getElementById('sheet');if(sheet?.querySelector('.tcv3-head'))sheet.querySelectorAll('.trainer-remove-programs-block,.trainer-live-programs,.trainer-program-control-v2').forEach(el=>el.remove())
   }
   window.unvrslLegacyCleanV292=clean;window.unvrslLegacyCleanV291=clean;window.unvrslLegacyCleanV260=clean;
+  window.unvrslLegacyWeightLockV292=lockLegacyWeightState;
   function schedule(){if(queued)return;queued=true;requestAnimationFrame(clean)}
   function install(){
     for(const id of ['home','stats','sheet','start']){const node=document.getElementById(id);if(!node||node.__legacyRetirementV292Observer)continue;const observer=new MutationObserver(schedule);observer.observe(node,{childList:true,subtree:true});node.__legacyRetirementV292Observer=observer}
     const body=document.body;if(body&&!body.__legacySplashRetirementV292Observer){const observer=new MutationObserver(schedule);observer.observe(body,{childList:true});body.__legacySplashRetirementV292Observer=observer}schedule()
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
-  ['pageshow','unvrsl:modules-ready','unvrsl:training-engine-ready','unvrsl:app-ready'].forEach(ev=>window.addEventListener(ev,schedule,{passive:true}));
-  [0,80,240,700].forEach(ms=>setTimeout(retireOldRecommendationApi,ms));
+  ['pageshow','unvrsl:modules-ready','unvrsl:training-engine-ready','unvrsl:app-ready','unvrsl:readiness-ready','unvrsl:cloud-modules-settled'].forEach(ev=>window.addEventListener(ev,schedule,{passive:true}));
+  [0,80,240,700,1200,2200,4000,7000].forEach(ms=>setTimeout(()=>{retireOldRecommendationApi();lockLegacyWeightState()},ms));
 })();
