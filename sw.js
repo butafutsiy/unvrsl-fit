@@ -1,4 +1,4 @@
-const SW_RELEASE='v282-active-rep-ranges';
+const SW_RELEASE='v283-ghost-rep-ranges';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
