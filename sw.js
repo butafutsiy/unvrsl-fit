@@ -1,4 +1,4 @@
-const SW_RELEASE='v292-single-training-model';
+const SW_RELEASE='v292-single-owner-final';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
