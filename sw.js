@@ -1,4 +1,4 @@
-const SW_RELEASE='v294.1-hard-disable-legacy-recommendation';
+const SW_RELEASE='v293-recommendation-display-gate';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
