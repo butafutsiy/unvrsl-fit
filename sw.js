@@ -1,4 +1,4 @@
-const SW_RELEASE='v295-unified-recommendation-engine';
+const SW_RELEASE='v296-builtin-intensity-rpe-profile';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
