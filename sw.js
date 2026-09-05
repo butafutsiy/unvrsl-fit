@@ -1,4 +1,4 @@
-const SW_RELEASE='v298-preview-text-sync';
+const SW_RELEASE='v299-first-open-recommendations';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
