@@ -1,4 +1,4 @@
-const SW_RELEASE='v295-canonical-recommendation-overlay';
+const SW_RELEASE='v295-unified-recommendation-engine';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
