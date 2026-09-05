@@ -3,16 +3,21 @@
   if(window.__unvrslReadinessAutoregulationV257)return;
   window.__unvrslReadinessAutoregulationV257=true;
   const ready={engine:false,questionnaire:false,exact:false};
-  function mark(name){ready[name]=true;if(Object.values(ready).every(Boolean)){window.__unvrslReadinessStackReadyV257=true;window.__unvrslReadinessStackReadyV260=true;window.dispatchEvent(new CustomEvent('unvrsl:readiness-ready',{detail:{release:295}}))}}
+  function mark(name){ready[name]=true;if(Object.values(ready).every(Boolean)){window.__unvrslReadinessStackReadyV257=true;window.__unvrslReadinessStackReadyV260=true;window.dispatchEvent(new CustomEvent('unvrsl:readiness-ready',{detail:{release:296}}))}}
+  function loadBuiltinProfile(){
+    if(window.__unvrslBuiltinCycleLoadProfileV296||document.querySelector('script[data-unvrsl-builtin-load-profile-v296]'))return;
+    const x=document.createElement('script');x.src='builtin-cycle-load-profile-v296.js?v=296';x.async=false;x.dataset.unvrslBuiltinLoadProfileV296='1';x.onerror=()=>console.warn('UNVRSL built-in load profile v296 failed to load');document.body.appendChild(x)
+  }
   let attempts=0;
   function load(){
+    loadBuiltinProfile();
     if(window.__unvrslTrainingEngineV257){mark('engine');loadPrescriptionBridge();return}
     if(attempts>=3)return;
     document.querySelectorAll('script[data-unvrsl-training-engine-v200]').forEach(x=>x.remove());
     const s=document.createElement('script');attempts++;
     s.src=attempts===1?'training-engine-v200.js?v=295':`training-engine-v200.js?v=295-${attempts}`;
     s.async=false;s.dataset.unvrslTrainingEngineV200='1';
-    s.onload=()=>{if(window.__unvrslTrainingEngineV257){mark('engine');loadPrescriptionBridge()}else setTimeout(load,250)};
+    s.onload=()=>{if(window.__unvrslTrainingEngineV257){mark('engine');loadPrescriptionBridge();loadBuiltinProfile()}else setTimeout(load,250)};
     s.onerror=()=>setTimeout(load,700);
     document.body.appendChild(s)
   }
@@ -35,6 +40,6 @@
     if(window.__unvrslTrainingPrescriptionBridgeV288||document.querySelector('script[data-unvrsl-prescription-bridge-v288]'))return;
     const x=document.createElement('script');x.src='training-prescription-bridge-v288.js?v=295';x.async=false;x.dataset.unvrslPrescriptionBridgeV288='1';x.onerror=()=>console.warn('UNVRSL prescription bridge v288 failed to load');document.body.appendChild(x)
   }
-  load();loadQuestionnaire();loadExactPlanFix();loadWorkoutShare();loadPrescriptionBridge();
-  ['unvrsl:training-engine-ready','unvrsl:modules-ready','unvrsl:app-ready','unvrsl:cloud-modules-settled'].forEach(ev=>window.addEventListener(ev,loadPrescriptionBridge,{passive:true}));
+  loadBuiltinProfile();load();loadQuestionnaire();loadExactPlanFix();loadWorkoutShare();loadPrescriptionBridge();
+  ['unvrsl:training-engine-ready','unvrsl:modules-ready','unvrsl:app-ready','unvrsl:cloud-modules-settled'].forEach(ev=>window.addEventListener(ev,()=>{loadBuiltinProfile();loadPrescriptionBridge()},{passive:true}));
 })();
