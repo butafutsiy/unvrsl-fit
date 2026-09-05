@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=297,SEED='sergey-8-week-training-plan',NAME='Тренировочный план (Сергей)';
+  const W=window,D=document,REV=297,UI_REV=301,SEED='sergey-8-week-training-plan',NAME='Тренировочный план (Сергей)';
   if(W.__unvrslSergeyLoadProfileV297)return;
   W.__unvrslSergeyLoadProfileV297=true;
 
@@ -74,27 +74,15 @@
   function ensureStyle(){
     if(D.getElementById('sergey-load-profile-v297-style'))return;
     const s=D.createElement('style');s.id='sergey-load-profile-v297-style';s.textContent=`
-      .sergey-load-v297{margin:12px 0 2px;padding-top:10px;border-top:1px solid #303034}
-      .sergey-load-v297-title{font-size:10px;font-weight:800;color:#8e8e93;margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em}
-      .sergey-load-v297-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-      .sergey-load-v297-cell{min-width:0;padding:7px 4px;border-radius:11px;background:#242428;border:1px solid #343438;text-align:center}
-      .sergey-load-v297-cell b{display:block;font-size:10px}.sergey-load-v297-cell span{display:block;margin-top:2px;font-size:8px;color:#b4b4b9;white-space:nowrap}.sergey-load-v297-cell .pct{color:var(--green);font-size:9px;font-weight:800}
       .sergey-week-v297{margin:9px 0 3px;padding:9px 11px;border-radius:13px;background:rgba(48,209,88,.08);border:1px solid rgba(48,209,88,.22)}
       .sergey-week-v297 b{font-size:11px;color:var(--green)}.sergey-week-v297 span{display:block;margin-top:3px;color:#9a9aa0;font-size:10px}
-      @media(max-width:390px){.sergey-load-v297-grid{gap:4px}.sergey-load-v297-cell{padding:6px 2px}.sergey-load-v297-cell span{font-size:7px}}
     `;D.head?.appendChild(s)
   }
-  function gridHtml(){return `<div class="sergey-load-v297" data-sergey-load-profile-v297="grid"><div class="sergey-load-v297-title">Интенсивность и RPE</div><div class="sergey-load-v297-grid">${Object.entries(PROFILE).map(([w,p])=>`<div class="sergey-load-v297-cell"><b>W${w}</b><span class="pct">${range(p.pct)}%</span><span>RPE ${range(p.rpe)}</span></div>`).join('')}</div></div>`}
   function weekHtml(w){const p=PROFILE[w];return p?`<div class="sergey-week-v297" data-sergey-load-profile-v297="week"><b>W${w} · ${range(p.pct)}% · RPE ${range(p.rpe)}</b><span>${p.focus}</span></div>`:''}
   function selectedWeek(root){const m=String(root?.querySelector('.weekbtn.on')?.textContent||'').match(/W\s*(\d+)/i);return Math.max(1,Math.min(8,Number(m?.[1])||1))}
 
-  function enhanceTrainerClientCard(){
-    const sh=D.getElementById('sheet');if(!sh)return;
-    sh.querySelectorAll('.tcv3-program').forEach(card=>{
-      if(!String(card.textContent||'').includes(NAME)||card.querySelector('[data-sergey-load-profile-v297="grid"]'))return;
-      const actions=card.querySelector('.tcv3-program-actions,.trainer-plan-actions,.coach-actions');
-      if(actions)actions.insertAdjacentHTML('beforebegin',gridHtml());else card.insertAdjacentHTML('beforeend',gridHtml())
-    })
+  function removeTrainerClientGrid(){
+    D.querySelectorAll('[data-sergey-load-profile-v297="grid"],.sergey-load-v297').forEach(el=>el.remove())
   }
   function enhanceWeekSheet(){
     const sh=D.getElementById('sheet');if(!sh||!String(sh.textContent||'').includes(NAME))return;
@@ -111,14 +99,15 @@
     old?.remove();bar.insertAdjacentHTML('afterend',weekHtml(w));const fresh=root.querySelector('[data-sergey-load-profile-v297="week"]');if(fresh)fresh.dataset.week=String(w)
   }
   let uiQueued=false;
-  function enhanceUi(){uiQueued=false;ensureStyle();enhanceTrainerClientCard();enhanceWeekSheet();enhancePlanPage()}
+  function enhanceUi(){uiQueued=false;ensureStyle();removeTrainerClientGrid();enhanceWeekSheet();enhancePlanPage()}
   function scheduleUi(){if(uiQueued)return;uiQueued=true;requestAnimationFrame(enhanceUi)}
   function observe(){
-    ensureStyle();
-    for(const id of ['sheet','plan']){const node=D.getElementById(id);if(!node||node.__sergeyLoadProfileV297Observer)continue;const o=new MutationObserver(scheduleUi);o.observe(node,{childList:true,subtree:true,characterData:true});node.__sergeyLoadProfileV297Observer=o}
+    ensureStyle();removeTrainerClientGrid();
+    for(const id of ['sheet','plan']){const node=D.getElementById(id);if(!node||node.__sergeyLoadProfileV301Observer)continue;const o=new MutationObserver(scheduleUi);o.observe(node,{childList:true,subtree:true,characterData:true});node.__sergeyLoadProfileV301Observer=o}
     scheduleUi()
   }
 
+  W.__unvrslSergeyLoadProfileUiRevision=UI_REV;
   if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',()=>{observe();sync(false)},{once:true});else{observe();sync(false)}
   ['unvrsl:modules-ready','unvrsl:app-ready','unvrsl:cloud-modules-settled','unvrsl:readiness-ready','unvrsl:training-engine-ready'].forEach(ev=>W.addEventListener?.(ev,()=>sync(false),{passive:true}));
   D.addEventListener?.('visibilitychange',()=>{if(!D.hidden)sync(false)},{passive:true});
