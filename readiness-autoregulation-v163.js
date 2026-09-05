@@ -3,14 +3,14 @@
   if(window.__unvrslReadinessAutoregulationV257)return;
   window.__unvrslReadinessAutoregulationV257=true;
   const ready={engine:false,questionnaire:false,exact:false};
-  function mark(name){ready[name]=true;if(Object.values(ready).every(Boolean)){window.__unvrslReadinessStackReadyV257=true;window.__unvrslReadinessStackReadyV260=true;window.dispatchEvent(new CustomEvent('unvrsl:readiness-ready',{detail:{release:300}}))}}
+  function mark(name){ready[name]=true;if(Object.values(ready).every(Boolean)){window.__unvrslReadinessStackReadyV257=true;window.__unvrslReadinessStackReadyV260=true;window.dispatchEvent(new CustomEvent('unvrsl:readiness-ready',{detail:{release:301}}))}}
   function loadBuiltinProfile(){
     if(window.__unvrslBuiltinCycleLoadProfileV296||document.querySelector('script[data-unvrsl-builtin-load-profile-v296]'))return;
     const x=document.createElement('script');x.src='builtin-cycle-load-profile-v296.js?v=299';x.async=false;x.dataset.unvrslBuiltinLoadProfileV296='1';x.onerror=()=>console.warn('UNVRSL built-in load profile v299 failed to load');document.body.appendChild(x)
   }
   function loadSergeyProfile(){
     if(window.__unvrslSergeyLoadProfileV297||document.querySelector('script[data-unvrsl-sergey-load-profile-v297]'))return;
-    const x=document.createElement('script');x.src='sergey-load-profile-v297.js?v=297';x.async=false;x.dataset.unvrslSergeyLoadProfileV297='1';x.onerror=()=>console.warn('UNVRSL Sergey load profile v297 failed to load');document.body.appendChild(x)
+    const x=document.createElement('script');x.src='sergey-load-profile-v297.js?v=301';x.async=false;x.dataset.unvrslSergeyLoadProfileV297='1';x.onerror=()=>console.warn('UNVRSL Sergey load profile v301 failed to load');document.body.appendChild(x)
   }
   function loadRecommendationCopy(){
     if(window.__unvrslRecommendationCopyV300||document.querySelector('script[data-unvrsl-recommendation-copy-v300]'))return;
