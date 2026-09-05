@@ -1,4 +1,4 @@
-const SW_RELEASE='v301-sergey-card-cleanup';
+const SW_RELEASE='v302-template-intensity-rpe';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
