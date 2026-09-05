@@ -1,4 +1,4 @@
-const SW_RELEASE='v302-template-intensity-rpe';
+const SW_RELEASE='v303-settings-cloud-cleanup';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
