@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=296,BUILTIN='__builtin_cycle__';
+  const W=window,D=document,REV=298,BUILTIN='__builtin_cycle__';
   if(W.__unvrslBuiltinCycleLoadProfileV296)return;
   W.__unvrslBuiltinCycleLoadProfileV296=true;
 
@@ -74,7 +74,7 @@
     const cur=state()?.current,changed=annotate(cur);
     if((changed||force)&&isBuiltinWorkout(cur)&&!calculating){
       const model=W.trainingLoadModel292;
-      if(model?.run){calculating=true;try{await model.run(true)}catch(e){console.warn('UNVRSL builtin load profile v296',e)}finally{calculating=false}}
+      if(model?.run){calculating=true;try{await model.run(true)}catch(e){console.warn('UNVRSL builtin load profile v298',e)}finally{calculating=false}}
     }
     scheduleUi()
   }
@@ -112,6 +112,21 @@
       const text=`RPE ${range(p.rpe)}`;if(ch.textContent!==text)ch.textContent=text
     })
   }
+  function enhanceRoutinePreview(sh){
+    const preview=sh?.querySelector('.routine-preview-v281');if(!preview)return false;
+    const meta=preview.querySelector('.rp281-meta');if(!meta)return false;
+    const raw=String(meta.textContent||'').trim(),m=raw.match(/W\s*(\d+)/i),w=Math.max(1,Math.min(8,Number(m?.[1])||0)),p=PROFILE[w];if(!p)return false;
+    const tempoMatch=raw.match(/темп\s+(.+)$/i),tempoText=tempoMatch?.[1]?.trim();
+    const next=`W${w} · ${range(p.pct)}% · RPE ${range(p.rpe)}${tempoText?` · темп ${tempoText}`:''}`;
+    if(meta.textContent!==next)meta.textContent=next;
+    preview.querySelectorAll('.rp281-rule').forEach(el=>{
+      const text=String(el.textContent||'');
+      const replaced=text.replace(/RPE\s+\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?/i,`RPE ${range(p.rpe)}`);
+      if(replaced!==text)el.textContent=replaced
+    });
+    preview.dataset.loadProfileTextRevision=String(REV);
+    return true
+  }
   function enhancePrograms(){
     const root=D.getElementById('programs');if(!root)return;
     const open=[...root.querySelectorAll('button')].find(b=>(b.getAttribute('onclick')||'').includes('openBuiltinProgramViewer'));
@@ -132,6 +147,7 @@
   }
   function enhanceSheet(){
     const sh=D.getElementById('sheet');if(!sh)return;
+    if(enhanceRoutinePreview(sh))return;
     const text=String(sh.textContent||'');
     if(text.includes('Встроенная программа · 8 недель')||text.includes(builtInName())){
       const w=activeWeek(sh),p=PROFILE[w];
