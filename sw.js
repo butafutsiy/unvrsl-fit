@@ -1,4 +1,4 @@
-const SW_RELEASE='v296-builtin-intensity-rpe-profile';
+const SW_RELEASE='v297-sergey-intensity-rpe-profile';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
