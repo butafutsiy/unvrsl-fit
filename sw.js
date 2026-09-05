@@ -1,4 +1,4 @@
-const SW_RELEASE='v299-first-open-recommendations';
+const SW_RELEASE='v300-clean-recommendation-copy';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
