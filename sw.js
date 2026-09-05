@@ -1,4 +1,4 @@
-const SW_RELEASE='v300-clean-recommendation-copy';
+const SW_RELEASE='v301-sergey-card-cleanup';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
