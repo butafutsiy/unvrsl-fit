@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=298,BUILTIN='__builtin_cycle__';
+  const W=window,D=document,REV=299,BUILTIN='__builtin_cycle__';
   if(W.__unvrslBuiltinCycleLoadProfileV296)return;
   W.__unvrslBuiltinCycleLoadProfileV296=true;
 
@@ -63,7 +63,12 @@
   }
   function installBeginHook(){
     const fn=W.begin;if(typeof fn!=='function'||fn.__builtinLoadProfileV296)return;
-    const wrapped=function(){const out=fn.apply(this,arguments);queueMicrotask(()=>sync(true));return out};
+    const wrapped=function(){
+      const out=fn.apply(this,arguments);
+      try{annotate(state()?.current)}catch(_){ }
+      scheduleUi();
+      return out
+    };
     wrapped.__builtinLoadProfileV296=true;wrapped.__builtinLoadProfileBase=fn;
     W.begin=wrapped;try{begin=wrapped}catch(_){ }
   }
@@ -71,10 +76,10 @@
   let calculating=false;
   async function sync(force=false){
     installSessionHook();installBeginHook();
-    const cur=state()?.current,changed=annotate(cur);
-    if((changed||force)&&isBuiltinWorkout(cur)&&!calculating){
+    const cur=state()?.current,changed=annotate(cur),preparing=D.documentElement?.classList?.contains('te200-preparing');
+    if((changed||force)&&isBuiltinWorkout(cur)&&!calculating&&!preparing){
       const model=W.trainingLoadModel292;
-      if(model?.run){calculating=true;try{await model.run(true)}catch(e){console.warn('UNVRSL builtin load profile v298',e)}finally{calculating=false}}
+      if(model?.run){calculating=true;try{await model.run(true)}catch(e){console.warn('UNVRSL builtin load profile v299',e)}finally{calculating=false}}
     }
     scheduleUi()
   }
