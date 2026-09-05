@@ -1,4 +1,4 @@
-const SW_RELEASE='v297-sergey-intensity-rpe-profile';
+const SW_RELEASE='v298-preview-text-sync';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
