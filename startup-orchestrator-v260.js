@@ -4,6 +4,14 @@
   if(W.__unvrslStartupOrchestratorV260)return;W.__unvrslStartupOrchestratorV260=true;
   W.__unvrslStartupComplete=false;
 
+  // Startup must never be held hostage by a slow cloud session refresh.
+  // Give Supabase a short grace period, then paint the local app and hydrate
+  // cloud/profile/role in the background when the service recovers.
+  const bootStarted=(W.performance?.now?.()||Date.now());
+  const CLOUD_GRACE_MS=850;
+  const HARD_RELEASE_MS=2600;
+  const elapsed=()=>((W.performance?.now?.()||Date.now())-bootStarted);
+
   // Load the canonical math layer independently from the workout UI. It waits
   // for the training engine and updates weight data without rebuilding pages.
   function loadTrainingLoadModel(){
@@ -37,7 +45,8 @@
   loadTrainingLoadModel();loadProgramIntensity();loadTrainerClientProgramEdit();loadProgramWeekRpeRir();loadProgramRepRange();loadBuiltInPlanRepRanges();loadProgramWeekRepGuidance();
 
   // app.js paints a harmless base DOM once. Every later full render is queued
-  // until all canonical owners, cloud data and the current role are settled.
+  // until canonical local owners are ready. Cloud is now non-blocking after
+  // the short grace period above.
   const baseRender=W.render;
   let unlocked=false,pending=false,finalizing=false,released=false;
   if(typeof baseRender==='function'){
@@ -55,12 +64,24 @@
     try{return typeof W.unvrslTrainerMode==='function'&&W.unvrslTrainerMode()}catch(_){return false}
   };
   const client=()=>!!W.cloud?.user&&!trainer();
-  function coreReady(){
-    const c=W.cloud;
+  const cloudSettled=()=>!!(W.__unvrslCloudModulesSettledV260&&W.cloud?.initSettled);
+  const cloudCanWait=()=>elapsed()<CLOUD_GRACE_MS;
+
+  function localCoreReady(){
     if(D.readyState!=='complete'||!W.__unvrslDynamicModulesReadyV260||!W.__unvrslReadinessStackReadyV260)return false;
-    if(!W.__unvrslCloudModulesSettledV260||!c?.initSettled)return false;
     if(!W.__unvrslStatsAuthorityV254||!W.__unvrslTrainerShellV252||!W.__unvrslClientWorkoutScrollV261)return false;
-    if(client()&&(!W.__unvrslClientRuntimeSettledV260||!D.body?.classList.contains('client-runtime-ready-v260')))return false;
+    return true
+  }
+  function coreReady(){
+    if(!localCoreReady())return false;
+    if(!cloudSettled()&&cloudCanWait())return false;
+    if(!cloudSettled()){
+      W.__unvrslStartupCloudBypassedV260=true;
+      W.__unvrslStartupCloudBypassMsV260=Math.round(elapsed());
+    }
+    // Only wait for client-specific cloud runtime when cloud actually resolved
+    // a signed-in client. An unavailable cloud must not block the local shell.
+    if(cloudSettled()&&client()&&(!W.__unvrslClientRuntimeSettledV260||!D.body?.classList.contains('client-runtime-ready-v260')))return false;
     return true
   }
   const frames=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
@@ -75,30 +96,34 @@
     try{W.statsEnsureCanonicalV254?.()}catch(_){ }
     try{W.unvrslLegacyCleanV260?.()}catch(_){ }
     await frames();
-    await new Promise(resolve=>setTimeout(resolve,90));
+    await new Promise(resolve=>setTimeout(resolve,60));
     try{W.unvrslTrainerShellSyncV260?.(false)}catch(_){ }
     try{W.unvrslLegacyCleanV260?.()}catch(_){ }
     await frames()
   }
-  async function finalize(){
-    if(finalizing||released||!coreReady())return false;
+  async function finalize(force=false){
+    if(finalizing||released)return false;
+    if(!force&&!coreReady())return false;
+    if(force&&!localCoreReady()&&typeof baseRender!=='function')return false;
     finalizing=true;
     try{
+      if(force&&!cloudSettled())W.__unvrslStartupCloudBypassedV260=true;
       await paintFinalInterface();
       D.documentElement?.classList.add(READY_CLASS);
       D.body?.classList.add(READY_CLASS);
-      W.__unvrslStartupComplete=true;W.__unvrslStartupReleaseReasonV260='ready';
+      W.__unvrslStartupComplete=true;
+      W.__unvrslStartupReleaseReasonV260=W.__unvrslStartupCloudBypassedV260?'local-first':'ready';
       const splash=D.getElementById('unvrsl-startup-v258');
       requestAnimationFrame(()=>requestAnimationFrame(()=>{
         splash?.classList.add('out');
-        setTimeout(()=>{splash?.remove();D.getElementById('unvrsl-startup-v258-style')?.remove()},240)
+        setTimeout(()=>{splash?.remove();D.getElementById('unvrsl-startup-v258-style')?.remove()},220)
       }));
-      released=true;clearInterval(poll);W.dispatchEvent?.(new CustomEvent('unvrsl:app-ready',{detail:{release:260,queuedRender:pending}}));
+      released=true;clearInterval(poll);W.dispatchEvent?.(new CustomEvent('unvrsl:app-ready',{detail:{release:260,queuedRender:pending,cloudBypassed:!!W.__unvrslStartupCloudBypassedV260}}));
       return true
     }finally{finalizing=false}
   }
   W.unvrslTryFinalizeStartupV260=finalize;
-  for(const name of ['load','unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:client-settled','unvrsl:readiness-ready'])W.addEventListener?.(name,finalize,{passive:true});
+  for(const name of ['load','unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:client-settled','unvrsl:readiness-ready'])W.addEventListener?.(name,()=>finalize(false),{passive:true});
   for(const name of ['unvrsl:modules-ready','unvrsl:training-engine-ready','unvrsl:app-ready']){
     W.addEventListener?.(name,loadTrainingLoadModel,{passive:true});
     W.addEventListener?.(name,loadProgramIntensity,{passive:true});
@@ -109,5 +134,9 @@
     W.addEventListener?.(name,loadProgramWeekRepGuidance,{passive:true})
   }
   [400,1200,3000].forEach(ms=>{setTimeout(loadTrainingLoadModel,ms);setTimeout(loadProgramIntensity,ms);setTimeout(loadTrainerClientProgramEdit,ms);setTimeout(loadProgramWeekRpeRir,ms);setTimeout(loadProgramRepRange,ms);setTimeout(loadBuiltInPlanRepRanges,ms);setTimeout(loadProgramWeekRepGuidance,ms)});
-  const poll=setInterval(finalize,80);finalize();
+  // Cloud grace expiry immediately retries startup. A hard cap prevents an
+  // unrelated optional module from leaving users on the splash indefinitely.
+  setTimeout(()=>finalize(false),CLOUD_GRACE_MS+30);
+  setTimeout(()=>finalize(true),HARD_RELEASE_MS);
+  const poll=setInterval(()=>finalize(false),80);finalize(false);
 })();
