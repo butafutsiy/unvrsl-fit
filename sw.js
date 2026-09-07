@@ -1,4 +1,4 @@
-const SW_RELEASE='v306-machine-rpe-reps';
+const SW_RELEASE='v307-manual-equipment-cardio';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
