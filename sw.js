@@ -1,4 +1,4 @@
-const SW_RELEASE='v305-machine-models';
+const SW_RELEASE='v306-machine-rpe-reps';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
