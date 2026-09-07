@@ -1,4 +1,4 @@
-const SW_RELEASE='v312-reactive-activity-factor';
+const SW_RELEASE='v313-stable-interactions';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
@@ -11,15 +11,7 @@ self.addEventListener('activate',event=>{
     try{await self.registration.navigationPreload?.enable()}catch(_){ }
     await self.clients.claim();
     const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
-    await Promise.all(clients.map(client=>{
-      try{
-        const url=new URL(client.url);
-        if(url.origin!==self.location.origin)return null;
-        if(url.searchParams.get('__unvrsl_refresh')===SW_RELEASE)return null;
-        url.searchParams.set('__unvrsl_refresh',SW_RELEASE);
-        return client.navigate(url.href).catch(()=>null)
-      }catch(_){return null}
-    }))
+    clients.forEach(client=>client.postMessage({type:'UNVRSL_RELEASE_READY',release:SW_RELEASE}))
   })())
 });
 
