@@ -39,7 +39,7 @@
   // One client runtime owns Home and Plan. It stays dormant for the trainer account.
   if(!document.querySelector('script[data-unvrsl-client-runtime-v257]')){
     const clientFinal=document.createElement('script');
-    clientFinal.src='client-final-runtime-v222.js?v=260';
+    clientFinal.src='client-final-runtime-v222.js?v=313';
     clientFinal.async=false;
     clientFinal.dataset.unvrslClientRuntimeV257='1';
     document.body.appendChild(clientFinal);
