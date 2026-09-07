@@ -1,4 +1,4 @@
-const SW_RELEASE='v303-settings-cloud-cleanup';
+const SW_RELEASE='v304-machine-weight-adaptation';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
