@@ -243,7 +243,7 @@
     clientBooting=(async()=>{
       await cleanupLegacyClientWeight();
       await hydrateAssignments();
-      await script('client-program-picker.js?v=260');
+      await script('client-program-picker.js?v=313');
       await script('client-journal-profile-v107.js?v=260');
       installPlanGuard();installSettings();installCanonicalClientHome();
       if(document.getElementById('plan')?.classList.contains('active'))canonicalClientPlan();
