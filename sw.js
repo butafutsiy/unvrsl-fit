@@ -1,4 +1,4 @@
-const SW_RELEASE='v304-machine-weight-adaptation';
+const SW_RELEASE='v305-machine-models';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
