@@ -70,10 +70,10 @@
       const profiles=profileStore();let changed=false;
       groups(cur).forEach(group=>{
         const active=selected(group);if(!active)return;
-        const rows=group.entries.flatMap(e=>(e.set||[]).filter(x=>x.ok&&N(x.w)>0&&N(x.r)>0)).map(x=>({actual:N(x.w),program:programWeight(x),reps:N(x.r),rpe:N(x.rpe)}));
-        const comparable=rows.filter(x=>x.program>0);if(!comparable.length)return;
+        const rows=group.entries.flatMap(e=>(e.set||[]).filter(x=>x.ok&&N(x.w)>0&&N(x.r)>0)).map(x=>({actual:N(x.w),program:programWeight(x),reps:N(x.r),rpe:N(x.rpe),targetReps:N(x.targetRepMax??x.targetRepMin??x.programR??x.r)}));
+        const comparable=rows.filter(x=>x.program>0&&x.rpe>0);if(!comparable.length)return;
         const ratios=comparable.map(x=>x.actual/x.program).filter(x=>Number.isFinite(x)&&x>.15&&x<6);if(!ratios.length)return;
-        const sample={id:`mw_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,date:cur.date||new Date().toISOString().slice(0,10),ratio:+A.median(ratios).toFixed(4),actualWeight:+A.median(comparable.map(x=>x.actual)).toFixed(2),programWeight:+A.median(comparable.map(x=>x.program)).toFixed(2),reps:+A.median(comparable.map(x=>x.reps)).toFixed(1),avgRpe:A.mean(comparable.map(x=>x.rpe)),targetRpe:targetRpe(group,cur)};
+        const sample={id:`mw_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,date:cur.date||new Date().toISOString().slice(0,10),ratio:+A.median(ratios).toFixed(4),actualWeight:+A.median(comparable.map(x=>x.actual)).toFixed(2),programWeight:+A.median(comparable.map(x=>x.program)).toFixed(2),reps:+A.median(comparable.map(x=>x.reps)).toFixed(1),targetReps:+A.median(comparable.map(x=>x.targetReps)).toFixed(1),avgRpe:A.mean(comparable.map(x=>x.rpe)),targetRpe:targetRpe(group,cur)};
         profiles[group.key]??={};const old=profiles[group.key][active.id]||{...active,samples:[]};old.label=active.label;old.brand=active.brand;old.model=active.model;old.updatedAt=Date.now();old.samples=[...(old.samples||[]),sample].slice(-12);profiles[group.key][active.id]=old;group.entries.forEach(e=>{e.equipmentProfile={...active};e.equipmentCalibration=sample});changed=true
       });
       if(changed)saveState()
@@ -128,7 +128,7 @@
   function optionsForExercise(name){const k=kind(name),specific=catalog.filter(x=>x.kind===k),common=catalog.filter(x=>['barbell','smith'].includes(x.id)),other=catalog.filter(x=>['technogym-other','matrix-other','custom'].includes(x.id));return[...common,...specific,...other]}
   function recommendWeights({plan,samples,step=2.5,targetRpe=8}){
     const valid=(samples||[]).filter(x=>number(x.ratio)>.15&&number(x.ratio)<6).slice(-5);if(!valid.length)return null;
-    const ratio=median(valid.map(x=>x.ratio)),latest=valid.at(-1),diff=number(latest?.avgRpe)-number(targetRpe);let delta=0;if(diff>=1.25)delta=-number(step);else if(diff<=-1.25&&number(latest?.avgRpe)>0)delta=number(step);
+    const ratio=median(valid.map(x=>x.ratio)),latest=valid.at(-1),diff=number(latest?.avgRpe)-number(targetRpe),reps=number(latest?.reps),targetReps=number(latest?.targetReps);let delta=0;if((targetReps>0&&reps<targetReps)||diff>=1.25)delta=-number(step);else if((targetReps>0&&reps>=targetReps+2&&diff<=0)||(diff<=-1.25&&number(latest?.avgRpe)>0))delta=number(step);
     const weights=(plan||[]).map(x=>number(x)>0?roundStep(number(x)*ratio+delta,step):0);return{weights,ratio:+ratio.toFixed(3),delta,confidence:valid.length>=3?'high':valid.length===2?'medium':'low',samples:valid.length}
   }
   return{number,median,mean,roundStep,formatWeights,slug,catalog,kind,optionsForExercise,recommendWeights}
