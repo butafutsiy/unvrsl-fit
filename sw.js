@@ -1,4 +1,4 @@
-const SW_RELEASE='v309-recalculated-leg-universal';
+const SW_RELEASE='v310-equipment-ui';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
