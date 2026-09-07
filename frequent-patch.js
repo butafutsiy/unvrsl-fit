@@ -5,7 +5,7 @@
   'popular-programs.js','female-program-templates.js','anton-gorkusha-plan.js','anton-plan-rules.js','program-management-patch.js','start-program-picker.js',
   'wake-lock.js','workout-duration.js','cardio-timer.js','advanced-training.js','profile-strength-core-v248.js','premium-ui.js','stable-ui.js','mockup-ui.js','density-ui.js','mobile-final-fix.js','sheet-swipe.js','stats-dashboard-v254.js','home-stats-v254.js','stats-cleanup-v254.js',
   'client-nav-hotfix.js','clients-action-layout.js','program-delete-fix.js','requested-cleanup-v2.js','program-delete-persistence-v3.js','adaptive-effort-v2.js','workout-template-ux-v2.js','cardio-exercise-library.js','trainer-self-plan-v110.js?v=260','stats-authority-v254.js','trainer-shell-v252.js','client-workout-scroll-v259.js?v=261',
-  'client-final-runtime-v222.js?v=260','client-program-picker.js?v=260','client-journal-profile-v107.js?v=260','og-enhance-v254.js?v=260','training-engine-v200.js?v=260','readiness-questionnaire-v227.js?v=260','exact-plan-fix-v228.js?v=260'
+  'client-final-runtime-v222.js?v=313','client-program-picker.js?v=313','client-journal-profile-v107.js?v=260','og-enhance-v254.js?v=260','training-engine-v200.js?v=260','readiness-questionnaire-v227.js?v=260','exact-plan-fix-v228.js?v=260'
  ];
  const seen=new Set();
  for(const href of sources){
