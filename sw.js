@@ -1,4 +1,4 @@
-const SW_RELEASE='v313-stable-interactions';
+const SW_RELEASE='v314-rpe-range-targets';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
