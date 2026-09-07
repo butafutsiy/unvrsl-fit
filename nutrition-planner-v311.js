@@ -5,7 +5,7 @@
   if(root&&root.document)api.boot();
 })(typeof window!=='undefined'?window:globalThis,function(W){
   const D=W.document;
-  const VERSION=311;
+  const VERSION=312;
   const GOALS={
     cut:{title:'Сушка',cal:[.85,.90],protein:[1.8,2.4],fat:[.6,.9]},
     maintain:{title:'Поддержание',cal:null,protein:[1.5,2],fat:[.7,1]},
@@ -125,6 +125,25 @@
     };
   }
 
+  function refreshActivityPreview(markStale=false){
+    if(!D)return null;
+    const select=D.getElementById('np311Factor');if(!select)return null;
+    const inputs=readInputs(),auto=recommendedActivityFactor(inputs),shown=String(auto.factor).replace('.',',');
+    const option=select.querySelector('option[value=""]');if(option)option.textContent=`Авто – ${shown}`;
+    const hint=D.getElementById('np311FactorHint');
+    if(hint)hint.innerHTML=select.value
+      ?`Выбран вручную: <b>×${String(select.value).replace('.',',')}</b>.`
+      :`Авто сейчас: <b>×${shown}</b>. Учтены шаги, силовые и активность вне тренировок.`;
+    if(markStale){
+      const out=D.getElementById('np311Result');
+      if(out&&out.dataset.np311Calculated==='1'){
+        const active=select.value?String(select.value).replace('.',','):shown,mode=select.value?'Выбранный коэффициент':'Автокоэффициент сейчас';
+        out.innerHTML=`<div class="np311-empty">Данные изменены. ${mode} <b>×${active}</b>. Нажми «Рассчитать и сохранить», чтобы обновить КБЖУ.</div>`;
+      }
+    }
+    return auto.factor;
+  }
+
   function resultHtml(result){
     if(!result)return '<div class="np311-empty">Заполни данные и нажми «Рассчитать».</div>';
     const cards=Object.values(result.goals).map(g=>`<div class="np311-goal">
@@ -152,26 +171,28 @@
         <div class="field"><label>Рост, см</label><input id="np311Height" type="number" inputmode="decimal" min="120" max="230" value="${esc(inputs.height)}"></div>
         <div class="field"><label>Вес, кг</label><input id="np311Weight" type="number" inputmode="decimal" step="0.1" min="35" max="300" value="${esc(inputs.weight)}"></div>
         <div class="field"><label>Есть лишний вес?</label><select id="np311Overweight"><option value="no"${selected(inputs.overweight,false)}>Нет</option><option value="yes"${selected(inputs.overweight,true)}>Да</option></select></div>
-        <div class="field"><label>Среднее шагов в день</label><input id="np311Steps" type="number" inputmode="numeric" min="0" max="50000" step="500" value="${esc(inputs.steps)}"></div>
-        <div class="field"><label>Силовых в неделю</label><input id="np311Strength" type="number" inputmode="numeric" min="0" max="14" value="${esc(inputs.strengthSessions)}"></div>
-        <div class="field"><label>Активность вне тренировок</label><select id="np311Daily">${Object.entries(ACTIVITY_LABELS).map(([k,v])=>`<option value="${k}"${selected(inputs.dailyActivity,k)}>${v}</option>`).join('')}</select></div>
-        <div class="field np311-wide"><label>Коэффициент активности</label><select id="np311Factor"><option value=""${selected(inputs.activityFactor,'')}>Авто – ${String(auto.factor).replace('.',',')}</option>${[1.2,1.375,1.55,1.725,1.9].map(v=>`<option value="${v}"${selected(inputs.activityFactor,v)}>${String(v).replace('.',',')} – вручную</option>`).join('')}</select><div class="np311-hint">Авто учитывает шаги, силовые и подвижность в течение дня.</div></div>
+        <div class="field"><label>Среднее шагов в день</label><input id="np311Steps" type="number" inputmode="numeric" min="0" max="50000" step="500" value="${esc(inputs.steps)}" oninput="refreshNutritionActivityV312(true)"></div>
+        <div class="field"><label>Силовых в неделю</label><input id="np311Strength" type="number" inputmode="numeric" min="0" max="14" value="${esc(inputs.strengthSessions)}" oninput="refreshNutritionActivityV312(true)"></div>
+        <div class="field"><label>Активность вне тренировок</label><select id="np311Daily" onchange="refreshNutritionActivityV312(true)">${Object.entries(ACTIVITY_LABELS).map(([k,v])=>`<option value="${k}"${selected(inputs.dailyActivity,k)}>${v}</option>`).join('')}</select></div>
+        <div class="field np311-wide"><label>Коэффициент активности</label><select id="np311Factor" onchange="refreshNutritionActivityV312(true)"><option value=""${selected(inputs.activityFactor,'')}>Авто – ${String(auto.factor).replace('.',',')}</option>${[1.2,1.375,1.55,1.725,1.9].map(v=>`<option value="${v}"${selected(inputs.activityFactor,v)}>${String(v).replace('.',',')} – вручную</option>`).join('')}</select><div id="np311FactorHint" class="np311-hint">Авто сейчас: <b>×${String(auto.factor).replace('.',',')}</b>. Учтены шаги, силовые и активность вне тренировок.</div></div>
       </div>
       <button class="btn primary full" onclick="calculateNutritionPlannerV311()">Рассчитать и сохранить</button>
-      <div id="np311Result">${resultHtml(result)}</div>`;
+      <div id="np311Result" data-np311-calculated="${result?'1':'0'}">${resultHtml(result)}</div>`;
   }
 
   function open(){
     const s=state()||{},inputs=profileDefaults(),result=s.nutritionPlannerV311?.result||null;
     if(typeof W.modal==='function')W.modal(formHtml(inputs,result));
     else{try{modal(formHtml(inputs,result))}catch(_){ }}
+    setTimeout(()=>refreshActivityPreview(false),0);
   }
 
   function run(){
     try{
       const inputs=readInputs(),result=calculate(inputs),s=state();
       if(s){s.nutritionPlannerV311={inputs:result.inputs,result,updatedAt:Date.now()};saveState()}
-      const out=D.getElementById('np311Result');if(out)out.innerHTML=resultHtml(result);
+      const out=D.getElementById('np311Result');if(out){out.innerHTML=resultHtml(result);out.dataset.np311Calculated='1'}
+      refreshActivityPreview(false);
       renderCard();W.toast?.('Расчёт КБЖУ сохранён');
       return result;
     }catch(e){W.toast?.(e.message||'Проверь данные');return null}
@@ -218,11 +239,11 @@
 
   function boot(){
     if(!D||W.__unvrslNutritionPlannerV311)return;W.__unvrslNutritionPlannerV311=true;
-    W.openNutritionPlannerV311=open;W.calculateNutritionPlannerV311=run;W.unvrslNutritionPlannerV311={calculate,recommendedActivityFactor,bmrFor,goalResult,version:VERSION};
+    W.openNutritionPlannerV311=open;W.calculateNutritionPlannerV311=run;W.refreshNutritionActivityV312=refreshActivityPreview;W.unvrslNutritionPlannerV311={calculate,recommendedActivityFactor,bmrFor,goalResult,refreshActivityPreview,version:VERSION};
     const start=()=>{ensureStyle();renderCard()};
     if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
     let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;renderCard()})}).observe(D.documentElement,{childList:true,subtree:true});
     D.addEventListener('click',e=>{if(e.target?.closest?.('[data-p="plan"]'))setTimeout(renderCard,60)},true);
   }
-  return {calculate,recommendedActivityFactor,bmrFor,goalResult,validate,boot,version:VERSION};
+  return {calculate,recommendedActivityFactor,bmrFor,goalResult,validate,refreshActivityPreview,boot,version:VERSION};
 });
