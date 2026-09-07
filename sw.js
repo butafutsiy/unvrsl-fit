@@ -1,4 +1,4 @@
-const SW_RELEASE='v308-universal-leg-weights';
+const SW_RELEASE='v309-recalculated-leg-universal';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
