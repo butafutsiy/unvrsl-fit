@@ -1,4 +1,4 @@
-const SW_RELEASE='v310-equipment-ui';
+const SW_RELEASE='v311-nutrition-rpe-range';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
