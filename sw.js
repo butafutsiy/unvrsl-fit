@@ -1,4 +1,4 @@
-const SW_RELEASE='v311-nutrition-rpe-range';
+const SW_RELEASE='v312-reactive-activity-factor';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
