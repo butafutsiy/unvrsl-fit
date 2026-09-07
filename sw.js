@@ -1,4 +1,4 @@
-const SW_RELEASE='v307-manual-equipment-cardio';
+const SW_RELEASE='v308-universal-leg-weights';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
