@@ -1,8 +1,8 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=322;
-  if(W.__unvrslOfflineProgressV322)return;
-  W.__unvrslOfflineProgressV322=true;W.__unvrslOfflineProgressV321=true;
+  const W=window,D=document,REV=323;
+  if(W.__unvrslOfflineProgressV323)return;
+  W.__unvrslOfflineProgressV323=true;W.__unvrslOfflineProgressV322=true;W.__unvrslOfflineProgressV321=true;
 
   const MEASURES=[
     ['chest','Грудь'],['waist','Талия'],['abdomen','Живот'],['hips','Ягодицы'],
@@ -123,10 +123,30 @@
       const result=core.calculate(nutritionReadInputs()),record={version:REV,inputs:result.inputs,result,updatedAt:iso()},c=W.cloud;
       if(!c?.client||!c?.user)throw new Error('Войди в аккаунт тренера');if(button)button.disabled=true;
       const saved=await c.client.from('offline_clients').update({nutrition_plan:record,updated_at:iso()}).eq('id',id).eq('trainer_id',c.user.id).select('id,nutrition_plan').single();if(saved.error)throw saved.error;
-      if(state.id===id&&state.data?.client)state.data.client.nutrition_plan=saved.data?.nutrition_plan||record;
+      if(state.id===id&&state.data?.client){
+        state.data.client.nutrition_plan=saved.data?.nutrition_plan||record;
+        try{await syncExistingShare(state.data)}catch(error){console.warn('UNVRSL nutrition share sync',error)}
+      }
       const out=D.getElementById('ofnResult');if(out)out.innerHTML=nutritionResultHtml(result);const stale=D.getElementById('ofnStale');if(stale)stale.hidden=true;W.toast?.('КБЖУ клиента сохранено')
     }catch(error){W.toast?.(error?.message||'Проверь данные')}finally{if(button)button.disabled=false}
   };
+
+  function publicRange(value,{min=0,max=10000}={}){
+    if(!Array.isArray(value)||value.length!==2)return null;
+    const range=value.map(N);if(range.some(x=>x==null||x<min||x>max))return null;
+    return range[0]<=range[1]?range:[range[1],range[0]]
+  }
+  function publicGoal(result,key,title){
+    const goal=result?.goals?.[key],calories=publicRange(goal?.calories,{min:500,max:10000}),protein=publicRange(goal?.protein,{max:1000}),fat=publicRange(goal?.fat,{max:1000}),carbs=publicRange(goal?.carbs,{max:2000});
+    return calories&&protein&&fat&&carbs?{title,calories,protein,fat,carbs}:null
+  }
+  function publicNutrition(data){
+    if(nutritionIsStale(data))return null;
+    const plan=nutritionPlan(data),result=plan?.result,bmr=N(result?.bmr?.value),factor=N(result?.activity?.factor),tdee=N(result?.tdee),formula=String(result?.bmr?.formula||'').slice(0,80);
+    const goals={cut:publicGoal(result,'cut','Сушка'),maintain:publicGoal(result,'maintain','Поддержание'),gain:publicGoal(result,'gain','Набор')};
+    if(!(bmr>=500&&bmr<=5000)||![1.2,1.375,1.55,1.725,1.9].includes(factor)||!(tdee>=500&&tdee<=10000)||!formula||Object.values(goals).some(x=>!x))return null;
+    return{updatedAt:String(plan.updatedAt||'').slice(0,32),bmr:Math.round(bmr),formula,activityFactor:factor,tdee:Math.round(tdee),goals}
+  }
 
   function snapshot(data){
     const cleanMeasures=chronological(data?.measurements,'measure_date').map(row=>{
@@ -134,7 +154,7 @@
       return{date:String(row.measure_date||'').slice(0,10),weight:N(row.weight_kg),measurements}
     }).filter(x=>x.date&&(x.weight!=null||Object.keys(x.measurements).length));
     const cleanStrengths=chronological(data?.strengths,'measured_at').map(row=>({date:String(row.measured_at||'').slice(0,10),key:String(row.exercise_key||''),name:String(row.exercise_name||'Упражнение').slice(0,120),weight:N(row.weight_kg),reps:N(row.reps),e1rm:N(row.e1rm)})).filter(x=>x.date&&x.key);
-    return{version:REV,generatedAt:iso(),client:{name:String(data?.client?.display_name||'Клиент').slice(0,100)},measurements:cleanMeasures,strengths:cleanStrengths}
+    return{version:REV,generatedAt:iso(),client:{name:String(data?.client?.display_name||'Клиент').slice(0,100)},nutrition:publicNutrition(data),measurements:cleanMeasures,strengths:cleanStrengths}
   }
 
   function weightCard(data){
@@ -183,7 +203,7 @@
     const data=await loadDetail(id);if(data.error||!data.client)return W.modal?.(`<div class="sheet-grabber"></div><div class="card muted">${E(data.error?.message||'Клиент не найден')}</div>`);
     state.data=data;renderDetail();syncExistingShare(data).catch(e=>console.warn('UNVRSL share refresh',e))
   }
-  openDetail.__offlineProgressV322=true;openDetail.__offlineProgressV321=true;
+  openDetail.__offlineProgressV323=true;openDetail.__offlineProgressV322=true;openDetail.__offlineProgressV321=true;
 
   W.offlineProgressCurrentIdV321=()=>state.id||'';
   W.offlineProgressSelectMetricV321=function(key){state.measureKey=String(key||'');const el=D.getElementById('ofpMeasurePanel');if(el&&state.data)el.outerHTML=measurePanel(state.data)};
@@ -199,7 +219,7 @@
     const options=catalogNames().map(n=>`<option value="${E(n)}"></option>`).join('');
     W.modal?.(`<div class="sheet-grabber"></div><div class="ofp-add-head"><div><h2>Добавить упражнение</h2><div class="muted">Для каждого клиента – свой список</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="field"><label>Упражнение</label><input id="ofpExerciseName" list="ofpExerciseList" placeholder="Начни вводить или напиши своё" autocomplete="off"><datalist id="ofpExerciseList">${options}</datalist></div><div class="field"><label>Тренажёр или вариант, если нужен</label><input id="ofpExerciseVariant" placeholder="Например, Matrix или Technogym"></div><div class="ofp-tip">Одинаковое упражнение на разных тренажёрах лучше вести как два показателя – их веса могут быть несопоставимы.</div><button class="btn primary full" onclick="offlineProgressOpenStrengthV321('${E(id)}')">Добавить и записать результат</button>`)
   }
-  customStrength.__offlineProgressV322=true;customStrength.__offlineProgressV321=true;
+  customStrength.__offlineProgressV323=true;customStrength.__offlineProgressV322=true;customStrength.__offlineProgressV321=true;
   W.offlineProgressOpenStrengthV321=function(id){
     const name=D.getElementById('ofpExerciseName')?.value.trim(),variant=D.getElementById('ofpExerciseVariant')?.value.trim();if(!name)return W.toast?.('Введи упражнение');
     const full=variant?`${name} · ${variant}`:name,key=`custom_${full.toLowerCase().replace(/ё/g,'е').replace(/[^a-zа-я0-9]+/gi,'_').replace(/^_|_$/g,'')}`;
@@ -225,12 +245,13 @@
       try{localStorage.setItem(storageKey,token)}catch(_){ }
       const url=new URL('progress.html',W.location.href);url.search='';url.hash=`t=${token}`;
       const title=`Прогресс – ${data.client.display_name}`;
-      if(navigator.share){try{await navigator.share({title,text:'Вес, замеры и силовые показатели',url:url.href});return}catch(e){if(e?.name==='AbortError')return}}
+      if(navigator.share){try{await navigator.share({title,text:'Вес, КБЖУ, замеры и силовые показатели',url:url.href});return}catch(e){if(e?.name==='AbortError')return}}
       await copyText(url.href);W.toast?.('Ссылка скопирована')
     }catch(e){console.warn('UNVRSL share offline progress',e);W.alert?.(`Не удалось создать ссылку: ${e?.message||'ошибка'}`)}
   };
 
-  const style=D.createElement('style');style.id='unvrsl-offline-progress-v322-style';style.textContent=`
+  D.getElementById('unvrsl-offline-progress-v322-style')?.remove();
+  const style=D.createElement('style');style.id='unvrsl-offline-progress-v323-style';style.textContent=`
     .ofp-root{padding-bottom:12px;color:#f5f5f7}.ofp-root *{min-width:0}.ofp-hero{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:13px;align-items:center;padding:2px 0 17px}.ofp-avatar{width:58px;height:58px;border-radius:19px;display:grid;place-items:center;background:linear-gradient(145deg,#bf5af2,#8b3ac1);font-size:25px;font-weight:900;box-shadow:0 12px 28px rgba(191,90,242,.18)}.ofp-hero h2{font-size:29px;line-height:1.05;letter-spacing:-.8px;margin:0}.ofp-hero .grow>span{display:block;color:#8e8e93;margin-top:5px}.ofp-hero-actions{display:flex;gap:7px}.ofp-hero-actions .btn{min-height:42px;padding:10px 12px}.ofp-share{color:#e7bdff!important;border:1px solid rgba(191,90,242,.45)!important;background:rgba(191,90,242,.11)!important}.ofp-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:10px}.ofp-facts>div{padding:13px 14px;border-radius:18px;background:#202024;border:1px solid #34343a}.ofp-facts span{display:block;color:#85858c;font-size:11px;text-transform:uppercase;letter-spacing:.06em}.ofp-facts b{display:block;margin-top:5px;font-size:18px;line-height:1.15}.ofp-sessions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:16px 17px;border-radius:21px;background:#1f2023;border:1px solid #35363c;margin:10px 0}.ofp-sessions b{display:block;font-size:17px}.ofp-sessions span{display:block;color:#8e8e93;font-size:12px;line-height:1.3;margin-top:4px}.ofp-stepper{display:grid;grid-template-columns:42px 42px 42px;align-items:center;gap:5px}.ofp-stepper button{height:42px;border-radius:13px;background:#303138;border:1px solid #414249;font-size:22px}.ofp-stepper strong{text-align:center;font-size:24px}.ofp-main-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.ofp-main-actions .btn{min-height:50px}.ofp-nutrition{display:block;width:100%;padding:17px;margin:10px 0 14px;border:1px solid rgba(191,90,242,.38);border-radius:22px;background:linear-gradient(145deg,rgba(191,90,242,.13),rgba(31,32,35,.96) 58%);color:#f5f5f7;text-align:left}.ofp-nutrition-top{display:flex;align-items:center;justify-content:space-between;gap:14px}.ofp-nutrition-top span{display:block;color:#c98af5;font-size:12px;font-weight:850;letter-spacing:.12em}.ofp-nutrition-top b{display:block;margin-top:7px;font-size:19px}.ofp-nutrition-top small{display:block;margin-top:5px;color:#9999a0;font-size:12px;line-height:1.35}.ofp-nutrition-top strong{flex:0 0 auto;color:#e6b9ff;font-size:13px}.ofp-nutrition-top i{font-style:normal;font-size:22px;vertical-align:-2px}.ofp-nutrition-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:13px}.ofp-nutrition-grid span{padding:9px;border-radius:13px;background:rgba(255,255,255,.055)}.ofp-nutrition-grid small{display:block;color:#8e8e95;font-size:10px}.ofp-nutrition-grid b{display:block;margin-top:4px;font-size:13px}.ofp-panel{background:#1c1c20;border:1px solid #303036;border-radius:24px;padding:18px;margin:11px 0;overflow:hidden}.ofp-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.ofp-kicker{color:#85858d;font-size:12px;line-height:1;font-weight:800;letter-spacing:.13em}.ofp-panel-value{font-size:27px;font-weight:850;letter-spacing:-.6px;margin-top:8px}.ofp-panel-value small{font-size:14px;color:#a0a0a7}.ofp-change{font-size:16px;font-weight:850;text-align:right;color:#c98af5}.ofp-change small{display:block;font-size:10px;font-weight:600;color:#818188;margin-top:3px}.ofp-chart{margin-top:12px}.ofp-chart svg{display:block;width:100%;height:132px;overflow:visible}.ofp-axis{display:flex;justify-content:space-between;color:#6f6f77;font-size:10px;margin-top:3px}.ofp-chart-empty{min-height:112px;display:grid;place-items:center;text-align:center;color:#76767d;font-size:13px}.ofp-measure-tabs{display:flex;gap:6px;overflow-x:auto;padding:13px 0 2px;scrollbar-width:none}.ofp-measure-tabs::-webkit-scrollbar{display:none}.ofp-measure-tabs button{flex:0 0 auto;padding:8px 11px;border-radius:999px;background:#292a2f;color:#8e8e95;font-size:12px;font-weight:750}.ofp-measure-tabs button.on{background:rgba(100,210,255,.15);color:#8bddff}.ofp-section{margin-top:22px}.ofp-section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;padding:0 3px 9px}.ofp-section-head h3{font-size:22px;line-height:1.08;margin:7px 0 0}.ofp-section-head .btn{min-height:42px}.ofp-strength-list{display:grid;gap:10px}.ofp-strength{background:#1c1c20;border:1px solid #303036;border-radius:24px;padding:17px;overflow:hidden}.ofp-strength-head{display:flex;align-items:center;gap:10px}.ofp-strength-head b{display:block;font-size:17px;line-height:1.2}.ofp-strength-head span{display:block;color:#8d8d94;font-size:12px;line-height:1.35;margin-top:4px}.ofp-strength-head .btn{flex:0 0 auto}.ofp-strength-meta{display:flex;justify-content:space-between;align-items:center;margin-top:14px;color:#818188;font-size:11px}.ofp-strength-meta b{color:#30d158;font-size:13px}.ofp-strength-meta b.down{color:#ff9f0a}.ofp-strength .ofp-chart svg{height:108px}.ofp-history-link{width:100%;display:flex;justify-content:space-between;align-items:center;color:#a7a7ae;border-top:1px solid #303036;padding:12px 1px 0;margin-top:7px;font-size:12px;text-align:left}.ofp-history-link span{font-size:20px}.ofp-empty{display:grid;gap:8px;justify-items:start;padding:20px;border-radius:22px;background:#1c1c20;border:1px dashed #393940;color:#8e8e95}.ofp-empty b{color:#f4f4f6;font-size:17px}.ofp-empty span{font-size:13px;line-height:1.45}.ofp-empty .btn{margin-top:5px}.ofp-note{margin-top:18px;padding:3px}.ofp-note p{color:#a0a0a7;line-height:1.5;white-space:pre-wrap}.ofp-loading{min-height:360px;display:grid;place-content:center;justify-items:center;gap:15px;color:#8e8e95}.ofp-loading i{width:28px;height:28px;border-radius:50%;border:3px solid #33333a;border-top-color:#bf5af2;animation:ofp-spin .8s linear infinite}.ofp-add-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.ofp-add-head h2{margin-bottom:5px}.ofp-tip{padding:12px 13px;margin:12px 0 15px;border-radius:15px;background:rgba(100,210,255,.08);border:1px solid rgba(100,210,255,.2);color:#9fcfe1;font-size:12px;line-height:1.45}.ofn-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.ofn-head h2{margin:7px 0 4px;font-size:28px}.ofn-head>div>span{color:#8e8e95;font-size:14px}.ofn-back{padding:0;color:#c98af5;font-size:14px;font-weight:750}.ofn-flow{margin-top:14px;padding:12px 13px;border-radius:15px;background:rgba(191,90,242,.09);color:#cda7df;font-size:13px}.ofn-fields{display:grid;grid-template-columns:1fr 1fr;gap:0 10px;margin-top:10px}.ofn-wide{grid-column:1/-1}.ofn-wide>small{display:block;margin:7px 2px 0;color:#85858d;font-size:12px;line-height:1.4}.ofn-stale{margin:12px 0;padding:11px 12px;border-radius:14px;background:rgba(255,159,10,.1);color:#e0b166;font-size:12px;line-height:1.4}.ofn-stale[hidden]{display:none}.ofn-stale+.btn{margin-top:2px}#ofnResult{margin-top:14px}.ofn-empty{padding:17px;border-radius:17px;background:#222226;color:#8e8e95;font-size:14px}.ofn-base{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.ofn-base>div{padding:11px;border-radius:16px;background:#222226;border:1px solid #303036}.ofn-base span,.ofn-base small{display:block;color:#8e8e95;font-size:10px;line-height:1.3}.ofn-base b{display:block;margin:5px 0;font-size:16px}.ofn-formula,.ofn-note{margin-top:9px;padding:12px 13px;border-radius:15px;background:#202024;color:#aaaab1;font-size:12px;line-height:1.45}.ofn-note{background:rgba(255,159,10,.09);color:#d8b06d}.ofn-goal{margin-top:9px;padding:14px;border:1px solid #303036;border-radius:19px;background:#202024}.ofn-goal>div:first-child{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.ofn-goal strong{color:#30d158;font-size:14px}.ofn-macros{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:11px}.ofn-macros span{padding:9px 8px;border-radius:13px;background:#2a2a2f}.ofn-macros small{display:block;color:#8e8e95;font-size:10px}.ofn-macros b{display:block;margin-top:4px;font-size:13px}.ofn-check{display:block;margin-top:9px;color:#777780;font-size:11px}@keyframes ofp-spin{to{transform:rotate(360deg)}}
     @media(max-width:430px){.ofp-hero{grid-template-columns:52px minmax(0,1fr);padding-bottom:13px}.ofp-avatar{width:52px;height:52px;border-radius:17px}.ofp-hero h2{font-size:26px}.ofp-hero-actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.ofp-hero-actions .btn{min-height:44px}.ofp-facts>div{padding:12px 10px}.ofp-facts b{font-size:16px}.ofp-sessions{padding:14px}.ofp-stepper{grid-template-columns:38px 36px 38px}.ofp-stepper button{height:40px}.ofp-main-actions{grid-template-columns:1fr}.ofp-panel{padding:16px}.ofp-chart svg{height:120px}.ofp-strength .ofp-chart svg{height:100px}.ofp-section-head{align-items:center}.ofp-section-head h3{font-size:19px}.ofp-section-head .btn{padding:9px 10px;font-size:12px}.ofp-nutrition{padding:15px}.ofp-nutrition-grid{gap:5px}.ofp-nutrition-grid b{font-size:11px}.ofn-fields{grid-template-columns:1fr}.ofn-wide{grid-column:auto}.ofn-base b{font-size:14px}.ofn-goal>div:first-child{display:block}.ofn-goal strong{display:block;margin-top:5px}.ofn-macros b{font-size:12px}}
   `;D.head.appendChild(style);

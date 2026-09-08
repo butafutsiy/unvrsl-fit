@@ -27,6 +27,17 @@
   function groups(){const map=new Map();A(data?.strengths).forEach(x=>{const key=String(x.key||x.name||'');if(!key)return;if(!map.has(key))map.set(key,{key,name:x.name||'Упражнение',rows:[]});map.get(key).rows.push(x)});return[...map.values()].sort((a,b)=>String(b.rows[b.rows.length-1]?.date||'').localeCompare(String(a.rows[a.rows.length-1]?.date||'')))}
   function strengthSeries(rows){const list=sorted(rows,'date'),mode=list.some(x=>N(x.e1rm)>0)?'e1rm':list.some(x=>N(x.weight)>0)?'weight':'reps',label=mode==='e1rm'?'Расчётный 1ПМ':mode==='weight'?'Рабочий вес':'Повторения',unit=mode==='reps'?'повт.':'кг',points=list.map(x=>({date:x.date,value:N(x[mode])})).filter(x=>x.value!=null);return{label,unit,points}}
   function strengthSummary(row){const out=[];if(N(row?.weight)!=null)out.push(`${fmt(row.weight)} кг`);if(N(row?.reps)!=null)out.push(`${fmt(row.reps,0)} повт.`);if(N(row?.e1rm)!=null)out.push(`1ПМ ≈ ${fmt(row.e1rm)} кг`);return out.join(' · ')||'Нет данных'}
+  const whole=value=>{const n=N(value);return n==null?'—':Math.round(n).toLocaleString('ru-RU')};
+  const range=(values,unit='')=>Array.isArray(values)&&values.length===2?`${whole(values[0])}–${whole(values[1])}${unit}`:'—';
+
+  function nutritionGoal(goal){
+    if(!goal)return'';
+    return `<article class="pp-nutrition-goal"><div class="pp-goal-head"><b>${E(goal.title)}</b><strong>${E(range(goal.calories,' ккал'))}</strong></div><div class="pp-macros"><span><small>Белок</small><b>${E(range(goal.protein,' г'))}</b></span><span><small>Жиры</small><b>${E(range(goal.fat,' г'))}</b></span><span><small>Углеводы</small><b>${E(range(goal.carbs,' г'))}</b></span></div></article>`
+  }
+  function nutritionPanel(){
+    const n=data?.nutrition;if(!n)return'';
+    return `<section class="pp-panel pp-nutrition"><div class="pp-nutrition-head"><div><div class="pp-kicker">ПИТАНИЕ</div><h2>Расчёт КБЖУ</h2><p>Обновлено ${E(day(n.updatedAt||data?.generatedAt))}</p></div><div class="pp-tdee"><span>Поддержание</span><b>${E(whole(n.tdee))}</b><small>ккал в день</small></div></div><div class="pp-nutrition-base"><div><span>BMR</span><b>${E(whole(n.bmr))} ккал</b><small>${E(n.formula)}</small></div><div><span>Активность</span><b>× ${E(String(n.activityFactor).replace('.',','))}</b><small>коэффициент</small></div></div><div class="pp-nutrition-goals">${nutritionGoal(n.goals?.cut)}${nutritionGoal(n.goals?.maintain)}${nutritionGoal(n.goals?.gain)}</div><p class="pp-nutrition-note">Белки и жиры рассчитаны по весу, углеводы – остатком от калорий. Это стартовый ориентир, который уточняется по динамике.</p></section>`
+  }
 
   function weightPanel(){const points=weightPoints(),last=points[points.length-1],delta=change(points);return `<section class="pp-panel"><div class="pp-head"><div><div class="pp-kicker">ВЕС</div><div class="pp-value">${last?`${fmt(last.value)} <small>кг</small>`:'Нет записей'}</div></div>${delta==null?'':`<div class="pp-change">${E(signed(delta,'кг'))}<small>за период</small></div>`}</div>${chart(points,{color:'#bf5af2',unit:'кг',label:'Динамика веса'})}</section>`}
   function measurePanel(){
@@ -39,7 +50,7 @@
   function render(updatedAt){
     const name=data?.client?.name||'Клиент',weights=weightPoints(),lastWeight=weights[weights.length-1]?.value,measureCount=A(data?.measurements).length,strengthCount=groups().length;
     D.title=`Прогресс ${name} · UNVRSL FIT`;
-    root.innerHTML=`<header class="pp-hero"><div class="pp-eyebrow">ПРОГРЕСС КЛИЕНТА</div><h1>${E(name)}</h1><p>Обновлено ${E(day(updatedAt||data?.generatedAt))}</p></header><div class="pp-facts"><div class="pp-fact"><span>Вес сейчас</span><b>${lastWeight?`${fmt(lastWeight)} кг`:'—'}</b></div><div class="pp-fact"><span>Замеров</span><b>${measureCount}</b></div><div class="pp-fact"><span>Упражнений</span><b>${strengthCount}</b></div></div>${weightPanel()}${measurePanel()}<div class="pp-section-head"><div class="pp-kicker">СИЛОВЫЕ</div><h2>Динамика упражнений</h2></div>${strengthCards()}<footer class="pp-footer">Страница доступна только по личной ссылке. Редактирование данных здесь отключено.</footer>`
+    root.innerHTML=`<header class="pp-hero"><div class="pp-eyebrow">ПРОГРЕСС КЛИЕНТА</div><h1>${E(name)}</h1><p>Обновлено ${E(day(updatedAt||data?.generatedAt))}</p></header><div class="pp-facts"><div class="pp-fact"><span>Вес сейчас</span><b>${lastWeight?`${fmt(lastWeight)} кг`:'—'}</b></div><div class="pp-fact"><span>Замеров</span><b>${measureCount}</b></div><div class="pp-fact"><span>Упражнений</span><b>${strengthCount}</b></div></div>${nutritionPanel()}${weightPanel()}${measurePanel()}<div class="pp-section-head"><div class="pp-kicker">СИЛОВЫЕ</div><h2>Динамика упражнений</h2></div>${strengthCards()}<footer class="pp-footer">Страница доступна только по личной ссылке. Редактирование данных здесь отключено.</footer>`
   }
   function fail(message){root.innerHTML=`<div class="pp-error"><b>Прогресс не найден</b><span>${E(message||'Ссылка неверна, устарела или была обновлена тренером.')}</span></div>`}
   async function hash(token){const bytes=new TextEncoder().encode(token),out=await crypto.subtle.digest('SHA-256',bytes);return[...new Uint8Array(out)].map(x=>x.toString(16).padStart(2,'0')).join('')}
