@@ -1,10 +1,10 @@
-const SW_RELEASE='v321-offline-progress';
-const STATIC_CACHE='unvrsl-static-v321';
+const SW_RELEASE='v322-offline-nutrition';
+const STATIC_CACHE='unvrsl-static-v322';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
   './ui-stability-v313.js?v=316',
-  './frequent-patch.js?v=321',
+  './frequent-patch.js?v=322',
   './premium-ui.js?v=320',
   './stable-ui.js?v=316',
   './mockup-ui.js?v=316',
@@ -17,7 +17,7 @@ const CORE_ASSETS=[
   './progress.html',
   './cloud-config.js?v=321',
   './public-progress-v321.js?v=321',
-  './offline-progress-v321.js?v=321'
+  './offline-progress-v321.js?v=322'
 ];
 
 self.addEventListener('install',event=>{
