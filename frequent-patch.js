@@ -3,8 +3,8 @@
  const sources=[
   'stable-ui.js?v=316','mockup-ui.js?v=316','density-ui.js?v=316','mobile-final-fix.js?v=316',
   'sheet-swipe.js?v=316','stats-dashboard-v254.js?v=316','home-stats-v254.js?v=316','stats-cleanup-v254.js?v=316',
-  'stats-authority-v254.js?v=316','trainer-shell-v252.js?v=316','client-workout-scroll-v259.js?v=316',
-  'training-engine-v200.js?v=315','readiness-questionnaire-v227.js?v=315'
+  'stats-authority-v254.js?v=316','trainer-shell-v252.js?v=316','client-workout-scroll-v259.js?v=317',
+  'training-engine-v200.js?v=317','readiness-questionnaire-v227.js?v=315'
  ];
  const seen=new Set();
  for(const href of sources){
@@ -138,7 +138,7 @@ setTimeout(()=>{
   .then(()=>loadExternalScript('trainer-self-plan-v110.js?v=260'))
   .then(()=>loadExternalScript('stats-authority-v254.js?v=316'))
   .then(()=>loadExternalScript('trainer-shell-v252.js?v=316'))
-  .then(()=>loadExternalScript('client-workout-scroll-v259.js?v=316'))
+  .then(()=>loadExternalScript('client-workout-scroll-v259.js?v=317'))
   .catch(e=>console.warn('post-load modules',e))
   .finally(()=>{window.__unvrslDynamicModulesReadyV257=true;window.__unvrslDynamicModulesReadyV260=true;window.dispatchEvent(new CustomEvent('unvrsl:modules-ready',{detail:{release:316}}))});
  window.__unvrslDynamicModulesPromiseV257=postChain;

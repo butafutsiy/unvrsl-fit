@@ -1,4 +1,4 @@
-const SW_RELEASE='v316-unified-shell';
+const SW_RELEASE='v317-live-load-deload';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
