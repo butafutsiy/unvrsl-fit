@@ -27,7 +27,7 @@
     if(attempts>=3)return;
     document.querySelectorAll('script[data-unvrsl-training-engine-v200]').forEach(x=>x.remove());
     const s=document.createElement('script');attempts++;
-    s.src=attempts===1?'training-engine-v200.js?v=295':`training-engine-v200.js?v=295-${attempts}`;
+    s.src=attempts===1?'training-engine-v200.js?v=315':`training-engine-v200.js?v=315-${attempts}`;
     s.async=false;s.dataset.unvrslTrainingEngineV200='1';
     s.onload=()=>{if(window.__unvrslTrainingEngineV257){mark('engine');loadPrescriptionBridge();loadBuiltinProfile();loadSergeyProfile();loadTemplateProfile();loadRecommendationCopy()}else setTimeout(load,250)};
     s.onerror=()=>setTimeout(load,700);

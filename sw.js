@@ -1,4 +1,4 @@
-const SW_RELEASE='v314-rpe-range-targets';
+const SW_RELEASE='v315-performance-control';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();

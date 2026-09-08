@@ -61,13 +61,13 @@
  function sourceWeight(src,ex,setIndex,cur){const sets=src?.sets||[];if(!sets.length)return 0;if((ex.set||[]).length>1)return num(sets[setIndex]?.w??sets.at(-1)?.w);const i=occurrenceIndex(ex,cur),m=method(src,ex),count=(cur.ex||[]).filter(x=>same(x,ex.n,ex.sourceId)).length;if(m==='UNVRSL'&&count>sets.length){const map=sets.length>=3?[0,1,0,1,0,1,2,2]:sets.length===2?[0,1,0,1,0,1,1,1]:[0,0,0,0,0,0,0,0];return num(sets[map[i]??map.at(-1)]?.w)}return num(sets[i]?.w??sets.at(-1)?.w)}
  async function ensureLoadModel(){
   if(W.trainingLoadModel292?.run)return true;
-  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model-v292.js?v=295';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
+  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model-v292.js?v=315';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
   for(let i=0;i<40;i++){if(W.trainingLoadModel292?.run)return true;await new Promise(r=>setTimeout(r,50))}
   return !!W.trainingLoadModel292?.run
  }
  function clearRecommendationState(cur){
   delete cur.trainingLoadModelRevision;delete cur.trainingProgressionRevision;delete cur.trainingProgressionAt;delete cur.trainingLoadModelAt;
-  (cur.ex||[]).forEach(ex=>{delete ex.trainingProgression292;delete ex.trainingProgression291;delete ex.trainingProgression290;(ex.set||[]).forEach(s=>{delete s.recommendedW;delete s.trainingIntensity292;delete s.progressionGateV292;delete s.progressionGateV291;delete s.progressionGateV290})})
+  (cur.ex||[]).forEach(ex=>{delete ex.trainingProgression315;delete ex.trainingProgression292;delete ex.trainingProgression291;delete ex.trainingProgression290;(ex.set||[]).forEach(s=>{delete s.recommendedW;delete s.trainingIntensity292;delete s.progressionGateV315;delete s.progressionGateV292;delete s.progressionGateV291;delete s.progressionGateV290})})
  }
  async function prepare(cur){
   if(!cur)return false;const p=program(cur);if((cur.programId||cur.planId)&&!p)return false;

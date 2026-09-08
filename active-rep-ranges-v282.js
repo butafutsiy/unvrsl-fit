@@ -28,6 +28,11 @@
     if(src?.sd){lo/=2;hi/=2;return `${lo===hi?lo:`${lo}–${hi}`} на ногу`}
     return lo===hi?String(lo):`${lo}–${hi}`;
   }
+  W.unvrslActiveRepRangeV315=(week,exercise)=>{
+    const range=rangeFor(week,exercise);if(!range)return null;
+    let [min,max]=range;if(exercise?.sd){min/=2;max/=2}
+    return{min,max,label:min===max?String(min):`${min}–${max}`,revision:315}
+  };
   function sourceFor(s,ei,e){
     const routines=W.UNVRSL_ROUTINES||[];
     const r=routines.find(x=>Number(x?.w)===Number(s?.w)&&String(x?.c)===String(s?.c));
