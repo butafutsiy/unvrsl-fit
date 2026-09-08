@@ -4,7 +4,10 @@
   'stable-ui.js?v=316','mockup-ui.js?v=316','density-ui.js?v=316','mobile-final-fix.js?v=316',
   'sheet-swipe.js?v=316','stats-dashboard-v254.js?v=316','home-stats-v254.js?v=316','stats-cleanup-v254.js?v=316',
   'stats-authority-v254.js?v=316','trainer-shell-v252.js?v=316','client-workout-scroll-v259.js?v=318',
-  'training-engine-v200.js?v=318','readiness-questionnaire-v227.js?v=315'
+  'training-engine-v200.js?v=318','readiness-questionnaire-v227.js?v=315',
+  'popular-programs.js','female-program-templates.js','anton-gorkusha-plan.js','anton-plan-rules.js','program-management-patch.js','start-program-picker.js',
+  'wake-lock.js','workout-duration.js','cardio-timer.js','advanced-training.js','profile-strength-core-v248.js','premium-ui.js',
+  'client-nav-hotfix.js','clients-action-layout.js','program-delete-fix.js','requested-cleanup-v2.js','program-delete-persistence-v3.js','adaptive-effort-v2.js','workout-template-ux-v2.js','cardio-exercise-library.js','trainer-self-plan-v110.js?v=260'
  ];
  const seen=new Set();
  for(const href of sources){
@@ -96,7 +99,9 @@ customCatalog=function(){
 };
 
 let cloudModulesLoading=false,cloudModulesLoaded=false;
-function loadExternalScript(src){return new Promise((resolve,reject)=>{if(window.unvrslScriptRetiredV257?.(src)||window.unvrslScriptRetiredV256?.(src)||window.unvrslScriptRetiredV255?.(src)||window.unvrslScriptRetiredV254?.(src)||window.unvrslScriptRetiredV253?.(src))return resolve({retired:true,src});const key=String(src).replace(/^\.\//,'');if(document.querySelector(`script[data-unvrsl-src="${src}"],script[data-unvrsl-src="${key}"],script[data-dyn="${src}"],script[data-dyn="./${key}"]`))return resolve();const s=document.createElement('script');s.src=src;s.async=false;s.dataset.unvrslSrc=key;s.onload=resolve;s.onerror=reject;document.body.appendChild(s)})}
+const startupAssetsSeen=new Set();
+function markStartupAsset(src){const key=String(src||'').replace(/[?#].*$/,'');if(startupAssetsSeen.has(key))return;startupAssetsSeen.add(key);try{window.unvrslStartupAssetLoadedV319?.(key)}catch(_){ }}
+function loadExternalScript(src){return new Promise((resolve,reject)=>{const done=value=>{markStartupAsset(src);resolve(value)};if(window.unvrslScriptRetiredV257?.(src)||window.unvrslScriptRetiredV256?.(src)||window.unvrslScriptRetiredV255?.(src)||window.unvrslScriptRetiredV254?.(src)||window.unvrslScriptRetiredV253?.(src))return done({retired:true,src});const key=String(src).replace(/^\.\//,'');if(document.querySelector(`script[data-unvrsl-src="${src}"],script[data-unvrsl-src="${key}"],script[data-dyn="${src}"],script[data-dyn="./${key}"]`))return done();const s=document.createElement('script');s.src=src;s.async=false;s.dataset.unvrslSrc=key;s.onload=()=>done();s.onerror=reject;document.body.appendChild(s)})}
 window.loadExternalScript=loadExternalScript;
 async function loadCloudModules(){
  if(cloudModulesLoaded||cloudModulesLoading)return;cloudModulesLoading=true;

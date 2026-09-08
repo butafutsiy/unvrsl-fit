@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
-  const W=window,D=document,READY_CLASS='unvrsl-shell-ready-v316',LEGACY_READY_CLASS='unvrsl-app-ready-v260';
-  if(W.__unvrslStartupOrchestratorV260)return;W.__unvrslStartupOrchestratorV260=true;
+  const W=window,D=document,RELEASE=319,READY_CLASS='unvrsl-shell-ready-v316',LEGACY_READY_CLASS='unvrsl-app-ready-v260';
+  if(W.__unvrslStartupOrchestratorV319)return;W.__unvrslStartupOrchestratorV319=true;W.__unvrslStartupOrchestratorV260=true;
   W.__unvrslStartupComplete=false;
 
   // Startup must never be held hostage by a slow cloud session refresh.
@@ -10,8 +10,14 @@
   const bootStarted=(W.performance?.now?.()||Date.now());
   const CLOUD_GRACE_MS=850;
   const AUTH_GRACE_MS=5000;
-  const RECOVERY_MS=10000;
   const elapsed=()=>((W.performance?.now?.()||Date.now())-bootStarted);
+  let progressValue=8,loadedAssets=0;
+  function setProgress(value){
+    const next=Math.max(progressValue,Math.min(100,Math.round(Number(value)||0))),splash=D.getElementById('unvrsl-startup-v258'),track=splash?.querySelector('.u-progress'),bar=track?.querySelector('i'),label=splash?.querySelector('.u-status');
+    progressValue=next;if(bar&&bar.style.width!==`${next}%`)bar.style.width=`${next}%`;if(track){track.setAttribute('aria-valuenow',String(next));track.dataset.progress=String(next)}if(label&&label.textContent!==`${next}%`)label.textContent=`${next}%`
+  }
+  W.unvrslStartupAssetLoadedV319=()=>{loadedAssets+=1;setProgress(Math.min(80,24+loadedAssets*1.1))};
+  setProgress(progressValue);
 
   // Load the canonical math layer independently from the workout UI. It waits
   // for the training engine and updates weight data without rebuilding pages.
@@ -94,6 +100,9 @@
     if(cloudSettled()&&client()&&(!W.__unvrslClientRuntimeSettledV260||!D.body?.classList.contains('client-runtime-ready-v260')))return false;
     return true
   }
+  function syncProgress(){
+    let next=10;if(D.readyState!=='loading')next=18;if(D.readyState==='complete')next=24;if(W.__unvrslTrainingLoadModelV292)next=Math.max(next,34);if(W.__unvrslUiStabilityV316)next=Math.max(next,42);if(W.__unvrslReadinessStackReadyV260)next=Math.max(next,58);if(W.__unvrslDynamicModulesReadyV260)next=Math.max(next,84);if(next>=84&&(cloudSettled()||elapsed()>=AUTH_GRACE_MS||(!cachedAuth()&&elapsed()>=CLOUD_GRACE_MS)))next=Math.max(next,91);if(next>=91&&(!client()||W.__unvrslClientRuntimeSettledV260))next=Math.max(next,94);setProgress(Math.min(next,96))
+  }
   const frames=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   async function paintFinalInterface(){
     unlocked=true;W.__unvrslBootRenderUnlockedV260=true;
@@ -115,9 +124,10 @@
     await frames()
   }
   async function finalize(){
+    syncProgress();
     if(finalizing||released)return false;
     if(!coreReady())return false;
-    finalizing=true;
+    finalizing=true;setProgress(97);
     try{
       await paintFinalInterface();
       D.getElementById('unvrsl-stability-v313')?.remove();
@@ -126,12 +136,13 @@
       D.body?.classList.add(READY_CLASS,LEGACY_READY_CLASS);
       W.__unvrslStartupComplete=true;
       W.__unvrslStartupReleaseReasonV260=W.__unvrslStartupCloudBypassedV260?'local-first':'ready';
+      setProgress(100);
       const splash=D.getElementById('unvrsl-startup-v258');
       requestAnimationFrame(()=>requestAnimationFrame(()=>{
         splash?.classList.add('out');
         setTimeout(()=>{splash?.remove();D.getElementById('unvrsl-startup-v258-style')?.remove()},220)
       }));
-      released=true;clearInterval(poll);W.dispatchEvent?.(new CustomEvent('unvrsl:app-ready',{detail:{release:316,queuedRender:pending,cloudBypassed:!!W.__unvrslStartupCloudBypassedV260}}));
+      released=true;clearInterval(poll);W.dispatchEvent?.(new CustomEvent('unvrsl:app-ready',{detail:{release:RELEASE,queuedRender:pending,cloudBypassed:!!W.__unvrslStartupCloudBypassedV260}}));
       return true
     }finally{finalizing=false}
   }
@@ -147,15 +158,8 @@
     W.addEventListener?.(name,loadProgramWeekRepGuidance,{passive:true})
   }
   [400,1200,3000].forEach(ms=>{setTimeout(loadTrainingLoadModel,ms);setTimeout(loadProgramIntensity,ms);setTimeout(loadTrainerClientProgramEdit,ms);setTimeout(loadProgramWeekRpeRir,ms);setTimeout(loadProgramRepRange,ms);setTimeout(loadBuiltInPlanRepRanges,ms);setTimeout(loadProgramWeekRepGuidance,ms)});
-  // Never expose a half-built shell. If a required local module truly fails,
-  // keep the cover and turn it into an explicit recovery action.
+  // Never expose a half-built shell. The fixed progress surface remains in
+  // place while slow modules finish, without inserting controls or moving it.
   setTimeout(finalize,CLOUD_GRACE_MS+30);
-  setTimeout(()=>{
-    if(released)return;
-    const splash=D.getElementById('unvrsl-startup-v258'),inner=splash?.querySelector('.u-inner');
-    if(!inner||inner.querySelector('.u-retry'))return;
-    const retry=D.createElement('button');retry.className='u-retry';retry.type='button';retry.textContent='Повторить';
-    retry.addEventListener('click',()=>location.reload());inner.appendChild(retry)
-  },RECOVERY_MS);
   const poll=setInterval(finalize,80);finalize();
 })();

@@ -1,4 +1,4 @@
-const SW_RELEASE='v318-apply-set-feedback';
+const SW_RELEASE='v319-stable-progress-loader';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
