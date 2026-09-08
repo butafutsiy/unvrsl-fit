@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const W=window,D=document,READY_CLASS='unvrsl-app-ready-v260';
+  const W=window,D=document,READY_CLASS='unvrsl-shell-ready-v316',LEGACY_READY_CLASS='unvrsl-app-ready-v260';
   if(W.__unvrslStartupOrchestratorV260)return;W.__unvrslStartupOrchestratorV260=true;
   W.__unvrslStartupComplete=false;
 
@@ -9,7 +9,8 @@
   // cloud/profile/role in the background when the service recovers.
   const bootStarted=(W.performance?.now?.()||Date.now());
   const CLOUD_GRACE_MS=850;
-  const HARD_RELEASE_MS=2600;
+  const AUTH_GRACE_MS=5000;
+  const RECOVERY_MS=10000;
   const elapsed=()=>((W.performance?.now?.()||Date.now())-bootStarted);
 
   // Load the canonical math layer independently from the workout UI. It waits
@@ -44,9 +45,8 @@
   }
   loadTrainingLoadModel();loadProgramIntensity();loadTrainerClientProgramEdit();loadProgramWeekRpeRir();loadProgramRepRange();loadBuiltInPlanRepRanges();loadProgramWeekRepGuidance();
 
-  // app.js paints a harmless base DOM once. Every later full render is queued
-  // until canonical local owners are ready. Cloud is now non-blocking after
-  // the short grace period above.
+  // app.js does not paint its legacy base DOM during boot. Its first render is
+  // released here only after every local UI owner has finished loading.
   const baseRender=W.render;
   let unlocked=false,pending=false,finalizing=false,released=false;
   if(typeof baseRender==='function'){
@@ -66,15 +66,25 @@
   const client=()=>!!W.cloud?.user&&!trainer();
   const cloudSettled=()=>!!(W.__unvrslCloudModulesSettledV260&&W.cloud?.initSettled);
   const cloudCanWait=()=>elapsed()<CLOUD_GRACE_MS;
+  function cachedAuth(){
+    try{
+      for(let i=0;i<localStorage.length;i++){
+        const key=String(localStorage.key(i)||'');
+        if((/^sb-.*-auth-token$/i.test(key)||/supabase.*auth/i.test(key))&&localStorage.getItem(key))return true
+      }
+    }catch(_){ }
+    return false
+  }
 
   function localCoreReady(){
     if(D.readyState!=='complete'||!W.__unvrslDynamicModulesReadyV260||!W.__unvrslReadinessStackReadyV260)return false;
+    if(!W.__unvrslUiStabilityV316||!W.__unvrslTrainingLoadModelV292)return false;
     if(!W.__unvrslStatsAuthorityV254||!W.__unvrslTrainerShellV252||!W.__unvrslClientWorkoutScrollV261)return false;
     return true
   }
   function coreReady(){
     if(!localCoreReady())return false;
-    if(!cloudSettled()&&cloudCanWait())return false;
+    if(!cloudSettled()&&(cloudCanWait()||(cachedAuth()&&elapsed()<AUTH_GRACE_MS)))return false;
     if(!cloudSettled()){
       W.__unvrslStartupCloudBypassedV260=true;
       W.__unvrslStartupCloudBypassMsV260=Math.round(elapsed());
@@ -87,6 +97,7 @@
   const frames=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   async function paintFinalInterface(){
     unlocked=true;W.__unvrslBootRenderUnlockedV260=true;
+    try{W.unvrslUiStabilityPrepareV316?.()}catch(_){ }
     try{W.render?.()}catch(e){console.warn('UNVRSL final render v260',e)}
     try{W.unvrslTrainerShellSyncV260?.(true)}catch(_){ }
     if(client()){
@@ -95,22 +106,24 @@
     }
     try{W.statsEnsureCanonicalV254?.()}catch(_){ }
     try{W.unvrslLegacyCleanV260?.()}catch(_){ }
+    try{W.unvrslUiStabilityPrepareV316?.()}catch(_){ }
     await frames();
     await new Promise(resolve=>setTimeout(resolve,60));
     try{W.unvrslTrainerShellSyncV260?.(false)}catch(_){ }
     try{W.unvrslLegacyCleanV260?.()}catch(_){ }
+    try{W.unvrslUiStabilityPrepareV316?.()}catch(_){ }
     await frames()
   }
-  async function finalize(force=false){
+  async function finalize(){
     if(finalizing||released)return false;
-    if(!force&&!coreReady())return false;
-    if(force&&!localCoreReady()&&typeof baseRender!=='function')return false;
+    if(!coreReady())return false;
     finalizing=true;
     try{
-      if(force&&!cloudSettled())W.__unvrslStartupCloudBypassedV260=true;
       await paintFinalInterface();
-      D.documentElement?.classList.add(READY_CLASS);
-      D.body?.classList.add(READY_CLASS);
+      D.getElementById('unvrsl-stability-v313')?.remove();
+      D.getElementById('unvrsl-ui-stability-v313-style')?.remove();
+      D.documentElement?.classList.add(READY_CLASS,LEGACY_READY_CLASS);
+      D.body?.classList.add(READY_CLASS,LEGACY_READY_CLASS);
       W.__unvrslStartupComplete=true;
       W.__unvrslStartupReleaseReasonV260=W.__unvrslStartupCloudBypassedV260?'local-first':'ready';
       const splash=D.getElementById('unvrsl-startup-v258');
@@ -118,12 +131,12 @@
         splash?.classList.add('out');
         setTimeout(()=>{splash?.remove();D.getElementById('unvrsl-startup-v258-style')?.remove()},220)
       }));
-      released=true;clearInterval(poll);W.dispatchEvent?.(new CustomEvent('unvrsl:app-ready',{detail:{release:260,queuedRender:pending,cloudBypassed:!!W.__unvrslStartupCloudBypassedV260}}));
+      released=true;clearInterval(poll);W.dispatchEvent?.(new CustomEvent('unvrsl:app-ready',{detail:{release:316,queuedRender:pending,cloudBypassed:!!W.__unvrslStartupCloudBypassedV260}}));
       return true
     }finally{finalizing=false}
   }
   W.unvrslTryFinalizeStartupV260=finalize;
-  for(const name of ['load','unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:client-settled','unvrsl:readiness-ready'])W.addEventListener?.(name,()=>finalize(false),{passive:true});
+  for(const name of ['load','unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:client-settled','unvrsl:readiness-ready','unvrsl:ui-stability-ready'])W.addEventListener?.(name,finalize,{passive:true});
   for(const name of ['unvrsl:modules-ready','unvrsl:training-engine-ready','unvrsl:app-ready']){
     W.addEventListener?.(name,loadTrainingLoadModel,{passive:true});
     W.addEventListener?.(name,loadProgramIntensity,{passive:true});
@@ -134,9 +147,15 @@
     W.addEventListener?.(name,loadProgramWeekRepGuidance,{passive:true})
   }
   [400,1200,3000].forEach(ms=>{setTimeout(loadTrainingLoadModel,ms);setTimeout(loadProgramIntensity,ms);setTimeout(loadTrainerClientProgramEdit,ms);setTimeout(loadProgramWeekRpeRir,ms);setTimeout(loadProgramRepRange,ms);setTimeout(loadBuiltInPlanRepRanges,ms);setTimeout(loadProgramWeekRepGuidance,ms)});
-  // Cloud grace expiry immediately retries startup. A hard cap prevents an
-  // unrelated optional module from leaving users on the splash indefinitely.
-  setTimeout(()=>finalize(false),CLOUD_GRACE_MS+30);
-  setTimeout(()=>finalize(true),HARD_RELEASE_MS);
-  const poll=setInterval(()=>finalize(false),80);finalize(false);
+  // Never expose a half-built shell. If a required local module truly fails,
+  // keep the cover and turn it into an explicit recovery action.
+  setTimeout(finalize,CLOUD_GRACE_MS+30);
+  setTimeout(()=>{
+    if(released)return;
+    const splash=D.getElementById('unvrsl-startup-v258'),inner=splash?.querySelector('.u-inner');
+    if(!inner||inner.querySelector('.u-retry'))return;
+    const retry=D.createElement('button');retry.className='u-retry';retry.type='button';retry.textContent='Повторить';
+    retry.addEventListener('click',()=>location.reload());inner.appendChild(retry)
+  },RECOVERY_MS);
+  const poll=setInterval(finalize,80);finalize();
 })();

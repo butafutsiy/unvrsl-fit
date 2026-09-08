@@ -1,4 +1,4 @@
-const SW_RELEASE='v315-performance-control';
+const SW_RELEASE='v316-unified-shell';
 
 self.addEventListener('install',event=>{
   self.skipWaiting();

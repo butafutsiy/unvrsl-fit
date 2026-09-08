@@ -83,4 +83,4 @@ function tick(){const s=Math.max(0,Math.ceil((timerEnd-Date.now())/1000)),m=Math
 function add30(){timerEnd+=30000;tick()}
 function stopTimer(){if(timerId)clearInterval(timerId);timerId=null;$('#timer')?.classList.remove('show')}
 function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=760;g.gain.value=.07;o.start();setTimeout(()=>{o.stop();c.close()},160)}catch(e){}}
-render();
+if(!window.__unvrslShellBootV316)render();
