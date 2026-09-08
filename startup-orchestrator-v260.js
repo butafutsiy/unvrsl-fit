@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
-  const W=window,D=document,RELEASE=319,READY_CLASS='unvrsl-shell-ready-v316',LEGACY_READY_CLASS='unvrsl-app-ready-v260';
-  if(W.__unvrslStartupOrchestratorV319)return;W.__unvrslStartupOrchestratorV319=true;W.__unvrslStartupOrchestratorV260=true;
+  const W=window,D=document,RELEASE=321,READY_CLASS='unvrsl-shell-ready-v316',LEGACY_READY_CLASS='unvrsl-app-ready-v260';
+  if(W.__unvrslStartupOrchestratorV321)return;W.__unvrslStartupOrchestratorV321=true;W.__unvrslStartupOrchestratorV320=true;W.__unvrslStartupOrchestratorV319=true;W.__unvrslStartupOrchestratorV260=true;
   W.__unvrslStartupComplete=false;
 
   // Startup must never be held hostage by a slow cloud session refresh.
@@ -16,7 +16,8 @@
     const next=Math.max(progressValue,Math.min(100,Math.round(Number(value)||0))),splash=D.getElementById('unvrsl-startup-v258'),track=splash?.querySelector('.u-progress'),bar=track?.querySelector('i'),label=splash?.querySelector('.u-status');
     progressValue=next;if(bar&&bar.style.width!==`${next}%`)bar.style.width=`${next}%`;if(track){track.setAttribute('aria-valuenow',String(next));track.dataset.progress=String(next)}if(label&&label.textContent!==`${next}%`)label.textContent=`${next}%`
   }
-  W.unvrslStartupAssetLoadedV319=()=>{loadedAssets+=1;setProgress(Math.min(80,24+loadedAssets*1.1))};
+  W.unvrslStartupAssetLoadedV320=()=>{loadedAssets+=1;setProgress(Math.min(80,24+loadedAssets*1.1))};
+  W.unvrslStartupAssetLoadedV319=W.unvrslStartupAssetLoadedV320;
   setProgress(progressValue);
 
   // Load the canonical math layer independently from the workout UI. It waits
@@ -49,7 +50,23 @@
     if(W.__unvrslProgramWeekRepGuidanceV268||D.querySelector('script[data-unvrsl-week-rep-guidance-v268]'))return;
     const s=D.createElement('script');s.src='program-week-rep-guidance-v268.js?v=268';s.async=false;s.dataset.unvrslWeekRepGuidanceV268='1';s.onerror=()=>console.warn('UNVRSL weekly rep guidance v268 failed to load');D.body?.appendChild(s)
   }
-  loadTrainingLoadModel();loadProgramIntensity();loadTrainerClientProgramEdit();loadProgramWeekRpeRir();loadProgramRepRange();loadBuiltInPlanRepRanges();loadProgramWeekRepGuidance();
+  let featureModulesStarted=false;
+  function warmFeatureModules(){
+    if(featureModulesStarted)return;featureModulesStarted=true;
+    const loadAll=()=>{loadTrainingLoadModel();loadProgramIntensity();loadTrainerClientProgramEdit();loadProgramWeekRpeRir();loadProgramRepRange();loadBuiltInPlanRepRanges();loadProgramWeekRepGuidance()};
+    loadAll();[1200,3000].forEach(ms=>setTimeout(loadAll,ms))
+  }
+  function scheduleFeatureModules(){
+    if(featureModulesStarted)return;
+    if('requestIdleCallback'in W)W.requestIdleCallback(warmFeatureModules,{timeout:1000});
+    else setTimeout(warmFeatureModules,240)
+  }
+  function warmFeatureIntent(e){
+    const button=e.target?.closest?.('.nav button[data-p]');if(!button)return;
+    if(['plan','start','programs','clients'].includes(button.dataset.p))warmFeatureModules()
+  }
+  D.addEventListener('pointerdown',warmFeatureIntent,{capture:true,passive:true});
+  D.addEventListener('touchstart',warmFeatureIntent,{capture:true,passive:true});
 
   // app.js does not paint its legacy base DOM during boot. Its first render is
   // released here only after every local UI owner has finished loading.
@@ -83,9 +100,8 @@
   }
 
   function localCoreReady(){
-    if(D.readyState!=='complete'||!W.__unvrslDynamicModulesReadyV260||!W.__unvrslReadinessStackReadyV260)return false;
-    if(!W.__unvrslUiStabilityV316||!W.__unvrslTrainingLoadModelV292)return false;
-    if(!W.__unvrslStatsAuthorityV254||!W.__unvrslTrainerShellV252||!W.__unvrslClientWorkoutScrollV261)return false;
+    if(D.readyState==='loading'||!W.__unvrslCriticalModulesReadyV320)return false;
+    if(!W.__unvrslUiStabilityV316||!W.__unvrslTrainerShellV252)return false;
     return true
   }
   function coreReady(){
@@ -101,7 +117,7 @@
     return true
   }
   function syncProgress(){
-    let next=10;if(D.readyState!=='loading')next=18;if(D.readyState==='complete')next=24;if(W.__unvrslTrainingLoadModelV292)next=Math.max(next,34);if(W.__unvrslUiStabilityV316)next=Math.max(next,42);if(W.__unvrslReadinessStackReadyV260)next=Math.max(next,58);if(W.__unvrslDynamicModulesReadyV260)next=Math.max(next,84);if(next>=84&&(cloudSettled()||elapsed()>=AUTH_GRACE_MS||(!cachedAuth()&&elapsed()>=CLOUD_GRACE_MS)))next=Math.max(next,91);if(next>=91&&(!client()||W.__unvrslClientRuntimeSettledV260))next=Math.max(next,94);setProgress(Math.min(next,96))
+    let next=10;if(D.readyState!=='loading')next=22;if(W.__unvrslUiStabilityV316)next=Math.max(next,42);if(W.__unvrslCriticalModulesReadyV320)next=Math.max(next,84);if(next>=84&&(cloudSettled()||elapsed()>=AUTH_GRACE_MS||(!cachedAuth()&&elapsed()>=CLOUD_GRACE_MS)))next=Math.max(next,91);if(next>=91&&(!client()||W.__unvrslClientRuntimeSettledV260))next=Math.max(next,94);setProgress(Math.min(next,96))
   }
   const frames=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   async function paintFinalInterface(){
@@ -148,16 +164,8 @@
   }
   W.unvrslTryFinalizeStartupV260=finalize;
   for(const name of ['load','unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:client-settled','unvrsl:readiness-ready','unvrsl:ui-stability-ready'])W.addEventListener?.(name,finalize,{passive:true});
-  for(const name of ['unvrsl:modules-ready','unvrsl:training-engine-ready','unvrsl:app-ready']){
-    W.addEventListener?.(name,loadTrainingLoadModel,{passive:true});
-    W.addEventListener?.(name,loadProgramIntensity,{passive:true});
-    W.addEventListener?.(name,loadTrainerClientProgramEdit,{passive:true});
-    W.addEventListener?.(name,loadProgramWeekRpeRir,{passive:true});
-    W.addEventListener?.(name,loadProgramRepRange,{passive:true});
-    W.addEventListener?.(name,loadBuiltInPlanRepRanges,{passive:true});
-    W.addEventListener?.(name,loadProgramWeekRepGuidance,{passive:true})
-  }
-  [400,1200,3000].forEach(ms=>{setTimeout(loadTrainingLoadModel,ms);setTimeout(loadProgramIntensity,ms);setTimeout(loadTrainerClientProgramEdit,ms);setTimeout(loadProgramWeekRpeRir,ms);setTimeout(loadProgramRepRange,ms);setTimeout(loadBuiltInPlanRepRanges,ms);setTimeout(loadProgramWeekRepGuidance,ms)});
+  W.addEventListener?.('unvrsl:app-ready',scheduleFeatureModules,{once:true,passive:true});
+  W.addEventListener?.('unvrsl:training-engine-ready',()=>{if(featureModulesStarted)loadTrainingLoadModel()},{passive:true});
   // Never expose a half-built shell. The fixed progress surface remains in
   // place while slow modules finish, without inserting controls or moving it.
   setTimeout(finalize,CLOUD_GRACE_MS+30);

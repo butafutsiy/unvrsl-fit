@@ -1,13 +1,40 @@
-const SW_RELEASE='v319-stable-progress-loader';
+const SW_RELEASE='v321-offline-progress';
+const STATIC_CACHE='unvrsl-static-v321';
+const CORE_ASSETS=[
+  './app.js?v=316',
+  './startup-orchestrator-v260.js?v=321',
+  './ui-stability-v313.js?v=316',
+  './frequent-patch.js?v=321',
+  './premium-ui.js?v=320',
+  './stable-ui.js?v=316',
+  './mockup-ui.js?v=316',
+  './density-ui.js?v=316',
+  './mobile-final-fix.js?v=316',
+  './home-stats-v254.js?v=316',
+  './requested-cleanup-v2.js?v=320',
+  './client-nav-hotfix.js?v=320',
+  './trainer-shell-v252.js?v=316',
+  './progress.html',
+  './cloud-config.js?v=321',
+  './public-progress-v321.js?v=321',
+  './offline-progress-v321.js?v=321'
+];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
+  event.waitUntil((async()=>{
+    const cache=await caches.open(STATIC_CACHE);
+    await Promise.allSettled(CORE_ASSETS.map(async url=>{
+      const request=new Request(url,{cache:'reload'}),response=await fetch(request);
+      if(response.ok)await cache.put(request,response)
+    }))
+  })())
 });
 
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
     const keys=await caches.keys();
-    await Promise.all(keys.map(key=>caches.delete(key)));
+    await Promise.all(keys.filter(key=>key!==STATIC_CACHE).map(key=>caches.delete(key)));
     try{await self.registration.navigationPreload?.enable()}catch(_){ }
     await self.clients.claim();
     const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
@@ -23,5 +50,37 @@ self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;
   const url=new URL(event.request.url);
   if(url.origin!==self.location.origin)return;
-  event.respondWith(fetch(event.request,{cache:'no-store'}))
+  if(event.request.mode==='navigate'){
+    event.respondWith((async()=>{
+      const cache=await caches.open(STATIC_CACHE);
+      try{
+        const response=await fetch(event.request,{cache:'no-store'});
+        if(response.ok)event.waitUntil(cache.put(event.request,response.clone()));
+        return response
+      }catch(error){
+        const cached=await cache.match(event.request)||await cache.match('./index.html');
+        if(cached)return cached;throw error
+      }
+    })());return
+  }
+  const versioned=url.searchParams.has('v');
+  if(versioned&&['script','style','image','font','manifest'].includes(event.request.destination)){
+    event.respondWith((async()=>{
+      const cache=await caches.open(STATIC_CACHE),cached=await cache.match(event.request);
+      if(cached)return cached;
+      const response=await fetch(event.request,{cache:'no-store'});
+      if(response.ok)event.waitUntil(cache.put(event.request,response.clone()));
+      return response
+    })());return
+  }
+  event.respondWith((async()=>{
+    const cache=await caches.open(STATIC_CACHE);
+    try{
+      const response=await fetch(event.request,{cache:'no-store'});
+      if(response.ok)event.waitUntil(cache.put(event.request,response.clone()));
+      return response
+    }catch(error){
+      const cached=await cache.match(event.request);if(cached)return cached;throw error
+    }
+  })())
 });
