@@ -17,7 +17,7 @@
   // for the training engine and updates weight data without rebuilding pages.
   function loadTrainingLoadModel(){
     if(W.__unvrslTrainingLoadModelV292||D.querySelector('script[data-unvrsl-load-model-v292]'))return;
-    const s=D.createElement('script');s.src='training-load-model-v292.js?v=317';s.async=false;s.dataset.unvrslLoadModelV292='1';s.onerror=()=>console.warn('UNVRSL load model v292 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');s.src='training-load-model-v292.js?v=318';s.async=false;s.dataset.unvrslLoadModelV292='1';s.onerror=()=>console.warn('UNVRSL load model v292 failed to load');D.body?.appendChild(s)
   }
   function loadProgramIntensity(){
     if(W.__unvrslProgramIntensityAutoWeightV261||D.querySelector('script[data-unvrsl-program-intensity-v261]'))return;

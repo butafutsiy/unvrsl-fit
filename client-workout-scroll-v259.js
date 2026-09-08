@@ -29,11 +29,12 @@
     #start .te200-readiness{width:100%!important;min-height:58px!important;box-sizing:border-box!important;margin:10px 0 4px!important}
     #start .exercise .te200-rec,#start .exercise .te200-auto{grid-column:1 / -1!important;width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important}
     #start .exercise .te200-auto{min-height:42px!important}
-    #start .exercise .te200-rec{display:block!important;min-height:84px!important;margin:9px 0 4px!important;padding:13px 14px!important;border-radius:18px!important;overflow:visible!important}
+    #start .exercise .te200-rec{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;gap:10px!important;min-height:84px!important;margin:9px 0 4px!important;padding:13px 14px!important;border-radius:18px!important;overflow:visible!important}
     #start .exercise .te200-rec .te200-rec-main{min-width:0!important;width:100%!important}
+    #start .exercise .te200-rec .te200-rec-apply{min-width:96px!important;min-height:44px!important;padding:9px 11px!important}
     #start .exercise .te200-rec b{font-size:13.5px!important;line-height:1.25!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
     #start .exercise .te200-rec span{font-size:11.5px!important;line-height:1.3!important;margin-top:5px!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important}
-    @media(max-width:380px){#start .exercise .te200-rec{padding:12px!important}}
+    @media(max-width:380px){#start .exercise .te200-rec{grid-template-columns:minmax(0,1fr) 90px!important;padding:12px!important;gap:8px!important}#start .exercise .te200-rec .te200-rec-apply{min-width:90px!important;padding:8px!important}}
   `;
   D.head?.appendChild(style);
 
