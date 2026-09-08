@@ -1,5 +1,5 @@
-const SW_RELEASE='v324-shared-nutrition-fix';
-const STATIC_CACHE='unvrsl-static-v324';
+const SW_RELEASE='v325-nutrition-goal-picker';
+const STATIC_CACHE='unvrsl-static-v325';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
@@ -16,7 +16,7 @@ const CORE_ASSETS=[
   './trainer-shell-v252.js?v=316',
   './progress.html',
   './cloud-config.js?v=321',
-  './public-progress-v321.js?v=324',
+  './public-progress-v321.js?v=325',
   './offline-progress-v321.js?v=324'
 ];
 

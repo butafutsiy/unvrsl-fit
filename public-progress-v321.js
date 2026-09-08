@@ -2,7 +2,7 @@
 (()=>{
   const W=window,D=document,root=D.getElementById('progressRoot');
   const MEASURES=[['chest','Грудь'],['waist','Талия'],['abdomen','Живот'],['hips','Ягодицы'],['thigh','Бедро'],['arm','Рука'],['calf','Икра']];
-  let data=null,measureKey='waist',chartId=0;
+  let data=null,measureKey='waist',chartId=0,nutritionGoalKey='maintain';
   const A=v=>Array.isArray(v)?v:[];
   const N=v=>{if(v===''||v==null)return null;const n=Number(v);return Number.isFinite(n)?n:null};
   const E=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -30,13 +30,14 @@
   const whole=value=>{const n=N(value);return n==null?'—':Math.round(n).toLocaleString('ru-RU')};
   const range=(values,unit='')=>Array.isArray(values)&&values.length===2?`${whole(values[0])}–${whole(values[1])}${unit}`:'—';
 
-  function nutritionGoal(goal){
-    if(!goal)return'';
-    return `<article class="pp-nutrition-goal"><div class="pp-goal-head"><b>${E(goal.title)}</b><strong>${E(range(goal.calories,' ккал'))}</strong></div><div class="pp-macros"><span><small>Белок</small><b>${E(range(goal.protein,' г'))}</b></span><span><small>Жиры</small><b>${E(range(goal.fat,' г'))}</b></span><span><small>Углеводы</small><b>${E(range(goal.carbs,' г'))}</b></span></div></article>`
-  }
+  const NUTRITION_GOALS=[['cut','Сушка'],['maintain','Поддержание'],['gain','Набор']];
+  function nutritionMacros(goal){return `<div class="pp-macros"><span><small>Белок</small><b>${E(range(goal?.protein,' г'))}</b></span><span><small>Жиры</small><b>${E(range(goal?.fat,' г'))}</b></span><span><small>Углеводы</small><b>${E(range(goal?.carbs,' г'))}</b></span></div>`}
   function nutritionPanel(){
     const n=data?.nutrition;if(!n)return'';
-    return `<section class="pp-panel pp-nutrition"><div class="pp-nutrition-head"><div><div class="pp-kicker">ПИТАНИЕ</div><h2>Расчёт КБЖУ</h2><p>Обновлено ${E(day(n.updatedAt||data?.generatedAt))}</p></div><div class="pp-tdee"><span>Поддержание</span><b>${E(whole(n.tdee))}</b><small>ккал в день</small></div></div><div class="pp-nutrition-base"><div><span>BMR</span><b>${E(whole(n.bmr))} ккал</b><small>${E(n.formula)}</small></div><div><span>Активность</span><b>× ${E(String(n.activityFactor).replace('.',','))}</b><small>коэффициент</small></div></div><div class="pp-nutrition-goals">${nutritionGoal(n.goals?.cut)}${nutritionGoal(n.goals?.maintain)}${nutritionGoal(n.goals?.gain)}</div><p class="pp-nutrition-note">Белки и жиры рассчитаны по весу, углеводы – остатком от калорий. Это стартовый ориентир, который уточняется по динамике.</p></section>`
+    const available=NUTRITION_GOALS.filter(([key])=>n.goals?.[key]);if(!available.length)return'';
+    if(!available.some(([key])=>key===nutritionGoalKey))nutritionGoalKey=available[0][0];
+    const goal=n.goals[nutritionGoalKey],goalTitle=goal.title||available.find(([key])=>key===nutritionGoalKey)?.[1]||'Цель';
+    return `<section id="publicNutritionPanel" class="pp-panel pp-nutrition"><div class="pp-nutrition-head"><div><div class="pp-kicker">ПИТАНИЕ</div><h2>Расчёт КБЖУ</h2><p>Обновлено ${E(day(n.updatedAt||data?.generatedAt))}</p></div><div class="pp-goal-picker"><label for="publicNutritionGoal">Цель</label><div class="pp-goal-picker-control"><select id="publicNutritionGoal" aria-label="Цель питания" onchange="publicProgressNutritionGoalV325(this.value)">${available.map(([key,title])=>`<option value="${key}"${key===nutritionGoalKey?' selected':''}>${E(title)}</option>`).join('')}</select></div><b>${E(range(goal.calories))}</b><small>ккал в день</small></div></div><div class="pp-nutrition-base"><div><span>BMR</span><b>${E(whole(n.bmr))}</b><small>${E(n.formula)}</small></div><div><span>Активность</span><b>× ${E(String(n.activityFactor).replace('.',','))}</b><small>коэффициент</small></div><div><span>TDEE</span><b>${E(whole(n.tdee))}</b><small>поддержание</small></div></div><div class="pp-selected-goal"><div class="pp-selected-label"><b>${E(goalTitle)}</b><span>БЖУ на день</span></div>${nutritionMacros(goal)}</div><p class="pp-nutrition-note">Белки и жиры рассчитаны по весу, углеводы – остатком от калорий. Это стартовый ориентир, который уточняется по динамике.</p></section>`
   }
 
   function weightPanel(){const points=weightPoints(),last=points[points.length-1],delta=change(points);return `<section class="pp-panel"><div class="pp-head"><div><div class="pp-kicker">ВЕС</div><div class="pp-value">${last?`${fmt(last.value)} <small>кг</small>`:'Нет записей'}</div></div>${delta==null?'':`<div class="pp-change">${E(signed(delta,'кг'))}<small>за период</small></div>`}</div>${chart(points,{color:'#bf5af2',unit:'кг',label:'Динамика веса'})}</section>`}
@@ -55,6 +56,7 @@
   function fail(message){root.innerHTML=`<div class="pp-error"><b>Прогресс не найден</b><span>${E(message||'Ссылка неверна, устарела или была обновлена тренером.')}</span></div>`}
   async function hash(token){const bytes=new TextEncoder().encode(token),out=await crypto.subtle.digest('SHA-256',bytes);return[...new Uint8Array(out)].map(x=>x.toString(16).padStart(2,'0')).join('')}
   W.publicProgressMetricV321=function(key){measureKey=String(key||'');const panel=D.getElementById('publicMeasurePanel');if(panel)panel.outerHTML=measurePanel()};
+  W.publicProgressNutritionGoalV325=function(key){if(!NUTRITION_GOALS.some(([value])=>value===key)||!data?.nutrition?.goals?.[key])return;nutritionGoalKey=key;const panel=D.getElementById('publicNutritionPanel');if(panel)panel.outerHTML=nutritionPanel()};
 
   (async()=>{
     try{
