@@ -23,9 +23,9 @@
     {key:'straight_bar_pushdown',name:'Разгибание рук на верхнем блоке с прямой рукоятью',aliases:['Разгибание рук с прямой рукоятью','Трицепс с прямой рукоятью']},
     {key:'captain_leg_raise',name:'Подъём ног в упоре на брусьях',aliases:['Подъём ног на брусьях']},
     {key:'smith_bent_row',name:'Тяга штанги в наклоне в Смите',aliases:['Тяга в наклоне в Смите','Тяга штанги в Смите в наклоне']},
-    {key:'one_arm_db_row',name:'Тяга гантели к поясу одной рукой',aliases:['Тяга гантели одной рукой к поясу','Тяга гантели одной рукой']},
+    {key:'one_arm_db_row',name:'Тяга гантели к поясу одной рукой',aliases:['Тяга гантели одной рукой к поясу','Тяга гантели одной рукой','Тяга одной гантели к поясу']},
     {key:'db_pullover',name:'Пуловер с одной гантелью лёжа',aliases:['Пуловер с гантелью']},
-    {key:'cable_pullover',name:'Пуловер с верхнего блока с рукояткой стоя',aliases:['Пуловер в кроссовере','Пуловер на верхнем блоке прямыми руками','Пуловер на верхнем блоке','Пуловер с верхнего блока стоя']},
+    {key:'cable_pullover',name:'Пуловер с верхнего блока с рукояткой стоя',aliases:['Пуловер в кроссовере','Пуловер на верхнем блоке прямыми руками','Пуловер на верхнем блоке','Пуловер с верхнего блока стоя','Пулловер с верхнего блока с рукояткой стоя','Пулловер на верхнем блоке','Пулловер в кроссовере']},
     {key:'cable_one_arm_overhead_triceps',name:'Разгибание одной руки из-за головы на блоке',aliases:[]}
   ];
 
@@ -114,6 +114,21 @@
     window[name]=wrapped;try{globalThis[name]=wrapped}catch(_){ }
   }
 
+  function installSearch(){
+    const base=window.setExerciseQuery||(()=>{try{return setExerciseQuery}catch(_){return null}})();
+    if(typeof base!=='function'||base.__catalogSyncSearchV330)return;
+    const wrapped=function(q){
+      const raw=String(q||''),n=norm(raw);let spec=specFor(raw);
+      if(!spec&&n.length>=8){
+        const found=ADDED.filter(x=>[x.name,...x.aliases].some(a=>{const an=norm(a);return an.includes(n)||n.includes(an)}));
+        if(found.length===1)spec=found[0]
+      }
+      return base.call(this,spec?spec.name:raw)
+    };
+    wrapped.__catalogSyncSearchV330=true;wrapped.__catalogSyncBase=base;
+    window.setExerciseQuery=wrapped;try{setExerciseQuery=wrapped}catch(_){ }
+  }
+
   function setIf(obj,key,value){if(value===undefined||value===null||obj[key]===value)return false;obj[key]=value;return true}
   function mapExercise(ex){
     if(!ex||typeof ex!=='object')return false;
@@ -169,7 +184,7 @@
   }
 
   function refresh(){
-    installFindExercise();installCatalog();installOpenByName();
+    installFindExercise();installCatalog();installOpenByName();installSearch();
     ['exercisesPage','refreshCatalogUI','renderExerciseResults'].forEach(wrapUi);
     syncPlans();syncCount();
     try{if(document.querySelector('#exercises.page.active')&&typeof renderExerciseResults==='function')renderExerciseResults()}catch(_){ }
