@@ -1,5 +1,5 @@
-const SW_RELEASE='v331-exercise-catalog';
-const STATIC_CACHE='unvrsl-static-v331';
+const SW_RELEASE='v332-autoweight-live-recommendations';
+const STATIC_CACHE='unvrsl-static-v332';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
@@ -14,6 +14,7 @@ const CORE_ASSETS=[
   './exercise-library-quality.js?v=331',
   './exercise-library-strict.js?v=331',
   './frequent-patch.js?v=331',
+  './performance-control-v315.js?v=332',
   './premium-ui.js?v=320',
   './stable-ui.js?v=316',
   './mockup-ui.js?v=316',
