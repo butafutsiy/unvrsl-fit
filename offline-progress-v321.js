@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=328;
+  const W=window,D=document,REV=333;
   if(W.__unvrslOfflineProgressV328)return;
   W.__unvrslOfflineProgressV328=true;W.__unvrslOfflineProgressV324=true;W.__unvrslOfflineProgressV323=true;W.__unvrslOfflineProgressV322=true;W.__unvrslOfflineProgressV321=true;
 
@@ -160,7 +160,7 @@
       return{id:String(row.id||''),date:String(row.measure_date||'').slice(0,10),weight:N(row.weight_kg),measurements,note:String(row.notes||'').slice(0,500),source:sourceKey(row.entry_source),createdAt:String(row.created_at||'').slice(0,40)}
     }).filter(x=>x.date&&(x.weight!=null||Object.keys(x.measurements).length));
     const cleanStrengths=chronological(data?.strengths,'measured_at').map(row=>({id:String(row.id||''),date:String(row.measured_at||'').slice(0,10),key:String(row.exercise_key||''),name:String(row.exercise_name||'Упражнение').slice(0,120),weight:N(row.weight_kg),reps:N(row.reps),e1rm:N(row.e1rm),note:String(row.notes||'').slice(0,500),source:sourceKey(row.entry_source),createdAt:String(row.created_at||'').slice(0,40)})).filter(x=>x.date&&x.key);
-    return{version:REV,generatedAt:iso(),client:{name:String(data?.client?.display_name||'Клиент').slice(0,100)},nutrition:publicNutrition(data),exerciseCatalog:catalogNames(),measurements:cleanMeasures,strengths:cleanStrengths}
+    return{version:REV,generatedAt:iso(),client:{name:String(data?.client?.display_name||'Клиент').slice(0,100),sex:String(data?.client?.sex||'other'),birthDate:String(data?.client?.birth_date||'').slice(0,10),height:N(data?.client?.height_cm)},nutrition:publicNutrition(data),exerciseCatalog:catalogNames(),measurements:cleanMeasures,strengths:cleanStrengths}
   }
 
   function weightCard(data){
@@ -291,7 +291,7 @@
       const expires=new Date(Date.now()+180*86400000).toISOString(),payload={trainer_id:c.user.id,offline_client_id:id,token_hash:hash,snapshot:snapshot(data),expires_at:expires,revoked_at:null,updated_at:iso()};
       const q=await c.client.from('offline_progress_shares').upsert(payload,{onConflict:'trainer_id,offline_client_id'}).select('id').single();if(q.error)throw q.error;
       try{localStorage.setItem(storageKey,token)}catch(_){ }
-      const url=new URL('progress.html',W.location.href);url.search='';url.searchParams.set('v','328');url.hash=`t=${token}`;
+      const url=new URL('progress.html',W.location.href);url.search='';url.searchParams.set('v','333');url.hash=`t=${token}`;
       const title=`Прогресс – ${data.client.display_name}`;
       if(navigator.share){try{await navigator.share({title,text:'Вес, КБЖУ, замеры и силовые показатели',url:url.href});return}catch(e){if(e?.name==='AbortError')return}}
       await copyText(url.href);W.toast?.('Ссылка скопирована')
