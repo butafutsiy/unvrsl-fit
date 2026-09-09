@@ -42,7 +42,7 @@
   window.__unvrslPlanExerciseCanonicalLoaderV330=true;
   const loadSync=()=>{
     if(window.__unvrslExerciseCatalogSyncV330||document.querySelector('script[data-exercise-catalog-sync-v330]'))return;
-    const p=document.createElement('script');p.src='exercise-catalog-sync-v330.js?v=330';p.async=false;p.dataset.exerciseCatalogSyncV330='1';
+    const p=document.createElement('script');p.src='exercise-catalog-sync-v330.js?v=331';p.async=false;p.dataset.exerciseCatalogSyncV330='1';
     (document.head||document.documentElement).appendChild(p)
   };
   const load=()=>{
