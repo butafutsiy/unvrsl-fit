@@ -3,7 +3,7 @@
   if(window.__unvrslPlanExerciseCanonicalV329)return;
   window.__unvrslPlanExerciseCanonicalV329=true;
 
-  const RELEASE=329;
+  const RELEASE=331;
   const norm=s=>String(s||'')
     .toLowerCase().replace(/ё/g,'е').replace(/[–—]/g,'-')
     .replace(/[()]/g,' ').replace(/[_.:,/\\]+/g,' ')
@@ -17,11 +17,7 @@
       .trim();
     return s
   };
-  const qtokens=q=>norm(q).split(' ').filter(Boolean);
-  const hasAll=(text,q)=>qtokens(q).every(t=>text.includes(t));
   const ruTech=e=>{const i=e?.instructions||{};return typeof i==='string'?i.trim():String(i.ru||i.russian||'').trim()};
-  const hasMedia=e=>!!String(e?.gif||e?.gif_url||e?.image||'').trim();
-  const lib=()=>{try{return typeof ogLibrary!=='undefined'&&Array.isArray(ogLibrary)?ogLibrary:[]}catch(_){return[]}};
 
   const specs=[];
   const add=(key,ru,aliases,queries,opt={})=>specs.push({
@@ -90,69 +86,75 @@
   add('cable_pullover','Пуловер в кроссовере',['Пуловер на верхнем блоке прямыми руками','Пуловер на верхнем блоке'],['cable straight arm pulldown','cable pullover','straight arm pulldown'],{eq:'cable',strictEq:true,bp:'back',tg:'lats',show:true});
   add('cable_one_arm_overhead_triceps','Разгибание одной руки из-за головы на блоке',[],['cable one arm overhead triceps extension','cable one arm triceps extension','one arm triceps extension'],{eq:'cable',strictEq:true,bp:'upper arms',tg:'triceps',show:true,exclude:['pushdown']});
 
+  // Only the explicitly reviewed names below gain aliases. No substring aliases.
+  const additions={
+    tbar_row:['Т-гриф'],db_supination_curl:['Сгибания с супинацией'],
+    kettlebell_snatch:['Рывок гири одной рукой'],
+    db_pullover:['Пуловер с одной гантелью'],
+    cable_one_arm_overhead_triceps:['Разгибание руки из-за головы в кроссовере']
+  };
+  specs.forEach(s=>{if(additions[s.key])s.aliases.push(...additions[s.key])});
+  const cablePullover=specs.find(s=>s.key==='cable_pullover');
+  cablePullover.ru='Пуловер с верхнего блока с рукояткой стоя';cablePullover.aliases.push(cablePullover.ru);
+  specs.find(s=>s.key==='barbell_hip_thrust').eq=['barbell'];
+  specs.find(s=>s.key==='weighted_hyperextension').eq=['weighted'];
+  specs.find(s=>s.key==='weighted_pushup').eq=['weighted'];
+  specs.find(s=>s.key==='kettlebell_snatch').bp='shoulders';
+  specs.splice(specs.findIndex(s=>s.key==='calf_raise_sergey'),1);
+  const pendingTechnique={
+    barbell_hip_thrust:'Обопрись верхней частью спины на устойчивую скамью. Расположи штангу с мягкой накладкой на сгибе бёдер. Подними таз, сохраняя рёбра опущенными и опору на стопы. Вверху выровняй корпус и бёдра без переразгибания поясницы. Плавно опусти таз.',
+    weighted_hyperextension:'Настрой опору ниже сгиба бёдер, закрепи стопы и прижми диск к груди. Наклоняйся за счёт движения в тазобедренных суставах, удерживая спину нейтрально. Поднимись до прямой линии корпуса и ног, без рывка и переразгибания поясницы.',
+    box_jump:'Выбери устойчивую тумбу подходящей высоты. Сделай небольшой подсед, оттолкнись двумя ногами и приземлись на тумбу обеими стопами с мягкими коленями. Выпрямись и спокойно сойди с тумбы. Это запрыгивание вверх, не спрыгивание вниз.',
+    weighted_pushup:'Надёжно закрепи дополнительное отягощение. Сохраняй корпус прямым, опускайся контролируемо и выжимай себя вверх без провисания поясницы.'
+  };
   const aliasMap=new Map();
   specs.forEach(s=>s.aliases.forEach(a=>aliasMap.set(norm(stripPlanName(a)),s)));
   const byKey=new Map(specs.map(s=>[s.key,s]));
-  const resolved=new Map();
+  byKey.set('calf_raise_sergey',byKey.get('calf_machine'));
 
   function specForName(raw,context=''){
     const key=norm(stripPlanName(raw));
     if(context==='sergey'&&key==='французский жим')return byKey.get('ez_lying_triceps')||null;
-    return aliasMap.get(key)||null
+    return aliasMap.get(key)||specs.find(s=>resolve(s)&&norm(resolve(s).n)===key)||null
   }
 
   function resolve(spec){
     if(!spec)return null;
-    const rows=lib();if(!rows.length)return null;
-    const cached=resolved.get(spec.key);if(cached&&rows.includes(cached))return cached;
-    let best=null,bestScore=-Infinity;
-    for(const e of rows){
-      const name=norm(e?.n||e?.name),eq=String(e?.eq||e?.equipment||'').toLowerCase();if(!name)continue;
-      if(spec.exclude.some(x=>name.includes(norm(x))))continue;
-      const eqOk=!spec.eq.length||spec.eq.includes(eq);if(spec.strictEq&&!eqOk)continue;
-      let qi=-1;
-      for(let i=0;i<spec.queries.length;i++){if(hasAll(name,spec.queries[i])){qi=i;break}}
-      if(qi<0)continue;
-      let score=1000-qi*90-name.length*.15;
-      if(eqOk)score+=80;else if(spec.eq.length)score-=80;
-      if(hasMedia(e))score+=30;if(ruTech(e))score+=25;
-      if(name===norm(spec.queries[qi]))score+=120;
-      if(score>bestScore){best=e;bestScore=score}
-    }
-    if(best)resolved.set(spec.key,best);
-    return best
+    // Pinned record includes a checked name, equipment and GIF. Never substitute
+    // another movement when the requested variant is absent from the dataset.
+    return window.UNVRSL_VERIFIED_EXERCISE_MEDIA_V331?.[spec.key]||null
   }
 
   function canonicalRecord(spec){
-    const src=resolve(spec);if(!src)return null;
-    return {...src,id:`canon:${spec.key}`,n:spec.ru,raw:spec.ru,rawId:String(src.rawId||src.id||''),sourceId:String(src.rawId||src.id||''),sourceName:String(src.n||src.name||''),bp:src.bp||spec.bp,tg:src.tg||spec.tg,eq:src.eq||spec.eq[0]||'',custom:false,canonical:true,canonicalKey:spec.key}
+    if(!spec)return null;const src=resolve(spec),sid=src?String(src.id):'';
+    return {...(src||{}),id:`canon:${spec.key}`,n:spec.ru,strictName:spec.ru,raw:spec.ru,rawId:sid,sourceId:sid||null,sourceName:src?.n||'',bp:spec.bp||src?.bp||'',tg:spec.tg||src?.tg||'',eq:spec.eq[0]||src?.eq||'',gif:src?.gif||'',image:src?.image||'',instructions:src?.instructions||{ru:pendingTechnique[spec.key]||''},mediaUnavailable:!src,custom:false,canonical:true,canonicalKey:spec.key}
   }
 
   function sameWantedRow(e,spec,src){
     const raw=norm(stripPlanName(e?.raw||e?.n||''));
     if(spec.aliases.some(a=>norm(stripPlanName(a))===raw))return true;
-    const sid=String(e?.rawId||e?.sourceId||'');return !!sid&&!!src&&sid===String(src.rawId||src.id||'')
+    const title=norm(e?.strictName||e?.curatedName||'');
+    if(title&&spec.aliases.some(a=>norm(a)===title))return true;
+    const sid=String(e?.rawId||e?.sourceId||e?.id||'').replace(/^og:/,'');return !!sid&&!!src&&sid===String(src.id)
   }
 
   function installCatalog(){
-    const base=window.catalogRecords||(()=>{try{return catalogRecords}catch(_){return null}})();
-    if(typeof base!=='function'||base.__canonicalV329)return;
-    const wrapped=function(){
-      let rows=base.apply(this,arguments)||[];
-      for(const spec of specs.filter(x=>x.show)){
-        const src=resolve(spec),card=canonicalRecord(spec);if(!card)continue;
-        rows=rows.filter(e=>!sameWantedRow(e,spec,src));rows.push(card)
+    window.UNVRSL_MERGE_EXERCISE_CATALOG_V331=function(input){
+      let rows=Array.isArray(input)?input.slice():[];
+      for(const spec of specs){
+        const src=resolve(spec),exists=rows.some(e=>sameWantedRow(e,spec,src));
+        if(!spec.show&&!exists)continue;
+        rows=rows.filter(e=>!sameWantedRow(e,spec,src));rows.push(canonicalRecord(spec))
       }
-      const seen=new Set();return rows.filter(e=>{const id=String(e?.id||''),sid=String(e?.rawId||e?.sourceId||''),name=norm(e?.n||'');const k=id.startsWith('canon:')?id:(sid?`sid:${sid}`:`name:${name}`);if(seen.has(k))return false;seen.add(k);return true})
-    };
-    wrapped.__canonicalV329=true;wrapped.__canonicalBase=base;window.catalogRecords=wrapped;try{catalogRecords=wrapped}catch(_){ }
+      const seen=new Set();return rows.filter(e=>{const key=norm(e.strictName||e.curatedName||e.n);if(seen.has(key))return false;seen.add(key);return true})
+    }
   }
 
   function installMedia(){
     const base=window.findMediaForCustom||(()=>{try{return findMediaForCustom}catch(_){return null}})();
     if(typeof base!=='function'||base.__canonicalV329)return;
     const wrapped=function(raw=''){
-      const spec=specForName(raw);const src=resolve(spec);return src||base.apply(this,arguments)||null
+      const spec=specForName(raw);return spec?resolve(spec):(base.apply(this,arguments)||null)
     };
     wrapped.__canonicalV329=true;wrapped.__canonicalBase=base;window.findMediaForCustom=wrapped;try{findMediaForCustom=wrapped}catch(_){ }
   }
@@ -163,10 +165,11 @@
     const wrapped=function(token){
       const id=decodeURIComponent(String(token||''));
       if(id.startsWith('canon:'))return canonicalRecord(byKey.get(id.slice(6)))||null;
+      if(id.startsWith('og:')){const spec=specs.find(s=>resolve(s)?.id===id.slice(3));if(spec)return canonicalRecord(spec)}
       const ex=base.apply(this,arguments);if(!ex)return ex;
       if(id.startsWith('custom:')){
         const raw=id.slice(7),spec=specForName(raw),src=resolve(spec),title=spec?.ru||(typeof displayExerciseName==='function'?displayExerciseName(raw):raw);
-        if(src){const meta=typeof inferCustomMeta==='function'?inferCustomMeta(title):{};return {...src,...meta,id,n:title,raw,rawId:String(src.rawId||src.id||''),sourceId:String(src.rawId||src.id||''),sourceName:String(src.n||''),custom:true,canonicalKey:spec?.key||null}}
+        if(spec)return {...canonicalRecord(spec),id,raw,planRaw:raw};
         return {...ex,n:title,raw,sourceName:ex.sourceName||((ex.n&&norm(ex.n)!==norm(title))?ex.n:'')}
       }
       return ex
@@ -180,6 +183,7 @@
     const wrapped=function(token){
       const raw=decodeURIComponent(String(token||'')),spec=specForName(raw),card=canonicalRecord(spec);
       if(card&&typeof renderExerciseDetail==='function'){
+        card.planRaw=raw;
         const best=typeof bestEstimateFor==='function'?bestEstimateFor(raw,card.rawId):null;
         try{rmState={id:card.id,w:best?.w||20,r:best?.r||5}}catch(_){ }
         return renderExerciseDetail(card)
@@ -196,45 +200,52 @@
     wrapped.__canonicalV329=true;wrapped.__canonicalBase=base;window.openExerciseDetailByName=wrapped;try{openExerciseDetailByName=wrapped}catch(_){ }
   }
 
+  function installDisplayName(){
+    const base=window.displayExerciseName||(()=>{try{return displayExerciseName}catch(_){return null}})();
+    if(typeof base!=='function'||base.__canonicalV331)return;
+    const wrapped=function(raw=''){
+      const spec=specForName(raw);return spec?.ru||base.apply(this,arguments)
+    };
+    wrapped.__canonicalV331=true;wrapped.__canonicalBase=base;window.displayExerciseName=wrapped;try{displayExerciseName=wrapped}catch(_){ }
+  }
+
   function mapExerciseObject(e,context=''){
-    if(!e)return false;const spec=specForName(e.cleanName||e.n,context),src=resolve(spec);if(!spec||!src)return false;
-    let changed=false;const sid=String(src.rawId||src.id||'');
+    if(!e)return false;const spec=specForName(e.n,context)||specForName(e.cleanName,context),src=resolve(spec);if(!spec)return false;
+    let changed=false;const sid=String(src?.rawId||src?.id||'');
     const set=(k,v)=>{if(v!==undefined&&v!==null&&e[k]!==v){e[k]=v;changed=true}};
-    set('sourceId',sid);set('canonicalExerciseKey',spec.key);set('canonicalName',spec.ru);
-    if(context==='anton')set('cleanName',spec.ru);
-    if(!e.bp)set('bp',src.bp||spec.bp);if(!e.tg)set('tg',src.tg||spec.tg);if(!e.eq)set('eq',src.eq||spec.eq[0]||'');
+    if(sid)set('sourceId',sid);set('canonicalExerciseKey',spec.key);set('canonicalName',spec.ru);
+    if(!e.bp)set('bp',spec.bp);if(!e.tg)set('tg',spec.tg);if(!e.eq)set('eq',spec.eq[0]||'');
     return changed
   }
 
   function mapPlans(){
-    if(!lib().length)return false;let changed=false;
+    let changed=false;
     try{(Array.isArray(ROUTINES)?ROUTINES:[]).forEach(r=>(r.e||[]).forEach(e=>{if(mapExerciseObject(e,'builtin'))changed=true}))}catch(_){ }
     try{
       const programs=Array.isArray(st?.programs)?st.programs:[];
-      programs.forEach(p=>{const context=(p?.seedId==='anton-gorkusha-training-plan'||/Антон Горькуша/i.test(p?.name||''))?'anton':(p?.seedId==='sergey-8-week-training-plan'||/^Тренировочный план \(Сергей\)$/i.test(p?.name||''))?'sergey':'';if(!context)return;
+      programs.forEach(p=>{const context=(p?.seedId==='sergey-8-week-training-plan')?'sergey':'';
         (p.weeks||[]).forEach(w=>(w.days||[]).forEach(d=>(d.ex||[]).forEach(e=>{if(mapExerciseObject(e,context))changed=true})));
         p.exerciseMappingRevision=RELEASE
       });
-      const mapSession=s=>{(s?.ex||[]).forEach(e=>{if(mapExerciseObject(e,'session'))changed=true})};
-      (st.sessions||[]).forEach(mapSession);mapSession(st.current);
-      st.aliases=st.aliases&&typeof st.aliases==='object'?st.aliases:{};
-      const aliases={
-        'Присед HB':'Присед со штангой high-bar','Ягодичный мост':'Хип-траст со штангой','Верхний блок':'Тяга верхнего блока','Нижний блок':'Горизонтальная тяга нижнего блока',
-        'Канат на трицепс':'Разгибание рук на верхнем блоке с канатом','Молотковые сгибания с канатом':'Молотковые сгибания на нижнем блоке с канатом',
-        'Французский жим EZ':'Французский жим с EZ-штангой лёжа','Гиперэкстензия с диском':'Гиперэкстензия с дополнительным весом',
-        'Выпады назад':'Выпады назад с гантелями','Зашагивания':'Зашагивания на платформу с гантелями','Разгибание гантели из-за головы':'Разгибание одной гантели из-за головы',
-        'Сгибание рук в блоке':'Сгибание рук на нижнем блоке','Французский жим с гантелями':'Французский жим с гантелями лёжа'
-      };
-      Object.entries(aliases).forEach(([k,v])=>{if(st.aliases[k]!==v){st.aliases[k]=v;changed=true}});
-      if(changed&&typeof save==='function')save()
+      Object.values(st.planAdds||{}).forEach(rows=>(rows||[]).forEach(e=>{if(mapExerciseObject(e))changed=true}));
+      // Runtime metadata only. Never rewrite historical records, active sets,
+      // user aliases, raw plan names, or prescribed loads to repair a media link.
     }catch(e){console.warn('canonical exercise mapping',e)}
     return changed
   }
 
   function refresh(){
-    installCatalog();installMedia();installFindExercise();installOpenByName();
+    installCatalog();installMedia();installFindExercise();installOpenByName();installDisplayName();
     if(mapPlans())try{if(document.querySelector('#exercises.page.active')&&typeof renderExerciseResults==='function')renderExerciseResults()}catch(_){ }
   }
+
+  window.UNVRSL_EXERCISE_REGISTRY_V331=Object.freeze({
+    specs,normalize:norm,stripPlanName,find:specForName,
+    record:name=>canonicalRecord(byKey.get(name)||specForName(name)),
+    identity:name=>specForName(name)?.key||norm(stripPlanName(name)),
+    aliases:name=>specForName(name)?.aliases.slice()||[],
+    mapPlans
+  });
 
   window.UNVRSL_PLAN_EXERCISES_V329=Object.freeze(specs.map(s=>({key:s.key,name:s.ru,show:s.show})));
   window.UNVRSL_PLAN_EXERCISE_AUDIT_V329=()=>specs.map(s=>{const x=resolve(s);return{key:s.key,name:s.ru,source:x?.n||null,sourceId:x?.id||null,gif:!!(x?.gif||x?.gif_url),ruTechnique:!!ruTech(x),show:s.show}});
@@ -243,5 +254,6 @@
   refresh();
   window.addEventListener('unvrsl:deferred-modules-ready',()=>setTimeout(refresh,0),{passive:true});
   window.addEventListener('unvrsl:modules-ready',()=>setTimeout(refresh,0),{passive:true});
-  let tries=0;const timer=setInterval(()=>{refresh();if(++tries>=40&&lib().length)clearInterval(timer)},300);
+  window.addEventListener('unvrsl:cloud-modules-settled',()=>setTimeout(refresh,0),{passive:true});
+  let tries=0;const timer=setInterval(()=>{refresh();if(++tries>=40)clearInterval(timer)},300);
 })();

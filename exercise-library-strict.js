@@ -260,15 +260,20 @@
     const out=[],seen=new Set();nameMap.clear();
     for(const raw of src){
       if(!quality(raw))continue;
-      const n=strictName(raw);if(!n)continue;
-      const key=n.toLocaleLowerCase('ru');if(seen.has(key))continue;seen.add(key);
+      const pinned=window.UNVRSL_EXERCISE_REGISTRY_V331?.specs.find(s=>String(window.UNVRSL_VERIFIED_EXERCISE_MEDIA_V331?.[s.key]?.id)===String(raw.id));
+      const n=pinned?.ru||strictName(raw);if(!n)continue;
       nameMap.set(clean(raw.n),n);
       out.push({...raw,id:String(raw.id).startsWith('og:')?String(raw.id):`og:${raw.id}`,rawId:raw.rawId||raw.id,strictName:n,custom:false});
     }
-    return out;
+    const rows=window.UNVRSL_MERGE_EXERCISE_CATALOG_V331?.(out)||out;
+    return rows.filter(e=>{const k=e.strictName.toLocaleLowerCase('ru');if(seen.has(k))return false;seen.add(k);return true});
   }
 
+  window.UNVRSL_STRICT_CATALOG_V331=records;
+  window.catalogRecords=records;try{catalogRecords=records}catch(_){}
+
   window.ruExerciseName=function(name=''){
+    const pinned=window.UNVRSL_EXERCISE_REGISTRY_V331?.find(name);if(pinned)return pinned.ru;
     const k=clean(name);if(nameMap.has(k))return nameMap.get(k);
     return typeof oldRu==='function'?oldRu(name):String(name||'Упражнение');
   };
@@ -278,11 +283,12 @@
   const fav=e=>typeof isFavorite==='function'&&isFavorite(id(e));
   const recent=e=>Array.isArray(st?.recentExercises)&&st.recentExercises.includes(id(e));
   const eqOk=e=>{try{return typeof exEquipment==='undefined'||exEquipment==='all'||(typeof equipmentGroup==='function'?equipmentGroup(e)===exEquipment:String(e.eq||'')===exEquipment)}catch(_){return true}};
-  const searchText=e=>`${e.strictName} ${e.n||''} ${(typeof BP_RU==='object'&&BP_RU[e.bp])||e.bp||''} ${(typeof EQ_RU==='object'&&EQ_RU[e.eq])||e.eq||''} ${typeof ruTarget==='function'?ruTarget(e.tg):e.tg||''}`.toLowerCase();
+  const searchNorm=s=>String(s||'').toLowerCase().replace(/ё/g,'е').replace(/[–—-]/g,' ').replace(/\s+/g,' ').trim();
+  const searchText=e=>searchNorm(`${e.strictName} ${e.sourceName||e.n||''} ${(window.UNVRSL_EXERCISE_REGISTRY_V331?.aliases(e.strictName)||[]).join(' ')} ${(typeof BP_RU==='object'&&BP_RU[e.bp])||e.bp||''} ${(typeof EQ_RU==='object'&&EQ_RU[e.eq])||e.eq||''} ${typeof ruTarget==='function'?ruTarget(e.tg):e.tg||''}`);
   let limit=160;const PAGE=160;
 
   function filtered(){
-    const q=String(typeof exQuery==='undefined'?'':exQuery).trim().toLowerCase();
+    const q=searchNorm(typeof exQuery==='undefined'?'':exQuery);
     return records().filter(e=>{
       if(typeof exBody!=='undefined'){
         if(exBody==='favorites'&&!fav(e))return false;
@@ -302,7 +308,7 @@
     const el=document.querySelector('#exList');if(!el)return;
     const all=records(),f=filtered(),shown=f.slice(0,limit);
     el.innerHTML=shown.map(row).join('')+(shown.length<f.length?`<button class="btn full" style="margin:12px 0 4px" onclick="showMoreStrictExercises()">Показать ещё · ${shown.length} из ${f.length}</button>`:'')+(!f.length?'<div class="card muted">По этому фильтру ничего не найдено.</div>':'');
-    const c=document.querySelector('#catalogCount');if(c)c.textContent=`${all.length} основных упражнений${f.length!==all.length?` · найдено ${f.length}`:''}`;
+    const c=document.querySelector('#catalogCount');if(c)c.textContent=`${all.length} упражнений в каталоге${f.length!==all.length?` · найдено ${f.length}`:''}`;
     document.querySelectorAll('#exercises .catalog-head .chip,#exercises .quality-media-line').forEach(x=>x.remove());
   };
   try{renderExerciseResults=window.renderExerciseResults}catch(e){}

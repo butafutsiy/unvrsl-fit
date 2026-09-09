@@ -249,14 +249,14 @@
 
   function catalogNames(){
     try{
-      const fn=typeof W.catalogRecords==='function'?W.catalogRecords:typeof catalogRecords==='function'?catalogRecords:null;if(!fn)return[];
-      const names=fn().map(x=>x.custom?x.n:(typeof W.ruExerciseName==='function'?W.ruExerciseName(x.n):x.n)).filter(Boolean);
-      return[...new Set(names.map(String))].sort((a,b)=>a.localeCompare(b,'ru')).slice(0,350)
-    }catch(_){return[]}
+      const fn=typeof W.catalogRecords==='function'?W.catalogRecords:typeof catalogRecords==='function'?catalogRecords:null;
+      const names=fn?fn().map(x=>x.strictName||(x.custom?x.n:(typeof W.ruExerciseName==='function'?W.ruExerciseName(x.n):x.n))).filter(Boolean):[];
+      return W.UNVRSL_EXERCISE_PICKER_V331?.list(names)||[...new Set(names.map(String))].sort((a,b)=>a.localeCompare(b,'ru'))
+    }catch(_){return W.UNVRSL_EXERCISE_PICKER_V331?.list()||[]}
   }
   function customStrength(id){
-    const options=catalogNames().map(n=>`<option value="${E(n)}"></option>`).join('');
-    W.modal?.(`<div class="sheet-grabber"></div><div class="ofp-add-head"><div><h2>Добавить упражнение</h2><div class="muted">Начни вводить – появится список нашей базы</div></div><button class="btn tiny" onclick="offlineClientDetail('${E(id)}')">✕</button></div><div class="field"><label>Упражнение</label><input id="ofpExerciseName" list="ofpExerciseList" placeholder="Выбрать из списка" autocomplete="off"><datalist id="ofpExerciseList">${options}</datalist></div><div class="field"><label>Тренажёр или вариант, если нужен</label><input id="ofpExerciseVariant" placeholder="Например, Matrix или Technogym"></div><div class="ofp-tip">Одинаковое упражнение на разных тренажёрах лучше вести как два показателя – их веса могут быть несопоставимы.</div><button class="btn primary full" onclick="offlineProgressOpenStrengthV321('${E(id)}')">Добавить и записать результат</button>`)
+    const options=catalogNames().map(n=>`<option value="${E(n)}">${E(n)}</option>`).join('');
+    W.modal?.(`<div class="sheet-grabber"></div><div class="ofp-add-head"><div><h2>Добавить упражнение</h2><div class="muted">Выбери упражнение из общей базы</div></div><button class="btn tiny" onclick="offlineClientDetail('${E(id)}')">✕</button></div><div class="field"><label>Упражнение</label><select id="ofpExerciseName"><option value="">Выбрать упражнение</option>${options}</select></div><div class="field"><label>Тренажёр или вариант, если нужен</label><input id="ofpExerciseVariant" placeholder="Например, Matrix или Technogym"></div><div class="ofp-tip">Одинаковое упражнение на разных тренажёрах лучше вести как два показателя – их веса могут быть несопоставимы.</div><button class="btn primary full" onclick="offlineProgressOpenStrengthV321('${E(id)}')">Добавить и записать результат</button>`)
   }
   customStrength.__offlineProgressV328=true;customStrength.__offlineProgressV324=true;customStrength.__offlineProgressV323=true;customStrength.__offlineProgressV322=true;customStrength.__offlineProgressV321=true;
 

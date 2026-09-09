@@ -1,12 +1,19 @@
-const SW_RELEASE='v329-exercise-plan-canonical';
-const STATIC_CACHE='unvrsl-static-v329';
+const SW_RELEASE='v331-exercise-catalog';
+const STATIC_CACHE='unvrsl-static-v331';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
   './ui-stability-v313.js?v=316',
-  './program-weight-policy-v257.js',
-  './exercise-plan-canonical-v329.js?v=329',
-  './frequent-patch.js?v=328',
+  './program-weight-policy-v257.js?v=331',
+  './exercise-picker-v331.js?v=331',
+  './exercise-media-verified-v331.js?v=331',
+  './exercise-plan-canonical-v329.js?v=331',
+  './og-db.js?v=331',
+  './og-detail.js?v=331',
+  './equipment-filter.js?v=331',
+  './exercise-library-quality.js?v=331',
+  './exercise-library-strict.js?v=331',
+  './frequent-patch.js?v=331',
   './premium-ui.js?v=320',
   './stable-ui.js?v=316',
   './mockup-ui.js?v=316',
@@ -21,8 +28,8 @@ const CORE_ASSETS=[
   './trainer-shell-v252.js?v=316',
   './progress.html',
   './cloud-config.js?v=321',
-  './public-progress-v321.js?v=328',
-  './offline-progress-v321.js?v=328'
+  './public-progress-v321.js?v=331',
+  './offline-progress-v321.js?v=331'
 ];
 
 self.addEventListener('install',event=>{

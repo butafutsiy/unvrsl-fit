@@ -37,13 +37,4 @@
   return{programWeightProfile,programWeightLabel}
 });
 
-(()=>{
-  if(typeof window==='undefined'||window.__unvrslPlanExerciseCanonicalLoaderV329)return;
-  window.__unvrslPlanExerciseCanonicalLoaderV329=true;
-  const load=()=>{
-    if(window.__unvrslPlanExerciseCanonicalV329||document.querySelector('script[data-plan-exercise-canonical-v329]'))return;
-    const s=document.createElement('script');s.src='exercise-plan-canonical-v329.js?v=329';s.async=false;s.dataset.planExerciseCanonicalV329='1';
-    (document.head||document.documentElement).appendChild(s)
-  };
-  if(document.readyState==='complete')load();else window.addEventListener('load',load,{once:true})
-})();
+// Exercise identities and verified media now load together in index.html.

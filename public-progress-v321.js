@@ -57,7 +57,7 @@
 
   function exerciseCatalog(){
     const values=[...A(data?.exerciseCatalog).map(x=>typeof x==='string'?x:x?.name),...A(data?.strengths).map(x=>x?.name)].map(x=>String(x||'').trim()).filter(Boolean);
-    return[...new Map(values.map(x=>[x.toLocaleLowerCase('ru'),x])).values()].sort((a,b)=>a.localeCompare(b,'ru')).slice(0,500)
+    return W.UNVRSL_EXERCISE_PICKER_V331?.list(values)||[...new Map(values.map(x=>[x.toLocaleLowerCase('ru'),x])).values()].sort((a,b)=>a.localeCompare(b,'ru'))
   }
   function entryPanel(){
     if(!entryMode)entryMode='measurement';
