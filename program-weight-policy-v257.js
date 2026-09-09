@@ -38,18 +38,11 @@
 });
 
 (()=>{
-  if(typeof window==='undefined'||window.__unvrslPlanExerciseCanonicalLoaderV330)return;
-  window.__unvrslPlanExerciseCanonicalLoaderV330=true;
-  const loadSync=()=>{
-    if(window.__unvrslExerciseCatalogSyncV330||document.querySelector('script[data-exercise-catalog-sync-v330]'))return;
-    const p=document.createElement('script');p.src='exercise-catalog-sync-v330.js?v=331';p.async=false;p.dataset.exerciseCatalogSyncV330='1';
-    (document.head||document.documentElement).appendChild(p)
-  };
+  if(typeof window==='undefined'||window.__unvrslPlanExerciseCanonicalLoaderV329)return;
+  window.__unvrslPlanExerciseCanonicalLoaderV329=true;
   const load=()=>{
-    if(window.__unvrslPlanExerciseCanonicalV329){loadSync();return}
-    const existing=document.querySelector('script[data-plan-exercise-canonical-v329]');
-    if(existing){existing.addEventListener('load',loadSync,{once:true});return}
-    const s=document.createElement('script');s.src='exercise-plan-canonical-v329.js?v=329';s.async=false;s.dataset.planExerciseCanonicalV329='1';s.addEventListener('load',loadSync,{once:true});
+    if(window.__unvrslPlanExerciseCanonicalV329||document.querySelector('script[data-plan-exercise-canonical-v329]'))return;
+    const s=document.createElement('script');s.src='exercise-plan-canonical-v329.js?v=329';s.async=false;s.dataset.planExerciseCanonicalV329='1';
     (document.head||document.documentElement).appendChild(s)
   };
   if(document.readyState==='complete')load();else window.addEventListener('load',load,{once:true})
