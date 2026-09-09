@@ -252,7 +252,7 @@
       const expires=new Date(Date.now()+180*86400000).toISOString(),payload={trainer_id:c.user.id,offline_client_id:id,token_hash:hash,snapshot:snapshot(data),expires_at:expires,revoked_at:null,updated_at:iso()};
       const q=await c.client.from('offline_progress_shares').upsert(payload,{onConflict:'trainer_id,offline_client_id'}).select('id').single();if(q.error)throw q.error;
       try{localStorage.setItem(storageKey,token)}catch(_){ }
-      const url=new URL('progress.html',W.location.href);url.search='';url.hash=`t=${token}`;
+      const url=new URL('progress.html',W.location.href);url.search='';url.searchParams.set('v','327');url.hash=`t=${token}`;
       const title=`Прогресс – ${data.client.display_name}`;
       if(navigator.share){try{await navigator.share({title,text:'Вес, КБЖУ, замеры и силовые показатели',url:url.href});return}catch(e){if(e?.name==='AbortError')return}}
       await copyText(url.href);W.toast?.('Ссылка скопирована')
