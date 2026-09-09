@@ -130,7 +130,7 @@ try{document.getElementById('adaptive-effort-v2-style')?.remove()}catch(e){}
 (()=>{
   if(document.querySelector('script[data-unvrsl-exercise-detail-rules]'))return;
   const s=document.createElement('script');
-  s.src='exercise-detail-rules-v156.js';
+  s.src='exercise-detail-rules-v156.js?v=326';
   s.async=false;
   s.dataset.unvrslExerciseDetailRules='1';
   document.body.appendChild(s);

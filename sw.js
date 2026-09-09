@@ -1,5 +1,5 @@
-const SW_RELEASE='v325-nutrition-goal-picker';
-const STATIC_CACHE='unvrsl-static-v325';
+const SW_RELEASE='v326-weight-timeline';
+const STATIC_CACHE='unvrsl-static-v326';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
@@ -11,12 +11,15 @@ const CORE_ASSETS=[
   './density-ui.js?v=316',
   './mobile-final-fix.js?v=316',
   './home-stats-v254.js?v=316',
+  './trainer-client-clean-v113.js?v=326',
+  './exercise-detail-rules-v156.js?v=326',
+  './bodyweight-history-v190.js?v=326',
   './requested-cleanup-v2.js?v=320',
   './client-nav-hotfix.js?v=320',
   './trainer-shell-v252.js?v=316',
   './progress.html',
   './cloud-config.js?v=321',
-  './public-progress-v321.js?v=325',
+  './public-progress-v321.js?v=326',
   './offline-progress-v321.js?v=324'
 ];
 
