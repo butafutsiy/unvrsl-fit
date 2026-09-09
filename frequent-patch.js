@@ -140,7 +140,7 @@ function startDeferredModules(){
  const stats=safe(loadSequence(['profile-strength-core-v248.js?v=320','sheet-swipe.js?v=316','stats-dashboard-v254.js?v=316','stats-cleanup-v254.js?v=316','stats-authority-v254.js?v=316']),'stats modules');
  const trainer=Promise.allSettled([
   safe(loadExternalScript('clients-action-layout.js?v=320'),'trainer layout'),
-  safe(loadExternalScript('offline-progress-v321.js?v=327'),'offline progress')
+  safe(loadExternalScript('offline-progress-v321.js?v=328'),'offline progress')
  ]);
  deferredPromise=Promise.allSettled([templates,programs,workout,stats,trainer]).finally(()=>{
   window.__unvrslDeferredModulesReadyV320=true;

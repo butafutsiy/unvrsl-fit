@@ -1,10 +1,10 @@
-const SW_RELEASE='v327-detailed-weight-chart';
-const STATIC_CACHE='unvrsl-static-v327';
+const SW_RELEASE='v328-client-progress-input';
+const STATIC_CACHE='unvrsl-static-v328';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
   './ui-stability-v313.js?v=316',
-  './frequent-patch.js?v=327',
+  './frequent-patch.js?v=328',
   './premium-ui.js?v=320',
   './stable-ui.js?v=316',
   './mockup-ui.js?v=316',
@@ -19,8 +19,8 @@ const CORE_ASSETS=[
   './trainer-shell-v252.js?v=316',
   './progress.html',
   './cloud-config.js?v=321',
-  './public-progress-v321.js?v=327',
-  './offline-progress-v321.js?v=327'
+  './public-progress-v321.js?v=328',
+  './offline-progress-v321.js?v=328'
 ];
 
 self.addEventListener('install',event=>{
