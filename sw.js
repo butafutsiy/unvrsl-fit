@@ -1,12 +1,11 @@
-const SW_RELEASE='v331-exercise-catalog-search';
-const STATIC_CACHE='unvrsl-static-v331';
+const SW_RELEASE='v329-exercise-plan-canonical';
+const STATIC_CACHE='unvrsl-static-v329';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
   './ui-stability-v313.js?v=316',
   './program-weight-policy-v257.js',
   './exercise-plan-canonical-v329.js?v=329',
-  './exercise-catalog-sync-v330.js?v=331',
   './frequent-patch.js?v=328',
   './premium-ui.js?v=320',
   './stable-ui.js?v=316',
