@@ -1,5 +1,5 @@
-const SW_RELEASE='v335-trainer-free-workout';
-const STATIC_CACHE='unvrsl-static-v335';
+const SW_RELEASE='v336-strength-progress';
+const STATIC_CACHE='unvrsl-static-v336';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
@@ -15,6 +15,7 @@ const CORE_ASSETS=[
   './exercise-library-strict.js?v=331',
   './frequent-patch.js?v=335',
   './client-free-workout-v334.js?v=335',
+  './strength-progress-v335.js?v=335',
   './performance-control-v315.js?v=332',
   './premium-ui.js?v=320',
   './stable-ui.js?v=316',
