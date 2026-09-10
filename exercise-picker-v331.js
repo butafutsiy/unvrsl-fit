@@ -20,14 +20,12 @@
 })();
 
 (()=>{
-  if(!document.getElementById('progressRoot')&&!document.querySelector('.ofp-root'))return;
-  if(!window.__unvrslStrengthProgressV335&&!document.querySelector('script[data-unvrsl-strength-progress-v335]')){
-    const s=document.createElement('script');
-    s.src='strength-progress-v335.js?v=338';
-    s.async=false;
-    s.dataset.unvrslStrengthProgressV335='1';
-    document.head.appendChild(s);
-  }
+  if(window.__unvrslStrengthProgressV335||document.querySelector('script[data-unvrsl-strength-progress-v335]'))return;
+  const s=document.createElement('script');
+  s.src='strength-progress-v335.js?v=338';
+  s.async=false;
+  s.dataset.unvrslStrengthProgressV335='1';
+  document.head.appendChild(s);
 })();
 
 (()=>{
