@@ -18,3 +18,12 @@
   };
   window.UNVRSL_EXERCISE_PICKER_V331=Object.freeze({base:Object.freeze(BASE.slice()),list});
 })();
+
+(()=>{
+  if(window.__unvrslStrengthProgressV335||document.querySelector('script[data-unvrsl-strength-progress-v335]'))return;
+  const s=document.createElement('script');
+  s.src='strength-progress-v335.js?v=335';
+  s.async=false;
+  s.dataset.unvrslStrengthProgressV335='1';
+  document.head.appendChild(s);
+})();
