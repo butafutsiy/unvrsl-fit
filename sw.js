@@ -1,5 +1,5 @@
-const SW_RELEASE='v333-client-self-service';
-const STATIC_CACHE='unvrsl-static-v333';
+const SW_RELEASE='v334-weight-goal-free-workout';
+const STATIC_CACHE='unvrsl-static-v334';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
@@ -13,7 +13,8 @@ const CORE_ASSETS=[
   './equipment-filter.js?v=331',
   './exercise-library-quality.js?v=331',
   './exercise-library-strict.js?v=331',
-  './frequent-patch.js?v=333',
+  './frequent-patch.js?v=334',
+  './client-free-workout-v334.js?v=334',
   './performance-control-v315.js?v=332',
   './premium-ui.js?v=320',
   './stable-ui.js?v=316',
@@ -29,8 +30,8 @@ const CORE_ASSETS=[
   './trainer-shell-v252.js?v=316',
   './progress.html',
   './cloud-config.js?v=321',
-  './public-progress-v321.js?v=333',
-  './offline-progress-v321.js?v=333'
+  './public-progress-v321.js?v=334',
+  './offline-progress-v321.js?v=334'
 ];
 
 self.addEventListener('install',event=>{

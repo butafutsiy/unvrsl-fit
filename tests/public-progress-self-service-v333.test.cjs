@@ -10,7 +10,7 @@ const migration=fs.readFileSync(path.join(root,'supabase-migrations/20260909_off
 
 test('shared progress page uses the active session to identify trainer entries',()=>{
   assert.match(publicJs,/persistSession:true/);
-  assert.match(publicJs,/get_offline_progress_share_v333/);
+  assert.match(publicJs,/get_offline_progress_share_v334/);
   assert.match(publicJs,/submit_offline_progress_entry_v333/);
   assert.match(publicJs,/sourceBadge\(actorSource\)/);
   assert.match(migration,/auth\.uid\(\)\) = v_share\.trainer_id then 'trainer' else 'client'/);
@@ -20,7 +20,7 @@ test('client gets the same quick actions and safe profile editor',()=>{
   assert.match(publicJs,/＋ Вес и замеры/);
   assert.match(publicJs,/＋ Силовой показатель/);
   assert.match(publicJs,/publicProgressProfileV333/);
-  assert.match(publicJs,/update_offline_progress_profile_v333/);
+  assert.match(publicJs,/update_offline_progress_profile_v334/);
   assert.match(migration,/set display_name = v_name,[\s\S]*sex = v_sex,[\s\S]*birth_date = v_birth,[\s\S]*height_cm = v_height/);
   assert.doesNotMatch(migration,/set[\s\S]{0,120}sessions_remaining/);
   assert.doesNotMatch(migration,/set[\s\S]{0,120}notes\s*=/);
@@ -28,7 +28,7 @@ test('client gets the same quick actions and safe profile editor',()=>{
 
 test('newly shared snapshots contain editable profile fields',()=>{
   assert.match(offlineJs,/client:\{name:[\s\S]*sex:[\s\S]*birthDate:[\s\S]*height:/);
-  assert.match(offlineJs,/REV=333/);
+  assert.match(offlineJs,/REV=334/);
 });
 
 test('new RPCs require a valid private share and are limited to anon and authenticated roles',()=>{

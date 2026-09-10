@@ -135,12 +135,12 @@ function startDeferredModules(){
  if(deferredStarted)return deferredPromise;deferredStarted=true;
  const safe=(promise,label)=>promise.catch(e=>{console.warn(label,e);return{failed:true,label}});
  const templates=safe(loadSequence(['popular-programs.js?v=320','female-program-templates.js?v=320']),'program templates');
- const programs=safe(loadSequence(['anton-gorkusha-plan.js?v=320','anton-plan-rules.js?v=320','program-management-patch.js?v=320','start-program-picker.js?v=320','program-delete-fix.js?v=320','program-delete-persistence-v3.js?v=320','trainer-self-plan-v110.js?v=260']),'program modules');
+ const programs=safe(loadSequence(['anton-gorkusha-plan.js?v=320','anton-plan-rules.js?v=320','program-management-patch.js?v=320','start-program-picker.js?v=320','program-delete-fix.js?v=320','program-delete-persistence-v3.js?v=320','trainer-self-plan-v110.js?v=260','client-free-workout-v334.js?v=334']),'program modules');
  const workout=safe(loadSequence(['wake-lock.js?v=320','workout-duration.js?v=320','cardio-timer.js?v=320','advanced-training.js?v=320','adaptive-effort-v2.js?v=320','workout-template-ux-v2.js?v=320','cardio-exercise-library.js?v=320','client-workout-scroll-v259.js?v=318']),'workout modules');
  const stats=safe(loadSequence(['profile-strength-core-v248.js?v=320','sheet-swipe.js?v=316','stats-dashboard-v254.js?v=316','stats-cleanup-v254.js?v=316','stats-authority-v254.js?v=316']),'stats modules');
  const trainer=Promise.allSettled([
   safe(loadExternalScript('clients-action-layout.js?v=320'),'trainer layout'),
-  safe(loadExternalScript('offline-progress-v321.js?v=333'),'offline progress')
+  safe(loadExternalScript('offline-progress-v321.js?v=334'),'offline progress')
  ]);
  deferredPromise=Promise.allSettled([templates,programs,workout,stats,trainer]).finally(()=>{
   window.__unvrslDeferredModulesReadyV320=true;
