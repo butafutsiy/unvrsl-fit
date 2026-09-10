@@ -77,7 +77,7 @@
     }
     const metrics=mode==='both'?['weight','e1rm']:[mode],count=displayed.length,w=Math.max(360,78+Math.max(0,count-1)*76),h=186,L=38,R=18,T=34,B=31;
     const values=[];displayed.forEach(r=>metrics.forEach(m=>{const v=metricValue(r,m);if(v!=null)values.push(v)}));
-    const min0=Math.min(...values),max0=Math.max(...values),span=Math.max(1,max0-min0),min=Math.max(0,min0-span*.16),max=max0+span*.16,range=Math.max(1,max-min),xyByIndex=new Map();
+    const min0=Math.min(...values),max0=Math.max(...values),span=Math.max(1,max0-min0);let min=Math.max(0,min0-span*.16),max=max0+span*.16;if(max-min<1){const mid=(max+min)/2;min=Math.max(0,mid-.5);max=min+1}const range=max-min,xyByIndex=new Map();
     displayed.forEach((r,i)=>{const x=count===1?w/2:L+i*(w-L-R)/(count-1),metricsMap={};metrics.forEach(m=>{const v=metricValue(r,m);if(v!=null)metricsMap[m]={x,y:h-B-(v-min)/range*(h-T-B)}});xyByIndex.set(r._i,metricsMap)});
     const ticks=[0,.5,1].map(q=>+(max-range*q).toFixed(1));
     const grid=ticks.map(v=>{const y=h-B-(v-min)/range*(h-T-B);return`<line class="spv335-grid" x1="${L}" y1="${y.toFixed(1)}" x2="${w-R}" y2="${y.toFixed(1)}"/><text class="spv335-axis" x="${L-6}" y="${(y+3).toFixed(1)}" text-anchor="end">${E(fmt(v))}</text>`}).join('');
