@@ -200,3 +200,12 @@ try{document.getElementById('adaptive-effort-v2-style')?.remove()}catch(e){}
   setTimeout(syncBody,600);
   setTimeout(refreshStats,2200);
 })();
+
+(()=>{
+  if(document.querySelector('script[data-unvrsl-offline-strength-search-v339]'))return;
+  const s=document.createElement('script');
+  s.src='offline-strength-search-v339.js?v=340';
+  s.async=false;
+  s.dataset.unvrslOfflineStrengthSearchV339='1';
+  document.body.appendChild(s);
+})();
