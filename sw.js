@@ -1,5 +1,5 @@
-const SW_RELEASE='v350-restore-187-exercises';
-const STATIC_CACHE='unvrsl-static-v350';
+const SW_RELEASE='v351-historical-187-plus-glutes';
+const STATIC_CACHE='unvrsl-static-v351';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
@@ -12,6 +12,8 @@ const CORE_ASSETS=[
   './og-detail.js?v=331',
   './equipment-filter.js?v=346',
   './exercise-library-quality.js?v=346',
+  './exercise-library-curated.js?v=351',
+  './exercise-library-strict.js?v=351',
   './exercise-library-final-rules.js?v=349',
   './exercise-library-final-owner-v349.js?v=349',
   './exercise-library-additions-v347.js?v=347',
