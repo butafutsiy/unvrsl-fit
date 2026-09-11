@@ -92,3 +92,12 @@ function formatPrescription(entries){
 }
 function planRestRule(r,g){const type=methodType(g.entries),entries=routineEntries(r),lastIndex=g.indices.at(-1),final=rest(r,entries[lastIndex],lastIndex);if(type==='UNVRSL')return`30с между тяжёлой и лёгкой фазой, ${final}с между раундами`;if(type==='SLDR')return`15с между мини-подходами, ${final}с после`;if(type==='DS')return`без отдыха в сбросах, ${final}с после`;if(type==='FST-7')return'20–40с между подходами';return`${final}с отдых`}
 function quickWeek(w){const el=$('#quickList');if(!el)return;el.innerHTML=ROUTINES.filter(r=>r.w===w).map(r=>`<div class="listline row between"><div><b>${esc(r.c)} · ${esc(r.t)}</b><div class="muted small">RPE ${RPE[w]} · ${groupIndexedEntries(routineEntries(r)).length} упражнений</div></div><button class="btn tiny primary" onclick="begin(${r.w},'${r.c}')">Старт</button></div>`).join('')}
+
+(()=>{
+  if(document.querySelector('script[data-unvrsl-offline-strength-search-v341]'))return;
+  const s=document.createElement('script');
+  s.src='offline-strength-search-v339.js?v=341';
+  s.async=false;
+  s.dataset.unvrslOfflineStrengthSearchV341='1';
+  document.body.appendChild(s);
+})();
