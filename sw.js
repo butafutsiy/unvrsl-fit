@@ -1,5 +1,5 @@
-const SW_RELEASE='v340-strength-exercise-search';
-const STATIC_CACHE='unvrsl-static-v340';
+const SW_RELEASE='v341-strength-catalog-cleanup';
+const STATIC_CACHE='unvrsl-static-v341';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
