@@ -52,10 +52,14 @@
     }catch(_){return[]}
   }
 
-  function isBarbellHipThrust(e,title=''){
+  function hipVariant(e,title=''){
     const hay=norm(`${title} ${e?.n||''} ${e?.strictName||''} ${e?.sourceName||''}`);
+    if(!/ягодич.*мост|hip thrust|glute bridge/.test(hay))return'';
     const eq=String(e?.eq||'').toLowerCase();
-    return ['barbell','olympic barbell'].includes(eq)&&(/ягодич.*мост|hip thrust|glute bridge/.test(hay));
+    if(eq==='smith machine')return'smith';
+    if(eq==='leverage machine')return'machine';
+    if(['barbell','olympic barbell'].includes(eq))return'barbell';
+    return'';
   }
 
   function finalRecords(){
@@ -68,7 +72,8 @@
       const title=canonicalTitle(before);if(!title)continue;
       const key=norm(title);if(seen.has(key))continue;seen.add(key);
       let item={...raw,strictName:title,n:title};
-      if(isBarbellHipThrust(raw,title))item={...item,gif:HIP_MEDIA.barbell,gif_url:HIP_MEDIA.barbell,image:'',instructions:{...(raw?.instructions||{}),ru:HIP_TECH.barbell}};
+      const variant=hipVariant(raw,title);
+      if(variant)item={...item,gif:HIP_MEDIA[variant],gif_url:HIP_MEDIA[variant],image:'',instructions:{...(raw?.instructions||{}),ru:HIP_TECH[variant]}};
       out.push(item);
     }
     for(const item of EXTRA){
