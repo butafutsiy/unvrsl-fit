@@ -1,5 +1,5 @@
-const SW_RELEASE='v349-clean-final-exercise-library';
-const STATIC_CACHE='unvrsl-static-v349';
+const SW_RELEASE='v350-restore-187-exercises';
+const STATIC_CACHE='unvrsl-static-v350';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
@@ -14,6 +14,7 @@ const CORE_ASSETS=[
   './exercise-library-quality.js?v=346',
   './exercise-library-final-rules.js?v=349',
   './exercise-library-final-owner-v349.js?v=349',
+  './exercise-library-additions-v347.js?v=347',
   './frequent-patch.js?v=335',
   './client-free-workout-v334.js?v=335',
   './strength-progress-v335.js?v=339',
