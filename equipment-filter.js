@@ -21,6 +21,9 @@ function equipmentGroup(ex){
 }
 function exerciseEquipmentFilterActive(){return exEquipment!=='all'&&document.querySelector('#exercises.page.active')}
 const _catalogRecordsEquipment=catalogRecords;
+// Canonical unfiltered catalog used by both the Exercise library and strength picker.
+// Do not replace this with curated/strict subsets: the user expects the complete base.
+window.UNVRSL_BASE_CATALOG_V346=_catalogRecordsEquipment;
 catalogRecords=function(){
  const all=_catalogRecordsEquipment();
  if(!exerciseEquipmentFilterActive())return all;
@@ -99,10 +102,9 @@ exercisesPage=function(){
  migratePrograms();migrateCurrent();setTimeout(()=>{migratePrograms();migrateCurrent()},1200);
 })();
 
+// Keep the complete base catalog. The old curated/strict chain reduced it to 99.
 Promise.resolve()
- .then(()=>loadExternalScript('exercise-library-quality.js?v=331'))
- .then(()=>loadExternalScript('exercise-library-curated.js'))
- .then(()=>loadExternalScript('exercise-library-strict.js?v=331'))
+ .then(()=>loadExternalScript('exercise-library-quality.js?v=346'))
  .then(()=>loadExternalScript('cardio-metric-fixes.js'))
  .then(()=>loadExternalScript('preview-mobile-fix.js'))
- .catch(e=>console.warn('curated exercise/cardio/preview fixes',e));
+ .catch(e=>console.warn('exercise/cardio/preview fixes',e));
