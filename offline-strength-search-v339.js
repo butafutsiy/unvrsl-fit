@@ -1,11 +1,39 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=339;
-  if(W.__unvrslOfflineStrengthSearchV339)return;
-  W.__unvrslOfflineStrengthSearchV339=true;
+  const W=window,D=document,REV=341;
+  if(W.__unvrslOfflineStrengthSearchV341)return;
+  W.__unvrslOfflineStrengthSearchV341=true;
 
   const E=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  const norm=v=>String(v??'').toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/[‐‑‒–—-]+/g,' ').replace(/[()]/g,' ').replace(/\s+/g,' ').trim();
+  const norm=v=>String(v??'').toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/[‐‑‒–—-]+/g,' ').replace(/[()]/g,' ').replace(/[·•]/g,' ').replace(/\s+/g,' ').trim();
+
+  const REQUIRED=Object.freeze([
+    'Присед со штангой с высокой постановкой грифа',
+    'Присед со штангой с низкой постановкой грифа',
+    'Ягодичный мостик в тренажёре'
+  ]);
+
+  const CANONICAL=Object.freeze({
+    'присед со штангой high bar':'Присед со штангой с высокой постановкой грифа',
+    'приседания со штангой high bar':'Присед со штангой с высокой постановкой грифа',
+    'присед со штангой с высокой постановкой грифа':'Присед со штангой с высокой постановкой грифа',
+    'присед со штангой low bar':'Присед со штангой с низкой постановкой грифа',
+    'приседания со штангой low bar':'Присед со штангой с низкой постановкой грифа',
+    'присед со штангой с низкой постановкой грифа':'Присед со штангой с низкой постановкой грифа',
+    'зашагивания с гантелями':'Зашагивания на платформу с гантелями',
+    'зашагивания на платформу с гантелями':'Зашагивания на платформу с гантелями',
+    'махи гантелей в стороны':'Махи гантелями в стороны',
+    'махи гантелями в стороны':'Махи гантелями в стороны',
+    'разведение на заднюю дельту':'Разведение гантелей на заднюю дельту',
+    'разведение гантелей на заднюю дельту':'Разведение гантелей на заднюю дельту',
+    'лестница / stairmaster':'Лестница / StairMaster',
+    'лестница stairmaster':'Лестница / StairMaster',
+    'кардио лестница':'Лестница / StairMaster',
+    'ягодичный мост в тренажере':'Ягодичный мостик в тренажёре',
+    'ягодичный мостик в тренажере':'Ягодичный мостик в тренажёре',
+    'хип траст в тренажере':'Ягодичный мостик в тренажёре',
+    'machine hip thrust':'Ягодичный мостик в тренажёре'
+  });
 
   const ALIASES=Object.freeze({
     'Присед со штангой с высокой постановкой грифа':['high bar','high-bar','хай бар','высокая постановка','высокий гриф'],
@@ -13,8 +41,37 @@
     'Лестница / StairMaster':['stairmaster','stair master','лестница','степпер'],
     'Молотковые сгибания с гантелями':['молотки','hammer curl','hammer curls'],
     'Лыжный тренажёр':['лыжи','ski erg','skierg'],
-    'Аэробайк':['air bike','airbike','assault bike']
+    'Аэробайк':['air bike','airbike','assault bike'],
+    'Ягодичный мостик в тренажёре':['ягодичный мост','ягодичный мостик','hip thrust machine','machine hip thrust','хип траст тренажер']
   });
+
+  function cleanName(value){
+    let name=String(value||'').trim().replace(/\s+/g,' ');
+    if(!name)return'';
+
+    // Убираем служебные обозначения, случайно попавшие из тренировочных программ.
+    name=name.replace(/^\s*\d+\s*[A-Za-zА-Яа-я]?\s*[·.):-]\s*/u,'').trim();
+    name=name.replace(/^\s*кардио\s*[·:)-]\s*/iu,'').trim();
+    if(/^аэробайк\s+a2$/iu.test(name))name='Аэробайк';
+
+    const key=norm(name);
+    if(!key||key==='прим')return'';
+
+    // Обычный присед без указания положения грифа больше не используем.
+    if(key==='приседания со штангой'||key==='присед со штангой')return'';
+
+    return CANONICAL[key]||name;
+  }
+
+  function finalizeNames(source){
+    const seen=new Map();
+    [...(Array.isArray(source)?source:[]),...REQUIRED].forEach(value=>{
+      const name=cleanName(value);
+      if(!name)return;
+      seen.set(norm(name),name);
+    });
+    return [...seen.values()].sort((a,b)=>a.localeCompare(b,'ru'));
+  }
 
   function catalogNames(){
     try{
@@ -28,12 +85,10 @@
       }).filter(Boolean):[];
       const list=W.UNVRSL_EXERCISE_PICKER_V331?.list;
       const merged=typeof list==='function'?list(names):names;
-      const seen=new Map();
-      merged.map(x=>String(x||'').trim()).filter(Boolean).forEach(name=>seen.set(norm(name),name));
-      return [...seen.values()].sort((a,b)=>a.localeCompare(b,'ru'));
+      return finalizeNames(merged);
     }catch(_){
       const list=W.UNVRSL_EXERCISE_PICKER_V331?.list;
-      return typeof list==='function'?list():[];
+      return finalizeNames(typeof list==='function'?list():[]);
     }
   }
 
@@ -51,8 +106,7 @@
     if(aliases.some(a=>a===query))return 3;
     if(aliases.some(a=>a.startsWith(query)))return 4;
     if(aliases.some(a=>a.includes(query)))return 5;
-    const tokens=query.split(' ').filter(Boolean);
-    const hay=[n,...aliases].join(' ');
+    const tokens=query.split(' ').filter(Boolean),hay=[n,...aliases].join(' ');
     if(tokens.length&&tokens.every(t=>hay.includes(t)))return 6;
     return Infinity;
   }
@@ -93,11 +147,7 @@
       results.hidden=true;
       count.textContent='Упражнение выбрано';
     };
-    const resetSelection=()=>{
-      hidden.value='';
-      selected.hidden=true;
-      submit.disabled=true;
-    };
+    const resetSelection=()=>{hidden.value='';selected.hidden=true;submit.disabled=true};
 
     results.addEventListener('click',event=>{
       const button=event.target.closest('[data-oss339-index]');
@@ -116,9 +166,9 @@
   function install(){
     const current=W.offlineCustomStrengthSheet;
     if(typeof current!=='function')return false;
-    if(current.__offlineStrengthSearchV339)return true;
+    if(current.__offlineStrengthSearchV341)return true;
     const patched=function(id){return openSearch(String(id||''))};
-    patched.__offlineStrengthSearchV339=true;
+    patched.__offlineStrengthSearchV341=true;
     patched.__offlineProgressV328=true;
     patched.__offlineProgressV324=true;
     patched.__offlineProgressV323=true;
