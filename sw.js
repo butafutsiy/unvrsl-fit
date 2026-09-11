@@ -1,5 +1,5 @@
-const SW_RELEASE='v341-strength-catalog-cleanup';
-const STATIC_CACHE='unvrsl-static-v341';
+const SW_RELEASE='v342-strength-catalog-cleanup';
+const STATIC_CACHE='unvrsl-static-v342';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
@@ -24,7 +24,7 @@ const CORE_ASSETS=[
   './mobile-final-fix.js?v=316',
   './home-stats-v254.js?v=316',
   './trainer-client-clean-v113.js?v=326',
-  './offline-strength-search-v339.js?v=340',
+  './offline-strength-search-v339.js?v=342',
   './exercise-detail-rules-v156.js?v=326',
   './bodyweight-history-v190.js?v=326',
   './requested-cleanup-v2.js?v=320',
