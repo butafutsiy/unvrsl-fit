@@ -1,5 +1,5 @@
-const SW_RELEASE='v352-single-exercise-catalog';
-const STATIC_CACHE='unvrsl-static-v352';
+const SW_RELEASE='v353-hip-thrust-media';
+const STATIC_CACHE='unvrsl-static-v353';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
@@ -13,7 +13,7 @@ const CORE_ASSETS=[
   './equipment-filter.js?v=346',
   './exercise-library-quality.js?v=352',
   './exercise-library-strict.js?v=352',
-  './exercise-library-additions-v347.js?v=352',
+  './exercise-library-additions-v347.js?v=353',
   './frequent-patch.js?v=335',
   './client-free-workout-v334.js?v=335',
   './strength-progress-v335.js?v=339',
