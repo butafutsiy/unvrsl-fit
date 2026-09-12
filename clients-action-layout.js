@@ -12,8 +12,6 @@
     #clients .clients-add-action .btn[hidden]{display:none!important}
     #clients>.card:first-child>.row.between{display:block!important}
     #clients>.card:first-child>.row.between>div:first-child{width:100%!important}
-    .offline-client-delete-v367{margin:24px 0 4px;padding-top:16px;border-top:1px solid #2d2d31}
-    .offline-client-delete-v367 .btn{min-height:48px;font-size:15px}
   `;
   document.head.appendChild(style);
 
@@ -93,54 +91,8 @@
     }
   }
 
-  function injectOfflineClientDelete(id){
-    const clientId=String(id||'').replace(/[^a-zA-Z0-9-]/g,'');if(!clientId)return;
-    const root=document.querySelector('#sheet .ofp-root');
-    if(!root||!root.querySelector('.ofp-hero')||root.querySelector('.offline-client-delete-v367'))return;
-    const section=document.createElement('section');section.className='offline-client-delete-v367';
-    const button=document.createElement('button');button.type='button';button.className='btn danger full';button.textContent='Удалить клиента';button.dataset.offlineDeleteClient='1';
-    button.addEventListener('click',()=>window.offlineDeleteClientV367?.(clientId));section.appendChild(button);root.appendChild(section)
-  }
-
-  function syncOfflineClientDelete(){
-    let id='';
-    try{id=window.offlineProgressCurrentIdV321?.()||''}catch(_){ }
-    if(id)injectOfflineClientDelete(id)
-  }
-
-  window.offlineDeleteClientV367=async function(id){
-    const clientId=String(id||'').replace(/[^a-zA-Z0-9-]/g,'');if(!clientId)return;
-    const name=(document.querySelector('#sheet .ofp-hero h2')?.textContent||'этого клиента').trim();
-    const ok=window.confirm(`Удалить офлайн-клиента «${name}»?\n\nБудут удалены его замеры, силовые записи и ссылка на прогресс. Это действие нельзя отменить.`);if(!ok)return;
-    const button=document.querySelector('#sheet [data-offline-delete-client]');if(button){button.disabled=true;button.textContent='Удаляю…'}
-    try{
-      const c=window.cloud;if(!c?.client||!c?.user)throw new Error('Нет подключения к аккаунту тренера');
-      const result=await c.client.from('offline_clients').delete().eq('id',clientId).eq('trainer_id',c.user.id).select('id');
-      if(result.error)throw result.error;if(!(result.data||[]).length)throw new Error('Клиент не найден или уже удалён');
-      if(typeof window.closeModal==='function')window.closeModal();else if(typeof closeModal==='function')closeModal();
-      if(typeof window.renderOfflineClients==='function')await window.renderOfflineClients();
-      if(typeof window.toast==='function')window.toast('Офлайн-клиент удалён');else if(typeof toast==='function')toast('Офлайн-клиент удалён')
-    }catch(error){
-      if(typeof window.alert==='function')window.alert(error?.message||'Не удалось удалить клиента');
-      if(button){button.disabled=false;button.textContent='Удалить клиента'}
-    }
-  };
-  window.offlineDeleteClientV366=window.offlineDeleteClientV367;
-
-  function patchOfflineClientDetail(){
-    const f=window.offlineClientDetail;
-    if(typeof f!=='function'||!f.__offlineProgressV321||f.__offlineClientDeleteV367)return false;
-    const wrapped=async function(){const id=arguments[0],r=await f.apply(this,arguments);setTimeout(()=>injectOfflineClientDelete(id),0);setTimeout(syncOfflineClientDelete,80);return r};
-    for(const key of ['__offlineProgressV328','__offlineProgressV324','__offlineProgressV323','__offlineProgressV322','__offlineProgressV321'])if(f[key])wrapped[key]=f[key];
-    wrapped.__offlineClientDeleteV367=true;wrapped.__offlineClientDeleteBaseV367=f;window.offlineClientDetail=wrapped;try{offlineClientDetail=wrapped}catch(e){}
-    return true
-  }
-
   const root=document.getElementById('clients');
   if(root)new MutationObserver(()=>{removeOldOfflineAdd();setTimeout(apply,0)}).observe(root,{childList:true,subtree:true});
-  const sheet=document.getElementById('sheet');
-  if(sheet)new MutationObserver(()=>setTimeout(syncOfflineClientDelete,0)).observe(sheet,{childList:true,subtree:true});
-  function install(){patchTabSwitch();patchClientsPage();patchOfflineClientDetail();apply();setTimeout(syncOfflineClientDelete,0)}
-  [0,100,350,900,1800,3200,6000,10000].forEach(t=>setTimeout(install,t));
-  window.addEventListener?.('unvrsl:deferred-modules-ready',()=>{install();setTimeout(install,80)},{passive:true});
+  function install(){patchTabSwitch();patchClientsPage();apply()}
+  [0,100,350,900,1800,3200].forEach(t=>setTimeout(install,t));
 })();
