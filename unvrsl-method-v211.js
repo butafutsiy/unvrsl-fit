@@ -180,3 +180,67 @@
     try{beginProgramDay=root.beginProgramDay}catch(_){ }
   }
 })(typeof window!=='undefined'?window:null);
+
+// SLDR v213: explicit scheme selector so a 10–12 range cannot be misread as 10 → 8 → 6.
+((root)=>{
+  if(!root||root.__unvrslSldrSchemeV213)return;
+  root.__unvrslSldrSchemeV213=true;
+
+  const previousRefresh=root.programRefreshMethodUi;
+  const previousForm=root.programExerciseForm;
+  const previousSave=root.saveProgramExercise;
+
+  function currentScheme(){
+    const saved=document.getElementById('pmSldrScheme')?.value;
+    if(saved==='15-12-10'||saved==='12-10-8')return saved;
+    const r=Number(String(document.getElementById('pmReps')?.value||'').replace(',','.'))||12;
+    return r>=15?'15-12-10':'12-10-8'
+  }
+  function applyScheme(value){
+    const reps=document.getElementById('pmReps');
+    if(reps)reps.value=value==='15-12-10'?'15':'12';
+    const hint=document.getElementById('methodHint');
+    if(hint)hint.textContent=value==='15-12-10'
+      ?'☑️ SLDR — 3×(15 → 12 → 10). Между мини-подходами 15 сек, затем полный отдых.'
+      :'☑️ SLDR — 3×(12 → 10 → 8). Между мини-подходами 15 сек, затем полный отдых.'
+  }
+  root.programSetSldrScheme=function(value){applyScheme(value)};
+
+  function decorate(applyDefaults=false){
+    if(document.getElementById('pmMethod')?.value!=='SLDR')return;
+    const repsField=document.getElementById('pmRepsField');
+    if(repsField)repsField.classList.add('hidden');
+    const scheme=applyDefaults?'12-10-8':currentScheme();
+    const box=document.getElementById('pmSldrFields');
+    if(box)box.innerHTML=`<div class="px-method-subtitle">Схема SLDR</div><div class="field px-span-2"><label>Повторы в каждом полном подходе</label><select id="pmSldrScheme" onchange="programSetSldrScheme(this.value)"><option value="12-10-8" ${scheme==='12-10-8'?'selected':''}>12 → 10 → 8</option><option value="15-12-10" ${scheme==='15-12-10'?'selected':''}>15 → 12 → 10</option></select></div><div class="px-method-info px-span-2">3 полноценных рабочих подхода. В каждом — 3 мини-подхода на одном весе. Между мини-подходами 15 сек; после третьего — обычный полный отдых.</div>`;
+    applyScheme(scheme);
+    const inner=document.getElementById('pmInnerRest');
+    if(inner)inner.textContent='Внутри каждого SLDR-подхода: 15 сек между мини-подходами. После третьего — полный отдых.'
+  }
+
+  if(typeof previousRefresh==='function'){
+    root.programRefreshMethodUi=function(applyDefaults=false){
+      const result=previousRefresh.apply(this,arguments);
+      if(document.getElementById('pmMethod')?.value==='SLDR')decorate(!!applyDefaults);
+      return result
+    };
+    try{programRefreshMethodUi=root.programRefreshMethodUi}catch(_){ }
+  }
+
+  if(typeof previousForm==='function'){
+    root.programExerciseForm=function(){
+      const result=previousForm.apply(this,arguments);
+      setTimeout(()=>decorate(false),0);
+      return result
+    };
+    try{programExerciseForm=root.programExerciseForm}catch(_){ }
+  }
+
+  if(typeof previousSave==='function'){
+    root.saveProgramExercise=function(){
+      if(document.getElementById('pmMethod')?.value==='SLDR')applyScheme(currentScheme());
+      return previousSave.apply(this,arguments)
+    };
+    try{saveProgramExercise=root.saveProgramExercise}catch(_){ }
+  }
+})(typeof window!=='undefined'?window:null);
