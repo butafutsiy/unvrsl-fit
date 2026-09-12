@@ -1,8 +1,8 @@
 'use strict';
 (()=>{
   const W=window,D=document;
-  if(W.__unvrslHipThrustDetailFixV358)return;
-  W.__unvrslHipThrustDetailFixV358=true;
+  if(W.__unvrslHipThrustDetailFixV360)return;
+  W.__unvrslHipThrustDetailFixV360=true;
 
   const norm=v=>String(v??'').toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/[‐‑‒–—-]+/g,' ').replace(/\s+/g,' ').trim();
   const DATA={
@@ -23,8 +23,8 @@
   }
 
   function media(kind){
-    try{return new URL(`assets/hip-thrust-${kind}.gif?v=359`,D.baseURI).href}
-    catch(_){return `assets/hip-thrust-${kind}.gif?v=359`}
+    try{return new URL(`assets/hip-thrust-${kind}.gif?v=360`,D.baseURI).href}
+    catch(_){return `assets/hip-thrust-${kind}.gif?v=360`}
   }
 
   function normalizeHip(ex){
@@ -34,27 +34,34 @@
     const oldName=String(ex.planRaw||ex.raw||ex.n||'').trim();
     return {...ex,planRaw:oldName||d.name,n:d.name,name:d.name,strictName:d.name,bp:'upper legs',tg:'glutes',eq:d.eq,gif,gif_url:gif,image:'',mediaUnavailable:false,instructions:{...(typeof ex.instructions==='object'?ex.instructions:{}),ru:d.tech},unvrslHipKind:kind};
   }
-  W.UNVRSL_NORMALIZE_HIP_V358=normalizeHip;
+  W.UNVRSL_NORMALIZE_HIP_V360=normalizeHip;
+
+  function fixRenderedDetail(kind){
+    if(!kind||!DATA[kind])return;
+    const sheet=D.getElementById('sheet');if(!sheet)return;
+    const title=sheet.querySelector('.detail-title');if(title)title.textContent=DATA[kind].name;
+    const img=sheet.querySelector('.exercise-media img');if(img&&img.src!==media(kind))img.src=media(kind);
+  }
 
   function patchFind(){
     let base;try{base=W.findExercise||findExercise}catch(_){base=W.findExercise}
-    if(typeof base!=='function'||base.__hipV358)return;
+    if(typeof base!=='function'||base.__hipV360)return;
     const wrapped=function(){return normalizeHip(base.apply(this,arguments))};
-    wrapped.__hipV358=true;W.findExercise=wrapped;try{findExercise=wrapped}catch(_){ }
+    wrapped.__hipV360=true;W.findExercise=wrapped;try{findExercise=wrapped}catch(_){ }
   }
 
   function patchCatalog(){
     let base;try{base=W.catalogRecords||catalogRecords}catch(_){base=W.catalogRecords}
-    if(typeof base!=='function'||base.__hipV358)return;
+    if(typeof base!=='function'||base.__hipV360)return;
     const wrapped=function(){const rows=base.apply(this,arguments);return Array.isArray(rows)?rows.map(normalizeHip):rows};
-    wrapped.__hipV358=true;W.catalogRecords=wrapped;try{catalogRecords=wrapped}catch(_){ }
+    wrapped.__hipV360=true;W.catalogRecords=wrapped;try{catalogRecords=wrapped}catch(_){ }
   }
 
   function patchDetail(){
     let base;try{base=W.renderExerciseDetail||renderExerciseDetail}catch(_){base=W.renderExerciseDetail}
-    if(typeof base!=='function'||base.__hipV358)return;
-    const wrapped=function(ex){return base.call(this,normalizeHip(ex))};
-    wrapped.__hipV358=true;W.renderExerciseDetail=wrapped;try{renderExerciseDetail=wrapped}catch(_){ }
+    if(typeof base!=='function'||base.__hipV360)return;
+    const wrapped=function(ex){const normalized=normalizeHip(ex),kind=kindOf(normalized),r=base.call(this,normalized);fixRenderedDetail(kind);setTimeout(()=>fixRenderedDetail(kind),0);return r};
+    wrapped.__hipV360=true;W.renderExerciseDetail=wrapped;try{renderExerciseDetail=wrapped}catch(_){ }
   }
 
   function patchRows(){
@@ -62,9 +69,8 @@
       const title=row.querySelector('b');if(!title)return;
       const meta=row.querySelector('.catalog-meta')?.textContent||'';
       const kind=kindOf({n:title.textContent,eq:meta});if(!kind)return;
-      const d=DATA[kind];title.textContent=d.name;
-      let img=row.querySelector('img.ex-thumb');
-      if(img)img.src=media(kind);
+      title.textContent=DATA[kind].name;
+      const img=row.querySelector('img.ex-thumb');if(img)img.src=media(kind);
     });
   }
 
