@@ -5,12 +5,12 @@
 `;document.head.appendChild(s)})();
 
 (()=>{
-  if(window.__unvrslClientsActionLayoutV366Loader||document.querySelector('script[data-unvrsl-clients-action-layout-v366]'))return;
-  window.__unvrslClientsActionLayoutV366Loader=true;
+  if(window.__unvrslClientsActionLayoutV367Loader||document.querySelector('script[data-unvrsl-clients-action-layout-v367]'))return;
+  window.__unvrslClientsActionLayoutV367Loader=true;
   const s=document.createElement('script');
-  s.src='clients-action-layout.js?v=366';
+  s.src='clients-action-layout.js?v=367';
   s.async=false;
-  s.dataset.unvrslClientsActionLayoutV366='1';
+  s.dataset.unvrslClientsActionLayoutV367='1';
   document.head.appendChild(s);
 })();
 
