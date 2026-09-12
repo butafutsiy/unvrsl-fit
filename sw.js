@@ -1,5 +1,108 @@
-const SW_RELEASE='v355-glute-bridge-direct',STATIC_CACHE='unvrsl-static-v355',CORE_ASSETS=['./app.js?v=316','./startup-orchestrator-v260.js?v=321','./ui-stability-v313.js?v=316','./program-weight-policy-v257.js?v=331','./exercise-picker-v331.js?v=339','./exercise-media-verified-v331.js?v=331','./exercise-plan-canonical-v329.js?v=331','./og-db.js?v=331','./og-detail.js?v=331','./equipment-filter.js?v=346','./exercise-library-quality.js?v=352','./exercise-library-strict.js?v=352','./exercise-library-additions-v347.js?v=355','./frequent-patch.js?v=335','./client-free-workout-v334.js?v=335','./strength-progress-v335.js?v=339','./performance-control-v315.js?v=332','./premium-ui.js?v=320','./stable-ui.js?v=316','./mockup-ui.js?v=316','./density-ui.js?v=316','./mobile-final-fix.js?v=316','./home-stats-v254.js?v=316','./trainer-client-clean-v113.js?v=326','./offline-strength-search-v339.js?v=352','./exercise-detail-rules-v156.js?v=327','./glute-bridge-barbell-data-1.js?v=353','./glute-bridge-barbell-data-2.js?v=353','./glute-bridge-barbell-data-3.js?v=353','./glute-bridge-barbell-data-4.js?v=353','./glute-bridge-barbell-v353.js?v=353','./glute-bridge-meta-v354.js?v=354','./glute-bridge-detail-v354.js?v=354','./glute-bridge-catalog-v354.js?v=354','./bodyweight-history-v190.js?v=326','./requested-cleanup-v2.js?v=320','./client-nav-hotfix.js?v=320','./trainer-shell-v252.js?v=316','./progress.html','./cloud-config.js?v=321','./public-progress-v321.js?v=334','./offline-progress-v321.js?v=334'];
-self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil((async()=>{const c=await caches.open(STATIC_CACHE);await Promise.allSettled(CORE_ASSETS.map(async u=>{const r=new Request(u,{cache:'reload'}),x=await fetch(r);if(x.ok)await c.put(r,x)}))})())});
-self.addEventListener('activate',e=>e.waitUntil((async()=>{const k=await caches.keys();await Promise.all(k.filter(x=>x!==STATIC_CACHE).map(x=>caches.delete(x)));try{await self.registration.navigationPreload?.enable()}catch(_){}await self.clients.claim();(await self.clients.matchAll({type:'window',includeUncontrolled:true})).forEach(c=>c.postMessage({type:'UNVRSL_RELEASE_READY',release:SW_RELEASE}))})()));
-self.addEventListener('message',e=>{if(e.data==='SKIP_WAITING'||e.data?.type==='SKIP_WAITING')self.skipWaiting()});
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==self.location.origin)return;e.respondWith((async()=>{const c=await caches.open(STATIC_CACHE);if(e.request.mode==='navigate')try{const x=await fetch(e.request,{cache:'no-store'});if(x.ok)e.waitUntil(c.put(e.request,x.clone()));return x}catch(err){const y=await c.match(e.request)||await c.match('./index.html');if(y)return y;throw err}const v=u.searchParams.has('v')&&['script','style','image','font','manifest'].includes(e.request.destination);if(v){const y=await c.match(e.request);if(y)return y}try{const x=await fetch(e.request,{cache:'no-store'});if(x.ok)e.waitUntil(c.put(e.request,x.clone()));return x}catch(err){const y=await c.match(e.request);if(y)return y;throw err}})())});
+const SW_RELEASE='v353-glute-bridge-barbell';
+const STATIC_CACHE='unvrsl-static-v353';
+const CORE_ASSETS=[
+  './app.js?v=316',
+  './startup-orchestrator-v260.js?v=321',
+  './ui-stability-v313.js?v=316',
+  './program-weight-policy-v257.js?v=331',
+  './exercise-picker-v331.js?v=339',
+  './exercise-media-verified-v331.js?v=331',
+  './exercise-plan-canonical-v329.js?v=331',
+  './og-db.js?v=331',
+  './og-detail.js?v=331',
+  './equipment-filter.js?v=346',
+  './exercise-library-quality.js?v=352',
+  './exercise-library-strict.js?v=352',
+  './exercise-library-additions-v347.js?v=352',
+  './frequent-patch.js?v=335',
+  './client-free-workout-v334.js?v=335',
+  './strength-progress-v335.js?v=339',
+  './performance-control-v315.js?v=332',
+  './premium-ui.js?v=320',
+  './stable-ui.js?v=316',
+  './mockup-ui.js?v=316',
+  './density-ui.js?v=316',
+  './mobile-final-fix.js?v=316',
+  './home-stats-v254.js?v=316',
+  './trainer-client-clean-v113.js?v=326',
+  './offline-strength-search-v339.js?v=352',
+  './exercise-detail-rules-v156.js?v=327',
+  './glute-bridge-barbell-data-1.js?v=353',
+  './glute-bridge-barbell-data-2.js?v=353',
+  './glute-bridge-barbell-data-3.js?v=353',
+  './glute-bridge-barbell-data-4.js?v=353',
+  './glute-bridge-barbell-v353.js?v=353',
+  './bodyweight-history-v190.js?v=326',
+  './requested-cleanup-v2.js?v=320',
+  './client-nav-hotfix.js?v=320',
+  './trainer-shell-v252.js?v=316',
+  './progress.html',
+  './cloud-config.js?v=321',
+  './public-progress-v321.js?v=334',
+  './offline-progress-v321.js?v=334'
+];
+
+self.addEventListener('install',event=>{
+  self.skipWaiting();
+  event.waitUntil((async()=>{
+    const cache=await caches.open(STATIC_CACHE);
+    await Promise.allSettled(CORE_ASSETS.map(async url=>{
+      const request=new Request(url,{cache:'reload'}),response=await fetch(request);
+      if(response.ok)await cache.put(request,response)
+    }))
+  })())
+});
+
+self.addEventListener('activate',event=>{
+  event.waitUntil((async()=>{
+    const keys=await caches.keys();
+    await Promise.all(keys.filter(key=>key!==STATIC_CACHE).map(key=>caches.delete(key)));
+    try{await self.registration.navigationPreload?.enable()}catch(_){ }
+    await self.clients.claim();
+    const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    clients.forEach(client=>client.postMessage({type:'UNVRSL_RELEASE_READY',release:SW_RELEASE}))
+  })())
+});
+
+self.addEventListener('message',event=>{
+  if(event.data==='SKIP_WAITING'||event.data?.type==='SKIP_WAITING')self.skipWaiting()
+});
+
+self.addEventListener('fetch',event=>{
+  if(event.request.method!=='GET')return;
+  const url=new URL(event.request.url);
+  if(url.origin!==self.location.origin)return;
+  if(event.request.mode==='navigate'){
+    event.respondWith((async()=>{
+      const cache=await caches.open(STATIC_CACHE);
+      try{
+        const response=await fetch(event.request,{cache:'no-store'});
+        if(response.ok)event.waitUntil(cache.put(event.request,response.clone()));
+        return response
+      }catch(error){
+        const cached=await cache.match(event.request)||await cache.match('./index.html');
+        if(cached)return cached;throw error
+      }
+    })());return
+  }
+  const versioned=url.searchParams.has('v');
+  if(versioned&&['script','style','image','font','manifest'].includes(event.request.destination)){
+    event.respondWith((async()=>{
+      const cache=await caches.open(STATIC_CACHE),cached=await cache.match(event.request);
+      if(cached)return cached;
+      const response=await fetch(event.request,{cache:'no-store'});
+      if(response.ok)event.waitUntil(cache.put(event.request,response.clone()));
+      return response
+    })());return
+  }
+  event.respondWith((async()=>{
+    const cache=await caches.open(STATIC_CACHE);
+    try{
+      const response=await fetch(event.request,{cache:'no-store'});
+      if(response.ok)event.waitUntil(cache.put(event.request,response.clone()));
+      return response
+    }catch(error){
+      const cached=await cache.match(event.request);if(cached)return cached;throw error
+    }
+  })())
+});

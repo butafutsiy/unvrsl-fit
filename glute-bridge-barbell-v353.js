@@ -16,8 +16,3 @@
   new MutationObserver(refresh).observe(D.documentElement,{childList:true,subtree:true});
   [0,100,300,900,2200].forEach(t=>setTimeout(refresh,t));
 })();
-(()=>{[
- ['glute-bridge-meta-v354.js?v=354','gbMeta354'],
- ['glute-bridge-detail-v354.js?v=354','gbDetail354'],
- ['glute-bridge-catalog-v354.js?v=354','gbCatalog354']
-].forEach(([src,key])=>{if(document.querySelector(`script[data-${key}]`))return;const s=document.createElement('script');s.src=src;s.async=false;s.setAttribute(`data-${key}`,'1');document.body.appendChild(s)})})();
