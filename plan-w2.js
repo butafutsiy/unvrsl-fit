@@ -23,23 +23,3 @@ window.UNVRSL_ROUTINES=(window.UNVRSL_ROUTINES||[]).concat([{"w":2,"c":"A1","t":
   s.dataset.unvrslPwaRecoveryV361='1';
   document.body.appendChild(s);
 })();
-
-// Сначала принудительно берём свежие цели, затем создаём отдельную программу v2.
-(()=>{
-  const loadPersonal=()=>{
-    if(document.querySelector('script[data-unvrsl-personal-8week-v367]'))return;
-    const p=document.createElement('script');
-    p.src='personal-8week-v367.js?v=367';
-    p.async=false;
-    p.dataset.unvrslPersonal8weekV367='1';
-    document.body.appendChild(p);
-  };
-  if(window.__unvrslActiveRepRangesV366){loadPersonal();return}
-  if(document.querySelector('script[data-unvrsl-active-rep-ranges-v367]'))return;
-  const s=document.createElement('script');
-  s.src='active-rep-ranges-v282.js?v=367';
-  s.async=false;
-  s.dataset.unvrslActiveRepRangesV367='1';
-  s.onload=loadPersonal;
-  document.body.appendChild(s);
-})();
