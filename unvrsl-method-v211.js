@@ -68,54 +68,105 @@
   return{aggregateRecommendation,expandPlanEntries,mean,round};
 });
 
-// Custom-program SLDR builder: 3 full working rounds, each with 3 mini-sets.
+// Custom-program SLDR engine v214.
+// One SLDR exercise = 3 full working rounds; every round contains 3 mini-sets.
 ((root)=>{
-  if(!root||root.__unvrslSldrBuilderV212)return;
-  root.__unvrslSldrBuilderV212=true;
+  if(!root||root.__unvrslSldrBuilderV214)return;
+  root.__unvrslSldrBuilderV214=true;
 
-  const baseForm=root.programExerciseForm;
   const baseRefresh=root.programRefreshMethodUi;
+  const baseForm=root.programExerciseForm;
   const baseSave=root.saveProgramExercise;
   const basePrescription=root.prescriptionText;
   const baseBegin=root.beginProgramDay;
+  let editingPattern=null;
 
   const num=(id,fallback=0)=>{
-    const el=document.getElementById(id);
-    if(!el)return fallback;
-    const n=Number(String(el.value??'').replace(',','.'));
+    const el=document.getElementById(id),n=Number(String(el?.value??'').replace(',','.'));
     return Number.isFinite(n)?n:fallback
   };
-  const sldrPattern=start=>{
-    const first=Math.max(1,Math.round(Number(start)||12));
-    return first>=15
-      ?[first,Math.max(1,first-3),Math.max(1,first-5)]
-      :[first,Math.max(1,first-2),Math.max(1,first-4)]
+  const same=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((v,i)=>Number(v)===Number(b[i]));
+  const normalizePattern=p=>Array.isArray(p)&&p.length>=3?p.slice(0,3).map(v=>Math.max(1,Math.round(Number(v)||1))):[12,10,8];
+  const presetName=p=>same(p,[10,8,6])?'10-8-6':same(p,[12,10,8])?'12-10-8':same(p,[15,12,10])?'15-12-10':'manual';
+  const patternFromExercise=e=>{
+    if(Array.isArray(e?.repPattern)&&e.repPattern.length>=3)return normalizePattern(e.repPattern);
+    const first=(e?.sets||[]).filter(x=>(x?.round||1)===1).slice(0,3).map(x=>Number(x?.r)||0);
+    return first.length===3&&first.every(Boolean)?normalizePattern(first):[12,10,8]
   };
-  const decorateSldr=applyDefaults=>{
-    if(document.getElementById('pmMethod')?.value!=='SLDR')return;
-    const reps=document.getElementById('pmReps');
-    if(applyDefaults&&reps)reps.value='12';
-    const box=document.getElementById('pmSldrFields');
-    if(box)box.innerHTML=`<div class="px-method-subtitle">3 полных рабочих подхода</div><div class="field"><label>Рабочих подходов</label><input value="3" disabled></div><div class="field"><label>Мини-подходов в каждом</label><input value="3" disabled></div><div class="px-method-info px-span-2">Повторы задаются первым числом выше. 12 = 12 → 10 → 8. 15 = 15 → 12 → 10. Вес внутри каждого SLDR-подхода не меняется.</div>`;
-    const hint=document.getElementById('methodHint');
-    if(hint)hint.textContent='SLDR — 3 полноценных рабочих подхода. Каждый: первый мини-подход → 15 сек → второй → 15 сек → третий; затем обычный отдых и следующий полный подход.';
+  const currentScheme=()=>document.getElementById('pmSldrScheme')?.value||presetName(editingPattern||[12,10,8]);
+  const currentPattern=()=>{
+    const scheme=currentScheme();
+    if(scheme==='10-8-6')return[10,8,6];
+    if(scheme==='15-12-10')return[15,12,10];
+    if(scheme==='manual')return normalizePattern([num('pmSldrManual1',12),num('pmSldrManual2',10),num('pmSldrManual3',8)]);
+    return[12,10,8]
+  };
+  const syncHiddenReps=()=>{
+    const reps=document.getElementById('pmReps'),p=currentPattern();
+    if(reps)reps.value=String(p[0]);
+    return p
+  };
+  const updateHint=()=>{
+    const p=currentPattern(),hint=document.getElementById('methodHint');
+    if(hint)hint.textContent=`SLDR — 3×(${p[0]} → ${p[1]} → ${p[2]}). Между мини-подходами 15 сек; после каждого полного подхода — обычный отдых.`;
     const inner=document.getElementById('pmInnerRest');
-    if(inner)inner.textContent='Внутри каждого SLDR-подхода: 15 сек между мини-подходами. После третьего — полный отдых.'
+    if(inner)inner.textContent='Внутри каждого SLDR-подхода: 15 сек между мини-подходами. После третьего — полный отдых.';
+    syncHiddenReps()
   };
+
+  root.programSetSldrScheme=function(value){
+    const manual=document.getElementById('pmSldrManualFields');
+    if(manual)manual.classList.toggle('hidden',value!=='manual');
+    if(value!=='manual'){
+      const p=value==='10-8-6'?[10,8,6]:value==='15-12-10'?[15,12,10]:[12,10,8];
+      const a=document.getElementById('pmSldrManual1'),b=document.getElementById('pmSldrManual2'),c=document.getElementById('pmSldrManual3');
+      if(a)a.value=p[0];if(b)b.value=p[1];if(c)c.value=p[2]
+    }
+    updateHint()
+  };
+  root.programSldrManualChanged=function(){updateHint()};
+
+  function decorateSldr(applyDefaults=false){
+    if(document.getElementById('pmMethod')?.value!=='SLDR')return;
+    document.getElementById('pmRepsField')?.classList.add('hidden');
+    const pattern=applyDefaults?[12,10,8]:normalizePattern(editingPattern||[12,10,8]);
+    const scheme=applyDefaults?'12-10-8':presetName(pattern),box=document.getElementById('pmSldrFields');
+    if(box)box.innerHTML=`
+      <div class="px-method-subtitle">Схема SLDR</div>
+      <div class="field px-span-2"><label>Повторы в каждом полном подходе</label><select id="pmSldrScheme" onchange="programSetSldrScheme(this.value)">
+        <option value="10-8-6" ${scheme==='10-8-6'?'selected':''}>10 → 8 → 6</option>
+        <option value="12-10-8" ${scheme==='12-10-8'?'selected':''}>12 → 10 → 8</option>
+        <option value="15-12-10" ${scheme==='15-12-10'?'selected':''}>15 → 12 → 10</option>
+        <option value="manual" ${scheme==='manual'?'selected':''}>Вручную</option>
+      </select></div>
+      <div id="pmSldrManualFields" class="px-span-2 ${scheme==='manual'?'':'hidden'}" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+        <div class="field"><label>1-й</label><input id="pmSldrManual1" type="number" min="1" max="50" value="${pattern[0]}" oninput="programSldrManualChanged()"></div>
+        <div class="field"><label>2-й</label><input id="pmSldrManual2" type="number" min="1" max="50" value="${pattern[1]}" oninput="programSldrManualChanged()"></div>
+        <div class="field"><label>3-й</label><input id="pmSldrManual3" type="number" min="1" max="50" value="${pattern[2]}" oninput="programSldrManualChanged()"></div>
+      </div>
+      <div class="px-method-info px-span-2">3 полноценных рабочих подхода. Каждый содержит 3 мини-подхода на одном весе. 15 сек между мини-подходами; после третьего — обычный полный отдых.</div>`;
+    updateHint()
+  }
 
   if(typeof baseRefresh==='function'){
     root.programRefreshMethodUi=function(applyDefaults=false){
       const result=baseRefresh.apply(this,arguments);
-      decorateSldr(!!applyDefaults);
+      if(document.getElementById('pmMethod')?.value==='SLDR'){
+        if(applyDefaults)editingPattern=[12,10,8];
+        decorateSldr(!!applyDefaults)
+      }
       return result
     };
     try{programRefreshMethodUi=root.programRefreshMethodUi}catch(_){ }
   }
 
   if(typeof baseForm==='function'){
-    root.programExerciseForm=function(){
+    root.programExerciseForm=function(x){
+      const d=typeof programById==='function'?programById(x?.pid)?.weeks?.[x?.wi]?.days?.[x?.di]:null;
+      const e=x?.existingIndex!==null&&x?.existingIndex!==undefined?d?.ex?.[x.existingIndex]:null;
+      editingPattern=e?.method==='SLDR'?patternFromExercise(e):null;
       const result=baseForm.apply(this,arguments);
-      setTimeout(()=>decorateSldr(false),0);
+      setTimeout(()=>{if(document.getElementById('pmMethod')?.value==='SLDR')decorateSldr(false)},0);
       return result
     };
     try{programExerciseForm=root.programExerciseForm}catch(_){ }
@@ -131,20 +182,19 @@
       const n=decodeURIComponent(nameToken||''),kind=document.getElementById('pmKind')?.value||(typeof root.programInferExerciseKind==='function'?root.programInferExerciseKind(n):'compound');
       const restMode=document.getElementById('pmRestMode')?.value||'auto';
       const fullRest=restMode==='auto'&&typeof root.programAutoRest==='function'?root.programAutoRest(kind,'SLDR'):Math.max(0,num('pmRest',90));
-      const firstReps=Math.max(1,num('pmReps',12)),weight=Math.max(0,num('pmWeight',0)),rpe=num('pmRpe',8),tempo=document.getElementById('pmTempo')?.value.trim()||(kind==='compound'?'2-1-1':'3-1-2');
-      const reps=sldrPattern(firstReps);
-      const sets=Array.from({length:3},(_,round)=>reps.map((r,mini)=>({
-        label:`Круг ${round+1}/3 · ${mini+1}/3`,
-        role:'sldr-mini',round:round+1,mini:mini+1,w:weight,r,
-        rest:mini<2?15:fullRest,tempo
+      const weight=Math.max(0,num('pmWeight',0)),rpe=num('pmRpe',8),tempo=document.getElementById('pmTempo')?.value.trim()||(kind==='compound'?'2-1-1':'3-1-2');
+      const repPattern=currentPattern();
+      const sets=Array.from({length:3},(_,round)=>repPattern.map((r,mini)=>({
+        label:`Круг ${round+1}/3 · ${mini+1}/3`,role:'sldr-mini',round:round+1,mini:mini+1,
+        w:weight,r,rest:mini<2?15:fullRest,tempo
       }))).flat();
       const obj={...(old||{}),id:old?.id||(typeof uid==='function'?uid('pex'):`pex-${Date.now()}`),n,
         sourceId:decodeURIComponent(sourceToken||'')||null,bp:decodeURIComponent(bpToken||''),tg:decodeURIComponent(tgToken||''),eq:decodeURIComponent(eqToken||''),
         kind,method:'SLDR',rpe,tempo,tempoLight:null,restMode,rest:fullRest,innerRest:15,
         heavyReps:null,lightReps:null,lightWeight:null,middleSets:null,middleReps:null,middleWeight:null,
-        sldrRounds:3,miniSets:3,repPattern:reps,repDrop:null,note:document.getElementById('pmNote')?.value.trim()||'',sets};
+        sldrRounds:3,miniSets:3,repPattern,repDrop:null,note:document.getElementById('pmNote')?.value.trim()||'',sets};
       if(old)d.ex[existingIndex]=obj;else d.ex.push(obj);
-      p.updated=Date.now();
+      p.updated=Date.now();editingPattern=repPattern;
       try{save()}catch(_){ }
       if(typeof openProgramEditor==='function')openProgramEditor(pid,wi,di)
     };
@@ -154,9 +204,8 @@
   if(typeof basePrescription==='function'){
     root.prescriptionText=function(e){
       if(e?.method!=='SLDR')return basePrescription.apply(this,arguments);
-      const sets=Array.isArray(e.sets)?e.sets:[],firstRound=sets.filter(x=>(x?.round||1)===1).slice(0,3),source=firstRound.length?firstRound:sets.slice(0,3);
-      const reps=source.map(x=>x?.r||'—').join('/'),weight=source[0]?.w??sets[0]?.w??0,rest=e?.rest??source[2]?.rest??90;
-      return `3×(${reps}) · ${weight} кг · 15с внутри · отдых ${rest}с`
+      const p=patternFromExercise(e),weight=e?.sets?.[0]?.w??0,rest=e?.rest??90;
+      return `3×(${p[0]}/${p[1]}/${p[2]}) · ${weight} кг · 15с внутри · отдых ${rest}с`
     };
     try{prescriptionText=root.prescriptionText}catch(_){ }
   }
@@ -178,69 +227,5 @@
       return result
     };
     try{beginProgramDay=root.beginProgramDay}catch(_){ }
-  }
-})(typeof window!=='undefined'?window:null);
-
-// SLDR v213: explicit scheme selector so a 10–12 range cannot be misread as 10 → 8 → 6.
-((root)=>{
-  if(!root||root.__unvrslSldrSchemeV213)return;
-  root.__unvrslSldrSchemeV213=true;
-
-  const previousRefresh=root.programRefreshMethodUi;
-  const previousForm=root.programExerciseForm;
-  const previousSave=root.saveProgramExercise;
-
-  function currentScheme(){
-    const saved=document.getElementById('pmSldrScheme')?.value;
-    if(saved==='15-12-10'||saved==='12-10-8')return saved;
-    const r=Number(String(document.getElementById('pmReps')?.value||'').replace(',','.'))||12;
-    return r>=15?'15-12-10':'12-10-8'
-  }
-  function applyScheme(value){
-    const reps=document.getElementById('pmReps');
-    if(reps)reps.value=value==='15-12-10'?'15':'12';
-    const hint=document.getElementById('methodHint');
-    if(hint)hint.textContent=value==='15-12-10'
-      ?'☑️ SLDR — 3×(15 → 12 → 10). Между мини-подходами 15 сек, затем полный отдых.'
-      :'☑️ SLDR — 3×(12 → 10 → 8). Между мини-подходами 15 сек, затем полный отдых.'
-  }
-  root.programSetSldrScheme=function(value){applyScheme(value)};
-
-  function decorate(applyDefaults=false){
-    if(document.getElementById('pmMethod')?.value!=='SLDR')return;
-    const repsField=document.getElementById('pmRepsField');
-    if(repsField)repsField.classList.add('hidden');
-    const scheme=applyDefaults?'12-10-8':currentScheme();
-    const box=document.getElementById('pmSldrFields');
-    if(box)box.innerHTML=`<div class="px-method-subtitle">Схема SLDR</div><div class="field px-span-2"><label>Повторы в каждом полном подходе</label><select id="pmSldrScheme" onchange="programSetSldrScheme(this.value)"><option value="12-10-8" ${scheme==='12-10-8'?'selected':''}>12 → 10 → 8</option><option value="15-12-10" ${scheme==='15-12-10'?'selected':''}>15 → 12 → 10</option></select></div><div class="px-method-info px-span-2">3 полноценных рабочих подхода. В каждом — 3 мини-подхода на одном весе. Между мини-подходами 15 сек; после третьего — обычный полный отдых.</div>`;
-    applyScheme(scheme);
-    const inner=document.getElementById('pmInnerRest');
-    if(inner)inner.textContent='Внутри каждого SLDR-подхода: 15 сек между мини-подходами. После третьего — полный отдых.'
-  }
-
-  if(typeof previousRefresh==='function'){
-    root.programRefreshMethodUi=function(applyDefaults=false){
-      const result=previousRefresh.apply(this,arguments);
-      if(document.getElementById('pmMethod')?.value==='SLDR')decorate(!!applyDefaults);
-      return result
-    };
-    try{programRefreshMethodUi=root.programRefreshMethodUi}catch(_){ }
-  }
-
-  if(typeof previousForm==='function'){
-    root.programExerciseForm=function(){
-      const result=previousForm.apply(this,arguments);
-      setTimeout(()=>decorate(false),0);
-      return result
-    };
-    try{programExerciseForm=root.programExerciseForm}catch(_){ }
-  }
-
-  if(typeof previousSave==='function'){
-    root.saveProgramExercise=function(){
-      if(document.getElementById('pmMethod')?.value==='SLDR')applyScheme(currentScheme());
-      return previousSave.apply(this,arguments)
-    };
-    try{saveProgramExercise=root.saveProgramExercise}catch(_){ }
   }
 })(typeof window!=='undefined'?window:null);
