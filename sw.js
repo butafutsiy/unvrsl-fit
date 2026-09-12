@@ -1,5 +1,5 @@
-const SW_RELEASE='v356-glute-bridge-safe';
-const STATIC_CACHE='unvrsl-static-v356';
+const SW_RELEASE='v357-local-media-fix';
+const STATIC_CACHE='unvrsl-static-v357';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
@@ -17,6 +17,7 @@ const CORE_ASSETS=[
   './assets/hip-thrust-machine.gif?v=356',
   './assets/hip-thrust-smith.gif?v=356',
   './assets/hip-thrust-barbell.gif?v=356',
+  './local-media-fix-v357.js?v=357',
   './frequent-patch.js?v=335',
   './client-free-workout-v334.js?v=335',
   './strength-progress-v335.js?v=339',
