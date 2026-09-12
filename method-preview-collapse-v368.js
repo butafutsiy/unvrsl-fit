@@ -56,7 +56,6 @@
         return methodOf(text)===g.type&&baseOf(text)===g.base
       });
 
-      // Fallback for preview owners that trim the detailed method suffix from the title.
       if(!matches.length){
         const rx=new RegExp(`^${escapeRx(g.base)}(?:\\s|$)`,'i');
         matches=items.filter(item=>{
@@ -109,4 +108,13 @@
   W.addEventListener?.('unvrsl:app-ready',install,{passive:true});
   W.addEventListener?.('unvrsl:modules-ready',install,{passive:true});
   D.addEventListener?.('visibilitychange',()=>{if(!D.hidden)install()},{passive:true});
+})();
+
+(()=>{
+  if(document.querySelector('script[data-unvrsl-active-method-collapse-v369]'))return;
+  const s=document.createElement('script');
+  s.src='active-method-collapse-v369.js?v=369';
+  s.async=false;
+  s.dataset.unvrslActiveMethodCollapseV369='1';
+  (document.head||document.documentElement).appendChild(s);
 })();
