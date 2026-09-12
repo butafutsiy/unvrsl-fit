@@ -1,5 +1,5 @@
-const SW_RELEASE='v366-builtin-plan-sync';
-const STATIC_CACHE='unvrsl-static-v366';
+const SW_RELEASE='v367-even-rep-ranges';
+const STATIC_CACHE='unvrsl-static-v367';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
