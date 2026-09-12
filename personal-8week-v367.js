@@ -1,6 +1,7 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=369,KEY='semen-8week-v2',NAME='Мой план · 8 недель v2';
+  const W=window,D=document,REV=369,EDIT_REV=370,KEY='semen-8week-v2',NAME='Мой план · 8 недель v2';
+  const BUILTIN='__builtin_cycle__',BUILTIN_COPY_KEY='editable-builtin-cycle-v370';
   if(W.__unvrslPersonal8WeekV369)return;
   W.__unvrslPersonal8WeekV369=true;
   W.__unvrslPersonal8WeekV367=true;
@@ -12,6 +13,9 @@
   const saveState=()=>{try{if(typeof save==='function')save();else W.save?.()}catch(_){ }};
   const makeId=p=>{try{if(typeof uid==='function')return uid(p)}catch(_){ }return `${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`};
   const personal=()=>A(state()?.programs).find(p=>p?.systemKey===KEY||p?.name===NAME)||null;
+  const localByAnyId=id=>A(state()?.programs).find(p=>String(p?.id||'')===String(id)||String(p?.cloudPlanId||'')===String(id))||null;
+  const trainerMode=()=>{try{return typeof W.trainerIsTrainer==='function'?!!W.trainerIsTrainer():true}catch(_){return true}};
+  const editable=p=>!p?.cloudPlanId||!p?.trainerId||!W.cloud?.user||String(p.trainerId)===String(W.cloud.user.id)||trainerMode();
 
   function rpe(text,fallback){
     const m=String(text||'').match(/RPE\s*(\d+(?:[.,]\d+)?)\s*(?:[–\-→]\s*(\d+(?:[.,]\d+)?))?/i);
@@ -60,40 +64,118 @@
 
   function weekFor(p){
     const s=state(),saved=Number(s?.primaryProgramWeeks?.[p.id]),fallback=Number(s?.week)||1;
-    return Math.max(1,Math.min(p.weeks?.length||8,Number.isFinite(saved)&&saved>0?saved:fallback))
+    return Math.max(1,Math.min(p.weeks?.length||1,Number.isFinite(saved)&&saved>0?saved:fallback))
   }
 
-  function edit(){
-    const s=state();if(!s)return;
-    let p=personal();
-    if(!p){install();p=personal()}
-    if(!p){W.toast?.('План пока не готов к редактированию');return}
-    if(!s.primaryProgramWeeks||typeof s.primaryProgramWeeks!=='object')s.primaryProgramWeeks={};
+  function openLocalEditor(p){
+    if(!p)return false;
+    if(!editable(p)){W.toast?.('Эту программу может редактировать только тренер');return false}
     const w=weekFor(p);
-    s.primaryProgramId=p.id;
-    s.startProgramId=p.id;
-    s.primaryProgramWeeks[p.id]=w;
-    saveState();
-    try{if(typeof openProgramEditor==='function'){openProgramEditor(p.id,w-1,0);return}}catch(_){ }
-    W.toast?.('Редактор программы не загрузился')
+    try{if(typeof openProgramEditor==='function'){openProgramEditor(p.id,w-1,0);return true}}catch(_){ }
+    try{if(typeof W.openProgramEditor==='function'){W.openProgramEditor(p.id,w-1,0);return true}}catch(_){ }
+    W.toast?.('Редактор программы не загрузился');return false
   }
-  W.editPersonal8WeekV369=edit;
-  W.editPersonal8WeekV367=edit;
 
-  function decorate(){
+  function buildEditableBuiltin(){
+    const s=state();if(!s)return null;
+    if(!Array.isArray(s.programs))s.programs=[];
+    let p=s.programs.find(x=>x?.systemKey===BUILTIN_COPY_KEY);
+    if(p)return p;
+    if(!A(W.UNVRSL_ROUTINES).length||typeof groupIndexedEntries!=='function'||typeof routineEntries!=='function'||typeof builtInGroupToProgramExercise!=='function')return null;
+    const weeks=[];
+    for(let w=1;w<=8;w++){
+      const days=A(W.UNVRSL_ROUTINES).filter(r=>Number(r.w)===w).map(r=>({id:makeId('day'),name:`${r.c} · ${r.t}`,ex:groupIndexedEntries(routineEntries(r)).map(g=>builtInGroupToProgramExercise(r,g))}));
+      weeks.push({n:w,days})
+    }
+    let base='Встроенный цикл · 8 недель';
+    try{base=String(W.unvrslBuiltInProgramName?.()||base)}catch(_){ }
+    p={id:makeId('prog'),systemKey:BUILTIN_COPY_KEY,name:`${base} — редактируемая`,description:'Редактируемая версия встроенной программы.',editRevision:EDIT_REV,created:Date.now(),updated:Date.now(),weeks};
+    s.programs.push(p);saveState();W.toast?.('Создана редактируемая версия встроенной программы');return p
+  }
+
+  async function importCloudProgram(planId){
+    let p=localByAnyId(planId);if(p)return p;
+    if(!trainerMode()||!W.cloud?.client||!W.cloud?.user)return null;
+    try{
+      const q=await W.cloud.client.from('plans').select('id,title,version,snapshot,trainer_id,is_active').eq('id',planId).maybeSingle();
+      if(q.error||!q.data?.snapshot?.program)return null;
+      p=JSON.parse(JSON.stringify(q.data.snapshot.program));
+      p.id=makeId('prog');p.name=p.name||q.data.title||'Программа';p.cloudPlanId=q.data.id;p.cloudVersion=q.data.version||1;p.trainerId=q.data.trainer_id||W.cloud.user.id;p.created=Date.now();p.updated=Date.now();
+      try{if(typeof ensureProgramShape==='function')ensureProgramShape(p)}catch(_){ }
+      A(p.weeks).forEach(w=>A(w.days).forEach(d=>d.id=makeId('day')));
+      const s=state();if(!Array.isArray(s.programs))s.programs=[];s.programs.push(p);saveState();return p
+    }catch(_){return null}
+  }
+
+  W.editAnyProgramV370=async function(id){
+    const s=state();if(!s)return;
+    id=String(id||'');
+    if(!id||id===BUILTIN){
+      const p=buildEditableBuiltin();if(!p){W.toast?.('Программа пока не готова к редактированию');return}
+      if(!s.primaryProgramWeeks||typeof s.primaryProgramWeeks!=='object')s.primaryProgramWeeks={};
+      const w=Math.max(1,Math.min(p.weeks?.length||8,Number(s.week)||1));
+      s.primaryProgramId=p.id;s.startProgramId=p.id;s.primaryProgramWeeks[p.id]=w;saveState();openLocalEditor(p);return
+    }
+    let p=localByAnyId(id);
+    if(!p)p=await importCloudProgram(id);
+    if(!p){W.toast?.('Программа не найдена');return}
+    openLocalEditor(p)
+  };
+
+  W.editPersonal8WeekV369=()=>W.editAnyProgramV370(personal()?.id||'');
+  W.editPersonal8WeekV367=W.editPersonal8WeekV369;
+
+  function button(label,handler,mark){
+    const b=D.createElement('button');b.className='btn tiny';b.type='button';b.textContent=label;if(mark)b.dataset[mark]='1';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();handler()});return b
+  }
+
+  function decoratePrimary(){
     const root=D.getElementById('plan');if(!root)return;
-    const head=root.querySelector('.primary-plan-head .row');if(!head||head.querySelector('[data-personal-8week-edit]'))return;
-    const btn=D.createElement('button');
-    btn.className='btn tiny';
-    btn.type='button';
-    btn.dataset.personal8weekEdit='1';
-    btn.textContent='Редактировать';
-    btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();edit()});
-    const badge=head.querySelector('.chip.green');
-    if(badge)head.insertBefore(btn,badge);else head.appendChild(btn)
+    const head=root.querySelector('.primary-plan-head .row');if(!head)return;
+    head.querySelectorAll('[data-personal-8week-edit]').forEach(x=>x.remove());
+    if(head.querySelector('[data-any-program-edit]'))return;
+    const id=String(state()?.primaryProgramId||BUILTIN),p=id===BUILTIN?null:localByAnyId(id);
+    if(p&&!editable(p))return;
+    const b=button('Редактировать',()=>W.editAnyProgramV370(id),'anyProgramEdit');
+    const badge=head.querySelector('.chip.green');if(badge)head.insertBefore(b,badge);else head.appendChild(b)
+  }
+
+  function decorateLocalCards(){
+    const root=D.getElementById('plan');if(!root)return;
+    root.querySelectorAll('.coach-program').forEach(card=>{
+      const buttons=[...card.querySelectorAll('button')];
+      const open=buttons.find(b=>/^Открыть$/i.test(String(b.textContent||'').trim()));
+      if(open)open.textContent='Редактировать'
+    })
+  }
+
+  function cloudPlanIdFromRow(row){
+    for(const el of row.querySelectorAll('[onclick]')){
+      const code=String(el.getAttribute('onclick')||''),m=code.match(/trainer(?:NewInvite|PlanClientsSheet|ArchiveCloudPlan)\('([^']+)'/);
+      if(m?.[1])return m[1]
+    }
+    return''
+  }
+
+  function decorateCloudRows(){
+    D.querySelectorAll('.trainer-plan-row').forEach(row=>{
+      const actions=row.querySelector('.trainer-plan-actions');if(!actions||actions.querySelector('[data-any-program-edit]'))return;
+      const id=cloudPlanIdFromRow(row);if(!id)return;
+      const b=button('Редактировать',()=>W.editAnyProgramV370(id),'anyProgramEdit');actions.insertBefore(b,actions.firstChild)
+    })
+  }
+
+  function decorateBuiltinViewer(){
+    const sh=D.getElementById('sheet');if(!sh||sh.querySelector('[data-builtin-edit-any]'))return;
+    const h=sh.querySelector('h2');if(!h)return;
+    let name='Встроенный цикл · 8 недель';try{name=String(W.unvrslBuiltInProgramName?.()||name)}catch(_){ }
+    if(String(h.textContent||'').trim()!==name)return;
+    const top=h.closest('.row');if(!top)return;
+    const b=button('Редактировать',()=>W.editAnyProgramV370(BUILTIN),'builtinEditAny');top.insertBefore(b,top.lastElementChild)
   }
 
   let queued=false;
+  function decorate(){decoratePrimary();decorateLocalCards();decorateCloudRows();decorateBuiltinViewer()}
   function queueDecorate(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;decorate()})}
   const mo=typeof MutationObserver==='function'?new MutationObserver(queueDecorate):null;
   mo?.observe(D.documentElement,{childList:true,subtree:true});
