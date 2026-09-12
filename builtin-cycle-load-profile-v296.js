@@ -1,16 +1,16 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=299,BUILTIN='__builtin_cycle__';
+  const W=window,D=document,REV=300,BUILTIN='__builtin_cycle__';
   if(W.__unvrslBuiltinCycleLoadProfileV296)return;
   W.__unvrslBuiltinCycleLoadProfileV296=true;
 
   const PROFILE=Object.freeze({
     1:Object.freeze({pct:[70,75],rpe:[6,8],focus:'Техника, базовый объём'}),
-    2:Object.freeze({pct:[75,80],rpe:[7,8],focus:'Рабочий объём'}),
-    3:Object.freeze({pct:[80,85],rpe:[8,9],focus:'Механика и метаболика'}),
+    2:Object.freeze({pct:[75,80],rpe:[7,8],focus:'Повышение интенсивности'}),
+    3:Object.freeze({pct:[80,85],rpe:[8,9],focus:'Интенсификация'}),
     4:Object.freeze({pct:[60,65],rpe:[4,6],focus:'Плотность и памп'}),
     5:Object.freeze({pct:[85,88],rpe:[8,9],focus:'Тяжёлый стимул'}),
-    6:Object.freeze({pct:[60,65],rpe:[4,6],focus:'Разгрузка и памп'}),
+    6:Object.freeze({pct:[60,70],rpe:[4,6],focus:'Разгрузка через методы и контролируемый объём'}),
     7:Object.freeze({pct:[88,90],rpe:[8.5,9.5],focus:'Сила'}),
     8:Object.freeze({pct:[90,100],rpe:[9,10],focus:'Контроль результатов',test:true})
   });
@@ -79,7 +79,7 @@
     const cur=state()?.current,changed=annotate(cur),preparing=D.documentElement?.classList?.contains('te200-preparing');
     if((changed||force)&&isBuiltinWorkout(cur)&&!calculating&&!preparing){
       const model=W.trainingLoadModel292;
-      if(model?.run){calculating=true;try{await model.run(true)}catch(e){console.warn('UNVRSL builtin load profile v299',e)}finally{calculating=false}}
+      if(model?.run){calculating=true;try{await model.run(true)}catch(e){console.warn('UNVRSL builtin load profile v300',e)}finally{calculating=false}}
     }
     scheduleUi()
   }
