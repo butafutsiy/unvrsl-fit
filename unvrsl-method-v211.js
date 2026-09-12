@@ -67,3 +67,116 @@
   }
   return{aggregateRecommendation,expandPlanEntries,mean,round};
 });
+
+// Custom-program SLDR builder: 3 full working rounds, each with 3 mini-sets.
+((root)=>{
+  if(!root||root.__unvrslSldrBuilderV212)return;
+  root.__unvrslSldrBuilderV212=true;
+
+  const baseForm=root.programExerciseForm;
+  const baseRefresh=root.programRefreshMethodUi;
+  const baseSave=root.saveProgramExercise;
+  const basePrescription=root.prescriptionText;
+  const baseBegin=root.beginProgramDay;
+
+  const num=(id,fallback=0)=>{
+    const el=document.getElementById(id);
+    if(!el)return fallback;
+    const n=Number(String(el.value??'').replace(',','.'));
+    return Number.isFinite(n)?n:fallback
+  };
+  const sldrPattern=start=>{
+    const first=Math.max(1,Math.round(Number(start)||12));
+    return first>=15
+      ?[first,Math.max(1,first-3),Math.max(1,first-5)]
+      :[first,Math.max(1,first-2),Math.max(1,first-4)]
+  };
+  const decorateSldr=applyDefaults=>{
+    if(document.getElementById('pmMethod')?.value!=='SLDR')return;
+    const reps=document.getElementById('pmReps');
+    if(applyDefaults&&reps)reps.value='12';
+    const box=document.getElementById('pmSldrFields');
+    if(box)box.innerHTML=`<div class="px-method-subtitle">3 полных рабочих подхода</div><div class="field"><label>Рабочих подходов</label><input value="3" disabled></div><div class="field"><label>Мини-подходов в каждом</label><input value="3" disabled></div><div class="px-method-info px-span-2">Повторы задаются первым числом выше. 12 = 12 → 10 → 8. 15 = 15 → 12 → 10. Вес внутри каждого SLDR-подхода не меняется.</div>`;
+    const hint=document.getElementById('methodHint');
+    if(hint)hint.textContent='SLDR — 3 полноценных рабочих подхода. Каждый: первый мини-подход → 15 сек → второй → 15 сек → третий; затем обычный отдых и следующий полный подход.';
+    const inner=document.getElementById('pmInnerRest');
+    if(inner)inner.textContent='Внутри каждого SLDR-подхода: 15 сек между мини-подходами. После третьего — полный отдых.'
+  };
+
+  if(typeof baseRefresh==='function'){
+    root.programRefreshMethodUi=function(applyDefaults=false){
+      const result=baseRefresh.apply(this,arguments);
+      decorateSldr(!!applyDefaults);
+      return result
+    };
+    try{programRefreshMethodUi=root.programRefreshMethodUi}catch(_){ }
+  }
+
+  if(typeof baseForm==='function'){
+    root.programExerciseForm=function(){
+      const result=baseForm.apply(this,arguments);
+      setTimeout(()=>decorateSldr(false),0);
+      return result
+    };
+    try{programExerciseForm=root.programExerciseForm}catch(_){ }
+  }
+
+  if(typeof baseSave==='function'){
+    root.saveProgramExercise=function(pid,wi,di,nameToken,sourceToken,bpToken,tgToken,eqToken,existingIndex){
+      const method=document.getElementById('pmMethod')?.value||'STANDARD';
+      if(method!=='SLDR')return baseSave.apply(this,arguments);
+      const p=typeof programById==='function'?programById(pid):null,d=p?.weeks?.[wi]?.days?.[di];
+      if(!p||!d)return;
+      const old=existingIndex===null||Number.isNaN(existingIndex)?null:d.ex?.[existingIndex];
+      const n=decodeURIComponent(nameToken||''),kind=document.getElementById('pmKind')?.value||(typeof root.programInferExerciseKind==='function'?root.programInferExerciseKind(n):'compound');
+      const restMode=document.getElementById('pmRestMode')?.value||'auto';
+      const fullRest=restMode==='auto'&&typeof root.programAutoRest==='function'?root.programAutoRest(kind,'SLDR'):Math.max(0,num('pmRest',90));
+      const firstReps=Math.max(1,num('pmReps',12)),weight=Math.max(0,num('pmWeight',0)),rpe=num('pmRpe',8),tempo=document.getElementById('pmTempo')?.value.trim()||(kind==='compound'?'2-1-1':'3-1-2');
+      const reps=sldrPattern(firstReps);
+      const sets=Array.from({length:3},(_,round)=>reps.map((r,mini)=>({
+        label:`Круг ${round+1}/3 · ${mini+1}/3`,
+        role:'sldr-mini',round:round+1,mini:mini+1,w:weight,r,
+        rest:mini<2?15:fullRest,tempo
+      }))).flat();
+      const obj={...(old||{}),id:old?.id||(typeof uid==='function'?uid('pex'):`pex-${Date.now()}`),n,
+        sourceId:decodeURIComponent(sourceToken||'')||null,bp:decodeURIComponent(bpToken||''),tg:decodeURIComponent(tgToken||''),eq:decodeURIComponent(eqToken||''),
+        kind,method:'SLDR',rpe,tempo,tempoLight:null,restMode,rest:fullRest,innerRest:15,
+        heavyReps:null,lightReps:null,lightWeight:null,middleSets:null,middleReps:null,middleWeight:null,
+        sldrRounds:3,miniSets:3,repPattern:reps,repDrop:null,note:document.getElementById('pmNote')?.value.trim()||'',sets};
+      if(old)d.ex[existingIndex]=obj;else d.ex.push(obj);
+      p.updated=Date.now();
+      try{save()}catch(_){ }
+      if(typeof openProgramEditor==='function')openProgramEditor(pid,wi,di)
+    };
+    try{saveProgramExercise=root.saveProgramExercise}catch(_){ }
+  }
+
+  if(typeof basePrescription==='function'){
+    root.prescriptionText=function(e){
+      if(e?.method!=='SLDR')return basePrescription.apply(this,arguments);
+      const sets=Array.isArray(e.sets)?e.sets:[],firstRound=sets.filter(x=>(x?.round||1)===1).slice(0,3),source=firstRound.length?firstRound:sets.slice(0,3);
+      const reps=source.map(x=>x?.r||'—').join('/'),weight=source[0]?.w??sets[0]?.w??0,rest=e?.rest??source[2]?.rest??90;
+      return `3×(${reps}) · ${weight} кг · 15с внутри · отдых ${rest}с`
+    };
+    try{prescriptionText=root.prescriptionText}catch(_){ }
+  }
+
+  if(typeof baseBegin==='function'){
+    root.beginProgramDay=function(pid,wi,di){
+      const result=baseBegin.apply(this,arguments);
+      try{
+        const p=typeof programById==='function'?programById(pid):null,d=p?.weeks?.[wi]?.days?.[di],s=typeof st!=='undefined'?st.current:null;
+        if(d&&s?.programId===pid){
+          (d.ex||[]).filter(b=>b.method==='SLDR'&&Array.isArray(b.sets)&&b.sets.length===9).forEach(b=>{
+            const rows=(s.ex||[]).filter(e=>e.method==='SLDR'&&String(e.n||'').startsWith(`${b.n} — SLDR`));
+            rows.forEach((e,i)=>{const x=b.sets[i];if(!x)return;e.phaseLabel=x.label;e.phaseRole='sldr-mini';e.rest=+x.rest||0;e.n=`${b.n} — SLDR ${x.label}`})
+          });
+          try{save()}catch(_){ }
+          if(document.getElementById('start')?.classList.contains('active')&&typeof startPage==='function')startPage()
+        }
+      }catch(_){ }
+      return result
+    };
+    try{beginProgramDay=root.beginProgramDay}catch(_){ }
+  }
+})(typeof window!=='undefined'?window:null);
