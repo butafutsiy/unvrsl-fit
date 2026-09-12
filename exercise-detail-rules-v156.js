@@ -8,13 +8,4 @@
   function patchDetail(){const base=window.renderExerciseDetail;if(typeof base!=='function'||base.__weightRulesV156)return;const wrapped=function(ex){const r=base.apply(this,arguments);remove1RMForUnweighted(ex);dedupeDotText(document.getElementById('sheet')||document);return r};wrapped.__weightRulesV156=true;window.renderExerciseDetail=wrapped;try{renderExerciseDetail=wrapped}catch(_){}}
   new MutationObserver(()=>dedupeDotText(document)).observe(document.documentElement,{childList:true,subtree:true});patchDetail();[50,250,900,2200].forEach(t=>setTimeout(patchDetail,t));
 })();
-(()=>{[
-  ['bodyweight-history-v190.js?v=326','unvrslBodyweightHistoryV190'],
-  ['unified-training-v174.js','unvrslUnifiedTrainingV174'],
-  ['muscle-drilldown-fix-v181.js','unvrslMuscleDrilldownV181'],
-  ['glute-bridge-barbell-data-1.js?v=353','unvrslGbbData1V353'],
-  ['glute-bridge-barbell-data-2.js?v=353','unvrslGbbData2V353'],
-  ['glute-bridge-barbell-data-3.js?v=353','unvrslGbbData3V353'],
-  ['glute-bridge-barbell-data-4.js?v=353','unvrslGbbData4V353'],
-  ['glute-bridge-barbell-v353.js?v=353','unvrslGluteBridgeBarbellV353']
-].forEach(([src,key])=>{if(document.querySelector(`script[data-${key}]`))return;const s=document.createElement('script');s.src=src;s.async=false;s.setAttribute(`data-${key}`,'1');document.body.appendChild(s)})})();
+(()=>{[['bodyweight-history-v190.js?v=326','unvrslBodyweightHistoryV190'],['unified-training-v174.js','unvrslUnifiedTrainingV174'],['muscle-drilldown-fix-v181.js','unvrslMuscleDrilldownV181']].forEach(([src,key])=>{if(document.querySelector(`script[data-${key}]`))return;const s=document.createElement('script');s.src=src;s.async=false;s.setAttribute(`data-${key}`,'1');document.body.appendChild(s)})})();
