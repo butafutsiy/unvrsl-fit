@@ -1,5 +1,5 @@
-const SW_RELEASE='v365-barbell-thumb-stable';
-const STATIC_CACHE='unvrsl-static-v365';
+const SW_RELEASE='v366-builtin-plan-sync';
+const STATIC_CACHE='unvrsl-static-v366';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
