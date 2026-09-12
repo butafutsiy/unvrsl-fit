@@ -13,3 +13,13 @@ window.UNVRSL_ROUTINES=(window.UNVRSL_ROUTINES||[]).concat([{"w":2,"c":"A1","t":
   s.dataset.unvrslOfflineStrengthSearchV345='1';
   document.body.appendChild(s);
 })();
+
+// Одноразово выводим iOS/PWA из старого service-worker кэша.
+(()=>{
+  if(document.querySelector('script[data-unvrsl-pwa-recovery-v361]'))return;
+  const s=document.createElement('script');
+  s.src='pwa-recovery-v361.js?v=361';
+  s.async=false;
+  s.dataset.unvrslPwaRecoveryV361='1';
+  document.body.appendChild(s);
+})();
