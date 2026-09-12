@@ -1,5 +1,5 @@
-const SW_RELEASE='v369-active-method-collapse';
-const STATIC_CACHE='unvrsl-static-v369';
+const SW_RELEASE='v370-program-rep-clarity';
+const STATIC_CACHE='unvrsl-static-v370';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
