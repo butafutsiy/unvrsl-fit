@@ -48,7 +48,7 @@
       changed=setIf(w,'rirMin',prof.rir[0])||changed;
       changed=setIf(w,'rirMax',prof.rir[1])||changed;
       changed=setIf(w,'loadProfileManual',true)||changed;
-      changed=setIf(w,'unvrslSldrRangeRevision',2)||changed;
+      changed=setIf(w,'unvrslSldrRangeRevision',3)||changed;
       (w.days||[]).forEach(d=>(d.ex||[]).forEach(e=>{
         changed=setIf(e,'rpeMin',prof.rpe[0])||changed;
         changed=setIf(e,'rpeMax',prof.rpe[1])||changed;
@@ -99,6 +99,19 @@
     try{return typeof modal==='function'?modal(html):W.modal?.(html)}catch(_){return undefined}
   }
 
+  function weightPolicy(cur){
+    (cur?.ex||[]).forEach(ex=>{
+      const sets=Array.isArray(ex?.set)?ex.set:[];
+      const hasPlanned=sets.some(s=>Number(s?.programW)>0||Number(s?.w)>0);
+      ex.programWeightMode=hasPlanned?'prescribed':'autoweight';
+      sets.forEach(s=>{
+        const w=Number(s?.programW)>0?Number(s.programW):(Number(s?.w)>0?Number(s.w):0);
+        if(hasPlanned){s.programW=w;s.plannedW=w;s.baselineW=w;s.baselineSource='program_prescribed'}
+        else{s.programW=0;if(!s.ok&&!s.manualOverride&&!(Number(s.w)>0))s.w=0}
+      })
+    })
+  }
+
   function annotateStarted(pid,wi,di){
     const s=state(),cur=s?.current,p=program(),d=p?.weeks?.[Number(wi)]?.days?.[Number(di)],prof=PROFILE[Number(wi)+1];
     if(!cur||!p||!d||!prof||String(cur.programId||'')!==String(pid))return;
@@ -126,8 +139,10 @@
       }
       cursor+=count;
     });
+    weightPolicy(cur);
     saveState();
     try{typeof startPage==='function'&&startPage()}catch(_){ }
+    setTimeout(()=>{patchActive();try{W.trainingLoadModel292?.run?.(true)}catch(_){ }},80)
   }
 
   W.unvrslSldrStartV2=function(pid,wi,di){
@@ -150,8 +165,42 @@
     return true
   }
 
-  function install(){enrichProgram();patchPreview()}
-  D?.addEventListener('click',()=>{enrichProgram();patchPreview()},{capture:true,passive:true});
-  ['unvrsl:app-ready','unvrsl:modules-ready','unvrsl:cloud-ready'].forEach(ev=>W.addEventListener?.(ev,install,{passive:true}));
+  function selectedPickerWeek(sheet){
+    const on=[...(sheet?.querySelectorAll?.('#startPickerWeeks .weekbtn')||[])].find(x=>x.classList.contains('on')||x.getAttribute('aria-pressed')==='true');
+    const m=String(on?.textContent||'').match(/W\s*(\d+)/i);return m?Math.max(1,Math.min(8,Number(m[1]))):null
+  }
+
+  function patchPicker(){
+    const sheet=D.getElementById('sheet');if(!sheet)return;
+    const title=sheet.querySelector('h2');if(!/Выбрать тренировку/i.test(String(title?.textContent||'')))return;
+    const current=sheet.querySelector('.start-picker-current');if(!/UNVRSL\s+SLDR/i.test(String(current?.textContent||'')))return;
+    const wn=selectedPickerWeek(sheet);if(!wn)return;const prof=PROFILE[wn];if(!prof)return;
+    sheet.querySelectorAll('#startPickerDays .start-picker-day').forEach(row=>{
+      const meta=row.querySelector('.muted.small');if(!meta)return;
+      const count=String(meta.textContent||'').match(/(\d+)\s+упраж/i)?.[1]||'';
+      meta.textContent=`RPE ${band(prof.rpe)} · RIR ${band(prof.rir)}${count?` · ${count} упражнений`:''}`
+    })
+  }
+
+  function patchActive(){
+    const s=state(),cur=s?.current;if(!cur||!/UNVRSL\s+SLDR/i.test(String(cur.programName||'')))return;
+    const prof=PROFILE[Number(cur.programWeekNumber||cur.w)||1]||PROFILE[1];
+    const cards=[...D.querySelectorAll('#start .exercise')];
+    (cur.ex||[]).forEach((ex,ei)=>{
+      const card=cards[ei];if(!card)return;
+      const first=ex?.set?.[0]||{},lo=Number(first.targetRepMin),hi=Number(first.targetRepMax);
+      let reps='';if(Number.isFinite(lo)&&lo>0){reps=Number.isFinite(hi)&&hi>0&&hi!==lo?`${fmt(lo)}–${fmt(hi)}`:fmt(lo)}
+      if(!reps&&Number(first.r)>0)reps=fmt(first.r);
+      let note=card.querySelector('.usldr-target-v3');
+      if(!note){note=D.createElement('div');note.className='usldr-target-v3 muted small';note.style.cssText='margin-top:7px;font-weight:650;letter-spacing:.01em';const anchor=card.querySelector('.rest-label')||card.querySelector('.exnote')||card.querySelector('.exname');anchor?.insertAdjacentElement('afterend',note)}
+      if(note)note.textContent=`Цель: ${reps?`${reps} повт. · `:''}RPE ${band(prof.rpe)} · RIR ${band(prof.rir)}`
+    })
+  }
+
+  function install(){enrichProgram();patchPreview();patchPicker();patchActive()}
+  let queued=false;const queue=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;install()})};
+  D?.addEventListener('click',()=>{setTimeout(queue,0)},{capture:true,passive:true});
+  const mo=typeof MutationObserver==='function'?new MutationObserver(queue):null;mo?.observe(D.documentElement,{childList:true,subtree:true});
+  ['unvrsl:app-ready','unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:training-engine-ready'].forEach(ev=>W.addEventListener?.(ev,install,{passive:true}));
   [0,700,1800,4000].forEach(ms=>setTimeout(install,ms));
 })();
