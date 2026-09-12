@@ -23,8 +23,8 @@
   }
 
   function media(kind){
-    try{return new URL(`assets/hip-thrust-${kind}.gif?v=358`,D.baseURI).href}
-    catch(_){return `assets/hip-thrust-${kind}.gif?v=358`}
+    try{return new URL(`assets/hip-thrust-${kind}.gif?v=359`,D.baseURI).href}
+    catch(_){return `assets/hip-thrust-${kind}.gif?v=359`}
   }
 
   function normalizeHip(ex){
