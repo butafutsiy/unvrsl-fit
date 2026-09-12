@@ -1,5 +1,5 @@
-const SW_RELEASE='v352-single-exercise-catalog';
-const STATIC_CACHE='unvrsl-static-v352';
+const SW_RELEASE='v356-glute-bridge-safe';
+const STATIC_CACHE='unvrsl-static-v356';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
@@ -14,6 +14,9 @@ const CORE_ASSETS=[
   './exercise-library-quality.js?v=352',
   './exercise-library-strict.js?v=352',
   './exercise-library-additions-v347.js?v=352',
+  './assets/hip-thrust-machine.gif?v=356',
+  './assets/hip-thrust-smith.gif?v=356',
+  './assets/hip-thrust-barbell.gif?v=356',
   './frequent-patch.js?v=335',
   './client-free-workout-v334.js?v=335',
   './strength-progress-v335.js?v=339',
