@@ -24,12 +24,22 @@ window.UNVRSL_ROUTINES=(window.UNVRSL_ROUTINES||[]).concat([{"w":2,"c":"A1","t":
   document.body.appendChild(s);
 })();
 
-// Создаём отдельную редактируемую программу «Мой план · 8 недель v2».
+// Сначала принудительно берём свежие цели, затем создаём отдельную программу v2.
 (()=>{
-  if(document.querySelector('script[data-unvrsl-personal-8week-v367]'))return;
+  const loadPersonal=()=>{
+    if(document.querySelector('script[data-unvrsl-personal-8week-v367]'))return;
+    const p=document.createElement('script');
+    p.src='personal-8week-v367.js?v=367';
+    p.async=false;
+    p.dataset.unvrslPersonal8weekV367='1';
+    document.body.appendChild(p);
+  };
+  if(window.__unvrslActiveRepRangesV366){loadPersonal();return}
+  if(document.querySelector('script[data-unvrsl-active-rep-ranges-v367]'))return;
   const s=document.createElement('script');
-  s.src='personal-8week-v367.js?v=367';
+  s.src='active-rep-ranges-v282.js?v=367';
   s.async=false;
-  s.dataset.unvrslPersonal8weekV367='1';
+  s.dataset.unvrslActiveRepRangesV367='1';
+  s.onload=loadPersonal;
   document.body.appendChild(s);
 })();
