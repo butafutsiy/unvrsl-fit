@@ -1,8 +1,8 @@
 'use strict';
 (()=>{
   const W=window,D=document;
-  if(W.__unvrslHipThrustDetailFixV360)return;
-  W.__unvrslHipThrustDetailFixV360=true;
+  if(W.__unvrslHipThrustDetailFixV361)return;
+  W.__unvrslHipThrustDetailFixV361=true;
 
   const norm=v=>String(v??'').toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/[‐‑‒–—-]+/g,' ').replace(/\s+/g,' ').trim();
   const DATA={
@@ -23,8 +23,8 @@
   }
 
   function media(kind){
-    try{return new URL(`assets/hip-thrust-${kind}.gif?v=360`,D.baseURI).href}
-    catch(_){return `assets/hip-thrust-${kind}.gif?v=360`}
+    try{return new URL(`assets/hip-thrust-${kind}.gif?v=361`,D.baseURI).href}
+    catch(_){return `assets/hip-thrust-${kind}.gif?v=361`}
   }
 
   function normalizeHip(ex){
@@ -34,7 +34,7 @@
     const oldName=String(ex.planRaw||ex.raw||ex.n||'').trim();
     return {...ex,planRaw:oldName||d.name,n:d.name,name:d.name,strictName:d.name,bp:'upper legs',tg:'glutes',eq:d.eq,gif,gif_url:gif,image:'',mediaUnavailable:false,instructions:{...(typeof ex.instructions==='object'?ex.instructions:{}),ru:d.tech},unvrslHipKind:kind};
   }
-  W.UNVRSL_NORMALIZE_HIP_V360=normalizeHip;
+  W.UNVRSL_NORMALIZE_HIP_V361=normalizeHip;
 
   function fixRenderedDetail(kind){
     if(!kind||!DATA[kind])return;
@@ -45,23 +45,23 @@
 
   function patchFind(){
     let base;try{base=W.findExercise||findExercise}catch(_){base=W.findExercise}
-    if(typeof base!=='function'||base.__hipV360)return;
+    if(typeof base!=='function'||base.__hipV361)return;
     const wrapped=function(){return normalizeHip(base.apply(this,arguments))};
-    wrapped.__hipV360=true;W.findExercise=wrapped;try{findExercise=wrapped}catch(_){ }
+    wrapped.__hipV361=true;W.findExercise=wrapped;try{findExercise=wrapped}catch(_){ }
   }
 
   function patchCatalog(){
     let base;try{base=W.catalogRecords||catalogRecords}catch(_){base=W.catalogRecords}
-    if(typeof base!=='function'||base.__hipV360)return;
+    if(typeof base!=='function'||base.__hipV361)return;
     const wrapped=function(){const rows=base.apply(this,arguments);return Array.isArray(rows)?rows.map(normalizeHip):rows};
-    wrapped.__hipV360=true;W.catalogRecords=wrapped;try{catalogRecords=wrapped}catch(_){ }
+    wrapped.__hipV361=true;W.catalogRecords=wrapped;try{catalogRecords=wrapped}catch(_){ }
   }
 
   function patchDetail(){
     let base;try{base=W.renderExerciseDetail||renderExerciseDetail}catch(_){base=W.renderExerciseDetail}
-    if(typeof base!=='function'||base.__hipV360)return;
+    if(typeof base!=='function'||base.__hipV361)return;
     const wrapped=function(ex){const normalized=normalizeHip(ex),kind=kindOf(normalized),r=base.call(this,normalized);fixRenderedDetail(kind);setTimeout(()=>fixRenderedDetail(kind),0);return r};
-    wrapped.__hipV360=true;W.renderExerciseDetail=wrapped;try{renderExerciseDetail=wrapped}catch(_){ }
+    wrapped.__hipV361=true;W.renderExerciseDetail=wrapped;try{renderExerciseDetail=wrapped}catch(_){ }
   }
 
   function patchRows(){
