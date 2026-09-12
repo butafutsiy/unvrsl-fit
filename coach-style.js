@@ -5,6 +5,16 @@
 `;document.head.appendChild(s)})();
 
 (()=>{
+  if(window.__unvrslClientsActionLayoutV366Loader||document.querySelector('script[data-unvrsl-clients-action-layout-v366]'))return;
+  window.__unvrslClientsActionLayoutV366Loader=true;
+  const s=document.createElement('script');
+  s.src='clients-action-layout.js?v=366';
+  s.async=false;
+  s.dataset.unvrslClientsActionLayoutV366='1';
+  document.head.appendChild(s);
+})();
+
+(()=>{
   if(window.__unvrslStrengthProgressV335||document.querySelector('script[data-unvrsl-strength-progress-v335]'))return;
   const s=document.createElement('script');
   s.src='strength-progress-v335.js?v=335';
