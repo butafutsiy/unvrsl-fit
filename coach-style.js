@@ -14,10 +14,16 @@
 })();
 
 (()=>{
-  if(window.__unvrslRepPolicy374||document.querySelector('script[data-unvrsl-rep-policy-v374]'))return;
+  const loadMigration=()=>{
+    if(window.__unvrslRepLegacyMigrationV375||document.querySelector('script[data-unvrsl-rep-migration-v375]'))return;
+    const m=document.createElement('script');m.src='program-rep-legacy-migration-v375.js?v=375';m.async=false;m.dataset.unvrslRepMigrationV375='1';document.head.appendChild(m)
+  };
+  if(window.__unvrslRepPolicy374){loadMigration();return}
+  if(document.querySelector('script[data-unvrsl-rep-policy-v374]')){setTimeout(loadMigration,120);return}
   const s=document.createElement('script');
   s.src='program-rep-range-v266.js?v=374';
   s.async=false;
   s.dataset.unvrslRepPolicyV374='1';
+  s.onload=loadMigration;
   document.head.appendChild(s);
 })();
