@@ -32,4 +32,21 @@
  window.pbrStartProgramDay=function(pid,wi,di){if(typeof window.previewPrimaryProgramDay==='function')return window.previewPrimaryProgramDay(pid,wi,di);return beginProgramDay(pid,wi,di)};
  window.programDayCard=function(p,w,d,di){const rows=(d.ex||[]).map((e,ei)=>programExerciseRow(p,d,e,ei)).join('');return `<div class="card program-day"><div class="row between"><div class="grow"><b>${esc(d.name)}</b><div class="muted small">${d.ex.length} упражнений</div></div><button class="btn tiny primary" onclick="pbrStartProgramDay('${p.id}',${programUi.week},${di})">Старт</button></div><div class="pbr-add-grid"><button class="pbr-add" onclick="chooseProgramExercise('${p.id}',${programUi.week},${di})">＋ Упражнение</button><button class="pbr-add" onclick="createProgramSuperset('${p.id}',${programUi.week},${di})">⛓ Суперсет</button></div><div class="coach-actions"><button class="btn tiny" onclick="renameProgramDaySheet('${p.id}',${programUi.week},${di})">Название</button><button class="btn tiny danger" onclick="deleteProgramDay('${p.id}',${programUi.week},${di})">Удалить день</button></div>${rows}</div>`};
  const oldChoose=window.chooseProgramExercise;window.chooseProgramExercise=function(pid,wi,di,q=''){if(!programById(pid))return;picker(pid,wi,di,'normal','Добавить упражнение')};
+ function installWorkoutRevealGuard(){
+  const base=window.trainingConfirmReadiness200;
+  if(typeof base!=='function'||base.__pbrRevealGuard)return !!base?.__pbrRevealGuard;
+  const wrapped=function(){
+   const result=base.apply(this,arguments);let ticks=0;
+   const timer=setInterval(()=>{
+    ticks++;
+    const cur=window.st?.current,prepared=!!(cur?.trainingEngineRevision||cur?.trainingPreparedAt),hasExercises=Array.isArray(cur?.ex)&&cur.ex.length>0,html=document.documentElement,modalEl=document.getElementById('modal');
+    if(html?.classList?.contains('te200-preparing')&&!modalEl?.classList?.contains('show')&&!prepared){try{window.modal?.('<div data-pbr-preparing="1"><div class="sheet-grabber"></div><div style="text-align:center;padding:24px 4px 14px"><h2>Подготавливаем тренировку</h2><div class="muted">Рассчитываем рабочие веса и готовим упражнения.</div></div></div>')}catch(_){}}
+    if(prepared&&hasExercises){clearInterval(timer);html?.classList?.remove('te200-preparing');try{window.closeModal?.()}catch(_){}try{window.startPage?.()}catch(_){}return}
+    if(ticks>=50){clearInterval(timer);html?.classList?.remove('te200-preparing');if(hasExercises)try{window.startPage?.()}catch(_){}}
+   },100);
+   return result
+  };
+  wrapped.__pbrRevealGuard=true;wrapped.__pbrRevealBase=base;window.trainingConfirmReadiness200=wrapped;try{trainingConfirmReadiness200=wrapped}catch(_){}return true
+ }
+ let revealHookTries=0;const revealHook=setInterval(()=>{if(installWorkoutRevealGuard()||++revealHookTries>40)clearInterval(revealHook)},150);
 })();
