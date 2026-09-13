@@ -5,9 +5,9 @@ const path=require('node:path');
 
 const root=path.join(__dirname,'..');
 const read=name=>fs.readFileSync(path.join(root,name),'utf8');
-const publicJs=read('public-progress-v321.js');
-const offlineJs=read('offline-progress-v321.js');
-const free=read('client-free-workout-v334.js');
+const publicJs=read('public-progress.js');
+const offlineJs=read('offline-progress.js');
+const free=read('client-free-workout.js');
 const migration=read('supabase-migrations/20260909_offline_weight_goal_history_v334.sql');
 
 test('offline progress exposes a weight goal in both trainer and shared views',()=>{
@@ -40,3 +40,4 @@ test('trainer sees and keeps the same free workout card after plan rerenders',()
   assert.match(free,/\.trainer-self-profile-v111/);
   assert.doesNotMatch(free,/!isClient\(\)/);
 });
+

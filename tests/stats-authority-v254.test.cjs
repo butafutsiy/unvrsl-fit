@@ -9,16 +9,16 @@ const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 
 test('Statistics contains progress only and history is owned by Plan',()=>{
   const app=read('app.js');
-  const dashboard=read('stats-dashboard-v254.js');
-  const home=read('home-stats-v254.js');
+  const dashboard=read('stats-dashboard.js');
+  const home=read('home-stats.js');
   const baseStats=app.match(/function statsPage\(\)[\s\S]*?\nfunction openSession/)?.[0]||'';
   const dashboardHtml=dashboard.match(/function dashboardHtml\(\)[\s\S]*?\n  function renderDashboard/)?.[0]||'';
   assert.doesNotMatch(baseStats,/ИСТОРИЯ|История пока|Тренировочный объём/);
   assert.doesNotMatch(dashboardHtml,/ИСТОРИЯ ТРЕНИРОВОК|workoutHistoryHtml|statsOpenWorkout|Вес тела|sd2HeatWrap/);
   assert.match(dashboardHtml,/Прогресс тренировок/);
   assert.match(dashboardHtml,/Средний RPE/);
-  assert.match(read('client-journal-profile-v107.js'),/ПРОВЕДЁННЫЕ ТРЕНИРОВКИ/);
-  assert.match(read('trainer-self-plan-v110.js'),/ПРОВЕДЁННЫЕ ТРЕНИРОВКИ/);
+  assert.match(read('client-journal-profile.js'),/ПРОВЕДЁННЫЕ ТРЕНИРОВКИ/);
+  assert.match(read('trainer-self-plan.js'),/ПРОВЕДЁННЫЕ ТРЕНИРОВКИ/);
   assert.match(home,/homeStatsWeightSheet/);
   assert.doesNotMatch(home,/statsWeightSheet|statsGoalSheet|statsSaveWeight|statsSaveGoal/);
 });
@@ -26,11 +26,11 @@ test('Statistics contains progress only and history is owned by Plan',()=>{
 test('final Statistics authority loads after all asynchronous module chains',()=>{
   const loader=read('frequent-patch.js');
   const settled=loader.indexOf('Promise.allSettled([templateChain,programChain,cloudChain,uiChain])');
-  const authority=loader.indexOf("loadExternalScript('stats-authority-v254.js')");
+  const authority=loader.indexOf("loadExternalScript('stats-authority.js')");
   const postLoad=loader.indexOf("loadExternalScript('cardio-exercise-library.js')");
-  const trainerShell=loader.indexOf("loadExternalScript('trainer-shell-v252.js')");
+  const trainerShell=loader.indexOf("loadExternalScript('trainer-shell.js')");
   assert.ok(settled>=0&&postLoad>settled&&authority>postLoad&&trainerShell>authority);
-  assert.match(read('stats-authority-v254.js'),/window\.statsPage=canonicalStatsPage/);
+  assert.match(read('stats-authority.js'),/window\.statsPage=canonicalStatsPage/);
   assert.equal((loader.match(/loadExternalScript\('trainer-self-plan-v110\.js\?v=260'\)/g)||[]).length,1);
   assert.doesNotMatch(read('clients-action-layout.js'),/loadExternalScript\('trainer-self-plan-v110\.js'\)/);
 });
@@ -38,7 +38,7 @@ test('final Statistics authority loads after all asynchronous module chains',()=
 test('trainer shell uses one role predicate and restores both trainer tabs',()=>{
   const trainer=read('trainer.js');
   const mode=read('app-mode.js');
-  const shell=read('trainer-shell-v252.js');
+  const shell=read('trainer-shell.js');
   assert.match(trainer,/butafutsiy@mail\.ru/);
   assert.match(mode,/window\.refreshTrainerNav\(\)/);
   assert.match(shell,/ORDER=\['home','plan','programs','start','stats','exercises','clients'\]/);
@@ -55,10 +55,10 @@ test('v261 service worker removes old app caches and never writes responses',()=
 });
 
 test('Anatomy is owned by the final Statistics renderer and every old block is rejected',()=>{
-  const dashboard=read('stats-dashboard-v254.js');
+  const dashboard=read('stats-dashboard.js');
   const anatomy=read('anatome-muscle-map.js');
-  const cleanup=read('stats-cleanup-v254.js');
-  const authority=read('stats-authority-v254.js');
+  const cleanup=read('stats-cleanup.js');
+  const authority=read('stats-authority.js');
   assert.match(dashboard,/anatomeMuscleCardHtmlV254/);
   assert.match(anatomy,/window\.anatomeMountCardV254=mount/);
   assert.match(anatomy,/root\.querySelector\('\.sd2-grid'\)/);
@@ -75,3 +75,4 @@ test('superseded UI layers no longer force delayed Home or Statistics rerenders'
   assert.doesNotMatch(density,/typeof statsPage|compactWeightChart/);
   assert.doesNotMatch(mobile,/typeof statsPage/);
 });
+

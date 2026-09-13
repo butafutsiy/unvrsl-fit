@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
-const {programWeightProfile,programWeightLabel}=require('../program-weight-policy-v257.js');
+const {programWeightProfile,programWeightLabel}=require('../program-weight-policy.js');
 
 const root=path.join(__dirname,'..');
 const read=name=>fs.readFileSync(path.join(root,name),'utf8');
@@ -25,7 +25,7 @@ test('client programs are split into prescribed and autoweight groups',()=>{
 });
 
 test('client Home contains no program card',()=>{
-  const runtime=read('client-final-runtime-v222.js'),fallback=read('app-mode.js');
+  const runtime=read('client-final-runtime.js'),fallback=read('app-mode.js');
   const canonical=runtime.match(/function renderCanonicalClientHome\(\)\{([\s\S]*?)\n  \}\n  function installCanonicalClientHome/)?.[1]||'';
   const legacy=fallback.match(/function clientCleanHome\(\)\{([\s\S]*?)\n\}/)?.[1]||'';
   assert.doesNotMatch(canonical,/МОЙ ПЛАН|Открыть план|client-plan-card-v255/);
@@ -46,7 +46,7 @@ test('client calendar rejects the trainer built-in cycle but keeps an assigned m
     document:{createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null}
   };
   context.window=context;
-  vm.runInNewContext(read('calendar-planner-v234.js'),context);
+  vm.runInNewContext(read('calendar-planner.js'),context);
   assert.equal(context.calendarPlanForDateV234('2026-09-01'),null);
   context.st.calendarPlans['2026-09-02']={kind:'builtin',week:1,code:'A1'};
   assert.equal(context.calendarPlanForDateV234('2026-09-02'),null);
@@ -62,7 +62,7 @@ test('choosing plan keeps adaptive exercises in autoweight mode',()=>{
     window:null
   };
   context.window=context;
-  vm.runInNewContext(read('exact-plan-fix-v228.js'),context);
+  vm.runInNewContext(read('exact-plan-fix.js'),context);
   const current={programId:'assigned',ex:[
     {programWeightMode:'prescribed',set:[{programW:110,plannedW:100,baselineW:100,w:100,ok:false}]},
     {programWeightMode:'adaptive',weightDecision:'adaptive_auto',set:[{programW:0,plannedW:60,baselineW:60,w:60,ok:false}]}
@@ -76,3 +76,4 @@ test('choosing plan keeps adaptive exercises in autoweight mode',()=>{
   assert.equal(current.ex[1].programWeightMode,'adaptive');
   assert.equal(current.ex[1].weightDecision,'adaptive_auto');
 });
+

@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 
 global.loadStepFor=()=>5;
-const api=require('../performance-control-v315.js');
+const api=require('../performance-control.js');
 
 function fixture(mode='adaptive',policy='autoweight'){
   const ex={
@@ -44,3 +44,4 @@ test('final report is allowed only in the workout completion sheet',()=>{
   assert.equal(api.isCompletionSheet(sheet('Тренировка завершена')),true);
   assert.equal(api.isCompletionSheet(null),false);
 });
+

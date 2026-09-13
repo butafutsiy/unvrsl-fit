@@ -8,18 +8,9 @@ window.UNVRSL_ROUTINES=(window.UNVRSL_ROUTINES||[]).concat([{"w":2,"c":"A1","t":
   window.__unvrslOfflineStrengthSearchV344=true;
   if(document.querySelector('script[data-unvrsl-offline-strength-search-v345]'))return;
   const s=document.createElement('script');
-  s.src='offline-strength-search-v339.js?v=352';
+  s.src='offline-strength-search.js?v=377';
   s.async=false;
   s.dataset.unvrslOfflineStrengthSearchV345='1';
   document.body.appendChild(s);
 })();
 
-// Одноразово выводим iOS/PWA из старого service-worker кэша.
-(()=>{
-  if(document.querySelector('script[data-unvrsl-pwa-recovery-v361]'))return;
-  const s=document.createElement('script');
-  s.src='pwa-recovery-v361.js?v=361';
-  s.async=false;
-  s.dataset.unvrslPwaRecoveryV361='1';
-  document.body.appendChild(s);
-})();

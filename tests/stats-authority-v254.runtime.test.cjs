@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 
-const source=fs.readFileSync(path.join(__dirname,'..','stats-authority-v254.js'),'utf8');
+const source=fs.readFileSync(path.join(__dirname,'..','stats-authority.js'),'utf8');
 
 test('late legacy renderer cannot restore history, weight, or another Statistics owner',async()=>{
   const listeners={window:{},document:{}};
@@ -48,3 +48,4 @@ test('late legacy renderer cannot restore history, weight, or another Statistics
   assert.equal(root.canonical,true);
   assert.doesNotMatch(root.textContent,/Вес тела|ИСТОРИЯ ТРЕНИРОВОК/);
 });
+

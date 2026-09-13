@@ -104,7 +104,8 @@ exercisesPage=function(){
 
 // Keep the complete base catalog. The old curated/strict chain reduced it to 99.
 Promise.resolve()
- .then(()=>loadExternalScript('exercise-library-quality.js?v=346'))
+ .then(()=>loadExternalScript('exercise-library-quality.js?v=377'))
  .then(()=>loadExternalScript('cardio-metric-fixes.js'))
  .then(()=>loadExternalScript('preview-mobile-fix.js'))
  .catch(e=>console.warn('exercise/cardio/preview fixes',e));
+

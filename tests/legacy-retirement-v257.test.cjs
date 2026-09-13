@@ -11,15 +11,15 @@ const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 test('v260 retirement guard loads before every application module',()=>{
   const html=read('index.html');
   const first=html.match(/<script src="([^"]+)"/);
-  assert.equal(first?.[1],'legacy-retirement-v257.js?v=260');
+  assert.equal(first?.[1],'legacy-retirement.js?v=377');
 });
 
 test('active loaders refuse retired scripts and use only canonical Statistics modules',()=>{
   const loader=read('frequent-patch.js');
   const settings=read('og-settings.js');
-  const client=read('client-final-runtime-v222.js');
+  const client=read('client-final-runtime.js');
   for(const source of [loader,settings,client])assert.match(source,/unvrslScriptRetiredV257/);
-  for(const name of ['stats-dashboard-v254.js','home-stats-v254.js','stats-cleanup-v254.js','stats-authority-v254.js'])assert.match(loader,new RegExp(name.replaceAll('.','\\.')));
+  for(const name of ['stats-dashboard.js','home-stats.js','stats-cleanup.js','stats-authority.js'])assert.match(loader,new RegExp(name.replaceAll('.','\\.')));
   assert.doesNotMatch(loader,/loadExternalScript\('(stats-dashboard-v2|home-stats-v2|stats-cleanup|stats-authority-v253)\.js'\)/);
   assert.match(client,/client-runtime-v257-style/);
   assert.match(read('og-style.js'),/og-enhance-v254\.js/);
@@ -27,7 +27,7 @@ test('active loaders refuse retired scripts and use only canonical Statistics mo
 });
 
 test('retired registry blocks every superseded renderer family',()=>{
-  const source=read('legacy-retirement-v257.js');
+  const source=read('legacy-retirement.js');
   const appended=[];
   const document={
     readyState:'complete',documentElement:{},
@@ -43,8 +43,8 @@ test('retired registry blocks every superseded renderer family',()=>{
     assert.equal(window.unvrslScriptRetiredV257(name),true,name);
   }
   assert.equal(window.unvrslScriptRetiredV257('legacy-retirement-v256.js'),true);
-  assert.equal(window.unvrslScriptRetiredV257('stats-authority-v254.js'),false);
-  assert.equal(window.unvrslScriptRetiredV257('stats-dashboard-v254.js'),false);
+  assert.equal(window.unvrslScriptRetiredV257('stats-authority.js'),false);
+  assert.equal(window.unvrslScriptRetiredV257('stats-dashboard.js'),false);
   assert.equal(window.__unvrslStatsAuthorityV253,true);
   assert.equal(window.__unvrslStatsDashboardV2,true);
   assert.equal(window.__unvrslTrainerClientDetailV2,true);
@@ -53,14 +53,14 @@ test('retired registry blocks every superseded renderer family',()=>{
 });
 
 test('superseded source files are removed from the published tree',()=>{
-  const source=read('legacy-retirement-v257.js');
+  const source=read('legacy-retirement.js');
   const block=source.match(/const retired=\[([\s\S]*?)\];/)?.[1]||'';
   const retired=[...block.matchAll(/'([^']+)'/g)].map(x=>x[1]);
   assert.ok(retired.length>30);
   for(const name of retired){
     assert.equal(fs.existsSync(path.join(root,name)),false,name);
   }
-  const active=fs.readdirSync(root).filter(name=>name.endsWith('.js')&&name!=='legacy-retirement-v257.js');
+  const active=fs.readdirSync(root).filter(name=>name.endsWith('.js')&&name!=='legacy-retirement.js');
   for(const name of retired){
     const owners=active.filter(file=>read(file).includes(name));
     assert.deepEqual(owners,[],`${name} is still referenced by ${owners.join(', ')}`);
@@ -68,9 +68,9 @@ test('superseded source files are removed from the published tree',()=>{
 });
 
 test('client Home and Plan have one canonical owner',()=>{
-  const runtime=read('client-final-runtime-v222.js');
+  const runtime=read('client-final-runtime.js');
   const picker=read('client-program-picker.js');
-  const journal=read('client-journal-profile-v107.js');
+  const journal=read('client-journal-profile.js');
   assert.doesNotMatch(runtime,/function renderClientPlan\s*\(/);
   assert.match(runtime,/canonicalClientPlan\.__clientPlanAuthorityV255/);
   assert.match(runtime,/await script\('client-program-picker\.js\?v=260'\)[\s\S]*await script\('client-journal-profile-v107\.js\?v=260'\)/);
@@ -80,3 +80,4 @@ test('client Home and Plan have one canonical owner',()=>{
   assert.doesNotMatch(journal,/window\.clientCleanPlanPage=w/);
   assert.doesNotMatch(read('frequent-patch.js'),/loadExternalScript\('(client-program-picker|client-journal-profile-v107)\.js'\)/);
 });
+

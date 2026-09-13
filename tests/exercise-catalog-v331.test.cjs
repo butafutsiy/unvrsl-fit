@@ -7,7 +7,7 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const context={console,setTimeout:()=>0,setInterval:()=>0,clearInterval:()=>{},CustomEvent:function(){},document:{querySelector:()=>null},ROUTINES:[],st:{programs:[],planAdds:{}},save:()=>{throw new Error('registry must not persist plan repairs')}};
 context.window=context;context.globalThis=context;context.addEventListener=()=>{};
-for(const file of ['exercise-media-verified-v331.js','exercise-picker-v331.js','exercise-plan-canonical-v329.js'])vm.runInNewContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file});
+for(const file of ['exercise-media-verified.js','exercise-picker.js','exercise-plan-canonical.js'])vm.runInNewContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file});
 const api=context.UNVRSL_EXERCISE_REGISTRY_V331;
 
 const expected={
@@ -48,3 +48,4 @@ test('client picker contains every reviewed canonical name without duplicates',(
   for(const spec of api.specs.filter(x=>x.show))assert.ok(names.includes(spec.ru),spec.ru);
   assert.equal(names.length,new Set(names.map(x=>x.toLocaleLowerCase('ru').replace(/ё/g,'е'))).size)
 });
+

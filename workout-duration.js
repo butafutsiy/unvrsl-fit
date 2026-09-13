@@ -78,9 +78,10 @@ unvrslStartDurationTimer();
 // between-set countdown cannot hide or overwrite each other.
 if(!document.querySelector('script[data-unvrsl-rest-timer-v2]')){
   const s=document.createElement('script');
-  s.src='rest-timer-v2.js';
+  s.src='rest-timer.js';
   s.async=false;
   s.dataset.unvrslRestTimerV2='1';
   s.onerror=()=>console.warn('rest timer v2 failed to load');
   document.body.appendChild(s);
 }
+

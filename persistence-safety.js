@@ -9,33 +9,15 @@
   const BACKUP_PREV='unvrsl-fit-v3-backup-prev';
   const JOURNAL='unvrsl-fit-session-journal-v1';
   const META='unvrsl-fit-persistence-meta-v1';
-  const BLOCKED_SESSION_IDS=new Set(['s1787842239872']);
-
   const parse=(raw)=>{try{return raw?JSON.parse(raw):null}catch(e){return null}};
   const clone=(x)=>{try{return JSON.parse(JSON.stringify(x))}catch(e){return null}};
-  const blocked=(s)=>!!s?.id&&BLOCKED_SESSION_IDS.has(String(s.id));
   const completed=(s)=>Array.isArray(s?.sessions)?s.sessions:[];
   const currentDone=(s)=>{try{return s?.current?.ex?.reduce((a,e)=>a+(e.set||[]).filter(x=>x.ok).length,0)||0}catch(e){return 0}};
-
-  function scrubState(state){
-    if(!state||typeof state!=='object')return false;
-    let changed=false;
-    if(Array.isArray(state.sessions)){
-      const before=state.sessions.length;
-      state.sessions=state.sessions.filter(s=>!blocked(s));
-      if(state.sessions.length!==before)changed=true;
-    }
-    if(blocked(state.current)){state.current=null;changed=true}
-    return changed;
-  }
-
-  let blockedRemoved=scrubState(st);
 
   function writeSnapshot(){
     try{
       const snapshot=clone(st);
       if(!snapshot)return;
-      scrubState(snapshot);
       const old=localStorage.getItem(BACKUP);
       if(old)localStorage.setItem(BACKUP_PREV,old);
       localStorage.setItem(BACKUP,JSON.stringify({savedAt:Date.now(),state:snapshot}));
@@ -45,22 +27,21 @@
 
   function readBackup(key){
     const x=parse(localStorage.getItem(key));
-    if(x?.state&&typeof x.state==='object')scrubState(x.state);
     return x?.state&&typeof x.state==='object'?x:null;
   }
 
   function journal(){
     const x=parse(localStorage.getItem(JOURNAL));
     const list=Array.isArray(x)?x:[];
-    return list.filter(s=>!blocked(s));
+    return list;
   }
 
   function writeJournal(list){
-    try{localStorage.setItem(JOURNAL,JSON.stringify(list.filter(s=>!blocked(s)).slice(-120)))}catch(e){}
+    try{localStorage.setItem(JOURNAL,JSON.stringify(list.slice(-120)))}catch(e){}
   }
 
   function addJournalSession(s){
-    if(!s?.id||blocked(s))return;
+    if(!s?.id)return;
     const list=journal();
     const copy=clone(s);
     const i=list.findIndex(x=>String(x.id)===String(copy.id));
@@ -74,7 +55,6 @@
     const ids=new Set(st.sessions.map(x=>String(x.id)));
     let added=0;
     for(const s of list){
-      if(blocked(s))continue;
       if(s?.id&&!ids.has(String(s.id))){st.sessions.push(clone(s));ids.add(String(s.id));added++}
     }
     if(added)st.sessions.sort((a,b)=>(a.started||0)-(b.started||0));
@@ -94,7 +74,6 @@
     try{
       const legacy=parse(localStorage.getItem(LEGACY));
       if(!legacy||typeof legacy!=='object')return 0;
-      scrubState(legacy);
       let added=mergeSessions(legacy.sessions);
       if(!st.current&&legacy.current&&currentDone(legacy)>0&&Date.now()-(legacy.current.started||0)<7*24*3600*1000){st.current=clone(legacy.current);added++}
       if(added&&typeof save==='function')save();
@@ -117,7 +96,6 @@
   const baseSave=typeof window.save==='function'?window.save:null;
   if(baseSave){
     window.save=function(){
-      scrubState(st);
       try{baseSave()}finally{writeSnapshot()}
     };
     try{save=window.save}catch(e){}
@@ -129,7 +107,7 @@
       const before=clone(st.current);
       writeSnapshot();
       const result=baseFinish.apply(this,arguments);
-      if(before&&!blocked(before)){
+      if(before){
         const finished=(st.sessions||[]).find(x=>String(x.id)===String(before.id))||before;
         if(!finished.ended)finished.ended=Date.now();
         addJournalSession(finished);
@@ -143,8 +121,6 @@
   const legacyRecovered=recoverLegacy();
   const journalRecovered=recoverJournal();
   const activeRecovered=recoverActive();
-  blockedRemoved=scrubState(st)||blockedRemoved;
-  if(blockedRemoved&&typeof save==='function')save();
   writeJournal(journal());
   writeSnapshot();
 
@@ -153,8 +129,7 @@
   window.addEventListener('beforeunload',writeSnapshot,{capture:true});
   setInterval(()=>{try{if(st.current)writeSnapshot()}catch(e){}},5000);
 
-  if(blockedRemoved)setTimeout(()=>{try{render();toast('Ошибочная тренировка удалена из статистики')}catch(e){}},250);
-  else if(activeRecovered)setTimeout(()=>{try{toast('Активная тренировка восстановлена')}catch(e){}},600);
+  if(activeRecovered)setTimeout(()=>{try{toast('Активная тренировка восстановлена')}catch(e){}},600);
   else if(legacyRecovered||journalRecovered)setTimeout(()=>{try{toast('История тренировок восстановлена')}catch(e){}},600);
 })();
 

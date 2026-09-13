@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const {aggregateRecommendation,expandPlanEntries}=require('../unvrsl-method-v211.js');
+const {aggregateRecommendation,expandPlanEntries}=require('../unvrsl-method.js');
 
 const plan=[
   {n:'Жим лёжа — UNVRSL 1/3',s:1,r:3,w:130},
@@ -50,7 +50,7 @@ function loadProgramMethodBuilder(){
     getElementById:()=>null,
     querySelectorAll:()=>[]
   };
-  vm.runInNewContext(fs.readFileSync(require.resolve('../program-exercise-rules-v162.js'),'utf8'),context);
+  vm.runInNewContext(fs.readFileSync(require.resolve('../program-exercise-rules.js'),'utf8'),context);
   return context.programBuildMethodSets;
 }
 
@@ -77,10 +77,10 @@ test('automatic readiness never raises the program weight at workout start',asyn
     console,setInterval:()=>0,setTimeout:()=>0,
     document:{createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null,querySelectorAll:()=>[]},
     st:{programs:[program],sessions:[],readinessLog:[],current:{id:'current',programId:'mine',w:1,c:'B',target:8,trainingReadinessDone:true,readinessAdjusted:true,readiness:{percent:10,factor:1.1,manual:false},ex:[{n:'Жим лёжа',sourceId:'bench',set:[{w:125,r:6,ok:false},{w:125,r:6,ok:false}]}]}},
-    programById:id=>id==='mine'?program:null,baseExerciseName:name=>String(name).replace(/\s+—\s+.*$/,'').trim(),save:()=>{},startPage:()=>{},UNVRSL_METHOD_V211:require('../unvrsl-method-v211.js')
+    programById:id=>id==='mine'?program:null,baseExerciseName:name=>String(name).replace(/\s+—\s+.*$/,'').trim(),save:()=>{},startPage:()=>{},UNVRSL_METHOD_V211:require('../unvrsl-method.js')
   };
   context.window=context;
-  vm.runInNewContext(fs.readFileSync(require.resolve('../training-engine-v200.js'),'utf8'),context);
+  vm.runInNewContext(fs.readFileSync(require.resolve('../training-engine.js'),'utf8'),context);
   await context.trainingEngine200Tick();
   assert.deepEqual(JSON.parse(JSON.stringify(context.st.current.ex[0].set.map(set=>set.w))),[110,110]);
   assert.equal(context.st.current.readiness.factor,1);
@@ -103,10 +103,10 @@ test('recommendation stays manual while autoweight is limited to missing program
       {n:'Жим лёжа',sourceId:'bench',set:[{w:110,r:6,ok:false}]},
       {n:'Тяга блока',sourceId:'row',set:[{w:0,r:8,ok:false}]}
     ]}},
-    programById:id=>id==='mine'?program:null,baseExerciseName:name=>String(name).replace(/\s+—\s+.*$/,'').trim(),save:()=>{},startPage:()=>{},UNVRSL_METHOD_V211:require('../unvrsl-method-v211.js'),loadStepFor:()=>2.5
+    programById:id=>id==='mine'?program:null,baseExerciseName:name=>String(name).replace(/\s+—\s+.*$/,'').trim(),save:()=>{},startPage:()=>{},UNVRSL_METHOD_V211:require('../unvrsl-method.js'),loadStepFor:()=>2.5
   };
   context.window=context;
-  vm.runInNewContext(fs.readFileSync(require.resolve('../training-engine-v200.js'),'utf8'),context);
+  vm.runInNewContext(fs.readFileSync(require.resolve('../training-engine.js'),'utf8'),context);
   await context.trainingEngine200Tick();
   const [prescribed,adaptive]=context.st.current.ex;
   assert.equal(prescribed.programWeightMode,'prescribed');
@@ -167,7 +167,7 @@ test('Samsung client workout keeps native one-finger scrolling',()=>{
     }
   };
   context.window=context;
-  vm.runInNewContext(fs.readFileSync(require.resolve('../client-workout-scroll-v259.js'),'utf8'),context);
+  vm.runInNewContext(fs.readFileSync(require.resolve('../client-workout-scroll.js'),'utf8'),context);
   assert.ok(htmlClasses.has('unvrsl-client-workout-scroll-v261'));
   assert.ok(bodyClasses.has('unvrsl-client-workout-scroll-v261'));
   assert.equal(listeners.some(x=>x.name==='touchmove'),false);
@@ -205,7 +205,7 @@ test('calendar planner can remove, restore and replace a planned workout',()=>{
     document:{createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null}
   };
   context.window=context;
-  vm.runInNewContext(fs.readFileSync(require.resolve('../calendar-planner-v234.js'),'utf8'),context);
+  vm.runInNewContext(fs.readFileSync(require.resolve('../calendar-planner.js'),'utf8'),context);
   assert.equal(context.plannedForDate('2026-08-31').c,'A1');
   context.calendarPlannerDeleteV234(encodeURIComponent('2026-08-31'));
   assert.equal(context.plannedForDate('2026-08-31'),null);
@@ -221,3 +221,4 @@ test('calendar planner can remove, restore and replace a planned workout',()=>{
   context.calendarPlannerPreviewDateV234(encodeURIComponent('2026-09-02'));
   assert.deepEqual(calls,[['builtin',2,'B'],['program','custom',0,0]]);
 });
+

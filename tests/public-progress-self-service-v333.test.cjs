@@ -4,8 +4,8 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const root=path.join(__dirname,'..');
-const publicJs=fs.readFileSync(path.join(root,'public-progress-v321.js'),'utf8');
-const offlineJs=fs.readFileSync(path.join(root,'offline-progress-v321.js'),'utf8');
+const publicJs=fs.readFileSync(path.join(root,'public-progress.js'),'utf8');
+const offlineJs=fs.readFileSync(path.join(root,'offline-progress.js'),'utf8');
 const migration=fs.readFileSync(path.join(root,'supabase-migrations/20260909_offline_progress_self_service_v333.sql'),'utf8');
 
 test('shared progress page uses the active session to identify trainer entries',()=>{
@@ -38,3 +38,4 @@ test('new RPCs require a valid private share and are limited to anon and authent
   assert.match(migration,/revoke all on function public\.update_offline_progress_profile_v333\(text, jsonb\) from public/);
   assert.match(migration,/grant execute on function public\.update_offline_progress_profile_v333\(text, jsonb\) to anon, authenticated/);
 });
+

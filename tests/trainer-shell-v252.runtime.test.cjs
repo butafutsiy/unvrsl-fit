@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 
-const source=fs.readFileSync(path.join(__dirname,'..','trainer-shell-v252.js'),'utf8');
+const source=fs.readFileSync(path.join(__dirname,'..','trainer-shell.js'),'utf8');
 
 class Element{
   constructor(tag,id=''){this.tagName=tag.toUpperCase();this.id=id;this.className='';this.dataset={};this.children=[];this.parentNode=null;this.style={display:'',setProperty:(k,v)=>{this.style[k]=v}};this.attributes={}}
@@ -61,3 +61,4 @@ test('ordinary client keeps the five-tab shell',()=>{
   assert.deepEqual(navEl.children.map(x=>x.dataset.p),['home','plan','start','stats','exercises']);
   assert.equal(navEl.style['--nav-cols'],'5');
 });
+
