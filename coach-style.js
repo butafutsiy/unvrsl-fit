@@ -12,12 +12,3 @@
   s.dataset.unvrslStrengthProgressV335='1';
   document.head.appendChild(s);
 })();
-
-(()=>{
-  if(window.__unvrslRepPolicy374||document.querySelector('script[data-unvrsl-rep-policy-v374]'))return;
-  const s=document.createElement('script');
-  s.src='program-rep-range-v266.js?v=374';
-  s.async=false;
-  s.dataset.unvrslRepPolicyV374='1';
-  document.head.appendChild(s);
-})();
