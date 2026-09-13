@@ -1,5 +1,5 @@
-const SW_RELEASE='v383-method-repetition-targets';
-const STATIC_CACHE='unvrsl-static-v383';
+const SW_RELEASE='v373-method-rep-authority';
+const STATIC_CACHE='unvrsl-static-v373';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
@@ -50,10 +50,6 @@ const CORE_ASSETS=[
   './requested-cleanup-v2.js?v=320',
   './client-nav-hotfix.js?v=320',
   './trainer-shell-v252.js?v=316',
-  './program-intensity-autoweight-v261.js?v=383',
-  './program-rep-range-v266.js?v=373',
-  './program-week-rep-guidance-v268.js?v=269',
-  './program-method-reps-v383.js?v=383',
   './progress.html',
   './cloud-config.js?v=321',
   './public-progress-v321.js?v=334',

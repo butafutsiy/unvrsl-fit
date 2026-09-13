@@ -5,7 +5,7 @@
   W.__unvrslProgramIntensityAutoWeightV261=true;
   W.__unvrslProgramIntensityUiOnlyV292=true;
 
-  const BUILTIN=Object.freeze({1:[70,75],2:[75,80],3:[80,85],4:[60,65],5:[85,88],6:[60,65],7:[88,90],8:[90,100]});
+  const BUILTIN=Object.freeze({1:[70,75],2:[75,80],3:[80,85],4:[60,70],5:[85,88],6:[60,70],7:[88,90],8:[90,100]});
   const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
   const num=v=>N(v)??0;
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -21,6 +21,14 @@
   function weightMode(e){if(e?.weightMode==='auto'||e?.weightMode==='manual')return e.weightMode;return (e?.sets||[]).some(s=>num(s?.w)>0)?'manual':'auto'}
   function saveState(){try{if(typeof save==='function')save();else W.save?.()}catch(_){}}
   function recalc(force=true){try{return W.trainingLoadModel292?.run?.(force)||W.trainingLoadModel258?.run?.(force)}catch(_){return null}}
+  function migrateLegacy6065(){
+    const s=state();let changed=false;
+    (s?.programs||[]).forEach(p=>(p?.weeks||[]).forEach(w=>{
+      const b=weekBandPct(w);if(!b||b[0]!==60||b[1]!==65)return;
+      w.intensityMin=60;w.intensityMax=70;p.updated=Date.now();changed=true
+    }));
+    if(changed)saveState();return changed
+  }
 
   function style(){
     if(D.getElementById('program-intensity-autoweight-v261-style'))return;
@@ -34,21 +42,21 @@
   }
 
   function injectWeekCard(){
-    style();const u=ui(),p=u?.pid?program(u.pid):null,wi=Number(u?.week)||0,w=p?.weeks?.[wi],sheet=D.getElementById('sheet'),bar=sheet?.querySelector('.weekbar');if(!p||!w||!bar)return;
+    migrateLegacy6065();style();const u=ui(),p=u?.pid?program(u.pid):null,wi=Number(u?.week)||0,w=p?.weeks?.[wi],sheet=D.getElementById('sheet'),bar=sheet?.querySelector('.weekbar');if(!p||!w||!bar)return;
     sheet.querySelector('.pi261-week')?.remove();const pct=weekBandPct(w),node=D.createElement('div');node.className='pi261-week';const lo=pct?.[0]??'',hi=pct?.[1]??'';
     node.innerHTML=`<div class="pi261-week-head"><div class="pi261-week-title">Интенсивность недели</div><div class="pi261-band">${pct?`${String(lo).replace('.',',')}–${String(hi).replace('.',',')}%`:'Не задана'}</div></div>
       <div class="pi261-grid"><div class="field"><label>От, %</label><input id="pi261Min" inputmode="decimal" placeholder="70" value="${lo}"></div><div class="field"><label>До, %</label><input id="pi261Max" inputmode="decimal" placeholder="75" value="${hi}"></div></div>
-      <div class="pi261-presets"><button class="pi261-preset" onclick="programWeekIntensityPresetV261(60,65)">60–65%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(70,75)">70–75%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(75,80)">75–80%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(80,85)">80–85%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(85,88)">85–88%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(88,90)">88–90%</button></div>
+      <div class="pi261-presets"><button class="pi261-preset" onclick="programWeekIntensityPresetV261(60,70)">60–70%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(70,75)">70–75%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(75,80)">75–80%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(80,85)">80–85%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(85,88)">85–88%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(88,90)">88–90%</button></div>
       <label class="pi261-toggle"><span><b>Учитывать при расчёте веса</b><div class="muted small">Считает единый training-load-model v292</div></span><input id="pi261Use" type="checkbox" ${w.useIntensity===false?'':'checked'}></label>
       <div class="pi261-note">Этот модуль только задаёт интенсивность и режим веса. Рекомендации и автовес рассчитывает один общий движок v292.</div>
       <button class="btn primary full" style="margin-top:11px" onclick="programWeekIntensitySaveV261('${String(p.id).replace(/'/g,"\\'")}',${wi})">Сохранить интенсивность</button>`;
     bar.insertAdjacentElement('afterend',node)
   }
 
-  W.programWeekIntensityPresetV261=(lo,hi)=>{const a=D.getElementById('pi261Min'),b=D.getElementById('pi261Max');if(a)a.value=lo;if(b)b.value=hi};
+  W.programWeekIntensityPresetV261=(lo,hi)=>{if(Number(lo)===60&&Number(hi)===65)hi=70;const a=D.getElementById('pi261Min'),b=D.getElementById('pi261Max');if(a)a.value=lo;if(b)b.value=hi};
   W.programWeekIntensitySaveV261=(pid,wi)=>{
     const p=program(pid),w=p?.weeks?.[Number(wi)];if(!p||!w)return;let lo=N(D.getElementById('pi261Min')?.value),hi=N(D.getElementById('pi261Max')?.value);
-    if(lo==null&&hi==null){delete w.intensityMin;delete w.intensityMax;w.useIntensity=false}else{if(lo==null)lo=hi;if(hi==null)hi=lo;lo=clamp(lo,40,100);hi=clamp(hi,40,100);w.intensityMin=Math.min(lo,hi);w.intensityMax=Math.max(lo,hi);w.useIntensity=D.getElementById('pi261Use')?.checked!==false}
+    if(lo==null&&hi==null){delete w.intensityMin;delete w.intensityMax;w.useIntensity=false}else{if(lo==null)lo=hi;if(hi==null)hi=lo;lo=clamp(lo,40,100);hi=clamp(hi,40,100);if(Math.min(lo,hi)===60&&Math.max(lo,hi)===65){lo=60;hi=70}w.intensityMin=Math.min(lo,hi);w.intensityMax=Math.max(lo,hi);w.useIntensity=D.getElementById('pi261Use')?.checked!==false}
     p.updated=Date.now();saveState();try{typeof renderProgramEditor==='function'&&renderProgramEditor()}catch(_){}recalc(true)
   };
 
@@ -63,7 +71,7 @@
   W.programIntensityApplyV261=()=>recalc(true);
 
   function install(){
-    style();let ok=false;
+    style();migrateLegacy6065();let ok=false;
     try{
       if(typeof renderProgramEditor==='function'&&!renderProgramEditor.__pi261){const old=renderProgramEditor,wrapped=function(){const r=old.apply(this,arguments);setTimeout(injectWeekCard,0);return r};wrapped.__pi261=true;wrapped.__pi261Base=old;W.renderProgramEditor=wrapped;renderProgramEditor=wrapped;ok=true}
       if(typeof programExerciseForm==='function'&&!programExerciseForm.__pi261){const old=programExerciseForm,wrapped=function(x){const r=old.apply(this,arguments);setTimeout(()=>injectWeightMode(x),0);return r};wrapped.__pi261=true;wrapped.__pi261Base=old;W.programExerciseForm=wrapped;programExerciseForm=wrapped;ok=true}
