@@ -1,5 +1,5 @@
-const SW_RELEASE='v373-method-rep-authority';
-const STATIC_CACHE='unvrsl-static-v373';
+const SW_RELEASE='v375-readiness-start-fix';
+const STATIC_CACHE='unvrsl-static-v375';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
@@ -50,6 +50,7 @@ const CORE_ASSETS=[
   './requested-cleanup-v2.js?v=320',
   './client-nav-hotfix.js?v=320',
   './trainer-shell-v252.js?v=316',
+  './readiness-questionnaire-v227.js?v=375',
   './progress.html',
   './cloud-config.js?v=321',
   './public-progress-v321.js?v=334',
