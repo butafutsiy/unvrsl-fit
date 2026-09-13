@@ -1,5 +1,5 @@
-const SW_RELEASE='v371-week-driven-reps';
-const STATIC_CACHE='unvrsl-static-v371';
+const SW_RELEASE='v372-ghost-rep-targets';
+const STATIC_CACHE='unvrsl-static-v372';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
