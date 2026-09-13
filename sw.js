@@ -1,5 +1,5 @@
-const SW_RELEASE='v373-method-rep-authority';
-const STATIC_CACHE='unvrsl-static-v373';
+const SW_RELEASE='v384-method-ranges';
+const STATIC_CACHE='unvrsl-static-v384';
 const CORE_ASSETS=[
   './app.js?v=316',
   './startup-orchestrator-v260.js?v=321',
