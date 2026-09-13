@@ -2,168 +2,55 @@
 (()=>{
   if(window.__unvrslProgramEditorV161Fix)return;
   window.__unvrslProgramEditorV161Fix=true;
+  const W=window,D=document;
 
   function openEditor(id,week=0,day=0){
     const p=programById(id);
     if(!p)return typeof toast==='function'?toast('Программа не найдена'):undefined;
     ensureProgramShape(p);
-    programUi={
-      pid:id,
-      week:Math.max(0,Math.min(Number(week)||0,p.weeks.length-1)),
-      day:Math.max(0,Number(day)||0),
-      query:''
-    };
+    programUi={pid:id,week:Math.max(0,Math.min(Number(week)||0,p.weeks.length-1)),day:Math.max(0,Number(day)||0),query:''};
     renderProgramEditor();
   }
 
-  function create(){
+  function legacyCreate(){
     if(window.__unvrslProgramCreating)return false;
-    const nameInput=document.getElementById('npName');
-    const weeksInput=document.getElementById('npWeeks');
-    const daysInput=document.getElementById('npDays');
-    if(!weeksInput||!daysInput){
-      if(typeof toast==='function')toast('Не удалось прочитать параметры программы');
-      return false;
-    }
-    const name=String(nameInput?.value||'').trim()||'Программа';
-    const weeks=Math.max(1,Math.min(16,Number(weeksInput.value)||4));
-    const days=Math.max(1,Math.min(7,Number(daysInput.value)||3));
-    const p={
-      id:uid('prog'),
-      name,
-      created:Date.now(),
-      updated:Date.now(),
-      weeks:Array.from({length:weeks},(_,wi)=>({
-        n:wi+1,
-        days:Array.from({length:days},(_,di)=>({
-          id:uid('day'),
-          name:`День ${di+1}`,
-          ex:[]
-        }))
-      }))
-    };
-    window.__unvrslProgramCreating=true;
-    st.programs.push(p);
-    openEditor(p.id,0,0);
-    setTimeout(()=>{
-      try{save()}
-      catch(e){
-        console.error('program save',e);
-        if(typeof toast==='function')toast('Программа открыта, но не сохранилась. Освободи место в браузере.')
-      }
-      window.__unvrslProgramCreating=false;
-    },0);
-    return false;
+    const nameInput=document.getElementById('npName'),weeksInput=document.getElementById('npWeeks'),daysInput=document.getElementById('npDays');
+    if(!weeksInput||!daysInput){if(typeof toast==='function')toast('Не удалось прочитать параметры программы');return false}
+    const name=String(nameInput?.value||'').trim()||'Программа',weeks=Math.max(1,Math.min(16,Number(weeksInput.value)||4)),days=Math.max(1,Math.min(7,Number(daysInput.value)||3));
+    const p={id:uid('prog'),name,created:Date.now(),updated:Date.now(),weeks:Array.from({length:weeks},(_,wi)=>({n:wi+1,days:Array.from({length:days},(_,di)=>({id:uid('day'),name:`День ${di+1}`,ex:[]}))}))};
+    window.__unvrslProgramCreating=true;st.programs.push(p);openEditor(p.id,0,0);setTimeout(()=>{try{save()}catch(e){console.error('program save',e);if(typeof toast==='function')toast('Программа открыта, но не сохранилась. Освободи место в браузере.')}window.__unvrslProgramCreating=false},0);return false
   }
 
-  window.openProgramEditor=openEditor;
-  window.createProgram=create;
-  try{openProgramEditor=openEditor}catch(e){}
-  try{createProgram=create}catch(e){}
+  window.openProgramEditor=openEditor;try{openProgramEditor=openEditor}catch(e){}
+  // v380 owns the extended create form and must not be replaced by this legacy safeguard.
+  if(!W.__unvrslProgramEngineEditorV380){W.createProgram=legacyCreate;try{createProgram=legacyCreate}catch(e){}}
 
-  // v225: replace an exercise without rebuilding its prescription.
-  const css=document.createElement('style');
-  css.id='program-exercise-replace-v225-style';
-  css.textContent=`
-    .program-ex-edit-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-    .program-ex-replace-results{min-height:100px}
-    .program-ex-replace-note{font-size:12px;color:#8e8e93;line-height:1.4;margin:8px 0 12px}
-  `;
-  document.head.appendChild(css);
+  // v381: rebuild method-specific fields immediately when method changes.
+  function removeMethodBlocks(){['pmUnvrslFields','pmSldrFields','pmDsFields','pmFstFields'].forEach(id=>D.getElementById(id)?.remove())}
+  function insertAfterRir(html){const a=D.getElementById('pmRirMirror');if(a&&html)a.insertAdjacentHTML('afterend',html)}
+  function unvrslFields(){return `<div id="pmUnvrslFields" class="px-method-fields"><div class="px-method-subtitle">Heavy → 30 сек → Light · 3 раунда</div><div class="field"><label>Heavy повторы</label><input id="pmHeavyReps" type="number" min="1" max="10" value="3"></div><div class="field"><label>Heavy вес, кг</label><input id="pmHeavyWeight" inputmode="decimal" value="" placeholder="Автовес"></div><div class="field"><label>Light повторы</label><input id="pmLightReps" type="number" min="1" max="30" value="9"></div><div class="field"><label>Light вес, кг</label><input id="pmLightWeight" inputmode="decimal" value="" placeholder="Автовес"></div><div class="field px-span-2"><label>Внутри раунда</label><div class="pe380-readonly">30 сек между Heavy и Light</div></div><div class="px-method-subtitle">Middle после 3 раундов</div><div class="field"><label>Подходов</label><input id="pmMiddleSets" type="number" min="0" max="5" value="2"></div><div class="field"><label>Повторов</label><input id="pmMiddleReps" type="number" min="1" max="20" value="6"></div><div class="field px-span-2"><label>Middle вес, кг</label><input id="pmMiddleWeight" inputmode="decimal" value="" placeholder="Автовес"></div></div>`}
+  function sldrFields(){return `<div id="pmSldrFields" class="px-method-fields"><div class="px-method-subtitle">SLDR · 3 рабочих раунда</div><div class="field px-span-2"><label>Схема мини-подходов</label><select id="pmSldrScheme" onchange="programSetSldrScheme?.(this.value)"><option value="10-8-6">10 → 8 → 6</option><option value="12-10-8" selected>12 → 10 → 8</option><option value="15-12-10">15 → 12 → 10</option><option value="manual">Вручную</option></select></div><div id="pmSldrManualFields" class="px-span-2" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"><div class="field"><label>1-й</label><input id="pmSldrManual1" type="number" value="12"></div><div class="field"><label>2-й</label><input id="pmSldrManual2" type="number" value="10"></div><div class="field"><label>3-й</label><input id="pmSldrManual3" type="number" value="8"></div></div><div class="field"><label>Раундов</label><input id="pmSldrRounds" type="number" min="1" max="5" value="3"></div><div class="field"><label>Пауза внутри, сек</label><input id="pmSldrInnerRest" type="number" min="5" max="60" value="15"></div><div class="px-method-info px-span-2">Один рабочий вес. После последнего mini-set каждого раунда – полный отдых.</div></div>`}
+  function dsFields(){return `<div id="pmDsFields" class="px-method-fields"><div class="px-method-subtitle">Drop Set</div><div class="field px-span-2"><label>Расчёт ступеней</label><select id="pmDsMode" onchange="programDsModeChangedV380?.()"><option value="auto">Авто</option><option value="manual">Вручную</option></select></div><div id="pmDsAutoFields" class="px-span-2" style="display:grid;grid-template-columns:repeat(2,1fr);gap:0 12px"><div class="field"><label>Ступеней</label><input id="pmDsStages" type="number" min="2" max="6" value="3"></div><div class="field"><label>Снижение</label><input id="pmDsDrop" inputmode="decimal" value="20"></div><div class="field"><label>Тип</label><select id="pmDsDropMode"><option value="percent">%</option><option value="kg">кг</option></select></div><div class="field"><label>Считать от</label><select id="pmDsReference"><option value="previous">предыдущей</option><option value="initial">стартовой</option></select></div></div><div id="pmDsManualWrap" class="px-span-2 hidden"><div class="pe380-stage-head"><span>#</span><span>Вес</span><span>Повт.</span><span></span></div><div id="pmDsManualStages"></div><button type="button" class="btn full" onclick="programDsAddStageV380?.()">＋ Ступень</button></div><div class="px-method-info px-span-2">Стартовый вес считает AutoWeight или задаёт тренер. В ручном режиме каждая ступень редактируется отдельно.</div></div>`}
+  function fstFields(){return `<div id="pmFstFields" class="px-method-fields"><div class="px-method-subtitle">FST-7</div><div class="field"><label>Повторы от</label><input id="pmFstRepMin" type="number" min="1" max="30" value="8"></div><div class="field"><label>до</label><input id="pmFstRepMax" type="number" min="1" max="30" value="15"></div><div class="field px-span-2"><label>Отдых между 7 подходами, сек</label><input id="pmFstRest" type="number" min="15" max="90" value="30"></div><div class="px-method-info px-span-2">7 рабочих подходов на одном весе. Фактические повторы сохраняются отдельно.</div></div>`}
+  function resetDsDraft(){try{for(let i=8;i>=2;i--)W.programDsRemoveStageV380?.(i);W.programDsStageChangedV380?.(0,'plannedWeight',0);W.programDsStageChangedV380?.(0,'plannedReps',12);W.programDsStageChangedV380?.(1,'plannedWeight',0);W.programDsStageChangedV380?.(1,'plannedReps',10);W.programDsAddStageV380?.();W.programDsModeChangedV380?.()}catch(_){}}
+  function installMethodSwitch(){const base=W.programSetMethod;if(typeof base!=='function'||base.__v381)return;const wrapped=function(method){const r=base.apply(this,arguments);removeMethodBlocks();if(method==='UNVRSL')insertAfterRir(unvrslFields());else if(method==='SLDR')insertAfterRir(sldrFields());else if(method==='DS'){insertAfterRir(dsFields());setTimeout(resetDsDraft,0)}else if(method==='FST-7')insertAfterRir(fstFields());setTimeout(()=>{try{W.programRefreshMethodUi?.(true);W.programWeightModeChangedV380?.();W.programRpeRangeChangedV380?.()}catch(_){}},0);return r};wrapped.__v381=true;wrapped.__v381Base=base;W.programSetMethod=wrapped;W.programMethodDefaults=wrapped;try{programSetMethod=wrapped;programMethodDefaults=wrapped}catch(_){}}
+  installMethodSwitch();setTimeout(installMethodSwitch,0);setTimeout(installMethodSwitch,900);
 
+  const css=document.createElement('style');css.id='program-exercise-replace-v225-style';css.textContent=`.program-ex-edit-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.program-ex-replace-results{min-height:100px}.program-ex-replace-note{font-size:12px;color:#8e8e93;line-height:1.4;margin:8px 0 12px}`;document.head.appendChild(css);
   const dayById=(pid,wi,dayId)=>programById(pid)?.weeks?.[wi]?.days?.find(d=>String(d.id)===String(dayId))||null;
   const dayIndex=(pid,wi,dayId)=>programById(pid)?.weeks?.[wi]?.days?.findIndex(d=>String(d.id)===String(dayId))??-1;
   const exerciseLabel=e=>e?.custom?(e.raw||e.n||'Упражнение'):(typeof ruExerciseName==='function'?ruExerciseName(e?.n||''):(e?.n||'Упражнение'));
-  const exerciseMeta=e=>{
-    if(e?.custom&&typeof inferCustomMeta==='function')return inferCustomMeta(e.raw||e.n||'')||{};
-    return {bp:e?.bp||'',tg:e?.tg||'',eq:e?.eq||''};
-  };
-  const replacementRecords=q=>{
-    if(typeof catalogRecords!=='function')return[];
-    const s=String(q||'').trim().toLowerCase();
-    return catalogRecords().filter(e=>{
-      if(!e)return false;
-      const label=exerciseLabel(e),m=exerciseMeta(e);
-      const bp=typeof BP_RU==='object'?(BP_RU[m.bp]||''):'';
-      const eq=typeof EQ_RU==='object'?(EQ_RU[m.eq]||''):'';
-      return !s||`${label} ${e.n||''} ${bp} ${eq}`.toLowerCase().includes(s)
-    }).slice(0,100)
-  };
-  function replacementRow(e,pid,wi,dayId,ei){
-    const label=exerciseLabel(e),m=exerciseMeta(e),media=e?.gif||e?.image||'';
-    const thumb=media&&typeof mediaUrl==='function'?`<img class="ex-thumb" src="${mediaUrl(media)}" loading="lazy">`:'<div class="ex-thumb placeholder">🏋︎</div>';
-    const bp=typeof BP_RU==='object'?(BP_RU[m.bp]||'—'):'—',eq=typeof EQ_RU==='object'?(EQ_RU[m.eq]||'—'):'—';
-    return `<button class="card exlib exlib-btn" onclick="replaceProgramExercisePickV225('${pid}',${wi},'${dayId}',${ei},'${encodeURIComponent(e.id)}')"><div class="exercise-list-row">${thumb}<div class="grow"><b>${esc(label)}</b><div class="catalog-meta">${esc(bp)} · ${esc(eq)}</div></div><span class="chev">›</span></div></button>`
-  }
-  function renderReplacementResults(pid,wi,dayId,ei,q){
-    const root=document.getElementById('programReplaceResultsV225');if(!root)return;
-    const rows=replacementRecords(q),name=String(q||'').trim();
-    root.innerHTML=rows.map(e=>replacementRow(e,pid,wi,dayId,ei)).join('')+(name?`<button class="card exlib exlib-btn" onclick="replaceProgramExerciseCustomV225('${pid}',${wi},'${dayId}',${ei},'${encodeURIComponent(name)}')"><b>＋ Использовать «${esc(name)}» как своё упражнение</b></button>`:'')||'<div class="card muted">Ничего не найдено.</div>';
-  }
+  const exerciseMeta=e=>{if(e?.custom&&typeof inferCustomMeta==='function')return inferCustomMeta(e.raw||e.n||'')||{};return{bp:e?.bp||'',tg:e?.tg||'',eq:e?.eq||''}};
+  const replacementRecords=q=>{if(typeof catalogRecords!=='function')return[];const s=String(q||'').trim().toLowerCase();return catalogRecords().filter(e=>{if(!e)return false;const label=exerciseLabel(e),m=exerciseMeta(e),bp=typeof BP_RU==='object'?(BP_RU[m.bp]||''):'',eq=typeof EQ_RU==='object'?(EQ_RU[m.eq]||''):'';return!s||`${label} ${e.n||''} ${bp} ${eq}`.toLowerCase().includes(s)}).slice(0,100)};
+  function replacementRow(e,pid,wi,dayId,ei){const label=exerciseLabel(e),m=exerciseMeta(e),media=e?.gif||e?.image||'',thumb=media&&typeof mediaUrl==='function'?`<img class="ex-thumb" src="${mediaUrl(media)}" loading="lazy">`:'<div class="ex-thumb placeholder">🏋︎</div>',bp=typeof BP_RU==='object'?(BP_RU[m.bp]||'—'):'—',eq=typeof EQ_RU==='object'?(EQ_RU[m.eq]||'—'):'—';return `<button class="card exlib exlib-btn" onclick="replaceProgramExercisePickV225('${pid}',${wi},'${dayId}',${ei},'${encodeURIComponent(e.id)}')"><div class="exercise-list-row">${thumb}<div class="grow"><b>${esc(label)}</b><div class="catalog-meta">${esc(bp)} · ${esc(eq)}</div></div><span class="chev">›</span></div></button>`}
+  function renderReplacementResults(pid,wi,dayId,ei,q){const root=document.getElementById('programReplaceResultsV225');if(!root)return;const rows=replacementRecords(q),name=String(q||'').trim();root.innerHTML=rows.map(e=>replacementRow(e,pid,wi,dayId,ei)).join('')+(name?`<button class="card exlib exlib-btn" onclick="replaceProgramExerciseCustomV225('${pid}',${wi},'${dayId}',${ei},'${encodeURIComponent(name)}')"><b>＋ Использовать «${esc(name)}» как своё упражнение</b></button>`:'')||'<div class="card muted">Ничего не найдено.</div>'}
   window.replaceProgramExerciseFilterV225=(pid,wi,dayId,ei,q)=>renderReplacementResults(pid,wi,dayId,ei,q);
-  window.replaceProgramExercisePickerV225=function(pid,wi,dayId,ei){
-    const di=dayIndex(pid,wi,dayId),d=dayById(pid,wi,dayId),old=d?.ex?.[ei];
-    if(di<0||!old)return typeof toast==='function'?toast('Упражнение не найдено'):undefined;
-    modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>Заменить упражнение</h2><div class="muted small">Сейчас: ${esc(old.n||'Упражнение')}</div></div><button class="btn tiny" onclick="openProgramEditor('${pid}',${wi},${di})">←</button></div><div class="program-ex-replace-note">После выбора сохранятся подходы, повторы, RPE, темп, отдых и метод. Их можно сразу проверить перед сохранением.</div><input class="search" id="programReplaceSearchV225" autocomplete="off" placeholder="Поиск упражнения" oninput="replaceProgramExerciseFilterV225('${pid}',${wi},'${dayId}',${ei},this.value)"><div id="programReplaceResultsV225" class="program-ex-replace-results"></div>`);
-    renderReplacementResults(pid,wi,dayId,ei,'');
-    setTimeout(()=>document.getElementById('programReplaceSearchV225')?.focus(),30)
-  };
-  window.replaceProgramExercisePickV225=function(pid,wi,dayId,ei,token){
-    const di=dayIndex(pid,wi,dayId);if(di<0)return;
-    if(typeof programExerciseSettings==='function')return programExerciseSettings(pid,wi,di,token,ei);
-    if(typeof toast==='function')toast('Редактор упражнения ещё загружается')
-  };
-  window.replaceProgramExerciseCustomV225=function(pid,wi,dayId,ei,token){
-    const di=dayIndex(pid,wi,dayId),name=decodeURIComponent(token||'').trim();if(di<0||!name)return;
-    if(!Array.isArray(st.customExercises))st.customExercises=[];
-    const base=typeof baseExerciseName==='function'?baseExerciseName(name).toLowerCase():name.toLowerCase();
-    const exists=st.customExercises.some(x=>{
-      const n=String(x?.n||'');return (typeof baseExerciseName==='function'?baseExerciseName(n).toLowerCase():n.toLowerCase())===base
-    });
-    if(!exists)st.customExercises.push({n:name,created:Date.now()});
-    try{save()}catch(e){}
-    const m=typeof inferCustomMeta==='function'?(inferCustomMeta(name)||{}):{};
-    if(typeof programExerciseForm==='function')return programExerciseForm({pid,wi,di,n:name,sourceId:null,bp:m.bp||'',tg:m.tg||'',eq:m.eq||'',existingIndex:ei});
-    if(typeof toast==='function')toast('Редактор упражнения ещё загружается')
-  };
+  window.replaceProgramExercisePickerV225=function(pid,wi,dayId,ei){const di=dayIndex(pid,wi,dayId),d=dayById(pid,wi,dayId),old=d?.ex?.[ei];if(di<0||!old)return typeof toast==='function'?toast('Упражнение не найдено'):undefined;modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>Заменить упражнение</h2><div class="muted small">Сейчас: ${esc(old.n||'Упражнение')}</div></div><button class="btn tiny" onclick="openProgramEditor('${pid}',${wi},${di})">←</button></div><div class="program-ex-replace-note">После выбора сохранятся подходы, повторы, RPE, темп, отдых и метод. Их можно сразу проверить перед сохранением.</div><input class="search" id="programReplaceSearchV225" autocomplete="off" placeholder="Поиск упражнения" oninput="replaceProgramExerciseFilterV225('${pid}',${wi},'${dayId}',${ei},this.value)"><div id="programReplaceResultsV225" class="program-ex-replace-results"></div>`);renderReplacementResults(pid,wi,dayId,ei,'');setTimeout(()=>document.getElementById('programReplaceSearchV225')?.focus(),30)};
+  window.replaceProgramExercisePickV225=function(pid,wi,dayId,ei,token){const di=dayIndex(pid,wi,dayId);if(di<0)return;if(typeof programExerciseSettings==='function')return programExerciseSettings(pid,wi,di,token,ei);if(typeof toast==='function')toast('Редактор упражнения ещё загружается')};
+  window.replaceProgramExerciseCustomV225=function(pid,wi,dayId,ei,token){const di=dayIndex(pid,wi,dayId),name=decodeURIComponent(token||'').trim();if(di<0||!name)return;if(!Array.isArray(st.customExercises))st.customExercises=[];const base=typeof baseExerciseName==='function'?baseExerciseName(name).toLowerCase():name.toLowerCase(),exists=st.customExercises.some(x=>{const n=String(x?.n||'');return(typeof baseExerciseName==='function'?baseExerciseName(n).toLowerCase():n.toLowerCase())===base});if(!exists)st.customExercises.push({n:name,created:Date.now()});try{save()}catch(e){}const m=typeof inferCustomMeta==='function'?(inferCustomMeta(name)||{}):{};if(typeof programExerciseForm==='function')return programExerciseForm({pid,wi,di,n:name,sourceId:null,bp:m.bp||'',tg:m.tg||'',eq:m.eq||'',existingIndex:ei});if(typeof toast==='function')toast('Редактор упражнения ещё загружается')};
 
-  function installReplaceButton(){
-    const base=window.programExerciseRow;
-    if(typeof base!=='function'||base.__replaceExerciseV225)return;
-    const wrapped=function(p,d,e,ei){
-      const html=base.apply(this,arguments);
-      if(!html||e?.method==='SUPERSET'||html.includes('replaceProgramExercisePickerV225'))return html;
-      const edit=`<button class="btn tiny" onclick="editProgramExercise('${p.id}',${programUi.week},'${d.id}',${ei})">Изм.</button>`;
-      if(!html.includes(edit))return html;
-      const actions=`<div class="program-ex-edit-actions"><button class="btn tiny" onclick="replaceProgramExercisePickerV225('${p.id}',${programUi.week},'${d.id}',${ei})">Заменить</button>${edit}</div>`;
-      return html.replace(edit,actions)
-    };
-    wrapped.__replaceExerciseV225=true;
-    window.programExerciseRow=wrapped;
-    try{programExerciseRow=wrapped}catch(e){}
-  }
-  installReplaceButton();
-  setTimeout(installReplaceButton,0);
-  setTimeout(installReplaceButton,800);
+  function installReplaceButton(){const base=window.programExerciseRow;if(typeof base!=='function'||base.__replaceExerciseV225)return;const wrapped=function(p,d,e,ei){const html=base.apply(this,arguments);if(!html||e?.method==='SUPERSET'||html.includes('replaceProgramExercisePickerV225'))return html;const edit=`<button class="btn tiny" onclick="editProgramExercise('${p.id}',${programUi.week},'${d.id}',${ei})">Изм.</button>`;if(!html.includes(edit))return html;return html.replace(edit,`<div class="program-ex-edit-actions"><button class="btn tiny" onclick="replaceProgramExercisePickerV225('${p.id}',${programUi.week},'${d.id}',${ei})">Заменить</button>${edit}</div>`)};wrapped.__replaceExerciseV225=true;window.programExerciseRow=wrapped;try{programExerciseRow=wrapped}catch(e){}}
+  installReplaceButton();setTimeout(installReplaceButton,0);setTimeout(installReplaceButton,800);
 
-  // Refresh the original Sergey seed once, then leave later trainer edits untouched.
-  setTimeout(()=>{
-    try{
-      const seed='sergey-8-week-training-plan',name='Тренировочный план (Сергей)';
-      const p=Array.isArray(st?.programs)?st.programs.find(x=>x?.seedId===seed||x?.id===seed||x?.name===name):null;
-      if(!p||Number(p.sourceRevision||1)>=2)return;
-      const dayNames=['День 1 · Грудь + трицепс + средняя дельта','День 2 · Спина + бицепс + плечи','День 3 · Ноги'];
-      const names=[
-        ['1 · Жим штанги лёжа','2 · Жим гантелей на наклонной скамье','3 · Сведение в кроссовере на низ груди','4 · Жим в тренажёре на грудь','5 · Французский жим','6 · Махи гантелями в стороны','7 · Разгибание рук на верхнем блоке'],
-        ['1 · Подтягивания с дополнительным весом','2 · Тяга в наклоне в Смите','3 · Тяга гантели одной рукой к поясу','4 · Тяга вертикального блока','5 · Подъём штанги на бицепс','6 · Сгибание гантелей с супинацией','7 · Жим гантелей сидя'],
-        ['1 · Гакк-присед','2 · Жим ногами','3 · Румынская тяга','4 · Сгибание ног лёжа','5 · Разгибание ног','6 · Сведение ног в тренажёре','7 · Подъём на носки в тренажёре']
-      ];
-      (p.weeks||[]).forEach(w=>(w.days||[]).slice(0,3).forEach((d,di)=>{
-        d.name=dayNames[di]||d.name;
-        (d.ex||[]).slice(0,7).forEach((ex,ei)=>{if(names[di]?.[ei])ex.n=names[di][ei]})
-      }));
-      p.sourceRevision=2;p.updated=Date.now();
-      try{save()}catch(e){}
-    }catch(e){console.warn('Sergey plan v225 refresh',e)}
-  },0);
+  setTimeout(()=>{try{const seed='sergey-8-week-training-plan',name='Тренировочный план (Сергей)',p=Array.isArray(st?.programs)?st.programs.find(x=>x?.seedId===seed||x?.id===seed||x?.name===name):null;if(!p||Number(p.sourceRevision||1)>=2)return;const dayNames=['День 1 · Грудь + трицепс + средняя дельта','День 2 · Спина + бицепс + плечи','День 3 · Ноги'],names=[['1 · Жим штанги лёжа','2 · Жим гантелей на наклонной скамье','3 · Сведение в кроссовере на низ груди','4 · Жим в тренажёре на грудь','5 · Французский жим','6 · Махи гантелями в стороны','7 · Разгибание рук на верхнем блоке'],['1 · Подтягивания с дополнительным весом','2 · Тяга в наклоне в Смите','3 · Тяга гантели одной рукой к поясу','4 · Тяга вертикального блока','5 · Подъём штанги на бицепс','6 · Сгибание гантелей с супинацией','7 · Жим гантелей сидя'],['1 · Гакк-присед','2 · Жим ногами','3 · Румынская тяга','4 · Сгибание ног лёжа','5 · Разгибание ног','6 · Сведение ног в тренажёре','7 · Подъём на носки в тренажёре']];(p.weeks||[]).forEach(w=>(w.days||[]).slice(0,3).forEach((d,di)=>{d.name=dayNames[di]||d.name;(d.ex||[]).slice(0,7).forEach((ex,ei)=>{if(names[di]?.[ei])ex.n=names[di][ei]})}));p.sourceRevision=2;p.updated=Date.now();try{save()}catch(e){}}catch(e){console.warn('Sergey plan v225 refresh',e)}},0);
 })();
