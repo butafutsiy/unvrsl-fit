@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const W=window,D=document,REV=368;
+  const W=window,D=document,REV=375;
   if(W.__unvrslMethodPreviewCollapseV368)return;
   W.__unvrslMethodPreviewCollapseV368=true;
 
@@ -43,6 +43,21 @@
     return lines
   }
 
+  function normalizeRule(rule,type){
+    if(!rule)return;
+    let text=String(rule.textContent||'').replace(/\s+/g,' ').trim();
+    if(type==='UNVRSL'){
+      const suffix='после 2×6 обычный отдых';
+      text=text.replace(/(?:\s*·\s*после 2×6 обычный отдых)+/gi,'').trim();
+      if(/между раундами/i.test(text))text=text.replace(/между раундами/i,`между раундами · ${suffix}`);
+    }else if(type==='SLDR'){
+      text=text.replace(/с после каждого полного круга(?:\s*·\s*после каждого полного круга)*/gi,'с после каждого полного круга');
+      text=text.replace(/с после$/i,'с после каждого полного круга')
+    }
+    rule.textContent=text;
+    rule.dataset.methodPreviewRuleRevision=String(REV)
+  }
+
   function collapseOpenPreview(w,c){
     const root=D.querySelector('#sheet .routine-preview-v281'),r=routine(w,c);
     if(!root||!r)return false;
@@ -61,9 +76,7 @@
         matches=items.filter(item=>{
           const title=String(item.querySelector('.rp281-name')?.textContent||'').trim();
           const prescription=String(item.querySelector('.rp281-prescription')?.textContent||'');
-          return rx.test(title)&&(
-            g.type==='UNVRSL'?(/30с|UNVRSL/i.test(prescription+title)):/15с|SLDR/i.test(prescription+title)
-          )
+          return rx.test(title)&&(g.type==='UNVRSL'?(/30с|UNVRSL/i.test(prescription+title)):/15с|SLDR/i.test(prescription+title))
         })
       }
       if(!matches.length)return;
@@ -75,11 +88,7 @@
         prescription.style.whiteSpace='pre-line';
         prescription.style.lineHeight='1.45'
       }
-      if(rule){
-        const current=String(rule.textContent||'');
-        if(g.type==='UNVRSL')rule.textContent=current.replace(/между раундами/i,'между раундами · после 2×6 обычный отдых');
-        if(g.type==='SLDR')rule.textContent=current.replace(/с после$/i,'с после каждого полного круга')
-      }
+      normalizeRule(rule,g.type);
       matches.slice(1).forEach(item=>item.remove())
     });
 
