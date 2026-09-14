@@ -80,7 +80,6 @@
   window.unvrslCleanupLegacyClientWeightV236=cleanupLegacyClientWeight;
 
   function script(src){
-    if(window.unvrslScriptRetiredV257?.(src)||window.unvrslScriptRetiredV256?.(src)||window.unvrslScriptRetiredV255?.(src)||window.unvrslScriptRetiredV254?.(src)||window.unvrslScriptRetiredV253?.(src))return Promise.resolve({retired:true,src});
     if(loaded.has(src)||document.querySelector(`script[src="${src}"],script[src="./${src}"]`))return Promise.resolve();
     loaded.add(src);
     return new Promise(resolve=>{const s=document.createElement('script');s.src=src;s.async=false;s.dataset.clientFinal='1';s.onload=resolve;s.onerror=resolve;document.body.appendChild(s)});
@@ -243,8 +242,8 @@
     clientBooting=(async()=>{
       await cleanupLegacyClientWeight();
       await hydrateAssignments();
-      await script('client-program-picker.js?v=377');
-      await script('client-journal-profile.js?v=377');
+      await script('client-program-picker.js?v=380');
+      await script('client-journal-profile.js?v=380');
       installPlanGuard();installSettings();installCanonicalClientHome();
       if(document.getElementById('plan')?.classList.contains('active'))canonicalClientPlan();
       if(document.getElementById('home')?.classList.contains('active'))renderCanonicalClientHome();
@@ -279,4 +278,3 @@
   setTimeout(()=>clearInterval(tick),20000);
   [500,1200,2500,5000].forEach(t=>setTimeout(()=>{if(isClient()){bootClient();installPlanGuard();installSettings();installCanonicalClientHome()}},t));
 })();
-

@@ -23,12 +23,9 @@
  .te200-ready-result{margin:12px 0;padding:13px 14px;border-radius:16px;background:#202023;border:1px solid #303034}.te200-ready-result b{display:block;color:#f5f5f7}.te200-ready-result span{display:block;color:#8e8e93;font-size:11px;margin-top:4px}.te200-ready-result.ready{border-color:rgba(48,209,88,.32);background:rgba(48,209,88,.08)}.te200-ready-result.ready b{color:#30d158}.te200-ready-result.down{border-color:rgba(255,159,10,.35);background:rgba(255,159,10,.08)}.te200-ready-result.down b{color:#ff9f0a}
  .te200-scale{display:flex;justify-content:space-between;color:#777;font-size:10px;margin-top:3px}.te200-explicit{margin-top:10px;color:#777;font-size:11px;line-height:1.4}
  html.te200-preparing #start>*{visibility:hidden!important}.te200-preparing-view{text-align:center;padding:24px 4px 14px}.te200-preparing-view h2{margin-bottom:8px}.te200-preparing-view .muted{line-height:1.45}
- #start .smart-suggest,#start .u177-rec,#start .wr180,#start .wr185,#start .adaptive-choice-btn,#start .adaptive-load-chip,#start .unvrsl-auto-load{display:none!important}
  `;document.head.appendChild(style);
- function disableLegacyReadiness(){if(typeof W.advAskReadiness!=='function'||W.advAskReadiness.__te205)return;const bypass=(fn,args)=>typeof fn==='function'?fn.apply(W,Array.isArray(args)?args:[]):undefined;bypass.__te205=true;W.advAskReadiness=bypass;try{advAskReadiness=bypass}catch(_){}}
  function lockLegacy(cur){if(!cur)return;cur.unvrslAdaptive174Applied=true;cur.adaptiveEffortV2Applied=true;cur.adaptiveDecision='engine295';cur.adaptivePrompted=true;delete cur.trainingWeightChoice;delete cur.engine196Prepared;delete cur.engine196FlowShown;delete cur.weightsPrepared194}
  function captureLaunchWeights(cur){if(!cur||cur.launchWeightsCaptured206)return;for(const ex of cur.ex||[]){for(const s of ex.set||[]){s.launchW=N(s.w)??0;s.launchWeightCaptured206=true}}cur.launchWeightsCaptured206=true;lockLegacy(cur)}
- disableLegacyReadiness();
  function program(cur){
   try{if(cur?.programId&&W.programById){const p=W.programById(cur.programId);if(p)return p}}catch(_){}
   if(cur?.planId){const p=(W.st?.programs||[]).find(x=>String(x?.cloudPlanId||'')===String(cur.planId));if(p)return p}
@@ -60,7 +57,7 @@
  function sourceWeight(src,ex,setIndex,cur){const sets=src?.sets||[];if(!sets.length)return 0;if((ex.set||[]).length>1)return num(sets[setIndex]?.w??sets.at(-1)?.w);const i=occurrenceIndex(ex,cur),m=method(src,ex),count=(cur.ex||[]).filter(x=>same(x,ex.n,ex.sourceId)).length;if(m==='UNVRSL'&&count>sets.length){const map=sets.length>=3?[0,1,0,1,0,1,2,2]:sets.length===2?[0,1,0,1,0,1,1,1]:[0,0,0,0,0,0,0,0];return num(sets[map[i]??map.at(-1)]?.w)}return num(sets[i]?.w??sets.at(-1)?.w)}
  async function ensureLoadModel(){
   if(W.trainingLoadModel292?.run)return true;
-  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=377';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
+  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=380';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
   for(let i=0;i<40;i++){if(W.trainingLoadModel292?.run)return true;await new Promise(r=>setTimeout(r,50))}
   return !!W.trainingLoadModel292?.run
  }
@@ -143,7 +140,7 @@
   const cur=W.st?.current;if(!cur)return;lockLegacy(cur);attachReadiness(cur,d,adjust);(cur.ex||[]).forEach(ex=>{(ex.set||[]).forEach(s=>{if(s.ok||s.manualOverride||num(s.plannedW)<=0)return;s.w=todayWeight(s.plannedW,ex,cur)})});try{W.save?.();W.startPage?.();W.closeModal?.()}catch(_){}try{await W.trainingLoadModel292?.run?.(true)}catch(_){}setTimeout(enhanceDom,0);if(adjust)W.toast?.(readinessText(d).label)
  }
  function domSignature(cur){return JSON.stringify([cur.id,cur.trainingWeightPolicy214,cur.trainingLoadModelRevision||0,cur.trainingLoadModelAt||'',!!cur.trainingReadinessDone,!!cur.readinessAdjusted,cur.readiness?.score??null,(cur.ex||[]).map(ex=>[key(ex),ex.programWeightMode,ex.weightDecision,ex.trainingProgression292?.action||'',ex.trainingProgression292?.reason||'',(ex.set||[]).map(s=>[num(s.programW),num(s.recommendedW),!!s.trainingIntensity292,num(s.plannedW),num(s.w)])])])}
- function enhanceDom(){const cur=W.st?.current,root=document.getElementById('start');if(!cur||!root)return;root.querySelectorAll('.smart-suggest,.u177-rec,.wr180,.wr185').forEach(x=>x.remove());const sig=domSignature(cur);if(root.dataset.te200Sig===sig&&root.querySelector('.te200-readiness'))return;root.querySelectorAll('.te200-rec,.te200-auto,.te200-readiness').forEach(x=>x.remove());const cards=[...root.querySelectorAll('.exercise')];const seen=new Set();
+ function enhanceDom(){const cur=W.st?.current,root=document.getElementById('start');if(!cur||!root)return;const sig=domSignature(cur);if(root.dataset.te200Sig===sig&&root.querySelector('.te200-readiness'))return;root.querySelectorAll('.te200-rec,.te200-auto,.te200-readiness').forEach(x=>x.remove());const cards=[...root.querySelectorAll('.exercise')],seen=new Set();
   (cur.ex||[]).forEach((ex,i)=>{if(ex?.mode==='cardio')return;const k=key(ex);if(seen.has(k))return;seen.add(k);const indices=groupIndices(cur,k),group=indices.map(j=>cur.ex[j]),card=cards[i];if(!card)return;const anchor=card.querySelector('.exname')||card.firstElementChild;
    const prescribedGroup=group.every(g=>g?.programWeightMode==='prescribed');
    if(!prescribedGroup){
@@ -158,10 +155,9 @@
  function assignStart(name,fn){W[name]=fn;try{if(name==='begin')begin=fn;else if(name==='beginProgramDay')beginProgramDay=fn;else if(name==='beginRemotePlan')beginRemotePlan=fn}catch(_){}}
  function installStart(name){const fn=W[name];if(typeof fn!=='function'||fn.__te205PreStart)return;const wrapped=function(){if(startingAfterReadiness)return fn.apply(this,arguments);askBeforeStart(fn,arguments,this)};wrapped.__te205PreStart=true;wrapped.__te205Base=fn;assignStart(name,wrapped)}
  function installStartHooks(){['begin','beginProgramDay','beginRemotePlan'].forEach(installStart)}
- async function tick(){disableLegacyReadiness();installStartHooks();const cur=W.st?.current;if(!cur?.id||cur.ended)return;lockLegacy(cur);const id=String(cur.id);if(id!==last){last=id;busy=false;const root=document.getElementById('start');if(root)delete root.dataset.te200Sig}if(busy)return;busy=true;try{if(cur.trainingEngineRevision!==REV){const ok=await prepare(cur);if(!ok)return}else if(!W.trainingLoadModel292?.run){await ensureLoadModel()}enhanceDom()}finally{busy=false}}
+ async function tick(){installStartHooks();const cur=W.st?.current;if(!cur?.id||cur.ended)return;lockLegacy(cur);const id=String(cur.id);if(id!==last){last=id;busy=false;const root=document.getElementById('start');if(root)delete root.dataset.te200Sig}if(busy)return;busy=true;try{if(cur.trainingEngineRevision!==REV){const ok=await prepare(cur);if(!ok)return}else if(!W.trainingLoadModel292?.run){await ensureLoadModel()}enhanceDom()}finally{busy=false}}
  W.trainingApplyRecommendation200=applyRecommendation;W.trainingRestoreProgram200=restoreProgram;W.trainingShowReadiness200=showReadiness;W.trainingConfirmReadiness200=confirm;W.trainingUpdateReadiness200=updateReadiness;W.trainingEngine200Tick=tick;
- const oldApply=W.applySuggestion;W.applySuggestion=function(){if(W.st?.current?.id){W.toast?.(isOwnerEightWeekPlan(W.st.current)?'Рекомендация показана над упражнением':'Автовес уже применяется автоматически');return}return typeof oldApply==='function'?oldApply.apply(this,arguments):undefined};try{applySuggestion=W.applySuggestion}catch(_){}
- installStartHooks();setInterval(tick,300);[0,80,250,700,1500,3000].forEach(t=>setTimeout(tick,t));
+ let tickQueued=false;const scheduleTick=()=>{if(tickQueued)return;tickQueued=true;queueMicrotask(()=>{tickQueued=false;tick()})};
+ installStartHooks();['unvrsl:workout-rendered','unvrsl:workout-set-changed','unvrsl:readiness-ready','pageshow'].forEach(ev=>W.addEventListener?.(ev,scheduleTick,{passive:true}));[0,120,500].forEach(t=>setTimeout(scheduleTick,t));
  W.dispatchEvent?.(new CustomEvent('unvrsl:training-engine-ready',{detail:{release:REV,mathOwner:MATH_OWNER}}));
 })();
-

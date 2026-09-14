@@ -57,16 +57,13 @@ test('v261 service worker removes old app caches and never writes responses',()=
 test('Anatomy is owned by the final Statistics renderer and every old block is rejected',()=>{
   const dashboard=read('stats-dashboard.js');
   const anatomy=read('anatome-muscle-map.js');
-  const cleanup=read('stats-cleanup.js');
   const authority=read('stats-authority.js');
   assert.match(dashboard,/anatomeMuscleCardHtmlV254/);
   assert.match(anatomy,/window\.anatomeMountCardV254=mount/);
   assert.match(anatomy,/root\.querySelector\('\.sd2-grid'\)/);
-  assert.match(cleanup,/#statsWorkoutHistory208/);
-  assert.match(cleanup,/sd2-weight-head/);
-  assert.match(cleanup,/Активность\\s\*—/);
   assert.match(authority,/#statsWorkoutHistory208/);
   assert.match(authority,/\.stats-muscle-week/);
+  assert.equal(fs.existsSync(path.join(root,'stats-cleanup.js')),false);
   assert.doesNotMatch(dashboard,/heatmapHtml|weightCardHtml|workoutHistoryHtml/);
 });
 
@@ -75,4 +72,3 @@ test('superseded UI layers no longer force delayed Home or Statistics rerenders'
   assert.doesNotMatch(density,/typeof statsPage|compactWeightChart/);
   assert.doesNotMatch(mobile,/typeof statsPage/);
 });
-

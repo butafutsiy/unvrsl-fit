@@ -90,9 +90,7 @@
   }
 
   function boot(){repairState();installStartGuard();syncDom()}
-  boot();[80,250,700,1500,3000].forEach(ms=>setTimeout(boot,ms));
-  ['unvrsl:training-engine-ready','unvrsl:modules-ready','unvrsl:app-ready'].forEach(ev=>W.addEventListener?.(ev,boot,{passive:true}));
+  boot();[80,300].forEach(ms=>setTimeout(boot,ms));
+  ['unvrsl:workout-rendered','unvrsl:workout-set-changed','unvrsl:training-engine-ready'].forEach(ev=>W.addEventListener?.(ev,boot,{passive:true}));
   D.addEventListener?.('visibilitychange',()=>{if(!D.hidden)boot()},{passive:true});
-  setInterval(()=>{if(D.getElementById('start')?.classList.contains('active'))syncDom()},900);
 })();
-
