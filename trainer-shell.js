@@ -27,7 +27,7 @@
   function ensureButton(nav,id){
     let btn=nav.querySelector(`button[data-p="${id}"]`);
     if(!btn){
-      const d=DEF[id];btn=document.createElement('button');btn.dataset.p=id;btn.innerHTML=`<span class="ico">${d.icon}</span>${d.label}`;
+      const d=DEF[id],icon=window.unvrslNavIconV385?.(id)||d.icon;btn=document.createElement('button');btn.dataset.p=id;btn.innerHTML=`<span class="ico">${icon}</span>${d.label}`;
       btn.addEventListener('click',()=>{if(typeof window.nav==='function')window.nav(id)});nav.appendChild(btn)
     }
     btn.setAttribute('aria-label',DEF[id].label);
@@ -59,6 +59,8 @@
       }else if(renderActive){
         const id=document.querySelector('.page.active')?.id;renderTrainerPage(id)
       }
+      window.unvrslNavApplyIconsV385?.();
+      window.dispatchEvent?.(new CustomEvent('unvrsl:trainer-shell-ready'));
     }finally{syncing=false}
   }
   window.unvrslTrainerShellSyncV260=syncShell;
