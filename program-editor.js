@@ -78,7 +78,8 @@
       console.error('program save',e);
       if(typeof toast==='function')toast('Программа открыта, но не сохранилась. Освободи место в браузере.')
     }
-    openEditor(p.id,0,0);
+    if(typeof window.openManagedProgramV386==='function')window.openManagedProgramV386(p.id,0,0);
+    else openEditor(p.id,0,0);
     setTimeout(()=>{window.__unvrslProgramCreating=false},250);
     return false;
   }
