@@ -1,6 +1,7 @@
 'use strict';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const KEY='unvrsl-fit-v3', OLDKEY='unvrsl-fit-v2';
+window.__unvrslHadPrimaryStorageV386=(()=>{try{return localStorage.getItem(KEY)!==null||localStorage.getItem(OLDKEY)!==null}catch(_){return false}})();window.__unvrslStorageHydrationSettledV386=false;
 const DAYCODE={1:'A1',2:'B',4:'C',5:'A2',6:'D'};
 const RPE={1:7,2:8,3:8.5,4:6.5,5:8.5,6:6.5,7:9,8:9};
 const BASE={1:150,2:150,3:120,4:75,5:150,6:75,7:210,8:300};

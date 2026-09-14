@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const W=window,D=document,RELEASE=321,READY_CLASS='unvrsl-shell-ready-v316',LEGACY_READY_CLASS='unvrsl-app-ready-v260';
+  const W=window,D=document,RELEASE=386,READY_CLASS='unvrsl-shell-ready-v316',LEGACY_READY_CLASS='unvrsl-app-ready-v260';
   if(W.__unvrslStartupOrchestratorV321)return;W.__unvrslStartupOrchestratorV321=true;W.__unvrslStartupOrchestratorV320=true;W.__unvrslStartupOrchestratorV319=true;W.__unvrslStartupOrchestratorV260=true;
   W.__unvrslStartupComplete=false;
 
@@ -20,53 +20,9 @@
   W.unvrslStartupAssetLoadedV319=W.unvrslStartupAssetLoadedV320;
   setProgress(progressValue);
 
-  // Load the canonical math layer independently from the workout UI. It waits
-  // for the training engine and updates weight data without rebuilding pages.
-  function loadTrainingLoadModel(){
-    if(W.__unvrslTrainingLoadModelV292||D.querySelector('script[data-unvrsl-load-model-v292]'))return;
-    const s=D.createElement('script');s.src='training-load-model.js?v=385';s.async=false;s.dataset.unvrslLoadModelV292='1';s.onerror=()=>console.warn('UNVRSL load model v292 failed to load');D.body?.appendChild(s)
-  }
-  function loadProgramIntensity(){
-    if(W.__unvrslProgramIntensityAutoWeightV261||D.querySelector('script[data-unvrsl-program-intensity-v261]'))return;
-    const s=D.createElement('script');s.src='program-intensity-autoweight.js?v=385';s.async=false;s.dataset.unvrslProgramIntensityV261='1';s.onerror=()=>console.warn('UNVRSL program intensity UI failed to load');D.body?.appendChild(s)
-  }
-  function loadTrainerClientProgramEdit(){
-    if(W.__unvrslTrainerClientProgramEditV262||D.querySelector('script[data-unvrsl-trainer-client-edit-v262]'))return;
-    const s=D.createElement('script');s.src='trainer-client-program-edit.js?v=385';s.async=false;s.dataset.unvrslTrainerClientEditV262='1';s.onerror=()=>console.warn('UNVRSL trainer client program edit v262 failed to load');D.body?.appendChild(s)
-  }
-  function loadProgramWeekRpeRir(){
-    if(W.__unvrslProgramWeekRpeRirV263||D.querySelector('script[data-unvrsl-week-rpe-rir-v263]'))return;
-    const s=D.createElement('script');s.src='program-week-rpe-rir.js?v=385';s.async=false;s.dataset.unvrslWeekRpeRirV263='1';s.onerror=()=>console.warn('UNVRSL week RPE RIR v263 failed to load');D.body?.appendChild(s)
-  }
-  function loadProgramRepRange(){
-    if(W.__unvrslProgramRepRangeV266||D.querySelector('script[data-unvrsl-program-rep-range-v266]'))return;
-    const s=D.createElement('script');s.src='program-rep-range.js?v=385';s.async=false;s.dataset.unvrslProgramRepRangeV266='1';s.onerror=()=>console.warn('UNVRSL program rep range v266 failed to load');D.body?.appendChild(s)
-  }
-  function loadBuiltInPlanRepRanges(){
-    if(W.__unvrslBuiltInPlanRepRangesV267||D.querySelector('script[data-unvrsl-built-in-ranges-v267]'))return;
-    const s=D.createElement('script');s.src='built-in-plan-rep-ranges.js?v=385';s.async=false;s.dataset.unvrslBuiltInRangesV267='1';s.onerror=()=>console.warn('UNVRSL built-in plan rep ranges v267 failed to load');D.body?.appendChild(s)
-  }
-  function loadProgramWeekRepGuidance(){
-    if(W.__unvrslProgramWeekRepGuidanceV268||D.querySelector('script[data-unvrsl-week-rep-guidance-v268]'))return;
-    const s=D.createElement('script');s.src='program-week-rep-guidance.js?v=385';s.async=false;s.dataset.unvrslWeekRepGuidanceV268='1';s.onerror=()=>console.warn('UNVRSL weekly rep guidance v268 failed to load');D.body?.appendChild(s)
-  }
-  let featureModulesStarted=false;
-  function warmFeatureModules(){
-    if(featureModulesStarted)return;featureModulesStarted=true;
-    const loadAll=()=>{loadTrainingLoadModel();loadProgramIntensity();loadTrainerClientProgramEdit();loadProgramWeekRpeRir();loadProgramRepRange();loadBuiltInPlanRepRanges();loadProgramWeekRepGuidance()};
-    loadAll();[1200,3000].forEach(ms=>setTimeout(loadAll,ms))
-  }
-  function scheduleFeatureModules(){
-    if(featureModulesStarted)return;
-    if('requestIdleCallback'in W)W.requestIdleCallback(warmFeatureModules,{timeout:1000});
-    else setTimeout(warmFeatureModules,240)
-  }
-  function warmFeatureIntent(e){
-    const button=e.target?.closest?.('.nav button[data-p]');if(!button)return;
-    if(['plan','start','programs','clients'].includes(button.dataset.p))warmFeatureModules()
-  }
-  D.addEventListener('pointerdown',warmFeatureIntent,{capture:true,passive:true});
-  D.addEventListener('touchstart',warmFeatureIntent,{capture:true,passive:true});
+  // Program model, migration, range resolution and readiness are part of
+  // the critical shell in v386. They are loaded once from index.html before
+  // the shell can be revealed; no feature module may replace them later.
 
   // app.js does not paint its legacy base DOM during boot. Its first render is
   // released here only after every local UI owner has finished loading.
@@ -102,6 +58,9 @@
   function localCoreReady(){
     if(D.readyState==='loading'||!W.__unvrslCriticalModulesReadyV320)return false;
     if(!W.__unvrslUiStabilityV316||!W.__unvrslTrainerShellV252)return false;
+    if(!W.unvrslProgramModelV386||!W.__unvrslProgramsMigratedV386)return false;
+    if(W.__unvrslStorageHydrationSettledV386!==true)return false;
+    if(!W.__unvrslReadinessStackReadyV386||typeof W.trainingRequestProgramStartV382!=='function')return false;
     return true
   }
   function coreReady(){
@@ -162,8 +121,6 @@
   }
   W.unvrslTryFinalizeStartupV260=finalize;
   for(const name of ['load','unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:client-settled','unvrsl:readiness-ready','unvrsl:ui-stability-ready'])W.addEventListener?.(name,finalize,{passive:true});
-  W.addEventListener?.('unvrsl:app-ready',scheduleFeatureModules,{once:true,passive:true});
-  W.addEventListener?.('unvrsl:training-engine-ready',()=>{if(featureModulesStarted)loadTrainingLoadModel()},{passive:true});
   // Never expose a half-built shell. The fixed progress surface remains in
   // place while slow modules finish, without inserting controls or moving it.
   setTimeout(finalize,CLOUD_GRACE_MS+30);

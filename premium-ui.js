@@ -67,5 +67,4 @@
   window.unvrslNavApplyIconsV385=setupNav;
   setupNav();
   for(const event of ['unvrsl:trainer-shell-ready','unvrsl:modules-ready','unvrsl:app-ready'])window.addEventListener?.(event,setupNav,{passive:true});
-  [150,500,1200,2500].forEach(t=>setTimeout(setupNav,t));
 })();
