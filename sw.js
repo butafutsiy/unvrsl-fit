@@ -1,6 +1,6 @@
 'use strict';
 
-const SW_RELEASE='v387-startup-watchdog';
+const SW_RELEASE='v388-startup-root';
 const CACHE_PREFIX='unvrsl-';
 
 self.addEventListener('install',()=>{
@@ -20,7 +20,7 @@ self.addEventListener('activate',event=>{
         const url=new URL(client.url);
         if(url.searchParams.get('__unvrsl_release')!==SW_RELEASE){
           url.searchParams.set('__unvrsl_release',SW_RELEASE);
-          await client.navigate(url.href)
+          await client.navigate(url.href);
         }
       }catch(_){}
     }));
