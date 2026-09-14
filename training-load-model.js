@@ -103,6 +103,7 @@
   }
   function evaluateGate(ex,cur,historyOrRows,futureRange=null){
     const cls=exerciseClass(ex);if(!historyOrRows?.length)return null;const current=futureRange||targetRange(ex),futureEffort=targetRpeRange(ex,null,cur),history=historyOrRows[0]?.rows?historyOrRows:[{rows:historyOrRows}],assessments=history.slice(0,2).map(x=>assessSession(x.rows,current,futureEffort)),latest=assessments[0];if(!latest)return null;
+    if(!latest.hasActualEffort)return null;
     let topStreak=0;for(const item of assessments){if(!item?.topReady)break;topStreak++}
     const futureChanged=!!current&&(Math.abs((latest.avgMin||0)-current.lo)>.01||Math.abs((latest.avgMax||0)-current.hi)>.01||Math.abs(((latest.rpeMin+latest.rpeMax)/2)-((futureEffort.min+futureEffort.max)/2))>.26),highEffort=latest.hasActualEffort&&latest.avgRpe>latest.rpeMax+.25,tooHeavy=latest.tooHeavyCount>0||(latest.belowCount>0&&highEffort)||(latest.avgReps<latest.avgMin-.5&&latest.avgRpe>latest.rpeMax),futureLabel=current?`${fmt1(current.lo)}–${fmt1(current.hi)} повт. · RPE ${fmt1(futureEffort.min)}–${fmt1(futureEffort.max)}`:`RPE ${fmt1(futureEffort.min)}–${fmt1(futureEffort.max)}`;
     let status='HOLD',code='range_progress',reason=`прошлая: ${fmt1(latest.avgReps)}/${fmt1(latest.avgMax)} повт. · следующая цель ${futureLabel}`;

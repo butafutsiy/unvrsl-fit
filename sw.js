@@ -1,6 +1,6 @@
 'use strict';
 
-const SW_RELEASE='v382-editor-stability';
+const SW_RELEASE='v383-workout-entry';
 const CACHE_PREFIX='unvrsl-';
 
 self.addEventListener('install',()=>{
