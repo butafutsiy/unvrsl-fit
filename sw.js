@@ -1,6 +1,6 @@
 'use strict';
 
-const SW_RELEASE='v389-stable-startup';
+const SW_RELEASE='v385-ui-program-stability';
 const CACHE_PREFIX='unvrsl-';
 
 self.addEventListener('install',()=>{

@@ -67,39 +67,18 @@
     return `${fmt(Math.min(a,b))}–${fmt(Math.max(a,b))}%`
   }
   const safeId=id=>String(id||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-  window.openManagedProgramV386=function(id,week=0,day=0){
-    const p=customProgram(id);
-    if(!p)return typeof toast==='function'?toast('Программа не найдена'):undefined;
-    const activePage=document.querySelector('.page.active')?.id;
-    window.__unvrslProgramEditorReturnPageV385=activePage==='plan'?'plan':'programs';
-    try{
-      if(typeof ensureProgramShape==='function')ensureProgramShape(p);
-      if(!Array.isArray(p.weeks)||!p.weeks.length)p.weeks=[{n:1,days:[{id:typeof uid==='function'?uid('day'):`day-${Date.now()}`,name:'День 1',ex:[]}]}];
-      const wi=Math.max(0,Math.min(Number(week)||0,p.weeks.length-1));
-      programUi={pid:p.id,week:wi,day:Math.max(0,Number(day)||0),query:''};
-      p.updated=Number(p.updated)||Date.now();
-      if(typeof renderProgramEditor!=='function')throw new Error('renderProgramEditor unavailable');
-      const result=renderProgramEditor();
-      requestAnimationFrame(()=>{
-        const modalRoot=document.getElementById('modal'),sheet=document.getElementById('sheet');
-        if(!modalRoot?.classList.contains('show')||!sheet?.querySelector('.weekbar')){
-          try{renderProgramEditor()}catch(error){console.error('program editor retry v386',error)}
-        }
-      });
-      return result
-    }catch(error){
-      console.error('program direct open v386',error);
-      if(typeof toast==='function')toast('Не удалось открыть программу');
-    }
+  window.openManagedProgramV385=function(id){
+    window.__unvrslProgramEditorReturnPageV385='programs';
+    if(typeof window.openProgramEditor!=='function')return typeof toast==='function'?toast('Редактор ещё загружается'):undefined;
+    return window.openProgramEditor(String(id),0,0)
   };
-  window.openManagedProgramV385=window.openManagedProgramV386;
   window.trainerProgramsPage=function(){
     const root=document.getElementById('programs');if(!root)return;
     const pid=primaryId(),programs=(Array.isArray(st.programs)?st.programs:[]).filter(p=>p&&!p.archived);
     const list=programs.map(p=>{
       const id=safeId(p.id),weeks=Array.isArray(p.weeks)?p.weeks:[],sessions=weeks.reduce((sum,w)=>sum+(w?.days?.length||0),0),main=String(p.id)===pid;
       const intensity=weekIntensityText(weeks[0]);
-      return `<div class="card program-list-card-v385 ${main?'program-card-primary':''}"><div class="row between"><button class="program-list-open-v385 grow" data-program-open-v386="${id}" onclick="return openManagedProgramV386('${id}')"><span class="title">${esc(p.name||'Программа')}</span><span class="muted small">${weeks.length} нед. · ${sessions} тренировок${intensity?` · ${intensity}`:''}</span>${main?'<span class="chip green program-primary-badge">Основная</span>':''}</button><span class="chev">›</span></div><div class="coach-actions"><button class="btn tiny" data-program-open-v386="${id}" onclick="return openManagedProgramV386('${id}')">Открыть</button>${main?'':`<button class="btn tiny" onclick="setPrimaryProgram('${id}')">Сделать основной</button>`}<button class="btn tiny danger" onclick="deleteProgram('${id}')">Удалить</button></div></div>`
+      return `<div class="card program-list-card-v385 ${main?'program-card-primary':''}"><div class="row between"><button class="program-list-open-v385 grow" data-program-open-v385="${id}" onclick="return openManagedProgramV385('${id}')"><span class="title">${esc(p.name||'Программа')}</span><span class="muted small">${weeks.length} нед. · ${sessions} тренировок${intensity?` · ${intensity}`:''}</span>${main?'<span class="chip green program-primary-badge">Основная</span>':''}</button><span class="chev">›</span></div><div class="coach-actions"><button class="btn tiny" onclick="openManagedProgramV385('${id}')">Открыть</button>${main?'':`<button class="btn tiny" onclick="setPrimaryProgram('${id}')">Сделать основной</button>`}<button class="btn tiny danger" onclick="deleteProgram('${id}')">Удалить</button></div></div>`
     }).join('');
     root.innerHTML=`<div class="programs-v385-head"><div><h1>Программы</h1><div class="muted">Создание и управление циклами</div></div><button class="btn primary program-create-v385" onclick="newProgramSheet()" aria-label="Создать программу">＋</button></div><div class="card program-list-card-v385 ${pid===BUILTIN?'program-card-primary':''}"><div class="row between"><button class="program-list-open-v385 grow" onclick="openBuiltinProgramViewer(1)"><span class="title">${esc(builtInName())}</span><span class="muted small">8 недель · встроенная программа</span>${pid===BUILTIN?'<span class="chip green program-primary-badge">Основная</span>':''}</button><span class="chev">›</span></div><div class="coach-actions"><button class="btn tiny" onclick="openBuiltinProgramViewer(1)">Открыть</button>${pid===BUILTIN?'':`<button class="btn tiny" onclick="setPrimaryProgram('${BUILTIN}')">Сделать основной</button>`}</div></div><div class="section">МОИ ПРОГРАММЫ</div>${list||'<div class="card muted">Пока нет своих программ.</div>'}`;
   };
@@ -135,7 +114,7 @@
     }
     const p=customProgram(pid);if(!p){st.primaryProgramId=BUILTIN;try{save()}catch(e){};return managedPlanPage()}
     const wi=customWeekIndex(p),w=p.weeks?.[wi],days=w?.days||[];
-    root.innerHTML=`<div class="card primary-plan-head"><div class="row between"><div class="grow"><div class="muted small">ОСНОВНАЯ ПРОГРАММА</div><div class="title" style="margin-top:5px">${esc(p.name||'Программа')}</div><div class="muted small" style="margin-top:5px">${p.weeks?.length||0} нед. · ${(p.weeks||[]).reduce((a,x)=>a+(x.days?.length||0),0)} тренировок</div></div><div class="coach-actions"><span class="chip green">Основная</span><button class="btn tiny" type="button" data-program-open-v386="${safeId(p.id)}" data-week="${wi}" onclick="return openManagedProgramV386('${safeId(p.id)}',${wi},0)">Редактор</button></div></div></div><div class="section">ТРЕНИРОВОЧНЫЙ ЦИКЛ</div><div class="weekbar">${p.weeks.map((_,i)=>`<button class="weekbtn ${i===wi?'on':''}" onclick="selectPrimaryPlanWeek(${i+1})">W${i+1}</button>`).join('')}</div><div class="card program-week-summary-v385"><div class="row between"><div><div class="title">Неделя ${wi+1}</div><div class="muted">${esc(w?.focus||w?.name||'')}</div></div>${weekIntensityText(w)?`<span class="chip green program-week-intensity-v385">${weekIntensityText(w)}</span>`:''}</div></div>${days.map((d,di)=>{const rr=d?.ex?.[0]?.rpe??d?.ex?.[0]?.target;return `<div class="card routine" onclick="previewPrimaryProgramDay('${p.id}',${wi},${di})"><h3>${esc(d.name||`День ${di+1}`)}</h3><div class="chips"><span class="chip">${d.ex?.length||0} упражнений</span>${rr?`<span class="chip">RPE ${rr}</span>`:''}</div></div>`}).join('')||'<div class="card muted">В этой неделе тренировок нет.</div>'}`;
+    root.innerHTML=`<div class="card primary-plan-head"><div class="row between"><div class="grow"><div class="muted small">ОСНОВНАЯ ПРОГРАММА</div><div class="title" style="margin-top:5px">${esc(p.name||'Программа')}</div><div class="muted small" style="margin-top:5px">${p.weeks?.length||0} нед. · ${(p.weeks||[]).reduce((a,x)=>a+(x.days?.length||0),0)} тренировок</div></div><span class="chip green">Основная</span></div></div><div class="section">ТРЕНИРОВОЧНЫЙ ЦИКЛ</div><div class="weekbar">${p.weeks.map((_,i)=>`<button class="weekbtn ${i===wi?'on':''}" onclick="selectPrimaryPlanWeek(${i+1})">W${i+1}</button>`).join('')}</div><div class="card program-week-summary-v385"><div class="row between"><div><div class="title">Неделя ${wi+1}</div><div class="muted">${esc(w?.focus||w?.name||'')}</div></div>${weekIntensityText(w)?`<span class="chip green program-week-intensity-v385">${weekIntensityText(w)}</span>`:''}</div></div>${days.map((d,di)=>{const rr=d?.ex?.[0]?.rpe??d?.ex?.[0]?.target;return `<div class="card routine" onclick="previewPrimaryProgramDay('${p.id}',${wi},${di})"><h3>${esc(d.name||`День ${di+1}`)}</h3><div class="chips"><span class="chip">${d.ex?.length||0} упражнений</span>${rr?`<span class="chip">RPE ${rr}</span>`:''}</div></div>`}).join('')||'<div class="card muted">В этой неделе тренировок нет.</div>'}`;
   };
   window.planPage=managedPlanPage;try{planPage=managedPlanPage}catch(e){}
 
@@ -156,16 +135,5 @@
     .program-week-summary-v385 .program-week-intensity-v385{flex:none;font-size:13px}
   `;document.head.appendChild(style);
 
-  document.addEventListener('click',event=>{
-    const button=event.target?.closest?.('[data-program-open-v386]');
-    if(!button)return;
-    event.preventDefault();event.stopImmediatePropagation();
-    const id=button.getAttribute('data-program-open-v386');
-    window.openManagedProgramV386(id,Number(button.dataset.week)||0,Number(button.dataset.day)||0)
-  },true);
-  document.addEventListener('click',event=>{
-    const navButton=event.target?.closest?.('.nav button[data-p="programs"]');if(!navButton)return;
-    [0,80,260].forEach(ms=>setTimeout(()=>{if(document.getElementById('programs')?.classList.contains('active'))window.trainerProgramsPage?.()},ms))
-  },true);
   setTimeout(()=>{migrateAntonName();try{planPage()}catch(e){};if(document.getElementById('programs')?.classList.contains('active'))try{window.trainerProgramsPage()}catch(e){}},0);
 })();
