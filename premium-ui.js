@@ -55,19 +55,16 @@
   function setupNav(){
     document.querySelectorAll('.nav button[data-p]').forEach(b=>{
       const key=b.dataset.p,ico=b.querySelector('.ico');
-      if(ico&&icons[key]&&ico.innerHTML!==icons[key])ico.innerHTML=icons[key];
+      if(ico&&icons[key]&&ico.dataset.unvrslIconV385!==key){
+        ico.innerHTML=icons[key];
+        ico.dataset.unvrslIconV385=key;
+      }
       if(key==='start')b.classList.add('start');
       if(labels[key])b.setAttribute('aria-label',labels[key]);
     });
   }
   window.unvrslNavIconV385=key=>icons[key]||'';
   window.unvrslNavApplyIconsV385=setupNav;
-  const nav=document.querySelector('.nav');
-  if(nav&&!nav.__unvrslIconObserverV385){
-    const observer=new MutationObserver(setupNav);
-    observer.observe(nav,{childList:true,subtree:true});
-    nav.__unvrslIconObserverV385=observer;
-  }
   setupNav();
   for(const event of ['unvrsl:trainer-shell-ready','unvrsl:modules-ready','unvrsl:app-ready'])window.addEventListener?.(event,setupNav,{passive:true});
   [150,500,1200,2500].forEach(t=>setTimeout(setupNav,t));
