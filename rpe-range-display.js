@@ -37,7 +37,7 @@
     const rpeLabel=label(range.min,range.max),rirMin=Math.max(0,10-range.max),rirMax=Math.max(0,10-range.min),rirLabel=label(rirMin,rirMax);
     const put=(o,k,v)=>{if(o[k]===v)return;o[k]=v;changed=true};
     put(cur,'targetRpeMin',range.min);put(cur,'targetRpeMax',range.max);put(cur,'targetRpeLabel',rpeLabel);put(cur,'targetRirMin',rirMin);put(cur,'targetRirMax',rirMax);put(cur,'targetRirLabel',rirLabel);
-    (cur.ex||[]).forEach(ex=>(ex.set||[]).forEach(set=>{put(set,'targetRpeMin',range.min);put(set,'targetRpeMax',range.max);put(set,'targetRpeLabel',rpeLabel);put(set,'targetRirMin',rirMin);put(set,'targetRirMax',rirMax);put(set,'targetRirLabel',rirLabel)}));
+    (cur.ex||[]).forEach(ex=>{const ownMin=num(ex?.targetRpeMin),ownMax=num(ex?.targetRpeMax),own=ownMin!=null&&ownMax!=null?{min:Math.min(ownMin,ownMax),max:Math.max(ownMin,ownMax)}:range,ownRpeLabel=label(own.min,own.max),ownRirMin=Math.max(0,10-own.max),ownRirMax=Math.max(0,10-own.min),ownRirLabel=label(ownRirMin,ownRirMax);put(ex,'targetRpeMin',own.min);put(ex,'targetRpeMax',own.max);put(ex,'targetRpeLabel',ownRpeLabel);put(ex,'targetRirMin',ownRirMin);put(ex,'targetRirMax',ownRirMax);put(ex,'targetRirLabel',ownRirLabel);(ex.set||[]).forEach(set=>{put(set,'targetRpeMin',own.min);put(set,'targetRpeMax',own.max);put(set,'targetRpeLabel',ownRpeLabel);put(set,'targetRirMin',ownRirMin);put(set,'targetRirMax',ownRirMax);put(set,'targetRirLabel',ownRirLabel)})});
     if(changed){cur.rpeRangeDisplayRevision=VERSION;saveState()}return changed;
   }
   function parseIndex(input){

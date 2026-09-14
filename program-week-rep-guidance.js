@@ -182,42 +182,9 @@
     const focus=host.querySelector('.wr264-focus');if(focus)focus.insertAdjacentElement('beforebegin',box);else host.appendChild(box);markRepInputs(box);bindWeekActions(card,p,wi);return true
   }
 
-  function inferKind(name=''){
-    const explicit=field('pmKind')?.value;if(explicit==='compound'||explicit==='isolation')return explicit;
-    try{if(typeof W.programInferExerciseKind==='function')return W.programInferExerciseKind(name)}catch(_){ }
-    const s=String(name).toLowerCase();return /(разгибан|сгибан|сведен|разведен|мах|кроссов|икр|дельт)/.test(s)?'isolation':'compound'
-  }
-  function exerciseDefaults(x,kind){const p=program(x?.pid),w=p?.weeks?.[Number(x?.wi)];if(!p||!w)return null;const rp=repProfile(p,Number(x.wi),true);return kind==='isolation'?[rp.isolationRepMin,rp.isolationRepMax]:[rp.baseRepMin,rp.baseRepMax]}
-  function setExerciseReps(x,force=false){
-    const min=field('pmReps'),max=field('pmRepsMax');if(!min)return;const existing=x?.existingIndex!==null&&x?.existingIndex!==undefined;if(existing&&!force)return;
-    if(!force&&(min.dataset.wrg268Touched==='1'||max?.dataset.wrg268Touched==='1'))return;
-    const kind=inferKind(x?.n||x?.name||''),d=exerciseDefaults(x,kind);if(!d)return;min.value=d[0];if(max)max.value=d[1];
-    const p=program(x?.pid),band=p?bandFor(p,Number(x?.wi),true):null,line=D.querySelector('.wrg268-current');if(line)line.textContent=`Рекомендация ${pctLabel(band)}: ${kind==='isolation'?'изоляция':'база'} ${label(d)} повт.`;
-    try{min.dispatchEvent(new Event('change',{bubbles:true}));max?.dispatchEvent(new Event('change',{bubbles:true}))}catch(_){ }
-  }
-  function decorateExercise(x){
-    const min=field('pmReps');if(!min)return false;const existing=x?.existingIndex!==null&&x?.existingIndex!==undefined;
-    if(min.dataset.wrg268TouchBound!=='1'){min.dataset.wrg268TouchBound='1';min.addEventListener('input',e=>{if(e.isTrusted)min.dataset.wrg268Touched='1'},{passive:true})}
-    const max=field('pmRepsMax');if(max&&max.dataset.wrg268TouchBound!=='1'){max.dataset.wrg268TouchBound='1';max.addEventListener('input',e=>{if(e.isTrusted)max.dataset.wrg268Touched='1'},{passive:true})}
-    let note=D.querySelector('.wrg268-current');if(!note){note=D.createElement('div');note.className='wrg268-current';const anchor=D.querySelector('.pr266-range-note')||max?.closest('.field')||min.closest('.field');anchor?.insertAdjacentElement('afterend',note)}
-    const p=program(x?.pid),kind=inferKind(x?.n||x?.name||''),d=exerciseDefaults(x,kind),band=p?bandFor(p,Number(x?.wi),true):null;if(d)note.textContent=`Рекомендация ${pctLabel(band)}: ${kind==='isolation'?'изоляция':'база'} ${label(d)} повт.`;
-    if(!existing)setExerciseReps(x,false);D.documentElement.dataset.wrg268Exercise=JSON.stringify({pid:x?.pid,wi:Number(x?.wi)||0,di:Number(x?.di)||0,n:x?.n||x?.name||'',existing:!!existing});return true
-  }
-  function patchExerciseForm(){
-    let cur=null;try{cur=typeof programExerciseForm==='function'?programExerciseForm:W.programExerciseForm}catch(_){cur=W.programExerciseForm}
-    if(typeof cur!=='function'||cur.__wrg269)return false;
-    const wrapped=function(x){const r=cur.apply(this,arguments);setTimeout(()=>decorateExercise(x),0);return r};wrapped.__wrg269=true;wrapped.__wrg269Base=cur;W.programExerciseForm=wrapped;try{programExerciseForm=wrapped}catch(_){ }return true
-  }
-  function currentExerciseContext(){try{return JSON.parse(D.documentElement.dataset.wrg268Exercise||'null')}catch(_){return null}}
-  function patchSetKind(){
-    const cur=W.programSetKind;if(typeof cur!=='function'||cur.__wrg269)return false;
-    const wrapped=function(kind){const r=cur.apply(this,arguments),x=currentExerciseContext();if(x&&!x.existing)setTimeout(()=>setExerciseReps(x,false),0);return r};wrapped.__wrg269=true;wrapped.__wrg269Base=cur;W.programSetKind=wrapped;return true
-  }
-
-  function install(){patchWeekProfile();patchIntensityApi();patchExerciseForm();patchSetKind();injectWeekEditor()}
+  function install(){patchWeekProfile();patchIntensityApi();injectWeekEditor()}
   let q=false;function queue(){if(q)return;q=true;requestAnimationFrame(()=>{q=false;install()})}
   const mo=typeof MutationObserver==='function'?new MutationObserver(queue):null;mo?.observe(D.documentElement,{childList:true,subtree:true});
   for(const ev of ['unvrsl:modules-ready','unvrsl:app-ready','unvrsl:cloud-ready','unvrsl:training-engine-ready'])W.addEventListener?.(ev,queue,{passive:true});
-  [0,100,300,700,1400,2600].forEach(ms=>setTimeout(queue,ms));setInterval(()=>{patchWeekProfile();patchIntensityApi();patchExerciseForm();patchSetKind();injectWeekEditor()},1200)
+  [0,100,300,700,1400,2600].forEach(ms=>setTimeout(queue,ms));setInterval(()=>{patchWeekProfile();patchIntensityApi();injectWeekEditor()},1200)
 })();
-

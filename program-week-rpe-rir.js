@@ -75,10 +75,6 @@
     const s=String(ex?.n||'').toLowerCase();
     return /(разгибан|сгибан|подъем|подъём|мах|разведен|сведен|бицеп|трицеп|кроссов|икр|дельт)/.test(s)?'isolation':'compound'
   }
-  function profileDefaults(pr,kind){
-    return {rpe:pr?.rpeMin!=null&&pr?.rpeMax!=null?Math.round(((pr.rpeMin+pr.rpeMax)/2)*2)/2:8,tempo:pr?.tempo||'2-0-2',rest:mid(kind==='isolation'?[pr.isolationRestMin,pr.isolationRestMax]:[pr.baseRestMin,pr.baseRestMax])||90}
-  }
-
   function ensureStyle(){
     if(D.getElementById('program-week-rpe-rir-v263-style'))return;
     const s=D.createElement('style');s.id='program-week-rpe-rir-v263-style';s.textContent=`
@@ -174,28 +170,6 @@
     const wrapped=function(){const r=cur.apply(this,arguments);setTimeout(()=>{const n=D.getElementById('npWeeks');if(n&&String(n.value)==='4')n.value='8'},0);return r};wrapped.__wr264=true;W.newProgramSheet=wrapped;try{newProgramSheet=wrapped}catch(_){ }return true
   }
 
-  function exerciseEditorContext(x){const p=program(x?.pid),pr=weekProfile(p,Number(x?.wi)||0,true),existing=x?.existingIndex!==null&&x?.existingIndex!==undefined,kind=exerciseKind(x);return {p,pr,existing,kind,defaults:profileDefaults(pr,kind)}}
-  function updateExerciseRelation(){
-    const reps=Math.max(1,N(field('pmReps')?.value)||1),rpe=clamp(N(field('pmRpe')?.value)??8,1,10),rir=Math.max(0,10-rpe),pct=100/(1+(reps+rir)/30),host=field('wr264ExerciseRelation');
-    if(host)host.innerHTML=`RPE <b>${fmt(rpe)}</b> · RIR <b>${fmt(rir)}</b> · ${reps} повт. ≈ <b>${fmt(pct)}%</b> e1RM`
-  }
-  function applyExerciseDefaults(def){
-    if(!def)return;setValue('pmRpe',def.rpe);setValue('pmTempo',def.tempo);setValue('pmRest',def.rest);updateExerciseRelation()
-  }
-  function decorateExerciseForm(x){
-    const input=field('pmRpe');if(!input)return;const ctx=exerciseEditorContext(x);if(!ctx.pr)return;
-    if(!ctx.existing)applyExerciseDefaults(ctx.defaults);
-    D.querySelector('.wr264-ex-note')?.remove();const host=input.closest('.method-builder-grid')||input.closest('.field');if(!host)return;
-    const note=D.createElement('div');note.className='wr264-ex-note';note.innerHTML=`<div class="wr264-ex-line"><b>W${ctx.pr.week}</b> · ${fmt(ctx.pr.intensityMin)}–${fmt(ctx.pr.intensityMax)}% · RPE ${fmt(ctx.pr.rpeMin)}–${fmt(ctx.pr.rpeMax)} · RIR ${fmt(ctx.pr.rirHigh)}→${fmt(ctx.pr.rirLow)}</div><div class="wr264-ex-line">Темп ${escHtml(ctx.pr.tempo)} · отдых ${ctx.kind==='isolation'?`${ctx.pr.isolationRestMin}–${ctx.pr.isolationRestMax}`:`${ctx.pr.baseRestMin}–${ctx.pr.baseRestMax}`} сек · ${ctx.kind==='isolation'?'изоляция':'база'}</div><div id="wr264ExerciseRelation" class="wr264-ex-line" style="margin-top:5px"></div><button type="button" class="btn tiny wr264-auto-btn">↻ Подставить нагрузку недели</button>`;
-    host.insertAdjacentElement('afterend',note);note.querySelector('button')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();applyExerciseDefaults(ctx.defaults)},{passive:false});field('pmRpe')?.addEventListener('input',updateExerciseRelation);field('pmReps')?.addEventListener('input',updateExerciseRelation);updateExerciseRelation()
-  }
-
-  function patchExerciseForm(){
-    let cur=null;try{cur=typeof programExerciseForm==='function'?programExerciseForm:W.programExerciseForm}catch(_){cur=W.programExerciseForm}
-    if(typeof cur!=='function'||cur.__wr264)return false;
-    const wrapped=function(x){const r=cur.apply(this,arguments);setTimeout(()=>decorateExerciseForm(x),0);return r};wrapped.__wr264=true;W.programExerciseForm=wrapped;try{programExerciseForm=wrapped}catch(_){ }return true
-  }
-
   function patchCopyWeek(){
     let cur=null;try{cur=typeof copyProgramWeek==='function'?copyProgramWeek:W.copyProgramWeek}catch(_){cur=W.copyProgramWeek}
     if(typeof cur!=='function'||cur.__wr264)return false;
@@ -225,9 +199,9 @@
     (cur.ex||[]).forEach(ex=>{const kind=exerciseKind(ex);if(!ex.tempo)ex.tempo=pr.tempo;if(!(N(ex.rest)>0))ex.rest=mid(kind==='isolation'?[pr.isolationRestMin,pr.isolationRestMax]:[pr.baseRestMin,pr.baseRestMax])||90});saveState()
   }
 
-  function install(){patchNewProgramDefault();patchExerciseForm();patchCopyWeek();injectEditor();decorateClientPlan();decorateStartPicker();annotateCurrent()}
+  function install(){patchNewProgramDefault();patchCopyWeek();injectEditor();decorateClientPlan();decorateStartPicker();annotateCurrent()}
   let queued=false;function queue(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;ensureStyle();install()})}
   const mo=typeof MutationObserver==='function'?new MutationObserver(queue):null;mo?.observe(D.documentElement,{childList:true,subtree:true});
   for(const e of ['unvrsl:modules-ready','unvrsl:app-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:training-engine-ready'])W.addEventListener?.(e,queue,{passive:true});
-  [0,100,300,700,1400,2600].forEach(ms=>setTimeout(queue,ms));setInterval(()=>{patchNewProgramDefault();patchExerciseForm();patchCopyWeek();decorateClientPlan();annotateCurrent()},1200)
+  [0,100,300,700,1400,2600].forEach(ms=>setTimeout(queue,ms));setInterval(()=>{patchNewProgramDefault();patchCopyWeek();decorateClientPlan();annotateCurrent()},1200)
 })();
