@@ -111,7 +111,7 @@
   const f=cur?.trainingReadinessDone&&cur?.readinessAdjusted?num(cur?.readiness?.factor)||1:1;return round(num(v)*f,step(ex))
  }
  function readinessPercent(cur){if(!cur?.trainingReadinessDone||!cur?.readinessAdjusted)return'';const p=Math.round(((num(cur?.readiness?.factor)||1)-1)*1000)/10;return`${p>0?'+':''}${String(p).replace('.',',')}%`}
- function v292Ready(group,cur){return Number(cur?.trainingLoadModelRevision)===292&&group.some(ex=>(ex?.set||[]).some(s=>N(s?.recommendedW)!=null&&!!s?.trainingIntensity292))}
+ function v292Ready(group,cur){return Number(cur?.trainingLoadModelRevision)===292&&group.some(ex=>ex?.trainingProgression292?.actualEffort===true)&&group.some(ex=>(ex?.set||[]).some(s=>N(s?.recommendedW)!=null&&!!s?.trainingIntensity292))}
  function applyRecommendation(k){const cur=W.st?.current;if(!cur)return;const idx=groupIndices(cur,k),prescribed=idx.some(i=>cur.ex?.[i]?.programWeightMode==='prescribed');if(!prescribed){W.toast?.('Здесь вес выставляется автоматически');return}idx.forEach(i=>{const ex=cur.ex[i];if(ex?.programWeightMode!=='prescribed')return;(ex.set||[]).forEach(s=>{if(s.ok||s.manualOverride||num(s.recommendedW)<=0||!s.trainingIntensity292)return;s.plannedW=num(s.recommendedW);s.baselineW=s.plannedW;s.baselineSource='prescribed_recommendation_v292';s.w=todayWeight(s.plannedW,ex,cur)});ex.weightDecision='recommendation'});try{W.save?.();W.startPage?.()}catch(_){}setTimeout(enhanceDom,0);W.toast?.('Рекомендованный вес применён')}
  function restoreProgram(k){const cur=W.st?.current;if(!cur)return;groupIndices(cur,k).forEach(i=>{const ex=cur.ex[i];if(ex?.programWeightMode!=='prescribed')return;(ex.set||[]).forEach(s=>{if(s.ok||s.manualOverride||num(s.programW)<=0)return;s.plannedW=num(s.programW);s.baselineW=s.plannedW;s.baselineSource='program';s.w=todayWeight(s.plannedW,ex,cur)});ex.weightDecision='program'});try{W.save?.();W.startPage?.()}catch(_){}setTimeout(enhanceDom,0)}
  function readiness(){const g=id=>num(document.getElementById(id)?.value||3),sl=g('te200Sleep'),en=g('te200Energy'),so=g('te200Sore'),st=g('te200Stress'),pos=v=>(v-1)/4,neg=v=>(5-v)/4,score=Math.round(pos(sl)*25+pos(en)*30+neg(so)*30+neg(st)*15);let percent=0;if(score<30)percent=-10;else if(score<50)percent=-7.5;else if(score<70)percent=-5;else if(score<85)percent=-2.5;return{sleep:sl,energy:en,soreness:so,stress:st,score,percent,factor:1+percent/100,skipped:false,at:new Date().toISOString()}}
@@ -124,7 +124,7 @@
  function showReadiness(){const cur=W.st?.current;if(!cur)return;pendingStart=null;cur.trainingReadinessPromptShown=true;try{W.save?.()}catch(_){}W.modal?.(readinessMarkup())}
  function askBeforeStart(fn,args,ctx){pendingStart={fn,args:Array.from(args||[]),ctx,before:W.st?.current||null};W.modal?.(readinessMarkup())}
  function requestProgramStart(pid,wi,di){
-  const fn=typeof W.programBeginDayCoreV382==='function'?W.programBeginDayCoreV382:W.beginProgramDay;
+  const fn=typeof W.beginProgramDay==='function'?W.beginProgramDay:W.programBeginDayCoreV382;
   if(typeof fn!=='function'){W.toast?.('Запуск тренировки ещё загружается');return false}
   W.__unvrslPendingProgramStartV382={pid:String(pid),wi:Number(wi)||0,di:Number(di)||0,at:Date.now(),source:'program-editor'};
   askBeforeStart(fn,[pid,Number(wi)||0,Number(di)||0],W);return true

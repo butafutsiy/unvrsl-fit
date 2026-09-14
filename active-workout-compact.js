@@ -36,9 +36,12 @@
     #start .exercise:not(.anton-superset):not(.anton-single) .setrow{margin-top:6px!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .setrow>*{min-width:0!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .setrow input{width:100%!important;min-width:0!important;min-height:38px!important;padding:7px 3px!important;border-radius:11px!important;font-size:14px!important;text-align:center!important}
+    #start .exercise:not(.anton-superset):not(.anton-single) .setrow input.rep-target-placeholder::placeholder{color:#8e8e93!important;opacity:.72!important;font-weight:650!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .u174-rir-input{font-size:13px!important;padding-left:1px!important;padding-right:1px!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .check{width:34px!important;height:34px!important;min-width:34px!important;border-radius:11px!important;font-size:15px!important;justify-self:end!important;grid-column:6!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .prev-set{font-size:10px!important;margin:3px 0 1px 32px!important;line-height:1.12!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+    #start .workout-finish-card{position:relative!important;z-index:2!important;margin-bottom:calc(28px + env(safe-area-inset-bottom))!important}
+    #start .workout-finish-card .btn{min-height:52px!important;touch-action:manipulation!important}
 
     #start .cardio-compact-ex{padding:12px 14px!important;margin:8px 0!important}
     #start .cardio-compact-ex .cardio-compact-row{margin-top:8px!important}

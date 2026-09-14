@@ -75,7 +75,7 @@
   window.previewPrimaryProgramDay=function(pid,wi,di){
     const p=customProgram(pid),d=p?.weeks?.[wi]?.days?.[di];if(!p||!d)return;
     const lines=(d.ex||[]).map(e=>`<div class="program-ex"><b>${esc(e.n||'Упражнение')}</b><div class="muted small">${typeof prescriptionText==='function'?esc(prescriptionText(e)):''}${e.rpe?` · RPE ${e.rpe}`:''}${e.tempo?` · темп ${esc(e.tempo)}`:''}${e.rest?` · отдых ${e.rest} сек`:''}</div></div>`).join('');
-    modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${esc(d.name||'Тренировка')}</h2><div class="muted">${esc(p.name||'Программа')} · W${wi+1}</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div>${lines||'<div class="card muted">Упражнения не добавлены.</div>'}<button class="btn primary full" style="margin-top:16px" onclick="beginProgramDay('${p.id}',${wi},${di})">Старт</button>`)
+    modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${esc(d.name||'Тренировка')}</h2><div class="muted">${esc(p.name||'Программа')} · W${wi+1}</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div>${lines||'<div class="card muted">Упражнения не добавлены.</div>'}<button class="btn primary full" data-program-editor-start="1" style="margin-top:16px" onclick="return programStartFromEditorV382(event,'${p.id}',${wi},${di})">Старт</button>`)
   };
 
   const managedPlanPage=function(){
