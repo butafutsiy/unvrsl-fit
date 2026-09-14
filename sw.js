@@ -1,6 +1,6 @@
 'use strict';
 
-const SW_RELEASE='v386-pwa-reload-program-route';
+const SW_RELEASE='v387-startup-watchdog';
 const CACHE_PREFIX='unvrsl-';
 
 self.addEventListener('install',()=>{
