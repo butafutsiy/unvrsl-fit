@@ -74,12 +74,4 @@
   `;
   document.head.appendChild(s);
 
-  function dedupeCardioEffort(){
-    document.querySelectorAll('#start .cardio-compact-ex').forEach(card=>{
-      const seen=new Set();card.querySelectorAll('.chip').forEach(ch=>{const t=(ch.textContent||'').trim().replace(/\s+/g,' ');if(!/^RIR\s/i.test(t))return;if(seen.has(t))ch.remove();else seen.add(t)})
-    })
-  }
-  const oldStart=window.startPage;
-  if(typeof oldStart==='function'&&!oldStart.__activeWorkoutCompact){const wrapped=function(){const r=oldStart.apply(this,arguments);requestAnimationFrame(dedupeCardioEffort);return r};wrapped.__activeWorkoutCompact=true;window.startPage=wrapped;try{startPage=wrapped}catch(e){}}
-  setTimeout(dedupeCardioEffort,0);
 })();

@@ -9,7 +9,7 @@ const root=path.join(__dirname,'..');
 const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 
 test('startup has one static owner and reveals only the final v260 interface',()=>{
-  const html=read('index.html'),style=read('og-style.js'),boot=read('startup-orchestrator.js'),retirement=read('legacy-retirement.js'),weekOne=read('plan-w1.js');
+  const html=read('index.html'),style=read('og-style.js'),boot=read('startup-orchestrator.js'),weekOne=read('plan-w1.js');
   assert.equal((html.match(/id="unvrsl-startup-v258"/g)||[]).length,1);
   assert.equal((html.match(/id="unvrsl-startup-v258-style"/g)||[]).length,1);
   assert.match(html,/startup-orchestrator-v260\.js\?v=261/);
@@ -27,8 +27,6 @@ test('startup has one static owner and reveals only the final v260 interface',()
   assert.match(boot,/await paintFinalInterface\(\)[\s\S]*classList\.add\(READY_CLASS\)[\s\S]*splash\?\.classList\.add\('out'\)/);
   assert.doesNotMatch(boot,/release\('timeout'\)|15000/);
   assert.match(html,/html:not\(\.unvrsl-app-ready-v260\) \.app/);
-  assert.match(retirement,/unvrsl-startup-splash-final/);
-  assert.match(retirement,/#unvrslBoot/);
 });
 
 test('trainer Plan owns its old journal style and renders only on demand',()=>{
@@ -78,11 +76,11 @@ test('v260 queues boot renders and paints once after every canonical owner is re
 });
 
 test('v260 preloads only active runtime files before ordered execution',()=>{
-  const loader=read('frequent-patch.js'),retired=read('legacy-retirement.js');
+  const loader=read('frequent-patch.js');
   assert.match(loader,/link\.rel='preload';link\.as='script'/);
   assert.match(loader,/__unvrslCanonicalPreloadsV260/);
   for(const old of ['stats-dashboard-v2.js','home-stats-v2.js','stats-cleanup.js','startup-splash-v156.js'])assert.doesNotMatch(loader,new RegExp(old.replaceAll('.','\\.')));
-  assert.match(retired,/window\.unvrslLegacyCleanV260=clean/);
+  assert.equal(fs.existsSync(path.join(root,'legacy-retirement.js')),false);
 });
 
 test('client Plan history supplements one canonical renderer without wrapping it',()=>{
@@ -94,4 +92,3 @@ test('client Plan history supplements one canonical renderer without wrapping it
   assert.doesNotMatch(journal,/\[0,300,900,1800\]/);
   assert.doesNotMatch(journal,/setInterval\([^\n]*planExtras/);
 });
-

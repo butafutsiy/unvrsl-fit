@@ -11,12 +11,6 @@
   const TESTISH=/\bтест\b|1[–-]3ПМ|3[–-]5ПМ|максимум/i;
   const baseName=n=>String(n||'').split(' — ')[0].trim();
 
-  function sourceFor(s,ei,e){
-    const routines=W.UNVRSL_ROUTINES||[];
-    const r=routines.find(x=>Number(x?.w)===Number(s?.w)&&String(x?.c||'')===String(s?.c||''));
-    return r?.e?.[Number(ei)]||e||null;
-  }
-
   function parsePlanRange(e){
     if(!e||e.m||SPECIAL.test(String(e.n||'')))return null;
     const name=String(e.n||'');
@@ -63,40 +57,4 @@
   };
   W.unvrslActiveRepRangeV316=W.unvrslActiveRepRangeV315;
 
-  function install(){
-    let cur=W.exerciseCard;
-    try{if(typeof exerciseCard==='function')cur=exerciseCard}catch(_){ }
-    if(typeof cur!=='function'||cur.__activeRepRangesV316)return false;
-
-    // If the old v282 wrapper is already present, unwrap it so its stale hard-coded map
-    // cannot add a second, contradictory range label.
-    if(cur.__activeRepRangesV282Base)cur=cur.__activeRepRangesV282Base;
-
-    const wrapped=function(s,e,ei){
-      const html=cur.apply(this,arguments);
-      const src=sourceFor(s,ei,e);
-      const target=rangeFor(s?.w,src);
-      if(!html||!target)return html;
-      const note=`<div class="unvrsl-active-rep-range-v282" style="margin:9px 0 3px;color:var(--green);font-size:13px;font-weight:750">Диапазон повторов · ${target.label}</div>`;
-      return html.replace('<div class="sethead">',`${note}<div class="sethead">`);
-    };
-    wrapped.__activeRepRangesV316=true;
-    wrapped.__activeRepRangesV282=true;
-    wrapped.__activeRepRangesV282Base=cur;
-    wrapped.__activeRepRangesV316Base=cur;
-    W.exerciseCard=wrapped;
-    try{exerciseCard=wrapped}catch(_){ }
-    return true;
-  }
-
-  const rerender=()=>{
-    try{
-      if(document.getElementById('start')?.classList.contains('active')&&typeof startPage==='function')startPage();
-    }catch(_){ }
-  };
-
-  if(install())rerender();
-  W.addEventListener('load',()=>{if(install())rerender()},{once:true});
-  ['unvrsl:training-engine-ready','unvrsl:modules-ready','unvrsl:app-ready'].forEach(ev=>W.addEventListener?.(ev,()=>{if(install())rerender()},{passive:true}));
 })();
-

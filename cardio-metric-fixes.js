@@ -77,14 +77,9 @@
     if(typeof best==='function'&&!best.__noCardioRm){const w=function(n,sourceId){if(isCardioRef(n,sourceId))return null;return best.apply(this,arguments)};w.__noCardioRm=true;window.bestEstimateFor=w;try{bestEstimateFor=w}catch(e){}}
     const pr=window.advDetectSetPR;if(typeof pr==='function'&&!pr.__noCardioRm){const w=function(e,x){if(isCardioEntry(e))return[];return pr.apply(this,arguments)};w.__noCardioRm=true;window.advDetectSetPR=w;try{advDetectSetPR=w}catch(e){}}
     const hist=window.advHistorySets;if(typeof hist==='function'&&!hist.__noCardioRm){const w=function(base,sourceId){if(isCardioRef(base,sourceId))return[];return hist.apply(this,arguments)};w.__noCardioRm=true;window.advHistorySets=w;try{advHistorySets=w}catch(e){}}
-    const sug=window.suggestionFor;if(typeof sug==='function'&&!sug.__noCardioRm){const w=function(base,sourceId){if(isCardioRef(base,sourceId))return null;return sug.apply(this,arguments)};w.__noCardioRm=true;window.suggestionFor=w;try{suggestionFor=w}catch(e){}}
-    const adaptive=window.applyAdaptiveLoads;if(typeof adaptive==='function'&&!adaptive.__noCardioRm){const w=function(){const changed=[];(st?.current?.ex||[]).forEach(e=>{if(isCardioEntry(e)&&e.mode!=='cardio'){changed.push([e,e.mode]);e.mode='cardio'}});try{return adaptive.apply(this,arguments)}finally{changed.forEach(([e,m])=>e.mode=m)}};w.__noCardioRm=true;window.applyAdaptiveLoads=w;try{applyAdaptiveLoads=w}catch(e){}}
   }
 
-  installGroupWrapper();installMetricGuards();
-  let tries=0;const id=setInterval(()=>{installGroupWrapper();installMetricGuards();if(++tries>60)clearInterval(id)},500);
-
-  if(!document.querySelector('script[data-unvrsl-active-workout-compact]')){
-    const s=document.createElement('script');s.src='active-workout-compact.js';s.async=false;s.dataset.unvrslActiveWorkoutCompact='1';s.onerror=()=>console.warn('active workout compact failed to load');document.body.appendChild(s);
-  }
+  const install=()=>{installGroupWrapper();installMetricGuards()};
+  install();
+  ['unvrsl:modules-ready','unvrsl:deferred-modules-ready','unvrsl:app-ready'].forEach(ev=>window.addEventListener(ev,install,{passive:true}));
 })();

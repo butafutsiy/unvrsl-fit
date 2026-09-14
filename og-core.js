@@ -53,7 +53,7 @@ function expandedSessionEntries(r){
 function session(r){
   const entries=expandedSessionEntries(r);
   return {id:'s'+Date.now(),date:iso(),w:r.w,c:r.c,name:r.t,target:RPE[r.w],tempo:r.p||'',started:Date.now(),ended:null,
-    ex:entries.map((e,i)=>({n:e.n,d:e.d||'',rest:rest(r,e,i,entries),g:e.g||null,sourceId:e.sourceId||null,mode:e.m?'cardio':'reps',set:Array.from({length:e.s||1},(_,j)=>e.m?{n:j+1,min:Number(e.m||0),rpe:'',ok:false}:{n:j+1,w:Number(e.w||0),r:Number(e.r||0),rpe:'',ok:false})}))};
+    ex:entries.map((e,i)=>({n:e.n,d:e.d||'',rest:rest(r,e,i,entries),g:e.g||null,sourceId:e.sourceId||null,mode:e.m?'cardio':'reps',set:Array.from({length:e.s||1},(_,j)=>e.m?{n:j+1,min:Number(e.m||0),rpe:'',rir:'',actualRpe:null,actualRir:null,ok:false}:{n:j+1,w:Number(e.w||0),r:Number(e.r||0),rpe:'',rir:'',actualRpe:null,actualRir:null,ok:false})}))};
 }
 function planPage(){
   const w=st.week||1,list=ROUTINES.filter(r=>r.w===w);
@@ -63,21 +63,22 @@ function planPage(){
 }
 function startPage(){
   const s=st.current;
-  if(!s){$('#start').innerHTML=`<div class="card"><div class="title">Нет активной тренировки</div><div class="muted" style="margin-top:6px">Выбери тренировку из плана или быстрым стартом.</div><button class="btn primary full" onclick="quick()">Выбрать тренировку</button></div>`;return}
-  const pct=total(s)?Math.round(done(s)/total(s)*100):0,groups=groupIndexedEntries(s.ex);
-  $('#start').innerHTML=`<div class="card workout-head"><div class="row between"><div><div class="title">${esc(s.c)} · ${esc(s.name)}</div><div class="muted">W${s.w} · RPE ${s.target} · темп ${esc(tempoOnly(s.tempo))}</div></div><span class="chip green">${pct}%</span></div><div class="progress"><i style="width:${pct}%"></i></div></div>
+  if(!s){$('#start').innerHTML=`<div class="card"><div class="title">Нет активной тренировки</div><div class="muted" style="margin-top:6px">Выбери тренировку из плана или быстрым стартом.</div><button class="btn primary full" onclick="quick()">Выбрать тренировку</button></div>`;window.dispatchEvent(new CustomEvent('unvrsl:workout-rendered'));return}
+  const pct=total(s)?Math.round(done(s)/total(s)*100):0,groups=groupIndexedEntries(s.ex),target=effortTargets(s,null,null);
+  $('#start').innerHTML=`<div class="card workout-head"><div class="row between"><div><div class="title">${esc(s.c)} · ${esc(s.name)}</div><div class="muted">W${s.w} · RPE ${target.rpe} · RIR ${target.rir} · темп ${esc(tempoOnly(s.tempo))}</div></div><span class="chip green">${pct}%</span></div><div class="progress"><i style="width:${pct}%"></i></div></div>
     ${groups.map(g=>exerciseGroupCard(s,g)).join('')}
     <div class="card"><button class="btn primary full" onclick="finish()">Завершить тренировку</button><button class="btn danger full" onclick="cancelWorkout()">Отменить тренировку</button></div>`;
+  window.dispatchEvent(new CustomEvent('unvrsl:workout-rendered'));
 }
 function exerciseGroupCard(s,group){
   const title=displayExerciseName(group.base),method=methodType(group.entries),last=group.entries.at(-1),finalRest=Number(last?.rest||0),allCardio=group.entries.every(e=>e.mode==='cardio');
   const rows=[];group.entries.forEach((e,local)=>{const ei=group.indices[local];e.set.forEach((x,si)=>rows.push({e,x,ei,si,label:e.phaseLabel||variantLabel(e.n,si)}))});
   return `<div class="exercise ${method?'method':''}"><div class="row between"><div class="grow"><button class="exname exlink" onclick="openExerciseDetailByName('${encodeURIComponent(group.base)}')">${esc(title)} <span class="info-dot">ⓘ</span></button><div class="rule-line">${esc(groupRuleText(group))}</div><div class="chips compact"><span class="chip green">RPE ${s.target}</span><span class="chip">темп ${esc(tempoOnly(s.tempo))}</span>${method?`<span class="chip method-chip">${method}</span>`:''}</div></div>${finalRest>0?`<button class="btn tiny" onclick="timer(${finalRest})">⏱</button>`:''}</div>${method?'<div class="method-strip"></div>':''}
     ${allCardio?`<div class="sethead cardiohead"><span>Сет</span><span>мин</span><span>RPE</span><span></span></div>${rows.map(z=>`<div class="setrow cardiorow"><span class="phase">${esc(z.label)}</span><input inputmode="decimal" value="${z.x.min||''}" placeholder="мин" onchange="editSet(${z.ei},${z.si},'min',this.value)"><input inputmode="decimal" value="${z.x.rpe||''}" placeholder="${s.target}" onchange="editSet(${z.ei},${z.si},'rpe',this.value)"><button class="check ${z.x.ok?'done':''}" onclick="toggleSet(${z.ei},${z.si})">${z.x.ok?'✓':'○'}</button></div>`).join('')}`:
-    `<div class="sethead"><span>Сет</span><span>кг</span><span>повт.</span><span>RPE</span><span></span></div>${rows.map(z=>`<div class="setrow"><span class="phase ${method?'accent-phase':''}">${esc(z.label)}</span><input inputmode="decimal" value="${z.x.w||''}" placeholder="0" onchange="editSet(${z.ei},${z.si},'w',this.value)"><input inputmode="numeric" value="${z.x.r||''}" placeholder="0" onchange="editSet(${z.ei},${z.si},'r',this.value)"><input inputmode="decimal" value="${z.x.rpe||''}" placeholder="${s.target}" onchange="editSet(${z.ei},${z.si},'rpe',this.value)"><button class="check ${z.x.ok?'done':''}" onclick="toggleSet(${z.ei},${z.si})">${z.x.ok?'✓':'○'}</button></div>`).join('')}`}</div>`;
+    `<div class="sethead"><span>Сет</span><span>кг</span><span>повт.</span><span>RPE</span><span>RIR</span><span></span></div>${rows.map(z=>{const target=effortTargets(s,z.e,z.x);return`<div class="setrow"><span class="phase ${method?'accent-phase':''}">${esc(z.label)}</span><input inputmode="decimal" value="${z.x.w||''}" placeholder="0" onchange="editSet(${z.ei},${z.si},'w',this.value,this)"><input inputmode="numeric" value="${z.x.r||''}" placeholder="0" onchange="editSet(${z.ei},${z.si},'r',this.value,this)"><input class="effort-input rpe-input" data-effort="rpe" inputmode="decimal" value="${z.x.rpe??''}" placeholder="${target.rpe}" aria-label="Фактический RPE, цель ${target.rpe}" onchange="editSet(${z.ei},${z.si},'rpe',this.value,this)"><input class="effort-input rir-input" data-effort="rir" inputmode="decimal" value="${z.x.rir??''}" placeholder="${target.rir}" aria-label="Фактический RIR, цель ${target.rir}" onchange="editSet(${z.ei},${z.si},'rir',this.value,this)"><button class="check ${z.x.ok?'done':''}" onclick="toggleSet(${z.ei},${z.si})">${z.x.ok?'✓':'○'}</button></div>`}).join('')}`}</div>`;
 }
-function editSet(ei,si,k,v){if(!st.current)return;let x=st.current.ex[ei].set[si];x[k]=v===''?'':Number(String(v).replace(',','.'));save()}
-function toggleSet(ei,si){if(!st.current)return;let e=st.current.ex[ei],x=e.set[si];x.ok=!x.ok;save();if(x.ok&&e.rest>0)timer(e.rest);startPage()}
+function editSet(ei,si,k,v,input){if(!st.current)return;const x=st.current.ex?.[ei]?.set?.[si];if(!x)return;if(k==='rpe'||k==='rir'){const n=effortNumber(v);x[k]=n==null?'':n;const other=k==='rpe'?'rir':'rpe';x[other]=n==null?'':Math.round((10-n)*10)/10;x.actualRpe=x.rpe===''?null:x.rpe;x.actualRir=x.rir===''?null:x.rir;const peer=input?.closest?.('.setrow')?.querySelector?.(`[data-effort="${other}"]`);if(peer&&document.activeElement!==peer)peer.value=x[other]}else{x[k]=v===''?'':Number(String(v).replace(',','.'))}save();window.dispatchEvent(new CustomEvent('unvrsl:workout-set-changed',{detail:{exerciseIndex:ei,setIndex:si,field:k}}))}
+function toggleSet(ei,si){if(!st.current)return;const e=st.current.ex?.[ei],x=e?.set?.[si];if(!e||!x)return;if(!x.ok){const cardio=e.mode==='cardio'||Object.prototype.hasOwnProperty.call(x,'min'),valid=cardio?Number(x.min)>0&&Number.isFinite(+x.min)&&x.rpe!==''&&Number.isFinite(+x.rpe):Number(x.w)>0&&Number.isFinite(+x.w)&&Number(x.r)>0&&Number.isFinite(+x.r)&&x.rpe!==''&&Number.isFinite(+x.rpe);if(!valid){toast(cardio?'Заполни минуты и RPE':'Заполни вес, повторы и RPE');return}}x.ok=!x.ok;save();if(x.ok&&e.rest>0)timer(e.rest);startPage()}
 function preview(w,c){
   const r=rmap.get(`${w}-${c}`);if(!r)return toast('Тренировка не найдена');const entries=routineEntries(r),groups=groupIndexedEntries(entries);
   modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${esc(r.c)} · ${esc(r.t)}</h2><div class="muted">W${r.w} · RPE ${RPE[r.w]} · темп ${esc(tempoOnly(r.p||''))}</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div>${groups.map(g=>planGroupPreview(r,g)).join('')}<button class="btn primary full" onclick="begin(${r.w},'${r.c}')">Начать</button>`)
@@ -96,9 +97,8 @@ function quickWeek(w){const el=$('#quickList');if(!el)return;el.innerHTML=ROUTIN
 (()=>{
   if(document.querySelector('script[data-unvrsl-offline-strength-search-v341]'))return;
   const s=document.createElement('script');
-  s.src='offline-strength-search.js?v=379';
+  s.src='offline-strength-search.js?v=380';
   s.async=false;
   s.dataset.unvrslOfflineStrengthSearchV341='1';
   document.body.appendChild(s);
 })();
-
