@@ -1,84 +1,154 @@
 'use strict';
 (()=>{
-  const W=window,D=document,RELEASE=321,READY_CLASS='unvrsl-shell-ready-v316',LEGACY_READY_CLASS='unvrsl-app-ready-v260';
-  if(W.__unvrslStartupOrchestratorV321)return;W.__unvrslStartupOrchestratorV321=true;W.__unvrslStartupOrchestratorV320=true;W.__unvrslStartupOrchestratorV319=true;W.__unvrslStartupOrchestratorV260=true;
+  const W=window,D=document,RELEASE=388,READY_CLASS='unvrsl-shell-ready-v316',LEGACY_READY_CLASS='unvrsl-app-ready-v260';
+  if(W.__unvrslStartupOrchestratorV388)return;
+  W.__unvrslStartupOrchestratorV388=true;
+  W.__unvrslStartupOrchestratorV321=true;
+  W.__unvrslStartupOrchestratorV320=true;
+  W.__unvrslStartupOrchestratorV319=true;
+  W.__unvrslStartupOrchestratorV260=true;
   W.__unvrslStartupComplete=false;
 
-  // Startup must never be held hostage by a slow cloud session refresh.
-  // Give Supabase a short grace period, then paint the local app and hydrate
-  // cloud/profile/role in the background when the service recovers.
+  // v388 root fix: the base shell must not wait for decorative/runtime patches.
+  // Disable the old watchdog workaround. Startup now completes only when the
+  // actual base app + ui-stability layer are ready.
+  try{
+    if(W.__unvrslBootWatchdogV387){
+      clearTimeout(W.__unvrslBootWatchdogV387);
+      W.__unvrslBootWatchdogV387=null;
+    }
+  }catch(_){ }
+
   const bootStarted=(W.performance?.now?.()||Date.now());
   const CLOUD_GRACE_MS=850;
   const AUTH_GRACE_MS=5000;
   const elapsed=()=>((W.performance?.now?.()||Date.now())-bootStarted);
   let progressValue=8,loadedAssets=0;
+
   function setProgress(value){
-    const next=Math.max(progressValue,Math.min(100,Math.round(Number(value)||0))),splash=D.getElementById('unvrsl-startup-v258'),track=splash?.querySelector('.u-progress'),bar=track?.querySelector('i'),label=splash?.querySelector('.u-status');
-    progressValue=next;if(bar&&bar.style.width!==`${next}%`)bar.style.width=`${next}%`;if(track){track.setAttribute('aria-valuenow',String(next));track.dataset.progress=String(next)}if(label&&label.textContent!==`${next}%`)label.textContent=`${next}%`
+    const next=Math.max(progressValue,Math.min(100,Math.round(Number(value)||0)));
+    const splash=D.getElementById('unvrsl-startup-v258');
+    const track=splash?.querySelector('.u-progress');
+    const bar=track?.querySelector('i');
+    const label=splash?.querySelector('.u-status');
+    progressValue=next;
+    if(bar&&bar.style.width!==`${next}%`)bar.style.width=`${next}%`;
+    if(track){track.setAttribute('aria-valuenow',String(next));track.dataset.progress=String(next)}
+    if(label&&label.textContent!==`${next}%`)label.textContent=`${next}%`;
   }
-  W.unvrslStartupAssetLoadedV320=()=>{loadedAssets+=1;setProgress(Math.min(80,24+loadedAssets*1.1))};
+
+  W.unvrslStartupAssetLoadedV320=()=>{
+    loadedAssets+=1;
+    setProgress(Math.min(78,24+loadedAssets*1.1));
+  };
   W.unvrslStartupAssetLoadedV319=W.unvrslStartupAssetLoadedV320;
   setProgress(progressValue);
 
-  // Load the canonical math layer independently from the workout UI. It waits
-  // for the training engine and updates weight data without rebuilding pages.
+  // Optional feature modules are intentionally outside the startup barrier.
   function loadTrainingLoadModel(){
     if(W.__unvrslTrainingLoadModelV292||D.querySelector('script[data-unvrsl-load-model-v292]'))return;
-    const s=D.createElement('script');s.src='training-load-model.js?v=387';s.async=false;s.dataset.unvrslLoadModelV292='1';s.onerror=()=>console.warn('UNVRSL load model v292 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');
+    s.src='training-load-model.js?v=387';
+    s.async=false;
+    s.dataset.unvrslLoadModelV292='1';
+    s.onerror=()=>console.warn('UNVRSL load model v292 failed to load');
+    D.body?.appendChild(s);
   }
   function loadProgramIntensity(){
     if(W.__unvrslProgramIntensityAutoWeightV261||D.querySelector('script[data-unvrsl-program-intensity-v261]'))return;
-    const s=D.createElement('script');s.src='program-intensity-autoweight.js?v=387';s.async=false;s.dataset.unvrslProgramIntensityV261='1';s.onerror=()=>console.warn('UNVRSL program intensity UI failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');
+    s.src='program-intensity-autoweight.js?v=387';
+    s.async=false;
+    s.dataset.unvrslProgramIntensityV261='1';
+    s.onerror=()=>console.warn('UNVRSL program intensity UI failed to load');
+    D.body?.appendChild(s);
   }
   function loadTrainerClientProgramEdit(){
     if(W.__unvrslTrainerClientProgramEditV262||D.querySelector('script[data-unvrsl-trainer-client-edit-v262]'))return;
-    const s=D.createElement('script');s.src='trainer-client-program-edit.js?v=387';s.async=false;s.dataset.unvrslTrainerClientEditV262='1';s.onerror=()=>console.warn('UNVRSL trainer client program edit v262 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');
+    s.src='trainer-client-program-edit.js?v=387';
+    s.async=false;
+    s.dataset.unvrslTrainerClientEditV262='1';
+    s.onerror=()=>console.warn('UNVRSL trainer client program edit v262 failed to load');
+    D.body?.appendChild(s);
   }
   function loadProgramWeekRpeRir(){
     if(W.__unvrslProgramWeekRpeRirV263||D.querySelector('script[data-unvrsl-week-rpe-rir-v263]'))return;
-    const s=D.createElement('script');s.src='program-week-rpe-rir.js?v=387';s.async=false;s.dataset.unvrslWeekRpeRirV263='1';s.onerror=()=>console.warn('UNVRSL week RPE RIR v263 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');
+    s.src='program-week-rpe-rir.js?v=387';
+    s.async=false;
+    s.dataset.unvrslWeekRpeRirV263='1';
+    s.onerror=()=>console.warn('UNVRSL week RPE RIR v263 failed to load');
+    D.body?.appendChild(s);
   }
   function loadProgramRepRange(){
     if(W.__unvrslProgramRepRangeV266||D.querySelector('script[data-unvrsl-program-rep-range-v266]'))return;
-    const s=D.createElement('script');s.src='program-rep-range.js?v=387';s.async=false;s.dataset.unvrslProgramRepRangeV266='1';s.onerror=()=>console.warn('UNVRSL program rep range v266 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');
+    s.src='program-rep-range.js?v=387';
+    s.async=false;
+    s.dataset.unvrslProgramRepRangeV266='1';
+    s.onerror=()=>console.warn('UNVRSL program rep range v266 failed to load');
+    D.body?.appendChild(s);
   }
   function loadBuiltInPlanRepRanges(){
     if(W.__unvrslBuiltInPlanRepRangesV267||D.querySelector('script[data-unvrsl-built-in-ranges-v267]'))return;
-    const s=D.createElement('script');s.src='built-in-plan-rep-ranges.js?v=387';s.async=false;s.dataset.unvrslBuiltInRangesV267='1';s.onerror=()=>console.warn('UNVRSL built-in plan rep ranges v267 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');
+    s.src='built-in-plan-rep-ranges.js?v=387';
+    s.async=false;
+    s.dataset.unvrslBuiltInRangesV267='1';
+    s.onerror=()=>console.warn('UNVRSL built-in plan rep ranges v267 failed to load');
+    D.body?.appendChild(s);
   }
   function loadProgramWeekRepGuidance(){
     if(W.__unvrslProgramWeekRepGuidanceV268||D.querySelector('script[data-unvrsl-week-rep-guidance-v268]'))return;
-    const s=D.createElement('script');s.src='program-week-rep-guidance.js?v=387';s.async=false;s.dataset.unvrslWeekRepGuidanceV268='1';s.onerror=()=>console.warn('UNVRSL weekly rep guidance v268 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');
+    s.src='program-week-rep-guidance.js?v=387';
+    s.async=false;
+    s.dataset.unvrslWeekRepGuidanceV268='1';
+    s.onerror=()=>console.warn('UNVRSL weekly rep guidance v268 failed to load');
+    D.body?.appendChild(s);
   }
+
   let featureModulesStarted=false;
   function warmFeatureModules(){
-    if(featureModulesStarted)return;featureModulesStarted=true;
-    const loadAll=()=>{loadTrainingLoadModel();loadProgramIntensity();loadTrainerClientProgramEdit();loadProgramWeekRpeRir();loadProgramRepRange();loadBuiltInPlanRepRanges();loadProgramWeekRepGuidance()};
-    loadAll();[1200,3000].forEach(ms=>setTimeout(loadAll,ms))
+    if(featureModulesStarted)return;
+    featureModulesStarted=true;
+    const loadAll=()=>{
+      loadTrainingLoadModel();
+      loadProgramIntensity();
+      loadTrainerClientProgramEdit();
+      loadProgramWeekRpeRir();
+      loadProgramRepRange();
+      loadBuiltInPlanRepRanges();
+      loadProgramWeekRepGuidance();
+    };
+    loadAll();
+    [1200,3000].forEach(ms=>setTimeout(loadAll,ms));
   }
   function scheduleFeatureModules(){
     if(featureModulesStarted)return;
     if('requestIdleCallback'in W)W.requestIdleCallback(warmFeatureModules,{timeout:1000});
-    else setTimeout(warmFeatureModules,240)
+    else setTimeout(warmFeatureModules,240);
   }
   function warmFeatureIntent(e){
-    const button=e.target?.closest?.('.nav button[data-p]');if(!button)return;
-    if(['plan','start','programs','clients'].includes(button.dataset.p))warmFeatureModules()
+    const button=e.target?.closest?.('.nav button[data-p]');
+    if(!button)return;
+    if(['plan','start','programs','clients'].includes(button.dataset.p))warmFeatureModules();
   }
   D.addEventListener('pointerdown',warmFeatureIntent,{capture:true,passive:true});
   D.addEventListener('touchstart',warmFeatureIntent,{capture:true,passive:true});
 
-  // app.js does not paint its legacy base DOM during boot. Its first render is
-  // released here only after every local UI owner has finished loading.
   const baseRender=W.render;
   let unlocked=false,pending=false,finalizing=false,released=false;
   if(typeof baseRender==='function'){
     const gated=function(){
       if(!unlocked){pending=true;return}
-      return baseRender.apply(this,arguments)
+      return baseRender.apply(this,arguments);
     };
-    gated.__unvrslBootRenderGateV260=true;gated.__unvrslBootRenderBaseV260=baseRender;
-    W.render=gated;try{render=gated}catch(_){ }
+    gated.__unvrslBootRenderGateV260=true;
+    gated.__unvrslBootRenderBaseV260=baseRender;
+    W.render=gated;
+    try{render=gated}catch(_){ }
   }
 
   const trainer=()=>{
@@ -89,27 +159,26 @@
   const client=()=>!!W.cloud?.user&&!trainer();
   const cloudSettled=()=>!!(W.__unvrslCloudModulesSettledV260&&W.cloud?.initSettled);
   const cloudCanWait=()=>elapsed()<CLOUD_GRACE_MS;
+
   function cachedAuth(){
     try{
       for(let i=0;i<localStorage.length;i++){
         const key=String(localStorage.key(i)||'');
-        if((/^sb-.*-auth-token$/i.test(key)||/supabase.*auth/i.test(key))&&localStorage.getItem(key))return true
+        if((/^sb-.*-auth-token$/i.test(key)||/supabase.*auth/i.test(key))&&localStorage.getItem(key))return true;
       }
     }catch(_){ }
-    return false
+    return false;
   }
 
+  // Root fix: critical startup = DOM + canonical ui-stability only.
+  // Premium UI, stats, mobile patches, client nav and trainer shell are runtime
+  // enhancements and must never keep the user behind the splash screen.
   function localCoreReady(){
     if(D.readyState==='loading')return false;
-    const deadline=elapsed()>=2600;
-    if(!W.__unvrslCriticalModulesReadyV320&&!deadline)return false;
-    if((!W.__unvrslUiStabilityV316||!W.__unvrslTrainerShellV252)&&!deadline)return false;
-    if(deadline&&!W.__unvrslCriticalModulesReadyV320){
-      W.__unvrslCriticalModulesBypassedV387=true;
-      W.__unvrslCriticalModulesReadyV320=true
-    }
-    return true
+    if(!W.__unvrslUiStabilityV316)return false;
+    return true;
   }
+
   function coreReady(){
     if(!localCoreReady())return false;
     if(!cloudSettled()&&(cloudCanWait()||(cachedAuth()&&elapsed()<AUTH_GRACE_MS)))return false;
@@ -117,19 +186,25 @@
       W.__unvrslStartupCloudBypassedV260=true;
       W.__unvrslStartupCloudBypassMsV260=Math.round(elapsed());
     }
-    // Only wait for client-specific cloud runtime when cloud actually resolved
-    // a signed-in client. An unavailable cloud must not block the local shell.
     if(cloudSettled()&&client()&&(!W.__unvrslClientRuntimeSettledV260||!D.body?.classList.contains('client-runtime-ready-v260')))return false;
-    return true
+    return true;
   }
+
   function syncProgress(){
-    let next=10;if(D.readyState!=='loading')next=22;if(W.__unvrslUiStabilityV316)next=Math.max(next,42);if(W.__unvrslCriticalModulesReadyV320)next=Math.max(next,84);if(next>=84&&(cloudSettled()||elapsed()>=AUTH_GRACE_MS||(!cachedAuth()&&elapsed()>=CLOUD_GRACE_MS)))next=Math.max(next,91);if(next>=91&&(!client()||W.__unvrslClientRuntimeSettledV260))next=Math.max(next,94);setProgress(Math.min(next,96))
+    let next=10;
+    if(D.readyState!=='loading')next=22;
+    if(W.__unvrslUiStabilityV316)next=Math.max(next,84);
+    if(next>=84&&(cloudSettled()||elapsed()>=AUTH_GRACE_MS||(!cachedAuth()&&elapsed()>=CLOUD_GRACE_MS)))next=Math.max(next,91);
+    if(next>=91&&(!client()||W.__unvrslClientRuntimeSettledV260))next=Math.max(next,94);
+    setProgress(Math.min(next,96));
   }
+
   const frames=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   async function paintFinalInterface(){
-    unlocked=true;W.__unvrslBootRenderUnlockedV260=true;
+    unlocked=true;
+    W.__unvrslBootRenderUnlockedV260=true;
     try{W.unvrslUiStabilityPrepareV316?.()}catch(_){ }
-    try{W.render?.()}catch(e){console.warn('UNVRSL final render v260',e)}
+    try{W.render?.()}catch(e){console.warn('UNVRSL final render v388',e)}
     try{W.unvrslTrainerShellSyncV260?.(true)}catch(_){ }
     if(client()){
       try{W.clientCleanHome?.()}catch(_){ }
@@ -141,37 +216,48 @@
     await new Promise(resolve=>setTimeout(resolve,60));
     try{W.unvrslTrainerShellSyncV260?.(false)}catch(_){ }
     try{W.unvrslUiStabilityPrepareV316?.()}catch(_){ }
-    await frames()
+    await frames();
   }
+
   async function finalize(){
     syncProgress();
     if(finalizing||released)return false;
     if(!coreReady())return false;
-    finalizing=true;setProgress(97);
+    finalizing=true;
+    setProgress(97);
     try{
       await paintFinalInterface();
       D.getElementById('unvrsl-stability-v313')?.remove();
       D.getElementById('unvrsl-ui-stability-v313-style')?.remove();
       D.documentElement?.classList.add(READY_CLASS,LEGACY_READY_CLASS);
       D.body?.classList.add(READY_CLASS,LEGACY_READY_CLASS);
-      W.__unvrslStartupComplete=true;clearTimeout(W.__unvrslBootWatchdogV387);
+      W.__unvrslStartupComplete=true;
       W.__unvrslStartupReleaseReasonV260=W.__unvrslStartupCloudBypassedV260?'local-first':'ready';
       setProgress(100);
       const splash=D.getElementById('unvrsl-startup-v258');
       requestAnimationFrame(()=>requestAnimationFrame(()=>{
         splash?.classList.add('out');
-        setTimeout(()=>{splash?.remove();D.getElementById('unvrsl-startup-v258-style')?.remove()},220)
+        setTimeout(()=>{
+          splash?.remove();
+          D.getElementById('unvrsl-startup-v258-style')?.remove();
+        },220);
       }));
-      released=true;clearInterval(poll);W.dispatchEvent?.(new CustomEvent('unvrsl:app-ready',{detail:{release:RELEASE,queuedRender:pending,cloudBypassed:!!W.__unvrslStartupCloudBypassedV260}}));
-      return true
-    }finally{finalizing=false}
+      released=true;
+      clearInterval(poll);
+      W.dispatchEvent?.(new CustomEvent('unvrsl:app-ready',{detail:{release:RELEASE,queuedRender:pending,cloudBypassed:!!W.__unvrslStartupCloudBypassedV260}}));
+      return true;
+    }finally{
+      finalizing=false;
+    }
   }
+
   W.unvrslTryFinalizeStartupV260=finalize;
-  for(const name of ['load','unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:client-settled','unvrsl:readiness-ready','unvrsl:ui-stability-ready'])W.addEventListener?.(name,finalize,{passive:true});
+  for(const name of ['load','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:client-settled','unvrsl:readiness-ready','unvrsl:ui-stability-ready']){
+    W.addEventListener?.(name,finalize,{passive:true});
+  }
   W.addEventListener?.('unvrsl:app-ready',scheduleFeatureModules,{once:true,passive:true});
   W.addEventListener?.('unvrsl:training-engine-ready',()=>{if(featureModulesStarted)loadTrainingLoadModel()},{passive:true});
-  // Never expose a half-built shell. The fixed progress surface remains in
-  // place while slow modules finish, without inserting controls or moving it.
-  setTimeout(finalize,CLOUD_GRACE_MS+30);
-  const poll=setInterval(finalize,80);finalize();
+
+  const poll=setInterval(finalize,80);
+  finalize();
 })();
