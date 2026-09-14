@@ -3,6 +3,24 @@
   if(window.__unvrslProgramEditorV161Fix)return;
   window.__unvrslProgramEditorV161Fix=true;
 
+  const baseRenderProgramEditor=window.renderProgramEditor;
+  function editorKey(){
+    try{return `${String(programUi?.pid||'')}|${Number(programUi?.week)||0}`}catch(_){return''}
+  }
+  function emitEditorRendered(){
+    try{window.dispatchEvent(new CustomEvent('unvrsl:program-editor-rendered',{detail:{key:editorKey()}}))}catch(_){ }
+  }
+  if(typeof baseRenderProgramEditor==='function'&&!baseRenderProgramEditor.__stableProgramEditorV382){
+    const stableRender=function(){
+      const sheet=document.getElementById('sheet'),key=editorKey(),keepScroll=sheet?.dataset?.programEditorKey===key&&document.getElementById('modal')?.classList.contains('show'),scrollTop=keepScroll?sheet.scrollTop:0;
+      const result=baseRenderProgramEditor.apply(this,arguments),next=document.getElementById('sheet'),modalRoot=document.getElementById('modal');
+      if(next){next.dataset.programEditorKey=key;next.scrollTop=keepScroll?scrollTop:0}
+      modalRoot?.classList.add('px-program-modal');emitEditorRendered();return result
+    };
+    stableRender.__stableProgramEditorV382=true;stableRender.__stableProgramEditorBaseV382=baseRenderProgramEditor;
+    window.renderProgramEditor=stableRender;try{renderProgramEditor=stableRender}catch(_){ }
+  }
+
   function openEditor(id,week=0,day=0){
     const p=programById(id);
     if(!p)return typeof toast==='function'?toast('Программа не найдена'):undefined;
@@ -14,7 +32,6 @@
       query:''
     };
     renderProgramEditor();
-    document.getElementById('modal')?.classList.add('px-program-modal');
   }
 
   function create(){
@@ -61,6 +78,23 @@
   window.createProgram=create;
   try{openProgramEditor=openEditor}catch(e){}
   try{createProgram=create}catch(e){}
+
+  let programStartLocked=false;
+  window.programStartFromEditorV382=function(event,pid,wi,di){
+    event?.preventDefault?.();event?.stopPropagation?.();
+    if(programStartLocked)return false;
+    programStartLocked=true;
+    const request={pid:String(pid),wi:Number(wi)||0,di:Number(di)||0,at:Date.now(),source:'program-editor'};
+    window.__unvrslPendingProgramStartV382=request;
+    const button=event?.currentTarget;if(button)button.disabled=true;
+    requestAnimationFrame(()=>{
+      try{
+        if(typeof window.trainingRequestProgramStartV382==='function')window.trainingRequestProgramStartV382(request.pid,request.wi,request.di);
+        else if(typeof window.beginProgramDay==='function')window.beginProgramDay(request.pid,request.wi,request.di)
+      }finally{setTimeout(()=>{programStartLocked=false;if(button)button.disabled=false},450)}
+    });
+    return false
+  };
 
   // v225: replace an exercise without rebuilding its prescription.
   const css=document.createElement('style');

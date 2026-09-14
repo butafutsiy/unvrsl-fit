@@ -123,6 +123,12 @@
  let pendingStart=null,startingAfterReadiness=false;
  function showReadiness(){const cur=W.st?.current;if(!cur)return;pendingStart=null;cur.trainingReadinessPromptShown=true;try{W.save?.()}catch(_){}W.modal?.(readinessMarkup())}
  function askBeforeStart(fn,args,ctx){pendingStart={fn,args:Array.from(args||[]),ctx,before:W.st?.current||null};W.modal?.(readinessMarkup())}
+ function requestProgramStart(pid,wi,di){
+  const fn=typeof W.programBeginDayCoreV382==='function'?W.programBeginDayCoreV382:W.beginProgramDay;
+  if(typeof fn!=='function'){W.toast?.('Запуск тренировки ещё загружается');return false}
+  W.__unvrslPendingProgramStartV382={pid:String(pid),wi:Number(wi)||0,di:Number(di)||0,at:Date.now(),source:'program-editor'};
+  askBeforeStart(fn,[pid,Number(wi)||0,Number(di)||0],W);return true
+ }
  function readinessData(adjust){return adjust?readiness():{sleep:null,energy:null,soreness:null,stress:null,score:null,percent:0,factor:1,skipped:true,at:new Date().toISOString()}}
  function attachReadiness(cur,d,adjust){cur.readiness=d;cur.readinessUsed=!!adjust;cur.readinessAdjusted=!!adjust&&Math.abs(d.factor-1)>.001;cur.trainingReadinessDone=true;cur.trainingReadinessPromptShown=true;W.st.readinessLog.push({date:cur.date,sessionId:cur.id,...d})}
  async function confirm(adjust){
@@ -132,7 +138,7 @@
    const p=pendingStart;pendingStart=null;document.documentElement?.classList?.add('te200-preparing');startingAfterReadiness=true;
    try{p.fn.apply(p.ctx,p.args)}finally{startingAfterReadiness=false}
    const cur=W.st?.current;if(!cur||cur===p.before){pendingStart=p;document.documentElement?.classList?.remove('te200-preparing');return}
-   captureLaunchWeights(cur);attachReadiness(cur,d,adjust);try{W.save?.();W.modal?.(preparingMarkup())}catch(_){}
+   captureLaunchWeights(cur);attachReadiness(cur,d,adjust);W.__unvrslPendingProgramStartV382=null;try{W.save?.();W.modal?.(preparingMarkup())}catch(_){}
    busy=true;last=String(cur.id||'');
    try{await prepare(cur);enhanceDom()}catch(e){console.warn('v295 prepare before reveal',e);W.toast?.('Не удалось подготовить веса')}finally{busy=false;document.documentElement?.classList?.remove('te200-preparing');try{W.closeModal?.()}catch(_){}}
    setTimeout(tick,0);return
@@ -156,7 +162,7 @@
  function installStart(name){const fn=W[name];if(typeof fn!=='function'||fn.__te205PreStart)return;const wrapped=function(){if(startingAfterReadiness)return fn.apply(this,arguments);askBeforeStart(fn,arguments,this)};wrapped.__te205PreStart=true;wrapped.__te205Base=fn;assignStart(name,wrapped)}
  function installStartHooks(){['begin','beginProgramDay','beginRemotePlan'].forEach(installStart)}
  async function tick(){installStartHooks();const cur=W.st?.current;if(!cur?.id||cur.ended)return;lockLegacy(cur);const id=String(cur.id);if(id!==last){last=id;busy=false;const root=document.getElementById('start');if(root)delete root.dataset.te200Sig}if(busy)return;busy=true;try{if(cur.trainingEngineRevision!==REV){const ok=await prepare(cur);if(!ok)return}else if(!W.trainingLoadModel292?.run){await ensureLoadModel()}enhanceDom()}finally{busy=false}}
- W.trainingApplyRecommendation200=applyRecommendation;W.trainingRestoreProgram200=restoreProgram;W.trainingShowReadiness200=showReadiness;W.trainingConfirmReadiness200=confirm;W.trainingUpdateReadiness200=updateReadiness;W.trainingEngine200Tick=tick;
+ W.trainingApplyRecommendation200=applyRecommendation;W.trainingRestoreProgram200=restoreProgram;W.trainingShowReadiness200=showReadiness;W.trainingConfirmReadiness200=confirm;W.trainingUpdateReadiness200=updateReadiness;W.trainingRequestProgramStartV382=requestProgramStart;W.trainingEngine200Tick=tick;
  let tickQueued=false;const scheduleTick=()=>{if(tickQueued)return;tickQueued=true;queueMicrotask(()=>{tickQueued=false;tick()})};
  installStartHooks();['unvrsl:workout-rendered','unvrsl:workout-set-changed','unvrsl:readiness-ready','pageshow'].forEach(ev=>W.addEventListener?.(ev,scheduleTick,{passive:true}));[0,120,500].forEach(t=>setTimeout(scheduleTick,t));
  W.dispatchEvent?.(new CustomEvent('unvrsl:training-engine-ready',{detail:{release:REV,mathOwner:MATH_OWNER}}));

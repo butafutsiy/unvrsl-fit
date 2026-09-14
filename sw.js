@@ -1,6 +1,6 @@
 'use strict';
 
-const SW_RELEASE='v381-program-overrides';
+const SW_RELEASE='v382-editor-stability';
 const CACHE_PREFIX='unvrsl-';
 
 self.addEventListener('install',()=>{
