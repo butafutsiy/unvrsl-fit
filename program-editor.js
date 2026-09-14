@@ -14,6 +14,7 @@
       query:''
     };
     renderProgramEditor();
+    document.getElementById('modal')?.classList.add('px-program-modal');
   }
 
   function create(){
@@ -167,4 +168,3 @@
     }catch(e){console.warn('Sergey plan v225 refresh',e)}
   },0);
 })();
-
