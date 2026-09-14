@@ -60,7 +60,7 @@
  function sourceWeight(src,ex,setIndex,cur){const sets=src?.sets||[];if(!sets.length)return 0;if((ex.set||[]).length>1)return num(sets[setIndex]?.w??sets.at(-1)?.w);const i=occurrenceIndex(ex,cur),m=method(src,ex),count=(cur.ex||[]).filter(x=>same(x,ex.n,ex.sourceId)).length;if(m==='UNVRSL'&&count>sets.length){const map=sets.length>=3?[0,1,0,1,0,1,2,2]:sets.length===2?[0,1,0,1,0,1,1,1]:[0,0,0,0,0,0,0,0];return num(sets[map[i]??map.at(-1)]?.w)}return num(sets[i]?.w??sets.at(-1)?.w)}
  async function ensureLoadModel(){
   if(W.trainingLoadModel292?.run)return true;
-  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=377';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
+  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=379';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
   for(let i=0;i<40;i++){if(W.trainingLoadModel292?.run)return true;await new Promise(r=>setTimeout(r,50))}
   return !!W.trainingLoadModel292?.run
  }
@@ -161,7 +161,7 @@
  async function tick(){disableLegacyReadiness();installStartHooks();const cur=W.st?.current;if(!cur?.id||cur.ended)return;lockLegacy(cur);const id=String(cur.id);if(id!==last){last=id;busy=false;const root=document.getElementById('start');if(root)delete root.dataset.te200Sig}if(busy)return;busy=true;try{if(cur.trainingEngineRevision!==REV){const ok=await prepare(cur);if(!ok)return}else if(!W.trainingLoadModel292?.run){await ensureLoadModel()}enhanceDom()}finally{busy=false}}
  W.trainingApplyRecommendation200=applyRecommendation;W.trainingRestoreProgram200=restoreProgram;W.trainingShowReadiness200=showReadiness;W.trainingConfirmReadiness200=confirm;W.trainingUpdateReadiness200=updateReadiness;W.trainingEngine200Tick=tick;
  const oldApply=W.applySuggestion;W.applySuggestion=function(){if(W.st?.current?.id){W.toast?.(isOwnerEightWeekPlan(W.st.current)?'Рекомендация показана над упражнением':'Автовес уже применяется автоматически');return}return typeof oldApply==='function'?oldApply.apply(this,arguments):undefined};try{applySuggestion=W.applySuggestion}catch(_){}
- installStartHooks();setInterval(tick,300);[0,80,250,700,1500,3000].forEach(t=>setTimeout(tick,t));
+ let tickQueued=false;const scheduleTick=()=>{if(tickQueued)return;tickQueued=true;queueMicrotask(()=>{tickQueued=false;tick()})};
+ installStartHooks();['unvrsl:workout-rendered','unvrsl:workout-set-changed','unvrsl:readiness-ready','pageshow'].forEach(ev=>W.addEventListener?.(ev,scheduleTick,{passive:true}));[0,120,500].forEach(t=>setTimeout(scheduleTick,t));
  W.dispatchEvent?.(new CustomEvent('unvrsl:training-engine-ready',{detail:{release:REV,mathOwner:MATH_OWNER}}));
 })();
-

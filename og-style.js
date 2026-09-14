@@ -39,7 +39,7 @@
   // One client runtime owns Home and Plan. It stays dormant for the trainer account.
   if(!document.querySelector('script[data-unvrsl-client-runtime-v257]')){
     const clientFinal=document.createElement('script');
-    clientFinal.src='client-final-runtime.js?v=377';
+    clientFinal.src='client-final-runtime.js?v=379';
     clientFinal.async=false;
     clientFinal.dataset.unvrslClientRuntimeV257='1';
     document.body.appendChild(clientFinal);
@@ -48,7 +48,7 @@
   // Canonical exercise-detail styling. No legacy boot cover or renderer is executed.
   if(!document.querySelector('script[data-unvrsl-og-enhance-v254]')){
     const enhance=document.createElement('script');
-    enhance.src='og-enhance.js?v=377';
+    enhance.src='og-enhance.js?v=379';
     enhance.async=false;
     enhance.dataset.unvrslOgEnhanceV254='1';
     document.head.appendChild(enhance);

@@ -97,8 +97,9 @@
       .mw304-holder{width:100%;margin:12px 0 15px}.mw304-control{width:100%;display:flex;gap:8px;align-items:stretch}.mw304-control>button:first-child,.mw304-control.empty{width:100%;min-width:0;min-height:64px;flex:1;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;background:#19191b;border:1px solid #3a3a3e;border-radius:17px;padding:11px 14px;box-sizing:border-box}.mw304-control span{min-width:0;flex:1}.mw304-control b,.mw304-control small{display:block}.mw304-control b{color:#e8e8ed;font-size:15px;line-height:1.2}.mw304-control small{margin-top:5px;color:#8e8e93;font-size:13px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mw304-control i{flex:0 0 auto;font-style:normal;color:#777;font-size:25px;line-height:1}.mw304-control.empty{appearance:none}.mw304-control.empty b{color:#e8e8ed}.mw304-apply{flex:0 0 auto;min-width:104px;border-radius:17px!important;background:rgba(48,209,88,.13)!important;border:1px solid rgba(48,209,88,.3)!important;color:var(--green)!important;padding:0 14px!important;font-size:13px!important;font-weight:800!important}.mw304-plan,.mw304-result,.mw304-first,.mw304-tech{margin:13px 0;border-radius:17px;padding:13px 14px}.mw304-plan{background:#202023;border:1px solid #303034}.mw304-plan span,.mw304-plan small,.mw304-result span,.mw304-first span{display:block;color:#8e8e93;font-size:12px;line-height:1.4}.mw304-plan b{display:block;font-size:21px;margin:4px 0}.mw304-result{background:rgba(48,209,88,.09);border:1px solid rgba(48,209,88,.26)}.mw304-result b,.mw304-first b{display:block;margin-bottom:5px}.mw304-result b{color:var(--green)}.mw304-first{background:rgba(255,159,10,.08);border:1px solid rgba(255,159,10,.25)}.mw304-first b{color:#ff9f0a}.mw304-tech{background:#202023;color:#a9a9ae;font-size:12px;line-height:1.45}@media(max-width:420px){.mw304-control small{white-space:normal}.mw304-apply{min-width:92px;padding:0 10px!important}}
     `;D.head.appendChild(style);
     W.machineWeightOpen304=openPicker;W.machineWeightSave304=savePicker;W.machineWeightApply304=applyRecommendation;W.machineWeightCapture304=capture;W.machineWeightEnhance304=enhance;
-    ['unvrsl:training-engine-ready','unvrsl:modules-ready','unvrsl:app-ready','unvrsl:readiness-ready'].forEach(ev=>W.addEventListener?.(ev,()=>setTimeout(enhance,0),{passive:true}));
-    setInterval(enhance,450);[0,100,350,900,1800].forEach(ms=>setTimeout(enhance,ms))
+    let queued=false;const schedule=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;enhance()})};
+    ['unvrsl:workout-rendered','unvrsl:workout-set-changed','unvrsl:training-engine-ready','unvrsl:readiness-ready'].forEach(ev=>W.addEventListener?.(ev,schedule,{passive:true}));
+    [0,120,500].forEach(ms=>setTimeout(schedule,ms))
   }
 })(typeof window!=='undefined'?window:null,function(){
   const number=v=>{if(v===''||v==null)return 0;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:0};
@@ -135,4 +136,3 @@
   }
   return{number,median,mean,roundStep,formatWeights,slug,isCardioName,catalog,kind,optionsForExercise,recommendWeights}
 });
-

@@ -122,7 +122,7 @@
 (()=>{
   if(document.querySelector('script[data-unvrsl-active-method-collapse-v369]'))return;
   const s=document.createElement('script');
-  s.src='active-method-collapse.js?v=377';
+  s.src='active-method-collapse.js?v=379';
   s.async=false;
   s.dataset.unvrslActiveMethodCollapseV369='1';
   (document.head||document.documentElement).appendChild(s);

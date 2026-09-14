@@ -1,21 +1,21 @@
 'use strict';
 
-const SW_RELEASE='v378-set-validation';
+const SW_RELEASE='v379-canonical-workout';
 const CACHE_PREFIX='unvrsl-';
 const STATIC_CACHE=`${CACHE_PREFIX}static-${SW_RELEASE}`;
 const CORE_ASSETS=[
   './',
   './index.html',
-  './manifest.webmanifest?v=378',
-  './app.js?v=378',
-  './plan-w1.js?v=378',
-  './plan-w2.js?v=378',
-  './plan-w3.js?v=378',
-  './plan-w4.js?v=378',
-  './plan-w5.js?v=378',
-  './plan-w6.js?v=378',
-  './plan-w7.js?v=378',
-  './plan-w8.js?v=378'
+  './manifest.webmanifest?v=379',
+  './app.js?v=379',
+  './plan-w1.js?v=379',
+  './plan-w2.js?v=379',
+  './plan-w3.js?v=379',
+  './plan-w4.js?v=379',
+  './plan-w5.js?v=379',
+  './plan-w6.js?v=379',
+  './plan-w7.js?v=379',
+  './plan-w8.js?v=379'
 ];
 
 async function fetchFresh(request){

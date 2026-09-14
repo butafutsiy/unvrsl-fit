@@ -56,7 +56,7 @@
       card.querySelectorAll('.chip').forEach(ch=>{const t=String(ch.textContent||'').trim();if(/^RPE\s+\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?$/i.test(t))ch.textContent='RPE '+rpeText});
       card.querySelectorAll('.setrow input').forEach(input=>{
         const idx=parseIndex(input);if(!idx)return;const set=cur.ex?.[idx.ei]?.set?.[idx.si],r=setRange(cur,cur.ex?.[idx.ei],set)||range;
-        const kind=input.dataset.u174Kind||(input.classList.contains('u174-rir-input')?'rir':((input.getAttribute('onchange')||'').includes("'rpe'")?'rpe':''));
+        const kind=input.dataset.effort||input.dataset.u174Kind||(input.classList.contains('u174-rir-input')||input.classList.contains('rir-input')?'rir':((input.getAttribute('onchange')||'').includes("'rpe'")?'rpe':''));
         if(kind==='rpe'){const v=label(r.min,r.max);input.placeholder=v;input.setAttribute('aria-label',`Фактический RPE, цель ${v}`);input.title=`Целевой RPE ${v}`}
         if(kind==='rir'){const v=label(Math.max(0,10-r.max),Math.max(0,10-r.min));input.placeholder=v;input.setAttribute('aria-label',`Фактический RIR, цель ${v}`);input.title=`Целевой RIR ${v}`}
       });
@@ -66,14 +66,10 @@
     if(!D||W.__unvrslRpeRangeDisplayV314)return;W.__unvrslRpeRangeDisplayV314=true;W.__unvrslRpeRangeDisplayV311=true;
     W.unvrslRpeRangeDisplayV314={currentRange,storedProgramRange,setRange,label,annotate,patchDom,version:VERSION};
     W.unvrslRpeRangeDisplayV311=W.unvrslRpeRangeDisplayV314;
-    const start=()=>{patchDom();setTimeout(patchDom,120)};
-    if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
-    let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;patchDom()})}).observe(D.documentElement,{childList:true,subtree:true});
-    D.addEventListener('click',e=>{if(e.target?.closest?.('[data-p="start"],.routine,.today-card,.plus'))setTimeout(patchDom,80)},true);
-    ['unvrsl:training-engine-ready','unvrsl:modules-ready','unvrsl:app-ready','unvrsl:client-ready','unvrsl:cloud-modules-settled','unvrsl:readiness-ready'].forEach(ev=>W.addEventListener?.(ev,()=>{patchDom();setTimeout(patchDom,120)},{passive:true}));
-    [300,700,1200,2200,3600].forEach(ms=>setTimeout(patchDom,ms));
-    setInterval(()=>{if(!D.hidden&&D.getElementById('start')?.classList.contains('active'))patchDom()},1000);
+    let rendering=false;
+    const sync=()=>{const cur=state()?.current;if(cur&&annotate(cur)&&typeof W.startPage==='function'&&!rendering){rendering=true;try{W.startPage()}finally{rendering=false};return}patchDom()};
+    if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',sync,{once:true});else sync();
+    ['unvrsl:workout-rendered','unvrsl:workout-set-changed','unvrsl:training-engine-ready','unvrsl:readiness-ready'].forEach(ev=>W.addEventListener?.(ev,sync,{passive:true}));
   }
   return {label,currentRange,storedProgramRange,setRange,annotate,boot,version:VERSION};
 });
-

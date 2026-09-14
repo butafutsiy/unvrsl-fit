@@ -24,31 +24,31 @@
   // for the training engine and updates weight data without rebuilding pages.
   function loadTrainingLoadModel(){
     if(W.__unvrslTrainingLoadModelV292||D.querySelector('script[data-unvrsl-load-model-v292]'))return;
-    const s=D.createElement('script');s.src='training-load-model.js?v=377';s.async=false;s.dataset.unvrslLoadModelV292='1';s.onerror=()=>console.warn('UNVRSL load model v292 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');s.src='training-load-model.js?v=379';s.async=false;s.dataset.unvrslLoadModelV292='1';s.onerror=()=>console.warn('UNVRSL load model v292 failed to load');D.body?.appendChild(s)
   }
   function loadProgramIntensity(){
     if(W.__unvrslProgramIntensityAutoWeightV261||D.querySelector('script[data-unvrsl-program-intensity-v261]'))return;
-    const s=D.createElement('script');s.src='program-intensity-autoweight.js?v=377';s.async=false;s.dataset.unvrslProgramIntensityV261='1';s.onerror=()=>console.warn('UNVRSL program intensity UI failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');s.src='program-intensity-autoweight.js?v=379';s.async=false;s.dataset.unvrslProgramIntensityV261='1';s.onerror=()=>console.warn('UNVRSL program intensity UI failed to load');D.body?.appendChild(s)
   }
   function loadTrainerClientProgramEdit(){
     if(W.__unvrslTrainerClientProgramEditV262||D.querySelector('script[data-unvrsl-trainer-client-edit-v262]'))return;
-    const s=D.createElement('script');s.src='trainer-client-program-edit.js?v=377';s.async=false;s.dataset.unvrslTrainerClientEditV262='1';s.onerror=()=>console.warn('UNVRSL trainer client program edit v262 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');s.src='trainer-client-program-edit.js?v=379';s.async=false;s.dataset.unvrslTrainerClientEditV262='1';s.onerror=()=>console.warn('UNVRSL trainer client program edit v262 failed to load');D.body?.appendChild(s)
   }
   function loadProgramWeekRpeRir(){
     if(W.__unvrslProgramWeekRpeRirV263||D.querySelector('script[data-unvrsl-week-rpe-rir-v263]'))return;
-    const s=D.createElement('script');s.src='program-week-rpe-rir.js?v=377';s.async=false;s.dataset.unvrslWeekRpeRirV263='1';s.onerror=()=>console.warn('UNVRSL week RPE RIR v263 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');s.src='program-week-rpe-rir.js?v=379';s.async=false;s.dataset.unvrslWeekRpeRirV263='1';s.onerror=()=>console.warn('UNVRSL week RPE RIR v263 failed to load');D.body?.appendChild(s)
   }
   function loadProgramRepRange(){
     if(W.__unvrslProgramRepRangeV266||D.querySelector('script[data-unvrsl-program-rep-range-v266]'))return;
-    const s=D.createElement('script');s.src='program-rep-range.js?v=377';s.async=false;s.dataset.unvrslProgramRepRangeV266='1';s.onerror=()=>console.warn('UNVRSL program rep range v266 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');s.src='program-rep-range.js?v=379';s.async=false;s.dataset.unvrslProgramRepRangeV266='1';s.onerror=()=>console.warn('UNVRSL program rep range v266 failed to load');D.body?.appendChild(s)
   }
   function loadBuiltInPlanRepRanges(){
     if(W.__unvrslBuiltInPlanRepRangesV267||D.querySelector('script[data-unvrsl-built-in-ranges-v267]'))return;
-    const s=D.createElement('script');s.src='built-in-plan-rep-ranges.js?v=377';s.async=false;s.dataset.unvrslBuiltInRangesV267='1';s.onerror=()=>console.warn('UNVRSL built-in plan rep ranges v267 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');s.src='built-in-plan-rep-ranges.js?v=379';s.async=false;s.dataset.unvrslBuiltInRangesV267='1';s.onerror=()=>console.warn('UNVRSL built-in plan rep ranges v267 failed to load');D.body?.appendChild(s)
   }
   function loadProgramWeekRepGuidance(){
     if(W.__unvrslProgramWeekRepGuidanceV268||D.querySelector('script[data-unvrsl-week-rep-guidance-v268]'))return;
-    const s=D.createElement('script');s.src='program-week-rep-guidance.js?v=377';s.async=false;s.dataset.unvrslWeekRepGuidanceV268='1';s.onerror=()=>console.warn('UNVRSL weekly rep guidance v268 failed to load');D.body?.appendChild(s)
+    const s=D.createElement('script');s.src='program-week-rep-guidance.js?v=379';s.async=false;s.dataset.unvrslWeekRepGuidanceV268='1';s.onerror=()=>console.warn('UNVRSL weekly rep guidance v268 failed to load');D.body?.appendChild(s)
   }
   let featureModulesStarted=false;
   function warmFeatureModules(){
