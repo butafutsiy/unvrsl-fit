@@ -7,8 +7,8 @@ function uid(p='id'){return `${p}-${Date.now().toString(36)}-${Math.random().toS
 function clone(x){return JSON.parse(JSON.stringify(x))}
 const programModel=window.unvrslProgramModelV386;
 if(!programModel)throw new Error('UNVRSL canonical program model is unavailable');
-function programById(id){return programModel.findProgram(st.programs,id)}
-function templateById(id){return programModel.findProgram(st.programTemplates,id)}
+function programById(id){const p=programModel.findProgram(st.programs,id);return p?programModel.normalizeProgram(p,uid):null}
+function templateById(id){const p=programModel.findProgram(st.programTemplates,id);return p?programModel.normalizeProgram(p,uid):null}
 function ensureProgramShape(p){return programModel.normalizeProgram(p,uid)}
 function migrateProgramsV386(){
  const result=programModel.normalizePrograms(st.programs,uid),templates=programModel.normalizePrograms(st.programTemplates,uid);
