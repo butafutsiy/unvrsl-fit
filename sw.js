@@ -1,6 +1,6 @@
 'use strict';
 
-const SW_RELEASE='v385-ui-program-stability';
+const SW_RELEASE='v384-workout-completion';
 const CACHE_PREFIX='unvrsl-';
 
 self.addEventListener('install',()=>{

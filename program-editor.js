@@ -24,8 +24,6 @@
   function openEditor(id,week=0,day=0){
     const p=programById(id);
     if(!p)return typeof toast==='function'?toast('Программа не найдена'):undefined;
-    const active=document.querySelector('.page.active')?.id;
-    if(active==='programs'||active==='plan')window.__unvrslProgramEditorReturnPageV385=active;
     ensureProgramShape(p);
     programUi={
       pid:id,
@@ -33,17 +31,8 @@
       day:Math.max(0,Number(day)||0),
       query:''
     };
-    try{return renderProgramEditor()}catch(error){
-      console.error('program editor open v385',error);
-      if(typeof toast==='function')toast('Не удалось открыть программу');
-    }
+    renderProgramEditor();
   }
-  window.programEditorCloseV385=function(){
-    const target=window.__unvrslProgramEditorReturnPageV385;
-    try{closeModal()}catch(_){}
-    if(target==='programs'&&typeof window.trainerProgramsPage==='function')window.trainerProgramsPage();
-    else try{planPage()}catch(_){}
-  };
 
   function create(){
     if(window.__unvrslProgramCreating)return false;
@@ -73,13 +62,15 @@
     };
     window.__unvrslProgramCreating=true;
     st.programs.push(p);
-    try{save()}
-    catch(e){
-      console.error('program save',e);
-      if(typeof toast==='function')toast('Программа открыта, но не сохранилась. Освободи место в браузере.')
-    }
     openEditor(p.id,0,0);
-    setTimeout(()=>{window.__unvrslProgramCreating=false},250);
+    setTimeout(()=>{
+      try{save()}
+      catch(e){
+        console.error('program save',e);
+        if(typeof toast==='function')toast('Программа открыта, но не сохранилась. Освободи место в браузере.')
+      }
+      window.__unvrslProgramCreating=false;
+    },0);
     return false;
   }
 
