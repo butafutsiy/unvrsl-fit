@@ -6,13 +6,13 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 
-test('v386 uses one cache version across static and dynamic loaders',()=>{
+test('v387 uses one cache version across static and dynamic loaders',()=>{
   for(const name of ['index.html','startup-orchestrator.js','frequent-patch.js']){
     const source=read(name);
-    assert.doesNotMatch(source,/\?v=(?:380|384|385)\b/);
-    assert.match(source,/\?v=386\b/);
+    assert.doesNotMatch(source,/\?v=(?:380|384|385|386)\b/);
+    assert.match(source,/\?v=387\b/);
   }
-  assert.match(read('sw.js'),/v386-pwa-reload-program-route/);
+  assert.match(read('sw.js'),/v387-startup-watchdog/);
 });
 
 test('navigation and statistics use stable SVG icons',()=>{
@@ -41,8 +41,17 @@ test('completion is compact and legacy reports are suppressed',()=>{
 });
 
 
-test('v386 forces an installed PWA out of an old JS process',()=>{
+test('v387 forces an installed PWA out of an old JS process',()=>{
   const worker=read('sw.js');
   assert.match(worker,/client\.navigate\(url\.href\)/);
   assert.match(worker,/__unvrsl_release/);
+});
+
+
+test('v387 cannot stay blocked on the 42 percent startup state',()=>{
+  const index=read('index.html'),startup=read('startup-orchestrator.js'),loader=read('frequent-patch.js');
+  assert.match(index,/__unvrslBootWatchdogV387/);
+  assert.match(index,/4500/);
+  assert.match(startup,/elapsed\(\)>=2600/);
+  assert.match(loader,/Timed out loading/);
 });
