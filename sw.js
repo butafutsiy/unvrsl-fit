@@ -1,6 +1,6 @@
 'use strict';
 
-const SW_RELEASE='v388-startup-root';
+const SW_RELEASE='v389-stable-startup';
 const CACHE_PREFIX='unvrsl-';
 
 self.addEventListener('install',()=>{
@@ -14,16 +14,7 @@ self.addEventListener('activate',event=>{
     try{await self.registration.navigationPreload?.enable()}catch(_){}
     await self.clients.claim();
     const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
-    await Promise.all(clients.map(async client=>{
-      client.postMessage({type:'UNVRSL_RELEASE_READY',release:SW_RELEASE});
-      try{
-        const url=new URL(client.url);
-        if(url.searchParams.get('__unvrsl_release')!==SW_RELEASE){
-          url.searchParams.set('__unvrsl_release',SW_RELEASE);
-          await client.navigate(url.href);
-        }
-      }catch(_){}
-    }));
+    clients.forEach(client=>client.postMessage({type:'UNVRSL_RELEASE_READY',release:SW_RELEASE}));
   })());
 });
 
