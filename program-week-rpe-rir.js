@@ -147,7 +147,7 @@
     ensureProgramDefaults(p,false);const pr=weekProfile(p,wi,true);if(!pr)return;
     const editorKey=`${String(p.id)}|${wi}`;
     const existing=card.querySelector('.wr264-box');
-    if(existing&&existing.dataset.editorKey===editorKey){bindIntensityButtons(card,p,wi);syncRirPreview();return}
+    if(existing&&existing.dataset.editorKey===editorKey){bindIntensityButtons(card,p,wi);syncRirPreview();W.dispatchEvent?.(new CustomEvent('unvrsl:program-week-profile-mounted',{detail:{key:editorKey}}));return}
     populateEditorFromProfile(pr);
     existing?.remove();card.querySelector('.wr263-box')?.remove();
     const box=D.createElement('div');box.className='wr264-box';box.dataset.editorKey=editorKey;box.innerHTML=`
@@ -162,7 +162,7 @@
     field('wr264RpeMin')?.addEventListener('input',syncRirPreview);field('wr264RpeMax')?.addEventListener('input',syncRirPreview);
     box.querySelector('[data-wr264-week]')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();applyCycleToEditor(pr.week)},{passive:false});
     box.querySelector('[data-wr264-cycle]')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();applyWholeCycle(p)},{passive:false});
-    bindIntensityButtons(card,p,wi);syncRirPreview()
+    bindIntensityButtons(card,p,wi);syncRirPreview();W.dispatchEvent?.(new CustomEvent('unvrsl:program-week-profile-mounted',{detail:{key:editorKey}}))
   }
 
   function patchNewProgramDefault(){
@@ -201,7 +201,8 @@
 
   function install(){patchNewProgramDefault();patchCopyWeek();injectEditor();decorateClientPlan();decorateStartPicker();annotateCurrent()}
   let queued=false;function queue(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;ensureStyle();install()})}
-  const mo=typeof MutationObserver==='function'?new MutationObserver(queue):null;mo?.observe(D.documentElement,{childList:true,subtree:true});
+  const mo=typeof MutationObserver==='function'?new MutationObserver(queue):null;[D.getElementById('plan'),D.getElementById('sheet'),D.getElementById('start')].filter(Boolean).forEach(root=>mo?.observe(root,{childList:true,subtree:true}));
+  W.addEventListener?.('unvrsl:program-intensity-mounted',queue,{passive:true});W.addEventListener?.('unvrsl:program-editor-rendered',queue,{passive:true});
   for(const e of ['unvrsl:modules-ready','unvrsl:app-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:training-engine-ready'])W.addEventListener?.(e,queue,{passive:true});
-  [0,100,300,700,1400,2600].forEach(ms=>setTimeout(queue,ms));setInterval(()=>{patchNewProgramDefault();patchCopyWeek();decorateClientPlan();annotateCurrent()},1200)
+  queue()
 })();

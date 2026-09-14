@@ -184,7 +184,7 @@
 
   function install(){patchWeekProfile();patchIntensityApi();injectWeekEditor()}
   let q=false;function queue(){if(q)return;q=true;requestAnimationFrame(()=>{q=false;install()})}
-  const mo=typeof MutationObserver==='function'?new MutationObserver(queue):null;mo?.observe(D.documentElement,{childList:true,subtree:true});
+  W.addEventListener?.('unvrsl:program-week-profile-mounted',queue,{passive:true});W.addEventListener?.('unvrsl:program-editor-rendered',queue,{passive:true});
   for(const ev of ['unvrsl:modules-ready','unvrsl:app-ready','unvrsl:cloud-ready','unvrsl:training-engine-ready'])W.addEventListener?.(ev,queue,{passive:true});
-  [0,100,300,700,1400,2600].forEach(ms=>setTimeout(queue,ms));setInterval(()=>{patchWeekProfile();patchIntensityApi();injectWeekEditor()},1200)
+  queue()
 })();

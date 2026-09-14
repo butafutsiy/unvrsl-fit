@@ -22,17 +22,17 @@
   D.head.appendChild(style);
 
   function rememberProgramStart(target){
-    const btn=target?.closest?.('button[onclick*="beginProgramDay("]');
+    const btn=target?.closest?.('button[data-program-editor-start],button[onclick*="beginProgramDay("]');
     if(!btn)return;
     const src=String(btn.getAttribute('onclick')||'');
-    const m=src.match(/beginProgramDay\(['\"]([^'\"]+)['\"]\s*,\s*(\d+)\s*,\s*(\d+)\)/);
+    const m=src.match(/(?:beginProgramDay|programStartFromEditorV382)\([^'\"]*['\"]([^'\"]+)['\"]\s*,\s*(\d+)\s*,\s*(\d+)\)/);
     if(!m)return;
     state.pendingProgram={pid:m[1],wi:Number(m[2]),di:Number(m[3]),at:Date.now()};
   }
   D.addEventListener('click',e=>rememberProgramStart(e.target),true);
 
   function pendingProgramSubtitle(){
-    const x=state.pendingProgram;
+    const globalPending=W.__unvrslPendingProgramStartV382,x=globalPending&&Date.now()-Number(globalPending.at||0)<15000?globalPending:state.pendingProgram;
     if(!x||Date.now()-x.at>15000)return null;
     const p=(W.st?.programs||[]).find(v=>String(v?.id)===String(x.pid));
     const d=p?.weeks?.[x.wi]?.days?.[x.di];
@@ -121,4 +121,3 @@
     wrapped.__rq227=true;wrapped.__rq227Base=baseModal;W.modal=wrapped;try{modal=wrapped}catch(_){ }
   }
 })();
-
