@@ -67,7 +67,7 @@ function startPage(){
   const pct=total(s)?Math.round(done(s)/total(s)*100):0,groups=groupIndexedEntries(s.ex),target=effortTargets(s,null,null);
   $('#start').innerHTML=`<div class="card workout-head"><div class="row between"><div><div class="title">${esc(s.c)} · ${esc(s.name)}</div><div class="muted">W${s.w} · RPE ${target.rpe} · RIR ${target.rir} · темп ${esc(tempoOnly(s.tempo))}</div></div><span class="chip green">${pct}%</span></div><div class="progress"><i style="width:${pct}%"></i></div></div>
     ${groups.map(g=>exerciseGroupCard(s,g)).join('')}
-    <div class="card workout-finish-card"><button type="button" class="btn primary full" onclick="finish()">Завершить тренировку</button><button type="button" class="btn danger full" onclick="cancelWorkout()">Отменить тренировку</button></div>`;
+    <div class="card workout-finish-card"><button type="button" class="btn primary full" data-workout-finish="1" onclick="finish()">Завершить тренировку</button><button type="button" class="btn danger full" onclick="cancelWorkout()">Отменить тренировку</button></div>`;
   window.dispatchEvent(new CustomEvent('unvrsl:workout-rendered'));
 }
 function exerciseGroupCard(s,group){

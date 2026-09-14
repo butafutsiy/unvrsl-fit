@@ -41,7 +41,7 @@
     #start .exercise:not(.anton-superset):not(.anton-single) .check{width:34px!important;height:34px!important;min-width:34px!important;border-radius:11px!important;font-size:15px!important;justify-self:end!important;grid-column:6!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .prev-set{font-size:10px!important;margin:3px 0 1px 32px!important;line-height:1.12!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
     #start .workout-finish-card{position:relative!important;z-index:2!important;margin-bottom:calc(28px + env(safe-area-inset-bottom))!important}
-    #start .workout-finish-card .btn{min-height:52px!important;touch-action:manipulation!important}
+    #start .workout-finish-card .btn{position:relative!important;z-index:3!important;min-height:52px!important;touch-action:manipulation!important;pointer-events:auto!important}
 
     #start .cardio-compact-ex{padding:12px 14px!important;margin:8px 0!important}
     #start .cardio-compact-ex .cardio-compact-row{margin-top:8px!important}
