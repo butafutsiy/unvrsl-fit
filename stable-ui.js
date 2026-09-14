@@ -79,7 +79,7 @@
   }
   function refreshSafe(){wrapHome();decorateHomeSafe();setNavColumns()}
   refreshSafe();
-  [200,600,1400,3000,6000].forEach(t=>setTimeout(refreshSafe,t));
+  window.addEventListener('unvrsl:app-ready',refreshSafe,{once:true,passive:true});
   window.addEventListener('pageshow',refreshSafe,{passive:true});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshSafe()},{passive:true});
 })();

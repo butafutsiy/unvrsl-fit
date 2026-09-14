@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
   if(window.__unvrslStorageResilienceV162)return;
-  window.__unvrslStorageResilienceV162=true;
+  window.__unvrslStorageResilienceV162=true;window.__unvrslStorageResilienceV386=true;
 
   const currentKey=typeof KEY==='string'?KEY:'unvrsl-fit-v3';
   const legacyKey=typeof OLDKEY==='string'?OLDKEY:'unvrsl-fit-v2';
@@ -85,15 +85,17 @@
   window.save=resilientSave;
   try{save=resilientSave}catch(e){}
 
-  const bootSnapshot=JSON.stringify(st);
-  readFallback().then(record=>{
-    if(!record?.state||JSON.stringify(st)!==bootSnapshot)return;
+  const hadPrimary=window.__unvrslHadPrimaryStorageV386===true;
+  const settle=()=>{
+    try{window.unvrslMigrateProgramsV386?.()}catch(error){console.warn('program migration after recovery',error)}
+    window.__unvrslStorageHydrationSettledV386=true;
+    window.dispatchEvent?.(new CustomEvent('unvrsl:storage-hydrated',{detail:{restored:!hadPrimary}}))
+  };
+  if(hadPrimary)settle();
+  else readFallback().then(record=>{
+    if(!record?.state)return;
     st=record.state;
-    resilientSave();
-    setTimeout(()=>{
-      try{render()}catch(e){}
-      try{if(document.getElementById('start')?.classList.contains('active'))startPage()}catch(e){}
-    },0)
-  })
+    resilientSave()
+  }).catch(()=>{}).finally(settle)
 })();
 

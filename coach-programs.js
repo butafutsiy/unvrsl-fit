@@ -5,22 +5,60 @@ if(!st.programUi)st.programUi={};
 let programUi={pid:null,week:0,day:0,query:''};
 function uid(p='id'){return `${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`}
 function clone(x){return JSON.parse(JSON.stringify(x))}
-function programById(id){return st.programs.find(p=>p.id===id)||null}
-function templateById(id){return st.programTemplates.find(p=>p.id===id)||null}
-function ensureProgramShape(p){if(!Array.isArray(p.weeks))p.weeks=[];p.weeks.forEach((w,wi)=>{if(!w.n)w.n=wi+1;if(!Array.isArray(w.days))w.days=[];w.days.forEach((d,di)=>{if(!d.id)d.id=uid('day');if(!d.name)d.name=`День ${di+1}`;if(!Array.isArray(d.ex))d.ex=[]})});return p}
+const programModel=window.unvrslProgramModelV386;
+if(!programModel)throw new Error('UNVRSL canonical program model is unavailable');
+function programById(id){return programModel.findProgram(st.programs,id)}
+function templateById(id){return programModel.findProgram(st.programTemplates,id)}
+function ensureProgramShape(p){return programModel.normalizeProgram(p,uid)}
+function migrateProgramsV386(){
+ const result=programModel.normalizePrograms(st.programs,uid),templates=programModel.normalizePrograms(st.programTemplates,uid);
+ st.programs=result.programs;st.programTemplates=templates.programs;
+ window.__unvrslProgramsMigratedV386=true;
+ const changed=result.changed||templates.changed;if(changed)try{save()}catch(error){console.warn('program migration v386',error)}
+ return changed
+}
+migrateProgramsV386();
+window.unvrslMigrateProgramsV386=migrateProgramsV386
 const _planPageCoach=planPage;
 planPage=function(){_planPageCoach();appendProgramStudio()}
 function appendProgramStudio(){const root=$('#plan');if(!root)return;const list=st.programs.map(p=>`<div class="card coach-program"><div class="row between"><div class="grow"><div class="title">${esc(p.name)}</div><div class="muted small">${p.weeks.length} нед. · ${p.weeks.reduce((a,w)=>a+w.days.length,0)} тренировок</div></div><button class="btn tiny" onclick="openProgramEditor('${p.id}')">Открыть</button></div><div class="coach-actions"><button class="btn tiny" onclick="shareProgram('${p.id}')">Поделиться</button><button class="btn tiny" onclick="saveProgramAsTemplate('${p.id}')">В шаблоны</button><button class="btn tiny danger" onclick="deleteProgram('${p.id}')">Удалить</button></div></div>`).join('');root.insertAdjacentHTML('beforeend',`<div class="section">МОИ ПРОГРАММЫ</div><div class="card"><div class="row between"><div><div class="title">Конструктор программ</div><div class="muted small">Недели, дни, упражнения, RPE, темп, отдых и методы сетов</div></div><button class="btn primary" onclick="newProgramSheet()">＋</button></div><div class="coach-actions"><button class="btn" onclick="templatesSheet()">Шаблоны</button><button class="btn" onclick="cloneBuiltInCycle()">Копия моего 8-недельного цикла</button></div></div>${list||'<div class="card muted">Пока нет своих программ.</div>'}`)}
 function newProgramSheet(){modal(`<div class="sheet-grabber"></div><h2>Новая программа</h2><div class="field"><label>Название</label><input id="npName" value="Новая программа"></div><div class="field"><label>Количество недель</label><input id="npWeeks" type="number" min="1" max="16" value="4"></div><div class="field"><label>Тренировок в неделю</label><input id="npDays" type="number" min="1" max="7" value="3"></div><button class="btn primary full" onclick="createProgram()">Создать</button>`)}
-function createProgram(){const name=$('#npName').value.trim()||'Программа',wc=Math.max(1,Math.min(16,+$('#npWeeks').value||4)),dc=Math.max(1,Math.min(7,+$('#npDays').value||3));const p={id:uid('prog'),name,created:Date.now(),updated:Date.now(),weeks:Array.from({length:wc},(_,wi)=>({n:wi+1,days:Array.from({length:dc},(_,di)=>({id:uid('day'),name:`День ${di+1}`,ex:[]}))}))};st.programs.push(p);save();openProgramEditor(p.id)}
+function createProgram(){
+ if(window.__unvrslProgramCreatingV386)return false;
+ const name=String($('#npName')?.value||'').trim()||'Программа',wc=Math.max(1,Math.min(16,+$('#npWeeks')?.value||4)),dc=Math.max(1,Math.min(7,+$('#npDays')?.value||3));
+ const p=ensureProgramShape({id:uid('prog'),name,created:Date.now(),updated:Date.now(),weeks:Array.from({length:wc},(_,wi)=>({n:wi+1,days:Array.from({length:dc},(_,di)=>({id:uid('day'),name:`День ${di+1}`,ex:[]}))}))});
+ window.__unvrslProgramCreatingV386=true;
+ try{st.programs.push(p);save();openProgramEditor(p.id,0,0)}catch(error){st.programs=st.programs.filter(item=>item!==p);console.error('program create v386',error);toast('Не удалось сохранить программу')}finally{queueMicrotask(()=>{window.__unvrslProgramCreatingV386=false})}
+ return false
+}
 function deleteProgram(id){const p=programById(id);if(!p||!confirm(`Удалить программу «${p.name}»?`))return;st.programs=st.programs.filter(x=>x.id!==id);save();closeModal();planPage()}
-function openProgramEditor(id,week=0,day=0){const p=programById(id);if(!p)return;ensureProgramShape(p);programUi={pid:id,week:Math.max(0,Math.min(week,p.weeks.length-1)),day};renderProgramEditor()}
-function renderProgramEditor(){const p=programById(programUi.pid);if(!p)return;const w=p.weeks[programUi.week]||p.weeks[0];if(!w)return;modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${esc(p.name)}</h2><div class="muted">Конструктор программы</div></div><button class="btn tiny" onclick="programEditorCloseV385()">✕</button></div><div class="weekbar">${p.weeks.map((x,i)=>`<button class="weekbtn ${i===programUi.week?'on':''}" onclick="programUi.week=${i};renderProgramEditor()">W${i+1}</button>`).join('')}</div><div class="coach-actions"><button class="btn tiny" onclick="renameProgramSheet('${p.id}')">Переименовать</button><button class="btn tiny" onclick="copyProgramWeek('${p.id}',${programUi.week})">Копировать неделю</button><button class="btn tiny" onclick="addProgramWeek('${p.id}')">＋ Неделя</button></div><div class="section">НЕДЕЛЯ ${programUi.week+1}</div>${w.days.map((d,di)=>programDayCard(p,w,d,di)).join('')}<button class="btn full" onclick="addProgramDay('${p.id}',${programUi.week})">＋ Добавить тренировку</button><div class="coach-actions"><button class="btn primary" onclick="shareProgram('${p.id}')">Поделиться программой</button><button class="btn" onclick="saveProgramAsTemplate('${p.id}')">Сохранить как шаблон</button></div>`)}
-function programDayCard(p,w,d,di){return `<div class="card program-day"><div class="row between"><div class="grow"><b>${esc(d.name)}</b><div class="muted small">${d.ex.length} упражнений</div></div><button class="btn tiny primary" data-program-editor-start="1" onclick="return programStartFromEditorV382(event,'${p.id}',${programUi.week},${di})">Старт</button></div><div class="coach-actions"><button class="btn tiny" onclick="renameProgramDaySheet('${p.id}',${programUi.week},${di})">Название</button><button class="btn tiny" onclick="chooseProgramExercise('${p.id}',${programUi.week},${di})">＋ Упражнение</button><button class="btn tiny danger" onclick="deleteProgramDay('${p.id}',${programUi.week},${di})">Удалить день</button></div>${d.ex.length?d.ex.map((e,ei)=>programExerciseRow(p,d,e,ei)).join(''):'<div class="muted small" style="padding:12px 2px">Добавь упражнения из русской базы.</div>'}</div>`}
+function openProgramEditor(id,week=0,day=0){
+ const p=programById(id);if(!p){toast('Программа не найдена');return false}
+ const active=document.querySelector('.page.active')?.id;if(active==='programs'||active==='plan')window.__unvrslProgramEditorReturnPageV386=active;
+ ensureProgramShape(p);programUi={pid:String(p.id),week:Math.max(0,Math.min(Number(week)||0,Math.max(0,p.weeks.length-1))),day:Math.max(0,Number(day)||0),query:''};
+ try{renderProgramEditor();return false}catch(error){console.error('program open v386',error);toast('Не удалось открыть программу');return false}
+}
+function programEditorCloseV386(){
+ const target=window.__unvrslProgramEditorReturnPageV386;closeModal();
+ if(target==='programs'&&typeof window.trainerProgramsPage==='function')window.trainerProgramsPage();else planPage()
+}
+window.programEditorCloseV386=programEditorCloseV386;window.programEditorCloseV385=programEditorCloseV386
+function renderProgramEditor(){
+ const p=programById(programUi.pid);if(!p)return false;ensureProgramShape(p);
+ const w=p.weeks[programUi.week]||p.weeks[0];if(!w)return false;
+ const sheet=document.getElementById('sheet'),key=`${p.id}|${programUi.week}`,keep=sheet?.dataset?.programEditorKey===key&&document.getElementById('modal')?.classList.contains('show'),scroll=keep?sheet.scrollTop:0;
+ modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${esc(p.name)}</h2><div class="muted">Конструктор программы</div></div><button class="btn tiny" onclick="programEditorCloseV386()">✕</button></div><div class="weekbar">${p.weeks.map((x,i)=>`<button class="weekbtn ${i===programUi.week?'on':''}" onclick="programUi.week=${i};renderProgramEditor()">W${i+1}</button>`).join('')}</div><div class="coach-actions"><button class="btn tiny" onclick="renameProgramSheet('${p.id}')">Переименовать</button><button class="btn tiny" onclick="copyProgramWeek('${p.id}',${programUi.week})">Копировать неделю</button><button class="btn tiny" onclick="addProgramWeek('${p.id}')">＋ Неделя</button></div><div class="section">НЕДЕЛЯ ${programUi.week+1}</div>${w.days.map((d,di)=>programDayCard(p,w,d,di)).join('')}<button class="btn full" onclick="addProgramDay('${p.id}',${programUi.week})">＋ Добавить тренировку</button><div class="coach-actions"><button class="btn primary" onclick="shareProgram('${p.id}')">Поделиться программой</button><button class="btn" onclick="saveProgramAsTemplate('${p.id}')">Сохранить как шаблон</button></div>`);
+ const next=document.getElementById('sheet');if(next){next.dataset.programEditorKey=key;next.scrollTop=keep?scroll:0}document.getElementById('modal')?.classList.add('px-program-modal');
+ window.dispatchEvent(new CustomEvent('unvrsl:program-editor-rendered',{detail:{key}}));return true
+}
+function programDayCard(p,w,d,di){return `<div class="card program-day"><div class="row between"><div class="grow"><b>${esc(d.name)}</b><div class="muted small">${d.ex.length} упражнений</div></div><button class="btn tiny primary" data-program-editor-start="1" onclick="return programStartFromEditorV386(event,'${p.id}',${programUi.week},${di})">Старт</button></div><div class="coach-actions"><button class="btn tiny" onclick="renameProgramDaySheet('${p.id}',${programUi.week},${di})">Название</button><button class="btn tiny" onclick="chooseProgramExercise('${p.id}',${programUi.week},${di})">＋ Упражнение</button><button class="btn tiny danger" onclick="deleteProgramDay('${p.id}',${programUi.week},${di})">Удалить день</button></div>${d.ex.length?d.ex.map((e,ei)=>programExerciseRow(p,d,e,ei)).join(''):'<div class="muted small" style="padding:12px 2px">Добавь упражнения из русской базы.</div>'}</div>`}
 function programExerciseRow(p,d,e,ei){const method=e.method&&e.method!=='STANDARD'?e.method:'';return `<div class="program-ex" draggable="true" ondragstart="programDragStart(event,'${p.id}',${programUi.week},'${d.id}',${ei})" ondragover="event.preventDefault()" ondrop="programDrop(event,'${p.id}',${programUi.week},'${d.id}',${ei})"><div class="row between"><div class="grow"><b>${esc(e.n)}</b><div class="muted small">${prescriptionText(e)}${method?` · ${method}`:''}</div></div><button class="btn tiny" onclick="editProgramExercise('${p.id}',${programUi.week},'${d.id}',${ei})">Изм.</button></div><div class="mini-actions"><button onclick="moveProgramExercise('${p.id}',${programUi.week},'${d.id}',${ei},-1)">↑</button><button onclick="moveProgramExercise('${p.id}',${programUi.week},'${d.id}',${ei},1)">↓</button><button class="danger-text" onclick="removeProgramExercise('${p.id}',${programUi.week},'${d.id}',${ei})">Удалить</button></div></div>`}
 function prescriptionText(e){
  const s=e.sets||[];if(!s.length)return'—';
- if(e.method==='STANDARD')return `${s.length}×${s[0]?.r||'—'} · ${s[0]?.w||0} кг · RPE ${e.rpe||8}`;
+ let resolved=null;try{if(programUi?.pid&&typeof window.programResolveExerciseParametersV381==='function')resolved=window.programResolveExerciseParametersV381(programUi.pid,programUi.week,e)}catch(_){}
+ const range=resolved?.reps?.mode==='method'?null:(resolved?.reps||programModel.range(e)),repText=range?programModel.formatRange(range):'',rpe=resolved?.effort?programModel.formatRange({min:resolved.effort.rpeMin,max:resolved.effort.rpeMax}):(e.rpe||8),weight=resolved?.weight?.mode==='auto'?'Авто':`${s[0]?.w||0} кг`;
+ if(e.method==='STANDARD')return `${s.length}×${repText||s[0]?.r||'—'} · ${weight} · RPE ${rpe}`;
+ if(e.method==='FST-7')return `7×${repText||s[0]?.r||'—'} · ${weight} · RPE ${rpe}`;
  if(e.method==='UNVRSL'){
   const heavy=s.find(x=>x.role==='heavy')||s[0],light=s.find(x=>x.role==='light')||s[1],middle=s.find(x=>x.role==='middle')||s[6],middleCount=s.filter(x=>x.role==='middle').length||(s.length>6?s.length-6:0);
   return `3×(${heavy?.w||0}×${heavy?.r||3} + 30с + ${light?.w||0}×${light?.r||9})${middle&&middleCount?`, затем ${middleCount}×${middle.r||6} · ${middle.w||0} кг`:''}`
@@ -50,7 +88,11 @@ function removeProgramExercise(pid,wi,dayId,ei){const p=programById(pid),d=p?.we
 function moveProgramExercise(pid,wi,dayId,ei,dir){const p=programById(pid),d=p?.weeks?.[wi]?.days?.find(x=>x.id===dayId);if(!d)return;const ni=ei+dir;if(ni<0||ni>=d.ex.length)return;[d.ex[ei],d.ex[ni]]=[d.ex[ni],d.ex[ei]];p.updated=Date.now();save();renderProgramEditor()}
 let dragProgram=null;function programDragStart(ev,pid,wi,dayId,ei){dragProgram={pid,wi,dayId,ei};try{ev.dataTransfer.effectAllowed='move'}catch(e){}}
 function programDrop(ev,pid,wi,dayId,ei){ev.preventDefault();if(!dragProgram||dragProgram.pid!==pid||dragProgram.wi!==wi||dragProgram.dayId!==dayId)return;const p=programById(pid),d=p?.weeks?.[wi]?.days?.find(x=>x.id===dayId);if(!d)return;const [item]=d.ex.splice(dragProgram.ei,1);d.ex.splice(ei,0,item);dragProgram=null;p.updated=Date.now();save();renderProgramEditor()}
-function programWorkoutRepTarget(b,q,x){const n=v=>{if(v===''||v==null)return null;const z=Number(v);return Number.isFinite(z)&&z>0?z:null},method=String(b?.method||'STANDARD').toUpperCase(),range=method==='STANDARD'||method==='FST-7',planned=n(x?.r),lo=range?n(q?.reps?.min??b?.repMin??x?.rMin??planned):n(x?.targetRepMin??planned),hi=range?n(q?.reps?.max??b?.repMax??x?.rMax??lo):n(x?.targetRepMax??planned??lo),min=Math.min(lo??hi??1,hi??lo??1),max=Math.max(lo??hi??1,hi??lo??1),label=Math.abs(min-max)<.001?String(min):`${min}–${max}`;return{r:'',programR:planned??min,targetRepMin:min,targetRepMax:max,targetRepLabel:label,repMode:q?.reps?.mode||b?.repMode||(range?'auto':'method')}}
+function programWorkoutRepTarget(b,q,x){
+ const n=v=>{if(v===''||v==null)return null;const z=Number(v);return Number.isFinite(z)&&z>0?z:null},method=String(b?.method||'STANDARD').toUpperCase(),mode=q?.reps?.mode||b?.reps?.mode||(method==='UNVRSL'||method==='SLDR'?'method':'auto'),planned=n(x?.r);
+ const pair=mode==='method'?{min:planned??1,max:planned??1}:{min:n(q?.reps?.min)??planned??1,max:n(q?.reps?.max)??n(q?.reps?.min)??planned??1},min=Math.min(pair.min,pair.max),max=Math.max(pair.min,pair.max);
+ return{r:'',programR:planned??min,targetRepMin:min,targetRepMax:max,targetRepLabel:programModel.formatRange({min,max}),repMode:mode}
+}
 function beginProgramDay(pid,wi,di){
  const p=programById(pid),d=p?.weeks?.[wi]?.days?.[di];if(!p||!d)return;if(st.current&&done(st.current)>0&&!confirm('Текущая тренировка не завершена. Начать новую?'))return;
  const ex=[],resolved=b=>typeof window.programResolveExerciseParametersV381==='function'?window.programResolveExerciseParametersV381(pid,wi,b):null;
@@ -62,7 +104,7 @@ function beginProgramDay(pid,wi,di){
   else (b.sets||[]).forEach((x,i)=>{const suffix=b.method==='DS'?`DS DS${i+1}`:`${b.method} ${i+1}/${b.sets.length}`;ex.push({n:`${b.n} — ${suffix}`,phaseLabel:x.label||`${i+1}/${b.sets.length}`,phaseRole:x.role||null,d:b.note||'',rest:+x.rest||0,fullRest:rest,g:group,sourceId:b.sourceId||null,...ef,tempo:x.tempo||tempo,method:b.method,mode:'reps',set:[{n:1,w:+x.w||0,...programWorkoutRepTarget(b,q,x),rpe:'',...ef,ok:false}]})})
  });
  const first=d.ex[0],firstResolved=first?resolved(first):null,firstEffort=first?effort(first,firstResolved):{target:8,targetRpeMin:8,targetRpeMax:8,targetRirMin:2,targetRirMax:2};
- st.current={id:uid('s'),date:iso(),w:wi+1,c:d.name,name:p.name,...firstEffort,tempo:'',started:Date.now(),ended:null,programId:p.id,programName:p.name,ex};save();closeModal();nav('start')
+ st.current={id:uid('s'),date:iso(),w:wi+1,c:d.name,name:p.name,...firstEffort,tempo:'',started:Date.now(),ended:null,programId:String(p.id),programDayId:String(d.id),programName:p.name,programSchemaVersion:programModel.SCHEMA_VERSION,ex};save();closeModal();nav('start')
 }
 window.programBeginDayCoreV382=beginProgramDay;
 function saveProgramAsTemplate(id){const p=programById(id);if(!p)return;const t=clone(p);t.id=uid('tpl');t.sourceProgramId=p.id;t.created=Date.now();st.programTemplates.push(t);save();toast('Шаблон сохранён')}

@@ -83,7 +83,8 @@
   if(navEl&&!navEl.__trainerShellV252Observer){
     const observer=new MutationObserver(()=>schedule(false));observer.observe(navEl,{childList:true});navEl.__trainerShellV252Observer=observer;
   }
-  [0,100,350,900,1800,3500,7000].forEach(t=>setTimeout(()=>syncShell(false),t));
+  syncShell(false);
+  for(const event of ['unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:cloud-modules-settled'])window.addEventListener(event,()=>syncShell(true),{passive:true});
   window.addEventListener('pageshow',()=>syncShell(true),{passive:true});
   window.addEventListener('focus',()=>syncShell(true),{passive:true});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncShell(true)},{passive:true});
