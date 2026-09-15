@@ -110,7 +110,7 @@ async function loadCloudModules(){
  if(cloudModulesLoaded||cloudModulesLoading)return;cloudModulesLoading=true;
  try{
   if(!window.supabase)await loadExternalScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-  for(const src of ['cloud-config.js','cloud.js?v=390','auth-ux.js','auth-handoff.js','trainer-style.js','trainer.js','trainer-nav-patch.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js?v=390','client-link.js','auth-password.js','checkin.js','checkin-singleton-fix.js','offline-clients.js?v=390','offline-create-measures.js?v=390','online-progress.js','client-ui-fix.js?v=390','trainer-plan-controls.js','trainer-tap-fix.js','trainer-direct-ui.js'])await loadExternalScript(src);
+  for(const src of ['cloud-config.js','cloud.js?v=390','auth-ux.js','auth-handoff.js','trainer-style.js','trainer.js?v=391','trainer-nav-patch.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js?v=390','client-link.js?v=391','auth-password.js','checkin.js?v=391','checkin-singleton-fix.js','online-progress.js','client-ui-fix.js?v=390','trainer-plan-controls.js','trainer-direct-ui.js','offline-progress.js?v=391','offline-schedule.js?v=391','trainer-clients-canonical.js?v=391'])await loadExternalScript(src);
   cloudModulesLoaded=true;
  }catch(e){console.warn('UNVRSL cloud modules',e)}finally{cloudModulesLoading=false;window.__unvrslCloudModulesSettledV257=true;window.__unvrslCloudModulesSettledV260=true;window.dispatchEvent(new CustomEvent('unvrsl:cloud-modules-settled',{detail:{loaded:cloudModulesLoaded,release:260}}))}
 }
@@ -137,12 +137,7 @@ function startDeferredModules(){
  const programs=safe(loadSequence(['anton-gorkusha-plan.js?v=390','anton-plan-rules.js?v=390','trainer-self-plan.js?v=390','client-free-workout.js?v=390']),'program modules');
  const workout=safe(loadSequence(['wake-lock.js?v=390','workout-duration.js?v=390','cardio-timer.js?v=390','advanced-training.js?v=390','workout-template-ux.js?v=390','cardio-exercise-library.js?v=390','client-workout-scroll.js?v=390']),'workout modules');
  const stats=safe(loadSequence(['profile-strength-core.js?v=390','sheet-swipe.js?v=390','stats-dashboard.js?v=390','stats-authority.js?v=390']),'stats modules');
- const trainer=safe(loadSequence([
-  'clients-action-layout.js?v=390',
-  'offline-progress.js?v=390',
-  'offline-schedule.js?v=390'
- ]),'trainer offline schedule');
- deferredPromise=Promise.allSettled([templates,programs,workout,stats,trainer]).finally(()=>{
+ deferredPromise=Promise.allSettled([templates,programs,workout,stats]).finally(()=>{
   window.__unvrslDeferredModulesReadyV320=true;
   window.dispatchEvent(new CustomEvent('unvrsl:deferred-modules-ready',{detail:{release:321}}))
  });

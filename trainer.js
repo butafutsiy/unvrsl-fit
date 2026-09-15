@@ -9,20 +9,9 @@ function refreshTrainerNav(){
  if(trainerIsTrainer()&&!btn){btn=document.createElement('button');btn.dataset.p='clients';btn.innerHTML='<span class="ico">◉</span>Клиенты';btn.addEventListener('click',()=>nav('clients'));document.querySelector('.nav')?.appendChild(btn)}
  if(btn)btn.style.display=trainerIsTrainer()?'block':'none';
  const navEl=document.querySelector('.nav');if(navEl)navEl.style.gridTemplateColumns=`repeat(${trainerIsTrainer()?6:5},1fr)`;
- if(trainerIsTrainer())clientsPage();
+ if(trainerIsTrainer()&&page.classList.contains('active'))window.clientsPage?.();
 }
 function trainerSnapshot(){return{kind:'unvrsl-plan',schema:1,title:'UNVRSL FIT · 8 недель',createdAt:new Date().toISOString(),weeks:8,routines:ROUTINES.map(r=>({w:r.w,c:r.c,t:r.t,p:r.p||'',e:routineEntries(r).map(e=>({...e}))}))}}
-async function clientsPage(){
- const el=$('#clients');if(!el)return;if(!trainerIsTrainer()){el.innerHTML='<div class="card"><div class="title">Режим тренера выключен</div></div>';return}
- el.innerHTML=`<div class="card"><div class="row between"><div><div class="title">Клиенты</div><div class="muted">Планы, тренировки и прогресс</div></div><button class="btn primary tiny" onclick="trainerShareCurrent()">＋ План</button></div></div><div id="clientMetrics" class="metrics"><div class="metric"><span>Клиентов</span><b>—</b></div><div class="metric"><span>Тренировок 7 дней</span><b>—</b></div></div><div id="clientList"><div class="card muted">Загружаю…</div></div><button class="btn full" onclick="trainerPlansSheet()">Мои отправленные планы</button>`;
- if(!cloud.ready||!cloud.user){$('#clientList').innerHTML='<div class="card muted">Войди в аккаунт, чтобы видеть клиентов.</div>';return}
- const {data:rels,error}=await cloud.client.from('trainer_clients').select('*').eq('trainer_id',cloud.user.id).neq('status','archived');if(error){$('#clientList').innerHTML=`<div class="card muted">${esc(error.message)}</div>`;return}
- const ids=(rels||[]).map(x=>x.client_id);let profiles=[];if(ids.length){const r=await cloud.client.from('profiles').select('id,display_name').in('id',ids);profiles=r.data||[]}
- const since=new Date(Date.now()-7*86400000).toISOString().slice(0,10);let recent=[];if(ids.length){const r=await cloud.client.from('workouts').select('user_id,workout_date,avg_rpe,completed_sets,total_sets,payload').in('user_id',ids).gte('workout_date',since).order('workout_date',{ascending:false});recent=r.data||[]}
- const metrics=$('#clientMetrics');if(metrics)metrics.innerHTML=`<div class="metric"><span>Клиентов</span><b>${ids.length}</b></div><div class="metric"><span>Тренировок 7 дней</span><b>${recent.length}</b></div>`;
- const list=$('#clientList');if(!ids.length){list.innerHTML='<div class="card"><div class="title">Пока нет клиентов</div><div class="muted" style="margin-top:6px">Отправь программу по ссылке. После принятия клиент появится здесь.</div><button class="btn primary full" onclick="trainerShareCurrent()">Отправить программу</button></div>';return}
- list.innerHTML=ids.map(id=>{const p=profiles.find(x=>x.id===id),rw=recent.filter(x=>x.user_id===id),last=rw[0],high=rw.some(x=>Number(x.avg_rpe)>=9.5);return `<button class="card exlib-btn client-card" onclick="trainerClientDetail('${id}')"><div class="row between"><div class="grow"><b>${esc(p?.display_name||'Клиент')}</b><div class="catalog-meta">${last?`Последняя: ${esc(last.workout_date)} · RPE ${last.avg_rpe??'—'}`:'Нет тренировок за 7 дней'}</div></div>${high?'<span class="chip orange">Высокий RPE</span>':'<span class="chev">›</span>'}</div></button>`}).join('')
-}
 async function trainerShareCurrent(){
  if(!cloudConfigured())return cloudSetupSheet();if(!cloud.user)return cloudAccountSheet();if(!trainerIsTrainer())return alert('В аккаунте включи роль «Тренер».');
  const title=prompt('Название программы','UNVRSL FIT · 8 недель');if(!title)return;const snapshot=trainerSnapshot();snapshot.title=title;toast('Создаю ссылку…');

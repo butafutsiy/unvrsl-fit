@@ -69,25 +69,4 @@
   }
   window.saveWeight=saveWeightDaily;try{saveWeight=saveWeightDaily}catch(e){}
 
-  function ensureClientPanes(){
-    if(typeof trainerIsTrainer!=='function'||!trainerIsTrainer())return;
-    const el=document.querySelector('#clients');if(!el)return;
-    if(el.querySelector('.client-tabs'))return;
-    const metrics=el.querySelector('#clientMetrics'),list=el.querySelector('#clientList');if(!metrics||!list)return;
-    const plans=[...el.children].find(x=>x.tagName==='BUTTON'&&/отправленные планы/i.test(x.textContent||''));
-    const tabs=document.createElement('div');tabs.className='client-tabs';tabs.innerHTML='<button class="on" data-tab="online" onclick="offlineSwitchTab(\'online\')">Онлайн</button><button data-tab="offline" onclick="offlineSwitchTab(\'offline\')">Офлайн</button>';
-    metrics.before(tabs);
-    const online=document.createElement('div');online.id='onlineClientsPane';tabs.after(online);online.append(metrics,list);if(plans)online.append(plans);
-    const offline=document.createElement('div');offline.id='offlineClientsPane';online.after(offline);offline.style.display='none';
-    const head=el.querySelector(':scope > .card .muted');if(head)head.textContent='Онлайн и офлайн клиенты · планы, занятия и прогресс';
-  }
-  function scheduleClientPanes(){[0,120,450,1000].forEach(t=>setTimeout(ensureClientPanes,t))}
-  function patchClients(){
-    const cp=window.clientsPage;
-    if(typeof cp==='function'&&!cp.__finalPanes){const wrapped=async function(){const r=await cp.apply(this,arguments);ensureClientPanes();return r};wrapped.__finalPanes=true;window.clientsPage=wrapped;try{clientsPage=wrapped}catch(e){}}
-    const nv=window.nav;
-    if(typeof nv==='function'&&!nv.__finalPanes){const wrappedNav=function(p){const r=nv.apply(this,arguments);if(p==='clients')scheduleClientPanes();return r};wrappedNav.__finalPanes=true;window.nav=wrappedNav;try{nav=wrappedNav}catch(e){}}
-    scheduleClientPanes();
-  }
-  [0,250,900,2200].forEach(t=>setTimeout(patchClients,t));
 })();

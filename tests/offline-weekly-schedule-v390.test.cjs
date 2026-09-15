@@ -78,12 +78,29 @@ test('database migration links templates, blocks, facts and idempotent writes',(
   assert.match(sql,/greatest\(total_sessions, v_after\)/)
 });
 
-test('runtime loads the schedule after offline progress and exposes one offline add action',()=>{
-  const loader=read('frequent-patch.js'),layout=read('clients-action-layout.js'),schedule=read('offline-schedule.js');
-  assert.match(loader,/offline-clients\.js\?v=390/);
-  assert.match(loader,/clients-action-layout\.js\?v=390[\s\S]*offline-progress\.js\?v=390[\s\S]*offline-schedule\.js\?v=390/);
-  assert.match(layout,/offline\.hidden=true/);
-  assert.match(schedule,/class="btn full offline-add-client"/);
+test('runtime loads one canonical clients owner before the cloud chain settles',()=>{
+  const loader=read('frequent-patch.js'),canonical=read('trainer-clients-canonical.js'),schedule=read('offline-schedule.js');
+  assert.match(loader,/trainer-direct-ui\.js'[\s\S]*offline-progress\.js\?v=391[\s\S]*offline-schedule\.js\?v=391[\s\S]*trainer-clients-canonical\.js\?v=391/);
+  for(const legacy of ['offline-clients.js','offline-create-measures.js','trainer-tap-fix.js','clients-action-layout.js'])assert.doesNotMatch(loader,new RegExp(legacy.replace('.', '\\.')));
+  assert.match(canonical,/data-clients-owner/);
+  assert.match(canonical,/state=\{tab:'online',onlineToken:0,offlineToken:0\}/);
+  assert.equal((canonical.match(/＋ Клиент/g)||[]).length,1);
+  assert.doesNotMatch(canonical,/MutationObserver|setTimeout\s*\(/);
+  assert.doesNotMatch(schedule,/offline-add-client|＋ Клиент/);
   assert.match(schedule,/const byDay=new Map\(cache\.slots\.filter/);
+  assert.match(schedule,/adjust_offline_sessions_v390/);
+  assert.match(schedule,/await renderOffline\(\)/);
+  assert.match(schedule,/if\(!cache\.loaded\|\|!root\.children\.length\)root\.innerHTML/);
+  assert.doesNotMatch(schedule,/from\('offline_clients'\)\.select\('sessions_remaining'\)/);
+  assert.doesNotMatch(schedule,/\[0,80,260,800,1600,3400\]/);
   for(const field of ['offChest','offWaist','offAbdomen','offHips','offThigh','offArm','offCalf'])assert.match(schedule,new RegExp(`id="${field}"`))
+});
+
+test('startup keeps the trainer shell hidden until the canonical owner is ready',()=>{
+  const startup=read('startup-orchestrator.js'),index=read('index.html'),sw=read('sw.js');
+  assert.match(startup,/trainer\(\)&&!W\.__unvrslTrainerClientsCanonicalV391/);
+  assert.match(startup,/unvrsl:trainer-clients-ready/);
+  assert.match(index,/window\.__unvrslRelease='v391'/);
+  assert.match(index,/frequent-patch\.js\?v=391/);
+  assert.match(sw,/v391-single-clients-owner/)
 });

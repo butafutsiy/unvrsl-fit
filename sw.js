@@ -1,6 +1,6 @@
 'use strict';
 
-const SW_RELEASE='v390-offline-weekly-schedule';
+const SW_RELEASE='v391-single-clients-owner';
 const CACHE_PREFIX='unvrsl-';
 
 self.addEventListener('install',()=>{

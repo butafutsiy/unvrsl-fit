@@ -51,16 +51,6 @@ if(typeof window.authHandoffRedirect==='function'){
   }
 }
 
-const _clientLinkClientsPage=window.clientsPage;
-if(typeof _clientLinkClientsPage==='function')window.clientsPage=async function(){
-  await _clientLinkClientsPage.apply(this,arguments);
-  const root=document.querySelector('#clients');if(!root||!(typeof trainerIsTrainer==='function'&&trainerIsTrainer()))return;
-  const first=root.querySelector('.card');if(first&&!first.querySelector('.invite-client-btn')){
-    const row=first.querySelector('.row.between');
-    if(row){const actions=document.createElement('div');actions.className='row';actions.innerHTML='<button class="btn tiny invite-client-btn" onclick="trainerCreateClientInvite()">＋ Клиент</button>';const existing=row.querySelector('button');if(existing)actions.appendChild(existing);row.appendChild(actions)}
-  }
-};
-
 const _clientLinkTrainerClientDetail=window.trainerClientDetail;
 if(typeof _clientLinkTrainerClientDetail==='function')window.trainerClientDetail=async function(id){
   await _clientLinkTrainerClientDetail(id);

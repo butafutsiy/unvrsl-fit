@@ -327,11 +327,8 @@
   `;style.textContent+=`.ofp-weight-side{display:grid;justify-items:end;gap:8px}.ofp-goal{padding:7px 10px;border-radius:13px;background:rgba(191,90,242,.1);color:#a98eb7;font-size:10px;text-align:right}.ofp-goal b,.ofp-goal small{display:block}.ofp-goal b{margin-top:2px;color:#e4bbfa;font-size:15px}.ofp-goal small{margin-top:2px;color:#82828a}.ofp-journal-tools{display:flex;align-items:center;gap:7px}.ofp-delete{min-height:28px;padding:5px 8px;border:0;border-radius:9px;background:rgba(255,69,58,.09);color:#ff7b73;font-size:10px;font-weight:800}`;D.head.appendChild(style);
 
   function install(){
-    if(!W.__unvrslOfflineClients)return;
     W.offlineClientDetail=openDetail;W.offlineCustomStrengthSheet=customStrength;W.offlineEditClientSheet=editClient;W.offlineSaveClientEdit=saveClientEditV334;W.offlineMeasurementSheet=measurementSheet;W.offlineSaveMeasurement=saveMeasurement;W.offlineStrengthSheet=strengthSheet;W.offlineSaveStrength=saveStrength;W.offlineStrengthHistory=strengthHistory;
     try{offlineClientDetail=openDetail;offlineCustomStrengthSheet=customStrength;offlineEditClientSheet=editClient;offlineSaveClientEdit=saveClientEditV334;offlineMeasurementSheet=measurementSheet;offlineSaveMeasurement=saveMeasurement;offlineStrengthSheet=strengthSheet;offlineSaveStrength=saveStrength;offlineStrengthHistory=strengthHistory}catch(_){ }
   }
-  [0,120,500,1400,3200].forEach(ms=>setTimeout(install,ms));
-  W.addEventListener('unvrsl:cloud-modules-settled',install,{passive:true});
+  install();
 })();
-

@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const W=window,D=document,RELEASE=390,READY_CLASS='unvrsl-shell-ready-v316',LEGACY_READY_CLASS='unvrsl-app-ready-v260';
+  const W=window,D=document,RELEASE=391,READY_CLASS='unvrsl-shell-ready-v316',LEGACY_READY_CLASS='unvrsl-app-ready-v260';
   if(W.__unvrslStartupOrchestratorV321)return;W.__unvrslStartupOrchestratorV321=true;W.__unvrslStartupOrchestratorV320=true;W.__unvrslStartupOrchestratorV319=true;W.__unvrslStartupOrchestratorV260=true;
   W.__unvrslStartupComplete=false;
 
@@ -70,6 +70,7 @@
       W.__unvrslStartupCloudBypassedV260=true;
       W.__unvrslStartupCloudBypassMsV260=Math.round(elapsed());
     }
+    if(cloudSettled()&&trainer()&&!W.__unvrslTrainerClientsCanonicalV391)return false;
     // Only wait for client-specific cloud runtime when cloud actually resolved
     // a signed-in client. An unavailable cloud must not block the local shell.
     if(cloudSettled()&&client()&&(!W.__unvrslClientRuntimeSettledV260||!D.body?.classList.contains('client-runtime-ready-v260')))return false;
@@ -120,7 +121,7 @@
     }finally{finalizing=false}
   }
   W.unvrslTryFinalizeStartupV260=finalize;
-  for(const name of ['load','unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:client-settled','unvrsl:readiness-ready','unvrsl:ui-stability-ready'])W.addEventListener?.(name,finalize,{passive:true});
+  for(const name of ['load','unvrsl:modules-ready','unvrsl:cloud-ready','unvrsl:client-ready','unvrsl:client-settled','unvrsl:readiness-ready','unvrsl:ui-stability-ready','unvrsl:trainer-clients-ready'])W.addEventListener?.(name,finalize,{passive:true});
   // Never expose a half-built shell. The fixed progress surface remains in
   // place while slow modules finish, without inserting controls or moving it.
   setTimeout(finalize,CLOUD_GRACE_MS+30);
