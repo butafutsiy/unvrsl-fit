@@ -70,7 +70,7 @@
       neutralize(online);
       const offline=ensureOfflineButton(slot),tab=activeTab();
       if(online)online.hidden=tab!=='online';
-      offline.hidden=tab!=='offline';
+      offline.hidden=true;
       removeOldOfflineAdd();
     }finally{busy=false}
   }

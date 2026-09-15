@@ -28,7 +28,7 @@
   function measureValue(row,key){const n=Number(row?.measurements?.[key]);return Number.isFinite(n)&&n>0?n:null}
   function deltaText(now,prev,unit='см'){if(now==null||prev==null)return'';const d=+(now-prev).toFixed(1);if(!d)return'<span class="muted small">без изменений</span>';return `<span class="offline-delta ${d<0?'down':''}">${d>0?'+':''}${d} ${unit}</span>`}
 
-  function switchTab(tab){activeTab=tab;const on=$('#onlineClientsPane'),off=$('#offlineClientsPane');if(on)on.style.display=tab==='online'?'':'none';if(off)off.style.display=tab==='offline'?'':'none';document.querySelectorAll('.client-tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));if(tab==='offline')renderOfflineClients()}
+  function switchTab(tab){activeTab=tab;const on=$('#onlineClientsPane'),off=$('#offlineClientsPane');if(on)on.style.display=tab==='online'?'':'none';if(off)off.style.display=tab==='offline'?'':'none';document.querySelectorAll('.client-tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));if(tab==='offline')window.renderOfflineClients?.()}
   window.offlineSwitchTab=switchTab;
 
   function installPanes(){

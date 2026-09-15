@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
-  const W=window,D=document,RELEASE=386,READY_CLASS='unvrsl-shell-ready-v316',LEGACY_READY_CLASS='unvrsl-app-ready-v260';
+  const W=window,D=document,RELEASE=390,READY_CLASS='unvrsl-shell-ready-v316',LEGACY_READY_CLASS='unvrsl-app-ready-v260';
   if(W.__unvrslStartupOrchestratorV321)return;W.__unvrslStartupOrchestratorV321=true;W.__unvrslStartupOrchestratorV320=true;W.__unvrslStartupOrchestratorV319=true;W.__unvrslStartupOrchestratorV260=true;
   W.__unvrslStartupComplete=false;
 
@@ -21,7 +21,7 @@
   setProgress(progressValue);
 
   // Program model, migration, range resolution and readiness are part of
-  // the critical shell in v386. They are loaded once from index.html before
+  // the critical shell in v390. They are loaded once from index.html before
   // the shell can be revealed; no feature module may replace them later.
 
   // app.js does not paint its legacy base DOM during boot. Its first render is

@@ -1,6 +1,6 @@
 'use strict';
 
-const SW_RELEASE='v386-canonical-program-flow';
+const SW_RELEASE='v390-offline-weekly-schedule';
 const CACHE_PREFIX='unvrsl-';
 
 self.addEventListener('install',()=>{
