@@ -1,6 +1,6 @@
 'use strict';
 (()=>{
- const W=window,REV=295,MATH_OWNER='training-load-model-v292';
+ const W=window,REV=295,MATH_OWNER='workout-domain';
  if(W.__unvrslTrainingEngineV295)return;
  let STATE=W.st||null;
  try{if(typeof st!=='undefined')STATE=st}catch(_){}
@@ -15,7 +15,7 @@
  if(!Array.isArray(W.st?.readinessLog))W.st.readinessLog=[];
  const style=document.createElement('style');style.id='training-engine-v200-style';style.textContent=`
  .te200-rec{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0 2px;padding:9px 11px;border-radius:14px;background:#191d1a;border:1px solid rgba(48,209,88,.28)}
- .te200-rec .te200-rec-main{min-width:0}.te200-rec b{display:block;font-size:12px;color:#30d158}.te200-rec span{display:block;font-size:11px;color:#8e8e93;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.te200-rec .te200-rec-apply{flex:0 0 auto;min-width:96px;min-height:42px;padding:9px 12px;border-radius:13px;background:#30d158;color:#061108;font-size:12px;font-weight:850}.te200-rec .te200-rec-apply:disabled{background:#313135;color:#85858b;cursor:default}
+ .te200-rec .te200-rec-main{min-width:0}.te200-rec b{display:block;font-size:12px;color:#30d158}.te200-rec span{display:block;font-size:11px;color:#8e8e93;margin-top:2px;white-space:normal}.te200-rec .te200-rec-apply{flex:0 0 auto;min-width:96px;min-height:42px;padding:9px 12px;border-radius:13px;background:#30d158;color:#061108;font-size:12px;font-weight:850}.te200-rec .te200-rec-apply:disabled{background:#313135;color:#85858b;cursor:default}
  .te200-auto{margin:9px 0 2px;padding:8px 10px;border-radius:13px;background:rgba(48,209,88,.10);color:#30d158;font-size:11px;font-weight:750}
  .te200-readiness{width:100%;margin:10px 0 4px;padding:11px 13px;border-radius:15px;background:#2a2a2d;border:1px solid #3a3a3e;font-weight:760;text-align:center}
  .te200-readiness.done{color:#30d158;border-color:rgba(48,209,88,.25);background:rgba(48,209,88,.08)}
@@ -50,14 +50,14 @@
   const w=N(cur.w);if(!(w>=1&&w<=8)||!cur.c)return false;
   return(cur.ex||[]).some(ex=>ex?.mode!=='cardio'&&!!builtInSource(ex,cur))
  }
- function step(ex,rows=[]){let s=2.5;try{s=Number(W.loadStepFor?.(base(ex.n),ex.sourceId||null))||s}catch(_){}const m=mean(rows.map(x=>x.w))||0;if(m>0&&m<=6)s=Math.min(s,.5);else if(m>0&&m<=12)s=Math.min(s,1);else if(m>0&&m<=22)s=Math.min(s,2);return s}
- function round(v,s){return Math.max(s,Math.round(v/s)*s)}
+ function step(ex){return WorkoutDomain.profile(ex,workoutRegistry,st.exerciseWeightProfiles||{}).step}
+ function round(v,s){return WorkoutDomain.roundWeight(v,{step:s,min:0})}
  function method(src,ex){return String(src?.method||ex?.method||'STANDARD').trim().toUpperCase()||'STANDARD'}
  function occurrenceIndex(ex,cur){const a=(cur.ex||[]).filter(x=>same(x,ex.n,ex.sourceId));const i=a.indexOf(ex);return i<0?0:i}
  function sourceWeight(src,ex,setIndex,cur){const sets=src?.sets||[];if(!sets.length)return 0;if((ex.set||[]).length>1)return num(sets[setIndex]?.w??sets.at(-1)?.w);const i=occurrenceIndex(ex,cur),m=method(src,ex),count=(cur.ex||[]).filter(x=>same(x,ex.n,ex.sourceId)).length;if(m==='UNVRSL'&&count>sets.length){const map=sets.length>=3?[0,1,0,1,0,1,2,2]:sets.length===2?[0,1,0,1,0,1,1,1]:[0,0,0,0,0,0,0,0];return num(sets[map[i]??map.at(-1)]?.w)}return num(sets[i]?.w??sets.at(-1)?.w)}
  async function ensureLoadModel(){
   if(W.trainingLoadModel292?.run)return true;
-  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=380';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
+  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=392';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
   for(let i=0;i<40;i++){if(W.trainingLoadModel292?.run)return true;await new Promise(r=>setTimeout(r,50))}
   return !!W.trainingLoadModel292?.run
  }
@@ -69,15 +69,13 @@
   if(!cur)return false;const p=program(cur);if((cur.programId||cur.planId)&&!p)return false;
   const ownerPlan=isOwnerEightWeekPlan(cur);cur.trainingWeightPolicy214=ownerPlan?'recommendation':'autoweight';
   let unresolved=false,adaptive=0,prescribed=0;
-  const oldReadinessPercent=N(cur?.readiness?.percent);
-  if(cur.trainingReadinessDone&&cur.readiness&&(oldReadinessPercent==null||oldReadinessPercent>0)){cur.readiness={...cur.readiness,percent:0,factor:1,skipped:true};cur.readinessUsed=false;cur.readinessAdjusted=false}
   lockLegacy(cur);clearRecommendationState(cur);
   for(const ex of cur.ex||[]){
    if(ex?.mode==='cardio')continue;const src=source(ex,cur);if((cur.programId||cur.planId)&&!src){unresolved=true;continue}
    const launch=(ex.set||[]).map(s=>s.launchWeightCaptured206?num(s.launchW):([s.programW,s.plannedW,s.w].map(num).find(x=>x>0)||0)),sets=ex.set||[];
    const sourceWeights=sets.map((s,i)=>src?sourceWeight(src,ex,i,cur):0);
    const seeds=sets.map((s,i)=>sourceWeights[i]>0?sourceWeights[i]:num(launch[i]));
-   const mode=ownerPlan||sourceWeights.some(x=>x>0)?'prescribed':'adaptive';
+   const mode=ownerPlan||src?.weightMode==='manual'||sourceWeights.some(x=>x>0)?'prescribed':'adaptive';
    ex.programWeightMode=mode;delete ex.recommendation194;delete ex.engine196Recommendation;delete ex.progression187;
    const activeMethod=method(src,ex);
    if(mode==='adaptive'){
@@ -106,13 +104,13 @@
  function groupIndices(cur,k){const a=[];(cur.ex||[]).forEach((e,i)=>{if(key(e)===k)a.push(i)});return a}
  function fmtWeights(a){const vals=(a||[]).map(x=>num(x)).filter(x=>x>0),unique=[];vals.forEach(x=>{if(!unique.some(y=>Math.abs(y-x)<.001))unique.push(x)});if(!unique.length)return'—';return unique.map(x=>String(x).replace('.',',')).join(' / ')}
  function todayWeight(v,ex,cur){
-  if(!(num(v)>0))return null;
+  if(N(v)==null)return null;
   try{const fn=W.unvrslTrainingReadinessWeightV292||W.trainingLoadModel292?.readinessWeight;if(typeof fn==='function'){const out=fn(num(v),ex,cur,step(ex));if(out!=null)return out}}catch(_){ }
   const f=cur?.trainingReadinessDone&&cur?.readinessAdjusted?num(cur?.readiness?.factor)||1:1;return round(num(v)*f,step(ex))
  }
  function readinessPercent(cur){if(!cur?.trainingReadinessDone||!cur?.readinessAdjusted)return'';const p=Math.round(((num(cur?.readiness?.factor)||1)-1)*1000)/10;return`${p>0?'+':''}${String(p).replace('.',',')}%`}
  function v292Ready(group,cur){return Number(cur?.trainingLoadModelRevision)===292&&group.some(ex=>ex?.trainingProgression292?.actualEffort===true)&&group.some(ex=>(ex?.set||[]).some(s=>N(s?.recommendedW)!=null&&!!s?.trainingIntensity292))}
- function applyRecommendation(k){const cur=W.st?.current;if(!cur)return;const idx=groupIndices(cur,k),prescribed=idx.some(i=>cur.ex?.[i]?.programWeightMode==='prescribed');if(!prescribed){W.toast?.('Здесь вес выставляется автоматически');return}idx.forEach(i=>{const ex=cur.ex[i];if(ex?.programWeightMode!=='prescribed')return;(ex.set||[]).forEach(s=>{if(s.ok||s.manualOverride||num(s.recommendedW)<=0||!s.trainingIntensity292)return;s.plannedW=num(s.recommendedW);s.baselineW=s.plannedW;s.baselineSource='prescribed_recommendation_v292';s.w=todayWeight(s.plannedW,ex,cur)});ex.weightDecision='recommendation'});try{W.save?.();W.startPage?.()}catch(_){}setTimeout(enhanceDom,0);W.toast?.('Рекомендованный вес применён')}
+ function applyRecommendation(k){const cur=W.st?.current;if(!cur)return;const idx=groupIndices(cur,k),prescribed=idx.some(i=>cur.ex?.[i]?.programWeightMode==='prescribed');if(!prescribed){W.toast?.('Здесь вес выставляется автоматически');return}idx.forEach(i=>{const ex=cur.ex[i];if(ex?.programWeightMode!=='prescribed')return;(ex.set||[]).forEach(s=>{if(s.ok||s.manualOverride||N(s.recommendedW)==null||!s.trainingIntensity292)return;s.plannedW=num(s.recommendedW);s.baselineW=s.plannedW;s.baselineSource='prescribed_recommendation_v292';s.w=todayWeight(s.plannedW,ex,cur)});ex.weightDecision='recommendation'});try{W.save?.();W.startPage?.()}catch(_){}setTimeout(enhanceDom,0);W.toast?.('Рекомендованный вес применён')}
  function restoreProgram(k){const cur=W.st?.current;if(!cur)return;groupIndices(cur,k).forEach(i=>{const ex=cur.ex[i];if(ex?.programWeightMode!=='prescribed')return;(ex.set||[]).forEach(s=>{if(s.ok||s.manualOverride||num(s.programW)<=0)return;s.plannedW=num(s.programW);s.baselineW=s.plannedW;s.baselineSource='program';s.w=todayWeight(s.plannedW,ex,cur)});ex.weightDecision='program'});try{W.save?.();W.startPage?.()}catch(_){}setTimeout(enhanceDom,0)}
  function readiness(){const g=id=>num(document.getElementById(id)?.value||3),sl=g('te200Sleep'),en=g('te200Energy'),so=g('te200Sore'),st=g('te200Stress'),pos=v=>(v-1)/4,neg=v=>(5-v)/4,score=Math.round(pos(sl)*25+pos(en)*30+neg(so)*30+neg(st)*15);let percent=0;if(score<30)percent=-10;else if(score<50)percent=-7.5;else if(score<70)percent=-5;else if(score<85)percent=-2.5;return{sleep:sl,energy:en,soreness:so,stress:st,score,percent,factor:1+percent/100,skipped:false,at:new Date().toISOString()}}
  function item(id,label,left,right){return `<div class="te200-item"><b><span>${label}</span><span id="${id}V">3</span></b><input id="${id}" data-touched="0" type="range" min="1" max="5" value="3" oninput="this.dataset.touched='1';document.getElementById('${id}V').textContent=this.value;trainingUpdateReadiness200()"><div class="te200-scale"><span>${left}</span><span>${right}</span></div></div>`}
@@ -147,19 +145,17 @@
  }
  function domSignature(cur){return JSON.stringify([cur.id,cur.trainingWeightPolicy214,cur.trainingLoadModelRevision||0,cur.trainingLoadModelAt||'',!!cur.trainingReadinessDone,!!cur.readinessAdjusted,cur.readiness?.score??null,(cur.ex||[]).map(ex=>[key(ex),ex.programWeightMode,ex.weightDecision,ex.trainingProgression292?.action||'',ex.trainingProgression292?.reason||'',(ex.set||[]).map(s=>[num(s.programW),num(s.recommendedW),!!s.trainingIntensity292,num(s.plannedW),num(s.w)])])])}
  function enhanceDom(){const cur=W.st?.current,root=document.getElementById('start');if(!cur||!root)return;const sig=domSignature(cur);if(root.dataset.te200Sig===sig&&root.querySelector('.te200-readiness'))return;root.querySelectorAll('.te200-rec,.te200-auto,.te200-readiness').forEach(x=>x.remove());const cards=[...root.querySelectorAll('.exercise')],seen=new Set();
-  (cur.ex||[]).forEach((ex,i)=>{if(ex?.mode==='cardio')return;const k=key(ex);if(seen.has(k))return;seen.add(k);const indices=groupIndices(cur,k),group=indices.map(j=>cur.ex[j]),card=cards[i];if(!card)return;const anchor=card.querySelector('.exname')||card.firstElementChild;
-   const prescribedGroup=group.every(g=>g?.programWeightMode==='prescribed');
-   if(!prescribedGroup){
-    const baseVals=[],todayVals=[],previousVals=[];group.forEach(g=>{if(num(g?.trainingEstimate200?.previousWeight)>0)previousVals.push(num(g.trainingEstimate200.previousWeight));(g.set||[]).forEach(s=>{if(num(s.plannedW)>0){baseVals.push(num(s.plannedW));todayVals.push(num(s.w)||todayWeight(s.plannedW,g,cur))}})});const el=document.createElement('div');el.className='te200-auto';const rp=readinessPercent(cur),fromHistory=Number(cur.trainingLoadModelRevision)===292&&group.some(g=>g.weightDecision==='adaptive_auto');if(baseVals.length&&fromHistory)el.textContent=`Автовес · ${fmtWeights(todayVals)} кг${previousVals.length?` · по прошлой ${fmtWeights(previousVals)} кг`:''}${rp?` · самочувствие ${rp}`:''}`;else if(baseVals.length)el.textContent=`Автовес · стартовый ${fmtWeights(todayVals)} кг${rp?` · самочувствие ${rp}`:''}`;else el.textContent='Автовес · первая тренировка · укажи рабочий вес для расчёта следующих занятий';anchor?.insertAdjacentElement('afterend',el)
-   }else if(v292Ready(group,cur)){
-    const rec=[],recToday=[],planToday=[];group.forEach(g=>(g.set||[]).forEach(s=>{if(num(s.recommendedW)>0&&s.trainingIntensity292){rec.push(num(s.recommendedW));recToday.push(todayWeight(s.recommendedW,g,cur))}if(num(s.programW)>0)planToday.push(todayWeight(s.programW,g,cur))}));if(rec.length){const rp=readinessPercent(cur),progression=group.map(g=>g.trainingProgression292).find(Boolean),basis=group.map(g=>g.trainingEstimate200).find(x=>x?.method==='UNVRSL'&&x.averageWeight>0),basisText=progression?.reason|| (basis?`Основа: ср. ${String(basis.averageWeight).replace('.',',')} кг × ${String(basis.averageReps).replace('.',',')} повт.${basis.averageRpe!=null?` · ср. RPE ${String(basis.averageRpe).replace('.',',')}`:''}`:`Расчёт ${MATH_OWNER}`),applied=group.some(g=>g.weightDecision==='recommendation'),el=document.createElement('div');el.className='te200-rec unvrsl-v292-ready';el.dataset.recommendationOwner=MATH_OWNER;el.innerHTML=`<div class="te200-rec-main"><b>Рекомендация · ${fmtWeights(recToday)} кг</b><span>${basisText} · план сегодня ${fmtWeights(planToday)} кг${rp?` · самочувствие ${rp}`:''}</span></div>`;const button=document.createElement('button');button.type='button';button.className='te200-rec-apply';button.textContent=applied?'Вернуть план':'Применить';button.onclick=()=>applied?restoreProgram(k):applyRecommendation(k);el.appendChild(button);anchor?.insertAdjacentElement('afterend',el)}
-   }
+  const groups=typeof groupIndexedEntries==='function'?groupIndexedEntries(cur.ex):cur.ex.map((e,i)=>({entries:[e],indices:[i]}));
+  groups.forEach((group,index)=>{const ex=group.entries[0],card=cards[index];if(!card||ex?.mode==='cardio')return;const pending=group.entries.flatMap(e=>(e.set||[]).filter(s=>!s.ok).map(s=>({e,s}))),item=pending.find(x=>x.s.recommendation);if(!item)return;const rec=item.s.recommendation,el=document.createElement('div');el.className='te200-rec';el.dataset.recommendationOwner=MATH_OWNER;
+   const label=WorkoutDomain.setLabel(item.e,{w:rec.weight,r:rec.repRange.hi},workoutRegistry);const title=document.createElement('div');title.className='te200-rec-main';const b=document.createElement('b');b.textContent='Рекомендация: '+label;title.append(b);const detail=document.createElement('details'),summary=document.createElement('summary');summary.textContent=rec.reason;detail.append(summary);const text=document.createElement('p');text.className='small muted';text.textContent=`${rec.previous==null?'Нет прошлой сопоставимой нагрузки':`Изменение: ${rec.delta>0?'+':''}${rec.delta} кг`}. Шаг: ${rec.step} кг. Уверенность: ${rec.confidence}. ${rec.rounding}. Основание: ${rec.evidence.join('; ')||'завершённых подходов пока нет'}`;detail.append(text);title.append(detail);el.append(title);
+   if(group.entries.some(e=>e.programWeightMode==='prescribed')){const button=document.createElement('button');button.type='button';button.className='te200-rec-apply';button.textContent='Применить';button.onclick=()=>{for(const {e,s} of pending){if(s.manualOverride||s.weightSource==='manual'||!s.recommendation)continue;WorkoutDomain.applyAuto(s,s.recommendation);s.plannedW=s.w;e.weightDecision='recommendation'}W.save();W.startPage()};el.append(button)}
+   card.querySelector('.row')?.insertAdjacentElement('afterend',el);
   });
   const head=root.querySelector('.workout-head')||root.firstElementChild;if(head){const b=document.createElement('button');b.className='te200-readiness'+(cur.trainingReadinessDone?' done':'');b.type='button';const rp=readinessPercent(cur);b.textContent=cur.trainingReadinessDone?(cur.readiness?.skipped?'Самочувствие · базовый вес':rp?`Самочувствие · ${rp}`:'Самочувствие · вес оставить'):'Самочувствие · рассчитать коррекцию';b.onclick=showReadiness;head.insertAdjacentElement('afterend',b)}root.dataset.te200Sig=sig
  }
  let last='',busy=false;
  function assignStart(name,fn){W[name]=fn;try{if(name==='begin')begin=fn;else if(name==='beginProgramDay')beginProgramDay=fn;else if(name==='beginRemotePlan')beginRemotePlan=fn}catch(_){}}
- function installStart(name){const fn=W[name];if(typeof fn!=='function'||fn.__te205PreStart)return;const wrapped=function(){if(startingAfterReadiness)return fn.apply(this,arguments);askBeforeStart(fn,arguments,this)};wrapped.__te205PreStart=true;wrapped.__te205Base=fn;assignStart(name,wrapped)}
+ function installStart(name){const fn=W[name];if(typeof fn!=='function'||fn.__te205PreStart)return;const wrapped=function(){if(W.st?.current){W.nav?.('start');W.toast?.('У вас есть незавершённая тренировка');return}if(startingAfterReadiness)return fn.apply(this,arguments);askBeforeStart(fn,arguments,this)};wrapped.__te205PreStart=true;wrapped.__te205Base=fn;assignStart(name,wrapped)}
  function installStartHooks(){['begin','beginProgramDay','beginRemotePlan'].forEach(installStart)}
  async function tick(){installStartHooks();const cur=W.st?.current;if(!cur?.id||cur.ended)return;lockLegacy(cur);const id=String(cur.id);if(id!==last){last=id;busy=false;const root=document.getElementById('start');if(root)delete root.dataset.te200Sig}if(busy)return;busy=true;try{if(cur.trainingEngineRevision!==REV){const ok=await prepare(cur);if(!ok)return}else if(!W.trainingLoadModel292?.run){await ensureLoadModel()}enhanceDom()}finally{busy=false}}
  W.trainingApplyRecommendation200=applyRecommendation;W.trainingRestoreProgram200=restoreProgram;W.trainingShowReadiness200=showReadiness;W.trainingConfirmReadiness200=confirm;W.trainingUpdateReadiness200=updateReadiness;W.trainingRequestProgramStartV382=requestProgramStart;W.trainingEngine200Tick=tick;

@@ -1,0 +1,58 @@
+{
+  "total": 188,
+  "complete": 185,
+  "incomplete": [
+    {
+      "id": "canon:weighted_hyperextension",
+      "name": "Гиперэкстензия с дополнительным весом",
+      "missing": [
+        "media"
+      ]
+    },
+    {
+      "id": "canon:box_jump",
+      "name": "Запрыгивания на тумбу",
+      "missing": [
+        "media"
+      ]
+    },
+    {
+      "id": "canon:weighted_pushup",
+      "name": "Отжимания с дополнительным весом",
+      "missing": [
+        "media"
+      ]
+    }
+  ],
+  "missingGIF": [
+    {
+      "id": "canon:weighted_hyperextension",
+      "name": "Гиперэкстензия с дополнительным весом"
+    },
+    {
+      "id": "canon:box_jump",
+      "name": "Запрыгивания на тумбу"
+    },
+    {
+      "id": "canon:weighted_pushup",
+      "name": "Отжимания с дополнительным весом"
+    }
+  ],
+  "missingImage": [
+    {
+      "id": "canon:weighted_hyperextension",
+      "name": "Гиперэкстензия с дополнительным весом"
+    },
+    {
+      "id": "canon:box_jump",
+      "name": "Запрыгивания на тумбу"
+    },
+    {
+      "id": "canon:weighted_pushup",
+      "name": "Отжимания с дополнительным весом"
+    }
+  ],
+  "missingStep": [],
+  "duplicateIds": [],
+  "note": "Completeness checks fields, not media availability or coaching accuracy. No fallback satisfies a missing field."
+}

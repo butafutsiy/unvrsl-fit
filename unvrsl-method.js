@@ -15,7 +15,7 @@
   };
   const round=(input,step=2.5)=>{
     const number=value(input),increment=value(step)||2.5;
-    return number==null?null:Math.max(increment,Math.round(number/increment)*increment);
+    return number==null?null:Math.max(0,Math.round(number/increment)*increment);
   };
   const entrySets=entry=>{
     if(Array.isArray(entry?.sets)&&entry.sets.length)return entry.sets.map(set=>({...set,w:value(set?.w??set?.weight)||0,r:value(set?.r??set?.reps)||0}));
@@ -34,38 +34,7 @@
     const finish=compressedWithFinish?entrySets(source[2]):[];
     return{method:'UNVRSL',sets:[...rounds,...finish]};
   }
-  function aggregateRecommendation(rows=[],currentWeights=[],currentReps=[],targetRpes=[],step=2.5){
-    const valid=rows.map(row=>({
-      w:value(row?.w??row?.weight),
-      r:value(row?.r??row?.reps),
-      rpe:value(row?.rpe),
-      rir:value(row?.rir)
-    })).filter(row=>row.w>0&&row.r>0);
-    if(!valid.length)return null;
-    const averageWeight=mean(valid.map(row=>row.w));
-    const averageReps=mean(valid.map(row=>row.r));
-    const averageRpe=mean(valid.map(row=>row.rpe));
-    const averageRir=mean(valid.map(row=>row.rir!=null?row.rir:(row.rpe!=null?Math.max(0,10-row.rpe):2)))??2;
-    const targetAverageReps=mean(currentReps)||averageReps;
-    const targetAverageRpe=mean(targetRpes)||8;
-    const targetRir=Math.max(0,10-targetAverageRpe);
-    const estimatedMax=averageWeight*(1+(averageReps+averageRir)/30);
-    const rawAverage=estimatedMax/(1+(targetAverageReps+targetRir)/30);
-    const desiredAverage=round(Math.max(averageWeight*.9,Math.min(averageWeight*1.075,rawAverage)),step);
-    const pattern=currentWeights.map(value).map(item=>item>0?item:null);
-    const patternAverage=mean(pattern)||averageWeight;
-    const ratio=desiredAverage/patternAverage;
-    const weights=pattern.map(item=>item==null?desiredAverage:round(item*ratio,step));
-    return{
-      weights,
-      averageWeight:Number(averageWeight.toFixed(1)),
-      averageReps:Number(averageReps.toFixed(1)),
-      averageRpe:averageRpe==null?null:Number(averageRpe.toFixed(1)),
-      desiredAverage,
-      estimatedMax:Number(estimatedMax.toFixed(1))
-    };
-  }
-  return{aggregateRecommendation,expandPlanEntries,mean,round};
+  return{expandPlanEntries,mean,round};
 });
 
 // Custom-program SLDR engine v214.

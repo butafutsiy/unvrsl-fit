@@ -1,0 +1,17 @@
+{
+  "environment": "Node jsdom, local assets, in-memory catalog fixture, no layout/network, anatomy fetch unavailable in both runs",
+  "readyMs": 1182.278108,
+  "scripts": 108,
+  "scriptBytes": 2037782,
+  "catalogTransferBytes": 0,
+  "catalogRequests": 0,
+  "catalogCount": 188,
+  "medianNavigationMs": {
+    "home": 7.77,
+    "exercises": 5,
+    "plan": 7.01,
+    "start": 5.66,
+    "stats": 3.96
+  },
+  "errors": []
+}

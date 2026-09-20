@@ -235,7 +235,7 @@
   }
 
   function refresh(){
-    installCatalog();installMedia();installFindExercise();installOpenByName();installDisplayName();
+    installMedia();installFindExercise();installOpenByName();installDisplayName();
     if(mapPlans())try{if(document.querySelector('#exercises.page.active')&&typeof renderExerciseResults==='function')renderExerciseResults()}catch(_){ }
   }
 
@@ -255,6 +255,6 @@
   window.addEventListener('unvrsl:deferred-modules-ready',()=>setTimeout(refresh,0),{passive:true});
   window.addEventListener('unvrsl:modules-ready',()=>setTimeout(refresh,0),{passive:true});
   window.addEventListener('unvrsl:cloud-modules-settled',()=>setTimeout(refresh,0),{passive:true});
-  let tries=0;const timer=setInterval(()=>{refresh();if(++tries>=40)clearInterval(timer)},300);
+  // Refresh only on dependency events; no repeated catalog rebuild.
 })();
 

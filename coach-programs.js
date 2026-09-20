@@ -94,7 +94,7 @@ function programWorkoutRepTarget(b,q,x){
  return{r:'',programR:planned??min,targetRepMin:min,targetRepMax:max,targetRepLabel:programModel.formatRange({min,max}),repMode:mode}
 }
 function beginProgramDay(pid,wi,di){
- const p=programById(pid),d=p?.weeks?.[wi]?.days?.[di];if(!p||!d)return;if(st.current&&done(st.current)>0&&!confirm('Текущая тренировка не завершена. Начать новую?'))return;
+ const p=programById(pid),d=p?.weeks?.[wi]?.days?.[di];if(!p||!d)return;if(st.current){toast('У вас есть незавершённая тренировка');nav('start');return;}
  const ex=[],resolved=b=>typeof window.programResolveExerciseParametersV381==='function'?window.programResolveExerciseParametersV381(pid,wi,b):null;
  const effort=(b,q)=>{const min=q?.effort?.rpeMin??b.rpeMin??b.rpe??8,max=q?.effort?.rpeMax??b.rpeMax??b.rpe??8;return{target:Math.round(((min+max)/2)*2)/2,targetRpeMin:min,targetRpeMax:max,targetRirMin:Math.max(0,10-max),targetRirMax:Math.max(0,10-min)}};
  d.ex.forEach(b=>{

@@ -9,13 +9,12 @@ const vm=require('node:vm');
 const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 
-test('program editor emits one stable render lifecycle and preserves its scroll',()=>{
-  const source=read('program-editor.js');
-  assert.match(source,/__stableProgramEditorV382/);
-  assert.match(source,/unvrsl:program-editor-rendered/);
-  assert.match(source,/sheet\.scrollTop/);
-  assert.match(source,/programStartFromEditorV382/);
-  assert.match(source,/trainingRequestProgramStartV382/);
+test('program editor lifecycle and scroll are owned by the canonical program page',()=>{
+ const editor=read('program-editor.js'),coach=read('coach-programs.js');
+ assert.match(editor,/__unvrslProgramEditorV386/);
+ assert.match(coach,/unvrsl:program-editor-rendered/);
+ assert.match(coach,/scrollTop/);
+ assert.match(editor,/trainingRequestProgramStartV382/);
 });
 
 test('week editor modules no longer rebuild themselves on polling loops',()=>{
@@ -55,7 +54,7 @@ test('intensity card is inserted only once for the same program week',()=>{
 test('editor start uses the canonical readiness request with an exact day',()=>{
   const coach=read('coach-programs.js'),engine=read('training-engine.js'),readiness=read('readiness-questionnaire.js');
   assert.match(coach,/data-program-editor-start="1"/);
-  assert.match(coach,/programStartFromEditorV382\(event/);
+  assert.match(coach,/programStartFromEditorV386\(event/);
   assert.match(coach,/programBeginDayCoreV382=beginProgramDay/);
   assert.match(engine,/function requestProgramStart\(pid,wi,di\)/);
   assert.match(engine,/programBeginDayCoreV382/);

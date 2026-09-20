@@ -1,0 +1,9 @@
+{
+  "environment": "Node jsdom; local assets; no real network, layout or device",
+  "status": "timeout",
+  "timeoutMs": 30000,
+  "elapsedMs": 30084,
+  "readyMs": null,
+  "medianNavigationMs": null,
+  "error": "spawnSync /opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node ETIMEDOUT"
+}

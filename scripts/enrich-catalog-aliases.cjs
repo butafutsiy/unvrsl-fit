@@ -1,0 +1,5 @@
+'use strict';
+const fs=require('node:fs'),vm=require('node:vm');const ctx={console,setTimeout:()=>0,setInterval:()=>0,clearInterval(){},document:{querySelector:()=>null},st:{programs:[],planAdds:{}},ROUTINES:[],addEventListener(){}};ctx.window=ctx;
+for(const file of ['exercise-catalog.js','exercise-media-verified.js','exercise-plan-canonical.js'])vm.runInNewContext(fs.readFileSync(file,'utf8'),ctx,{filename:file});
+for(const e of ctx.UNVRSL_EXERCISES){const spec=ctx.UNVRSL_EXERCISE_REGISTRY_V331.find(e.n)||ctx.UNVRSL_EXERCISE_REGISTRY_V331.specs.find(s=>s.key===e.canonicalKey||s.ru===e.n);if(spec){e.aliases=[...new Set([...(e.aliases||[]),...spec.aliases])];e.legacyIds=[...new Set([...(e.legacyIds||[]),`canon:${spec.key}`])]}if(e.n.includes('высокой постановкой'))e.aliases.push('Присед HB','Присед со штангой high-bar');}
+fs.writeFileSync('exercise-catalog.js',"'use strict';\n// Canonical 188 exercise IDs; source metadata: ExerciseDB, media © Gym visual.\nwindow.UNVRSL_EXERCISES="+JSON.stringify(ctx.UNVRSL_EXERCISES,null,2)+';\n');

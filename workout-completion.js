@@ -1,101 +1,248 @@
-'use strict';
-(()=>{
-  const W=window,D=document;
-  if(W.__unvrslWorkoutCompletionV385)return;
-  W.__unvrslWorkoutCompletionV385=true;
-
-  const state=()=>{try{return typeof st!=='undefined'?st:W.st}catch(_){return W.st}};
-  const number=value=>{if(value===''||value==null)return null;const parsed=Number(String(value).replace(',','.'));return Number.isFinite(parsed)?parsed:null};
-  const completedSets=session=>(session?.ex||[]).flatMap(exercise=>(exercise?.set||[]).filter(set=>set?.ok).map(set=>({exercise,set})));
-  const completedCount=session=>completedSets(session).length;
-  const baseName=name=>{try{return W.baseExerciseName?.(name)||String(name||'').split(' – ')[0].split(' — ')[0].trim()}catch(_){return String(name||'').trim()}};
-  const roundWeight=(weight,step)=>{try{return W.roundLoad?.(weight,step)??Math.round(weight/step)*step}catch(_){return Math.round(weight/step)*step}};
-  const escape=value=>{try{return typeof W.esc==='function'?W.esc(String(value??'')):String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}catch(_){return String(value??'')}};
-
-  function recommendations(session){
-    const groups=new Map();
-    (session?.ex||[]).forEach(exercise=>{
-      const key=String(exercise?.sourceId||baseName(exercise?.n)).toLowerCase();
-      if(!groups.has(key))groups.set(key,{name:baseName(exercise?.n),sourceId:exercise?.sourceId||null,entries:[]});
-      groups.get(key).entries.push(exercise)
-    });
-    const result=[];
-    groups.forEach(group=>{
-      const sets=group.entries.flatMap(exercise=>(exercise?.set||[]).filter(set=>set?.ok));
-      const effort=sets.map(set=>number(set?.actualRpe??set?.rpe)??(number(set?.actualRir??set?.rir)!=null?10-number(set?.actualRir??set?.rir):null)).filter(value=>value!=null);
-      if(!sets.length||!effort.length)return;
-      const average=effort.reduce((sum,value)=>sum+value,0)/effort.length;
-      const first=group.entries[0]||{},min=number(first.targetRpeMin??session?.targetRpeMin),max=number(first.targetRpeMax??session?.targetRpeMax),target=number(first.target??session?.target)??(min!=null&&max!=null?(min+max)/2:8);
-      const baseWeight=Math.max(0,...sets.map(set=>number(set?.w)||0));
-      let step=2.5;try{step=number(W.loadStepFor?.(group.name,group.sourceId))||step}catch(_){}
-      let delta=0;if(average<=target-1.5)delta=step*2;else if(average<=target-.75)delta=step;else if(average>=target+1.25)delta=-step*2;else if(average>=target+.75)delta=-step;
-      const next=Math.max(0,roundWeight(baseWeight+delta,step));
-      result.push({n:group.name,r:+average.toFixed(1),a:delta>0?`+${delta} кг`:delta<0?`${delta} кг`:'оставить',next})
-    });
-    return result
-  }
-
-  function durationText(session){
-    const ms=Math.max(0,(Number(session?.ended)||Date.now())-(Number(session?.started)||Date.now()));
-    const total=Math.floor(ms/1000),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;
-    return hours?`${hours}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`:`${minutes}:${String(seconds).padStart(2,'0')}`
-  }
-  function tonnage(session){return completedSets(session).reduce((sum,row)=>sum+(number(row.set?.w)||0)*(number(row.set?.r)||0),0)}
-  function averageRpe(session){
-    const values=completedSets(session).map(row=>number(row.set?.actualRpe??row.set?.rpe)??(number(row.set?.actualRir??row.set?.rir)!=null?10-number(row.set?.actualRir??row.set?.rir):null)).filter(value=>value!=null);
-    return values.length?values.reduce((sum,value)=>sum+value,0)/values.length:null
-  }
-  function weightText(value){if(value>=1000)return`${String(Math.round(value/100)/10).replace('.',',')} т`;return`${Math.round(value).toLocaleString('ru-RU')} кг`}
-
-  function compactSummary(session){
-    const count=completedCount(session),avg=averageRpe(session),name=session?.c||session?.name||'Тренировка';
-    W.modal?.(`<div class="wc385" data-compact-completion-v385="1"><div class="wc385-head"><div><h2>Тренировка завершена</h2><div class="muted">${escape(name)} · ${count} выполненных подходов</div></div><button class="btn tiny wc385-close" onclick="closeModal()" aria-label="Закрыть">✕</button></div><div class="wc385-metrics"><div class="wc385-metric"><span>Длительность</span><b>${durationText(session)}</b></div><div class="wc385-metric"><span>Тоннаж</span><b>${weightText(tonnage(session))}</b></div><div class="wc385-metric"><span>Подходы</span><b>${count}</b></div><div class="wc385-metric"><span>Средний RPE</span><b>${avg==null?'Не указан':String(Math.round(avg*10)/10).replace('.',',')}</b></div></div><button class="btn primary full wc385-primary" onclick="closeModal();nav('stats')">К статистике</button></div>`);
-  }
-  W.summary=compactSummary;try{summary=compactSummary}catch(_){}
-
-  if(!D.getElementById('workout-completion-v385-style')){
-    const style=D.createElement('style');style.id='workout-completion-v385-style';style.textContent=`
-      #sheet:has(.wc385){padding-bottom:calc(26px + env(safe-area-inset-bottom));overflow:auto}
-      .wc385{padding:2px 0 4px}.wc385-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:20px}
-      .wc385-head h2{font-size:30px;line-height:1.05;margin:0 0 8px;letter-spacing:-1px}.wc385-close{width:48px;height:48px;padding:0;flex:none}
-      .wc385-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-      .wc385-metric{min-height:104px;padding:16px;border-radius:20px;background:#1d1d20;border:1px solid #303137;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
-      .wc385-metric span{color:#8e8e93;font-size:13px}.wc385-metric b{font-size:24px;line-height:1.05;letter-spacing:-.5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-      .wc385-primary{margin-top:14px;min-height:58px;font-size:18px}
-    `;D.head?.appendChild(style)
-  }
-
-  function completionVisible(){const modal=D.getElementById?.('modal'),sheet=D.getElementById?.('sheet');return!!modal?.classList?.contains?.('show')&&!!sheet?.querySelector?.('[data-compact-completion-v385]')}
-  function fallback(session){
-    const store=state();if(!store||store.current!==session)return false;
-    session.ended=Date.now();session.suggest=recommendations(session);
-    store.sessions=Array.isArray(store.sessions)?store.sessions:[];
-    if(!store.sessions.some(item=>String(item?.id)===String(session.id)))store.sessions.push(session);
-    store.current=null;
-    try{W.save?.()}catch(error){console.error('UNVRSL workout save',error)}
-    try{W.stopTimer?.()}catch(_){}
-    compactSummary(session);
-    try{if(typeof W.cloudSyncSession==='function')setTimeout(()=>W.cloudSyncSession(session),0)}catch(_){}
-    W.dispatchEvent?.(new CustomEvent('unvrsl:workout-completed',{detail:{sessionId:String(session.id||''),fallback:true}}));
-    return true
-  }
-  function complete(button){
-    const store=state(),session=store?.current;if(!session)return false;
-    const count=completedCount(session);
-    if(!count&&!W.confirm?.('Ни один подход не отмечен. Завершить тренировку?'))return false;
-    const label=button?.textContent;button?.setAttribute('aria-busy','true');if(button)button.textContent='Завершаю…';
-    let error=null;
-    try{if(typeof W.finish==='function')W.finish();else error=new Error('finish is unavailable')}catch(caught){error=caught;console.error('UNVRSL workout finish',caught)}
-    if(state()?.current===session)fallback(session);
-    else if(!completionVisible()){try{W.stopTimer?.()}catch(_){}compactSummary(session)}
-    if(state()?.current===session&&button){button.removeAttribute('aria-busy');button.textContent=label||'Завершить тренировку';W.toast?.('Не удалось завершить тренировку')}
-    return !error||state()?.current!==session
-  }
-  function finishButton(target){
-    const button=target?.closest?.('#start [data-workout-finish],#start .workout-finish-card button:first-child,#start button[onclick="finish()"]');
-    if(!button||!/завершить тренировку/i.test(button.textContent||''))return null;
-    return button
-  }
-  D.addEventListener('click',event=>{const button=finishButton(event.target);if(!button)return;event.preventDefault();event.stopImmediatePropagation();complete(button)},true);
-  W.completeWorkoutV385=complete;W.completeWorkoutV384=complete;
+"use strict";
+(() => {
+  const W = window,
+    A = WorkoutDomain,
+    D = document;
+  const report = (s) =>
+    A.summary(s, st.sessions || [], workoutRegistry, st.bw || []);
+  const duration = (ms) =>
+    `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
+  let currentReport = null,
+    currentSession = null;
+  W.renderWorkoutSummary = function (s) {
+    currentSession = s;
+    const r = (currentReport = report(s));
+    const volume =
+      r.unknownVolumeSets && r.volume === 0
+        ? "Не рассчитан"
+        : r.unknownVolumeSets
+          ? `${r.volume.toLocaleString("ru-RU")} кг · частичный`
+          : `${r.volume.toLocaleString("ru-RU")} кг`;
+    modal(
+      `<div class="wc392"><div class="row between"><h2>Тренировка завершена</h2><button class="btn" onclick="closeModal()" aria-label="Закрыть">✕</button></div><p class="muted">${esc(r.name)} · ${esc(r.date)}</p><div class="wc392-grid">${[
+        ["Время", duration(r.durationMs)],
+        ["Упражнения", r.exerciseCount],
+        ["Рабочие подходы", r.setCount],
+        ["Объём", volume],
+      ]
+        .map(([label, v]) => `<div><small>${label}</small><b>${v}</b></div>`)
+        .join(
+          "",
+        )}</div>${r.unknownVolumeSets ? '<p class="muted small">Объём включает только подходы с известной эффективной нагрузкой.</p>' : ""}${r.comparison ? `<p class="muted small">По сравнению с ${esc(r.comparison.date)}: подходы ${r.comparison.setDelta > 0 ? "+" : ""}${r.comparison.setDelta}${r.comparison.volumeDelta == null ? "" : `, объём ${r.comparison.volumeDelta > 0 ? "+" : ""}${r.comparison.volumeDelta} кг`}</p>` : ""}${r.exercises.map((e) => `<div class="listline"><b>${esc(e.name)}</b>${e.sets.map((x) => `<p class="small">${esc(x.label)}</p>`).join("")}<p class="muted small">Лучший подход: ${esc(e.best.label)}</p>${e.records.length ? '<span class="chip">Новый рекорд</span>' : ""}</div>`).join("")}<button class="btn primary full" onclick="previewWorkoutShare()">Поделиться результатом</button><button class="btn full" onclick="closeModal();nav('stats')">К статистике</button></div>`,
+    );
+  };
+  W.completeWorkout = async function () {
+    const s = st.current;
+    if (!s || W.__workoutFinishing) return;
+    if (
+      !(s.ex || []).some((e) =>
+        (e.set || []).some((x) => A.complete(e, x, workoutRegistry)),
+      )
+    ) {
+      toast("Нет завершённых рабочих подходов");
+      return;
+    }
+    W.__workoutFinishing = true;
+    const button = D.querySelector("[data-workout-finish]");
+    if (button) button.disabled = true;
+    try {
+      const userId = W.cloud?.user?.id || s.userId;
+      const mustSync = !!userId;
+      const result = await workoutStore.finish(st, {
+        persist: () =>
+          W.persistWorkoutState ? W.persistWorkoutState() : save(),
+        userId,
+        sync: mustSync
+          ? async (result) => {
+              if (!W.cloud?.user || W.cloud.user.id !== userId) return false;
+              return await W.cloudSyncSession?.(result);
+            }
+          : null,
+      });
+      if (result) {
+        stopTimer();
+        W.showWorkoutDraft();
+        W.renderWorkoutSummary(result);
+        W.dispatchEvent(
+          new CustomEvent("unvrsl:workout-completed", {
+            detail: { sessionId: result.id },
+          }),
+        );
+        save();
+      }
+    } catch (error) {
+      toast(
+        st.current
+          ? "Результаты сохранены в черновике. Повторите завершение после восстановления связи."
+          : "Тренировка сохранена. Откройте результат из истории.",
+      );
+      console.warn("Workout completion retained draft", error);
+    } finally {
+      W.__workoutFinishing = false;
+      if (button) button.disabled = false;
+    }
+  };
+  W.completeWorkoutV385 = W.completeWorkout;
+  W.completeWorkoutV384 = W.completeWorkout;
+  W.showWorkoutDraft = function () {
+    if (!st.current) {
+      D.querySelectorAll("[data-workout-draft]").forEach((x) => x.remove());
+      return;
+    }
+    const root = D.querySelector(".page.active");
+    if (
+      !root ||
+      root.id === "start" ||
+      root.querySelector("[data-workout-draft]")
+    )
+      return;
+    const block = D.createElement("div");
+    block.className = "card";
+    block.dataset.workoutDraft = "1";
+    block.innerHTML = `<b>У вас есть незавершённая тренировка</b><p class="muted">${esc(st.current.name || st.current.c || "Тренировка")}${st.current.pendingCompletion ? " · ожидает сохранения" : ""}</p><div class="chips"><button class="btn primary" onclick="resumeWorkoutDraft()">Продолжить</button><button class="btn" onclick="inspectWorkoutDraft()">Посмотреть</button><button class="btn danger" onclick="cancelWorkout()">Удалить черновик</button></div>`;
+    root.prepend(block);
+  };
+  W.resumeWorkoutDraft = () => {
+    if (st.current?.pendingCompletion && !W.__workoutFinishing) {
+      delete st.current.pendingCompletion;
+      delete st.current.ended;
+      delete st.current.syncError;
+      save();
+    }
+    const y = st.current?.scrollY || 0;
+    closeModal();
+    nav("start");
+    requestAnimationFrame(() => scrollTo(0, y));
+  };
+  W.inspectWorkoutDraft = () => {
+    const s = st.current;
+    if (!s) return;
+    modal(
+      `<h2>Незавершённая тренировка</h2><p>${esc(s.name || s.c)}</p>${(s.ex || []).map((e) => `<div class="listline"><b>${esc(e.n)}</b>${(e.set || []).map((x) => `<p>${x.ok ? "✓" : "○"} ${esc(A.setLabel(e, x, workoutRegistry))}</p>`).join("")}</div>`).join("")}<button class="btn primary full" onclick="resumeWorkoutDraft()">Продолжить</button>`,
+    );
+  };
+  W.previewWorkoutShare = function () {
+    if (!currentReport) return;
+    const r = currentReport,
+      c = D.createElement("canvas");
+    c.width = 1080;
+    c.height = 1350;
+    const ctx = c.getContext("2d");
+    ctx.fillStyle = "#0c0b10";
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = "#bf5af2";
+    ctx.fillRect(64, 64, 96, 8);
+    ctx.font = "bold 38px Arial, sans-serif";
+    ctx.fillText("UNVRSL FIT", 64, 140);
+    ctx.fillStyle = "#f5f5f7";
+    ctx.font = "bold 64px Arial, sans-serif";
+    const fit = (text, width) => {
+      text = String(text);
+      if (ctx.measureText(text).width <= width) return text;
+      while (text && ctx.measureText(text + "…").width > width)
+        text = text.slice(0, -1);
+      return text + "…";
+    };
+    const words = r.name.split(" "),
+      lines = [];
+    let line = "";
+    for (const word of words) {
+      const next = (line ? line + " " : "") + word;
+      if (line && ctx.measureText(next).width > 920) {
+        lines.push(line);
+        line = word;
+      } else line = next;
+    }
+    if (line) lines.push(line);
+    let y = 250;
+    for (const [i, title] of lines.slice(0, 2).entries()) {
+      ctx.fillText(
+        fit(title + (i === 1 && lines.length > 2 ? "…" : ""), 920),
+        64,
+        y,
+      );
+      if (i === 0 && lines.length > 1) y += 76;
+    }
+    ctx.fillStyle = "#96909f";
+    ctx.font = "28px Arial, sans-serif";
+    ctx.fillText(r.date, 64, y + 54);
+    let by = Math.max(450, y + 150);
+    for (const [i, [value, label]] of [
+      [duration(r.durationMs), "Время"],
+      [String(r.exerciseCount), "Упражнения"],
+      [String(r.setCount), "Рабочие подходы"],
+      [
+        r.unknownVolumeSets && r.volume === 0
+          ? "—"
+          : `${r.volume.toLocaleString("ru-RU")} кг`,
+        r.unknownVolumeSets ? "Объём с известной нагрузкой" : "Объём",
+      ],
+    ].entries()) {
+      const x = i % 2 ? 570 : 64,
+        yy = by + Math.floor(i / 2) * 170;
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 60px Arial, sans-serif";
+      ctx.fillText(fit(value, 440), x, yy);
+      ctx.fillStyle = "#96909f";
+      ctx.font = "24px Arial, sans-serif";
+      ctx.fillText(label, x, yy + 48);
+    }
+    by += 380;
+    const highlights = r.records.length
+      ? r.records.slice(0, 2)
+      : r.exercises
+          .slice(0, 2)
+          .map((e) => ({ name: e.name, label: e.best.label }));
+    if (r.records.length) {
+      ctx.fillStyle = "#bf5af2";
+      ctx.font = "bold 28px Arial, sans-serif";
+      ctx.fillText(`НОВЫЕ РЕКОРДЫ · ${r.records.length}`, 64, by);
+      by += 55;
+    }
+    ctx.font = "28px Arial, sans-serif";
+    for (const h of highlights) {
+      ctx.fillStyle = "#c6c1cc";
+      ctx.fillText(fit(h.name, 940), 64, by);
+      ctx.fillStyle = "#fff";
+      ctx.fillText(fit(h.label, 940), 64, by + 44);
+      by += 114;
+    }
+    const data = c.toDataURL("image/png");
+    W.__workoutShareCanvas = c;
+    modal(
+      `<h2>Поделиться результатом</h2><img class="wc392-preview" src="${data}" alt="Точный предпросмотр результата"><a class="btn primary full" download="UNVRSL-FIT-${esc(r.date)}.png" href="${data}">Сохранить изображение</a><button class="btn full" onclick="sendWorkoutShare()">Отправить</button>`,
+    );
+  };
+  W.sendWorkoutShare = async () => {
+    const c = W.__workoutShareCanvas;
+    if (!c) return;
+    const blob = await new Promise((resolve) => c.toBlob(resolve, "image/png")),
+      file = new File([blob], "UNVRSL-FIT.png", { type: "image/png" });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: "UNVRSL FIT" });
+      } catch (e) {
+        if (e.name !== "AbortError") toast("Не удалось открыть отправку");
+      }
+    } else toast("Сохраните изображение и отправьте его из галереи");
+  };
+  // Reuse the canonical summary for the old share entry points, without the old canvas renderer.
+  W.advShareWorkout = (s) => {
+    currentSession = s || st.sessions.at(-1);
+    if (currentSession) {
+      currentReport = report(currentSession);
+      W.previewWorkoutShare();
+    }
+  };
+  const css = D.createElement("style");
+  css.textContent =
+    ".weight392{min-width:0}.weight392>div{display:flex;justify-content:space-between;gap:4px}.weight392 button{min-height:24px;flex:1;background:#302734;border-radius:6px;font-size:16px} .wc392-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wc392-grid>div{background:#242127;border:1px solid #39303f;border-radius:18px;padding:18px;min-width:0}.wc392-grid small{display:block;color:#aaa}.wc392-grid b{display:block;font-size:26px;margin-top:10px}.wc392 .primary{background:#bf5af2;color:#120918}.wc392-preview{display:block;width:100%;height:auto;border-radius:18px;margin-bottom:16px}.wc392 .listline p{margin:8px 0}";
+  D.head.append(css);
+  W.addEventListener("unvrsl:app-ready", W.showWorkoutDraft);
+  W.addEventListener("unvrsl:workout-rendered", () => {
+    if (st.current?.pendingCompletion) {
+      const b = D.querySelector("[data-workout-finish]");
+      if (b) b.textContent = "Повторить сохранение";
+    }
+  });
 })();

@@ -20,27 +20,11 @@
   function ageFromBirth(v){if(!v)return null;const d=new Date(v+'T12:00:00');if(Number.isNaN(d.getTime()))return null;const now=new Date();let a=now.getFullYear()-d.getFullYear();const m=now.getMonth()-d.getMonth();if(m<0||(m===0&&now.getDate()<d.getDate()))a--;return a>=0&&a<130?a:null}
   function currentWeight(){const w=typeof W.latestW==='function'?W.latestW():typeof latestW==='function'?latestW():null;return w==null?null:+w}
   function sexLabel(v){return v==='male'?'Мужской':v==='female'?'Женский':v==='other'?'Другой':'Не указан'}
-  function e1rm(w,r){w=+w||0;r=+r||0;if(!w||!r)return 0;if(typeof W.advE1rm==='function')return W.advE1rm(w,r);return r===1?w:w*(1+r/30)}
   function baseName(n){return typeof W.baseExerciseName==='function'?W.baseExerciseName(n):String(n||'').split(' — ')[0]}
   function displayName(n){return typeof W.displayExerciseName==='function'?W.displayExerciseName(n):n}
   function E(v){return typeof W.esc==='function'?W.esc(String(v??'')):String(v??'')}
 
-  function series(){
-    const merged=typeof W.unvrslStatsSessions254==='function'?W.unvrslStatsSessions254():(st.sessions||[]),map=new Map(),sessions=[...(merged||[])].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||(+a.started||0)-(+b.started||0));
-    sessions.forEach(s=>{
-      const perSession=new Map();
-      (s.ex||[]).forEach(e=>{
-        const base=baseName(e.n),done=(e.set||[]).filter(x=>x.ok&&(+x.w||0)>0&&(+x.r||0)>0);if(!done.length)return;
-        const key=base.toLowerCase();let z=perSession.get(key);if(!z){z={base,sets:[],sourceId:e.sourceId||null};perSession.set(key,z)}z.sets.push(...done);
-      });
-      perSession.forEach((z,key)=>{
-        const maxWeight=Math.max(...z.sets.map(x=>+x.w||0)),best5=Math.max(0,...z.sets.filter(x=>+x.r===5).map(x=>+x.w||0)),one=Math.max(...z.sets.map(x=>e1rm(x.w,x.r))),volume=z.sets.reduce((a,x)=>a+(+x.w||0)*(+x.r||0),0);
-        let rec=map.get(key);if(!rec){rec={key,base:z.base,sourceId:z.sourceId,points:[],sets:0};map.set(key,rec)}
-        rec.points.push({date:s.date||'',started:+s.started||0,e1:+one.toFixed(1),maxWeight:+maxWeight.toFixed(1),best5:+best5.toFixed(1),sets:z.sets.length,volume:Math.round(volume)});rec.sets+=z.sets.length;
-      });
-    });
-    return [...map.values()].map(x=>{const p=x.points,first=p[0],last=p[p.length-1],best=Math.max(...p.map(z=>z.e1)),bestWeight=Math.max(...p.map(z=>z.maxWeight)),best5=Math.max(0,...p.map(z=>z.best5)),growth=first?.e1>0?((best-first.e1)/first.e1*100):0;return{...x,first,last,best:+best.toFixed(1),bestWeight,best5,growth:+growth.toFixed(1),workouts:p.length}}).sort((a,b)=>(b.last?.date||'').localeCompare(a.last?.date||'')||b.workouts-a.workouts)
-  }
+  function series(){const sessions=typeof W.unvrslStatsSessions254==='function'?W.unvrslStatsSessions254():(st.sessions||[]);return WorkoutDomain.strengthSeries(sessions,workoutRegistry,st.bw||[])}
   function medianGrowth(rows){const a=rows.filter(x=>x.workouts>=2&&x.growth>-50&&x.growth<250).map(x=>x.growth).sort((a,b)=>a-b);if(!a.length)return null;const m=Math.floor(a.length/2);return +(a.length%2?a[m]:(a[m-1]+a[m])/2).toFixed(1)}
   function row(x){const latest=x.last?.e1||0,delta=x.growth||0;return `<button class="strength-item" onclick="openStrengthExercise('${encodeURIComponent(x.key)}')"><div><div class="strength-item-title">${E(displayName(x.base))}</div><div class="strength-item-meta">${x.workouts} трен. · лучший вес ${x.bestWeight} кг · 1ПМ сейчас ≈ ${latest} кг</div></div><div class="strength-delta ${delta>0?'up':delta<0?'down':''}">${delta>0?'+':''}${delta.toFixed(1)}%</div></button>`}
   function overview(){const rows=series(),growth=medianGrowth(rows),totalSets=rows.reduce((a,x)=>a+x.sets,0);return `<div class="card"><div class="row between"><div><div class="title">Силовой прогресс</div><div class="muted">Только упражнения, которые реально выполнялись</div></div><span class="chip green">${rows.length} упр.</span></div><div class="strength-summary"><div class="metric"><span>Упражнений</span><b>${rows.length}</b></div><div class="metric"><span>Рабочих сетов</span><b>${totalSets}</b></div><div class="metric"><span>Медианный рост 1ПМ</span><b>${growth==null?'—':`${growth>=0?'+':''}${growth}%`}</b></div></div>${rows.length?`<div class="strength-list">${rows.slice(0,30).map(row).join('')}</div>`:'<div class="strength-empty">После завершённых тренировок здесь появятся графики роста силовых.</div>'}</div>`}

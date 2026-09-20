@@ -174,6 +174,6 @@
   W.openShareProgressV262=W.openShareProgressV264;W.shareProgressModeV262=W.shareProgressModeV264;W.shareProgressSaveV262=W.shareProgressSaveV264;W.shareProgressNativeV262=W.shareProgressNativeV264;
 
   function wrap(name){const f=W[name];if(typeof f!=='function'||f.__sp264)return;const w=function(){let id='';try{id=decodeURIComponent(String(arguments[0]??''))}catch(_){id=String(arguments[0]??'')}const s=(W.st?.sessions||[]).find(x=>String(x?.id||'')===id)||null;if(s){W.openShareProgressV264(s);return}return f.apply(this,arguments)};w.__sp264=true;W[name]=w;try{if(name==='advShareWorkout')advShareWorkout=w}catch(_){}try{if(name==='clientShare107')clientShare107=w}catch(_){} }
-  function hook(){wrap('advShareWorkout');wrap('clientShare107')}
+  function hook(){wrap('clientShare107')}
   hook();const poll=setInterval(hook,500);setTimeout(()=>clearInterval(poll),120000);W.addEventListener?.('unvrsl:app-ready',hook,{passive:true});
 })();

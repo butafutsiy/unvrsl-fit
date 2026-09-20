@@ -31,7 +31,7 @@ test('online clients can build a free workout from the shared exercise catalog',
   assert.match(free,/Свободная тренировка/);
   assert.match(free,/beginProgramDay/);
   assert.match(free,/ownerUserId:userId\(\)/);
-  assert.match(free,/weightMode:item\.weight>0\?'manual':'auto'/);
+  assert.match(free,/weightMode:item\.weightMode/);
 });
 
 test('trainer sees and keeps the same free workout card after plan rerenders',()=>{

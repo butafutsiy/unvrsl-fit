@@ -16,6 +16,7 @@ function loadResolver(program){
     createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null,
     querySelector:()=>null,querySelectorAll:()=>[]
   };
+  context.WorkoutDomain=require('../workout-domain.js');context.workoutRegistry=context.WorkoutDomain.registry([]);context.st={exerciseWeightProfiles:{}};context.programModel=require('../program-model.js');
   vm.runInNewContext(read('program-exercise-rules.js'),context);
   return context.programResolveExerciseParametersV381;
 }
@@ -58,15 +59,16 @@ test('saving manual controls writes one complete exercise override',()=>{
   const context={console,encodeURIComponent,decodeURIComponent,programById:id=>id==='p-save'?program:null,uid:()=> 'exercise-1',save:()=>{saved++},openProgramEditor:()=>{opened++},toast:()=>{throw new Error('unexpected validation error')}};
   context.window=context;
   context.document={createElement:()=>({}),head:{appendChild:()=>{}},getElementById:id=>elements[id]||null,querySelector:()=>null,querySelectorAll:()=>[]};
+  context.WorkoutDomain=require('../workout-domain.js');context.workoutRegistry=context.WorkoutDomain.registry([]);context.st={exerciseWeightProfiles:{}};context.programModel=require('../program-model.js');
   vm.runInNewContext(read('program-exercise-rules.js'),context);
   context.saveProgramExercise('p-save',0,0,encodeURIComponent('Разгибание ног'),encodeURIComponent('leg-extension'),'legs','quads','machine',null);
   assert.equal(saved,1);assert.equal(opened,1);assert.equal(program.weeks[0].days[0].ex.length,1);
   const exercise=program.weeks[0].days[0].ex[0],overrides=exercise.parameterOverrides;
-  assert.deepEqual([exercise.repMin,exercise.repMax],[15,20]);
+  assert.deepEqual([exercise.reps.min,exercise.reps.max],[15,20]);
   assert.deepEqual([exercise.rpeMin,exercise.rpeMax,exercise.rirMin,exercise.rirMax],[8,9,1,2]);
   assert.deepEqual([exercise.restMin,exercise.restMax],[30,45]);
   assert.equal(exercise.tempo,'4-1-2');assert.equal(exercise.weightMode,'manual');assert.equal(exercise.sets[0].w,55);
-  assert.deepEqual(JSON.parse(JSON.stringify(overrides.reps)),{mode:'manual',min:15,max:20});
+  assert.deepEqual(JSON.parse(JSON.stringify(exercise.reps)),{mode:'manual',min:15,max:20});
   assert.deepEqual(JSON.parse(JSON.stringify(overrides.effort)),{mode:'manual',type:'rir',rpeMin:7,rpeMax:8,rirMin:1,rirMax:2});
   assert.deepEqual(JSON.parse(JSON.stringify(overrides.rest)),{mode:'manual',min:30,max:45});
 });
@@ -89,6 +91,7 @@ test('exercise form renders one stable full-screen editor with auto and manual c
   const program={id:'p3',weeks:[{n:1,rpeMin:7,rpeMax:8,tempo:'3-1-2',baseRepMin:8,baseRepMax:10,baseRestMin:120,baseRestMax:180,days:[{ex:[]}]}]},modalRoot={classList:{add:()=>{}}};
   let html='';const context={console,encodeURIComponent,decodeURIComponent,setTimeout:()=>0,programById:id=>id==='p3'?program:null,modal:value=>{html=value},esc:value=>String(value),uid:()=> 'new-id'};
   context.window=context;context.document={createElement:()=>({}),head:{appendChild:()=>{}},getElementById:id=>id==='modal'?modalRoot:null,querySelector:()=>null,querySelectorAll:()=>[]};
+  context.WorkoutDomain=require('../workout-domain.js');context.workoutRegistry=context.WorkoutDomain.registry([]);context.st={exerciseWeightProfiles:{}};context.programModel=require('../program-model.js');
   vm.runInNewContext(read('program-exercise-rules.js'),context);
   context.programExerciseForm({pid:'p3',wi:0,di:0,n:'Присед со штангой',sourceId:'squat',bp:'legs',tg:'quads',eq:'barbell',existingIndex:null});
   assert.equal((html.match(/id="pmRepsMin"/g)||[]).length,1);

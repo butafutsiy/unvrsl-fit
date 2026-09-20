@@ -6,6 +6,7 @@
   const META_KEY='unvrsl-account-sync-meta-v1';
   const DEVICE_KEY='unvrsl-device-id-v1';
   let suppress=false,timerId=null,inflight=null,lastUserId=null;
+  const structuredCache=new Map(),uploadedSessions=new Map();
 
   const clone=x=>{try{return JSON.parse(JSON.stringify(x))}catch(e){return null}};
   const parse=x=>{try{return x?JSON.parse(x):null}catch(e){return null}};
@@ -19,7 +20,7 @@
   function markLocal(){if(!suppress)setMeta({localModifiedAt:Date.now()})}
   function arr(x){return Array.isArray(x)?x:[]}
   function doneCount(session){return arr(session?.ex).reduce((sum,e)=>sum+arr(e?.set).filter(x=>x?.ok).length,0)}
-  function sessionScore(s){return Number(s?.ended||s?.started||0)+doneCount(s)*10}
+  function sessionScore(s){return Number(s?.updatedAt||s?.ended||s?.started||0)+doneCount(s)*10}
   function mergeByKey(first,second,keyFn,scoreFn){
     const map=new Map();
     for(const item of [...arr(first),...arr(second)]){
@@ -51,9 +52,9 @@
     // Also treat a fresh local `current: null` as an explicit completion/cancel state instead
     // of reviving an older remote current session during the next cloud reconcile.
     const completedIds=new Set(base.sessions.filter(x=>x?.ended&&x?.id).map(x=>String(x.id)));
-    const validCurrent=x=>x&&(!x.id||!completedIds.has(String(x.id)))?x:null;
+    const closed=workoutStore.journal().closed;const validCurrent=x=>x&&!closed[x.id]&&(x.pendingCompletion||!x.id||!completedIds.has(String(x.id)))?x:null;
     const lc=validCurrent(local.current),rc=validCurrent(remote.current);
-    if(lc&&rc){
+    if(lc&&rc&&lc.id!==rc.id){base.current=lc;}else if(lc&&rc){
       const ls=sessionScore(lc),rs=sessionScore(rc);
       base.current=ls===rs?(preferRemote?rc:lc):(ls>rs?lc:rc);
     }else if(lc){
@@ -71,43 +72,34 @@
     }
     return window.cloud||null;
   }
-  async function fetchStructuredCloud(c,user){
-    const out={sessions:[],bw:[],stamp:0};
-    try{
-      const [wr,br]=await Promise.all([
-        c.client.from('workouts').select('payload,updated_at').eq('user_id',user.id),
-        c.client.from('bodyweights').select('measure_date,weight_kg,created_at').eq('user_id',user.id)
-      ]);
-      if(!wr.error){
-        out.sessions=arr(wr.data).map(x=>x?.payload).filter(x=>x&&typeof x==='object');
-        for(const row of arr(wr.data))out.stamp=Math.max(out.stamp,Date.parse(row?.updated_at||0)||0);
-      }
-      if(!br.error){
-        out.bw=arr(br.data).filter(x=>x?.measure_date&&x?.weight_kg!=null).map(x=>({d:x.measure_date,w:Number(x.weight_kg),t:Date.parse(x.created_at||0)||0}));
-        for(const row of arr(br.data))out.stamp=Math.max(out.stamp,Date.parse(row?.created_at||0)||0);
-      }
-    }catch(e){console.warn('UNVRSL legacy cloud hydrate',e)}
-    return out;
+  async function fetchAll(client,table,columns,userId,order){const out=[];for(let from=0;;from+=500){const r=await client.from(table).select(columns).eq('user_id',userId).order(order,{ascending:true}).range(from,from+499);if(r.error)throw r.error;out.push(...arr(r.data));if(arr(r.data).length<500)return out}}
+  async function fetchStructuredCloud(c,user,force=false){
+    const cached=structuredCache.get(user.id);if(!force&&cached&&Date.now()-cached.at<60000)return cached.value;
+    const [workouts,weights]=await Promise.all([fetchAll(c.client,'workouts','payload,updated_at',user.id,'id'),fetchAll(c.client,'bodyweights','measure_date,weight_kg,created_at',user.id,'measure_date')]);
+    const out={sessions:workouts.map(x=>x.payload).filter(x=>x&&typeof x==='object'),bw:weights.filter(x=>x.measure_date&&x.weight_kg!=null).map(x=>({d:x.measure_date,w:Number(x.weight_kg),t:Date.parse(x.created_at)||0})),stamp:Math.max(0,...workouts.map(x=>Date.parse(x.updated_at)||0),...weights.map(x=>Date.parse(x.created_at)||0))};
+    for(const session of out.sessions)uploadedSessions.set(user.id+':'+session.id,JSON.stringify(session));
+    structuredCache.set(user.id,{at:Date.now(),value:out});return out;
   }
   async function reconcile({quiet=false}={}){
     const c=await waitCloud();
     const user=c?.user;
-    if(!c?.client||!user)return false;
+    if(!c?.client||!user||window.__workoutFinishing)return false;
     if(inflight)return inflight;
+    st=workoutStore.activateAccount(st,user.id,meta().lastUserId);workoutStore.restore(st,user.id);
     inflight=(async()=>{
       try{
         const [stateRes,structured]=await Promise.all([
           c.client.from('user_app_state').select('state,client_updated_at,updated_at,device_id').eq('user_id',user.id).maybeSingle(),
-          fetchStructuredCloud(c,user)
+          fetchStructuredCloud(c,user,!quiet)
         ]);
-        if(stateRes.error)throw stateRes.error;
+        if(stateRes.error)throw stateRes.error;if(window.__workoutFinishing||c.user?.id!==user.id)return false;
         const appState=stateRes.data?.state&&typeof stateRes.data.state==='object'?clone(stateRes.data.state):{};
         appState.sessions=mergeByKey(appState.sessions,structured.sessions,x=>String(x.id||''),sessionScore);
         appState.bw=mergeByKey(appState.bw,structured.bw,x=>String(x.d||''),x=>Number(x.t||x.updatedAt||0));
         const remoteExists=!!stateRes.data||appState.sessions.length>0||appState.bw.length>0;
         const remoteStamp=Math.max(stateRes.data?.client_updated_at?Date.parse(stateRes.data.client_updated_at):0,structured.stamp||0);
         let merged=clone(st)||{};
-        if(remoteExists)merged=mergeStates(st,appState,remoteStamp);
+        if(remoteExists)merged=mergeStates(st,appState,remoteStamp);merged.accountOwnerId=user.id;workoutStore.restore(merged,user.id);
         suppress=true;
         try{st=merged;if(typeof save==='function')save()}finally{suppress=false}
         const stamp=Math.max(Date.now(),Number(meta().localModifiedAt||0),remoteStamp||0);
@@ -115,7 +107,7 @@
         const payload={user_id:user.id,state:clone(st),client_updated_at:new Date(stamp).toISOString(),device_id:deviceId()};
         const up=await c.client.from('user_app_state').upsert(payload,{onConflict:'user_id'});
         if(up.error)throw up.error;
-        if(typeof cloudSyncSession==='function')for(const s of arr(st.sessions))await cloudSyncSession(s);
+        if(typeof cloudSyncSession==='function')for(const s of arr(st.sessions)){if(s.userId&&s.userId!==user.id||s.pendingCompletion)continue;const key=user.id+':'+s.id,value=JSON.stringify(s);if(uploadedSessions.get(key)===value)continue;if(await cloudSyncSession(s)!==true)throw new Error('Не удалось синхронизировать тренировку');uploadedSessions.set(key,value);}
         if(typeof cloudSyncBodyweights==='function')await cloudSyncBodyweights();
         setMeta({lastSyncedAt:Date.now(),lastUserId:user.id});
         if(!quiet)try{toast(remoteExists?'Данные аккаунта синхронизированы':'Облачная копия создана')}catch(e){}
@@ -129,7 +121,7 @@
   function schedule(){
     if(suppress)return;
     clearTimeout(timerId);
-    timerId=setTimeout(()=>reconcile({quiet:true}),2500);
+    timerId=setTimeout(()=>reconcile({quiet:true}),10000);
   }
 
   const baseSave=typeof window.save==='function'?window.save:null;
@@ -143,8 +135,8 @@
     window.cloudSyncAll=async function(){
       if(!window.cloud?.user)return originalSync.apply(this,arguments);
       try{toast('Синхронизация…')}catch(e){}
-      await reconcile({quiet:true});
-      try{toast('Синхронизировано')}catch(e){}
+      const ok=await reconcile({quiet:true});
+      try{toast(ok?'Синхронизировано':'Синхронизация не завершена')}catch(e){}
     };
     try{cloudSyncAll=window.cloudSyncAll}catch(e){}
   }

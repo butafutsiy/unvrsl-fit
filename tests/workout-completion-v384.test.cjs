@@ -1,67 +1,41 @@
 'use strict';
-
-const test=require('node:test');
-const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const path=require('node:path');
-const vm=require('node:vm');
-
-const root=path.resolve(__dirname,'..');
-const read=file=>fs.readFileSync(path.join(root,file),'utf8');
-
-function runtime(session,finish){
-  const calls=[],listeners={};
-  const context={
-    console:{error:value=>calls.push(['error',String(value)]),warn:()=>{},log:()=>{}},
-    st:{current:session,sessions:[],nextSuggestions:{}},
-    document:{addEventListener:(name,fn)=>{listeners[name]=fn}},
-    CustomEvent:function(name,init){this.type=name;this.detail=init?.detail},
-    setTimeout:fn=>{calls.push('sync');return 1},
-    confirm:()=>true,
-    save:()=>calls.push('save'),
-    stopTimer:()=>calls.push('stop'),
-    summary:value=>calls.push(['summary',value.id]),
-    dispatchEvent:event=>calls.push(['event',event.type]),
-    finish
-  };
-  context.window=context;
-  vm.runInNewContext(read('workout-completion.js'),context);
-  return{context,calls,listeners}
+// v384 completion fallback was retired. Exercise its replacement through the public UI handler.
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const A=require('../workout-domain.js'),S=require('../workout-store.js');
+function runtime({signedIn=false,fail=false,modalFails=false}={}){
+ const values=new Map(),storage={getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)};
+ const store=S.create(storage),session={id:'same-session',userId:signedIn?'user':null,started:100,date:'2026-09-19',ex:[{n:'Подтягивания',loadType:'bodyweight_added',set:[{w:0,r:10,rpe:'',rir:'',ok:true}]}]};
+ const calls={uploads:0,summary:0,legacy:0},state={current:session,sessions:[]};
+ const context={WorkoutDomain:A,workoutRegistry:A.registry([]),workoutStore:store,st:state,console:{warn(){}},
+  cloud:signedIn?{user:{id:'user'}}:null,save:()=>store.save(state),persistWorkoutState:async()=>store.save(state),
+  cloudSyncSession:async()=>{calls.uploads++;return !fail},toast(){},stopTimer(){},esc:String,
+  finish:()=>{calls.legacy++;throw Error('retired wrapper must never execute')},
+  modal:()=>{calls.summary++;if(modalFails)throw Error('render unavailable')},
+  addEventListener(){},dispatchEvent(){},CustomEvent:class{},
+  document:{querySelector:()=>null,querySelectorAll:()=>[],createElement:()=>({}),head:{append(){}}}};
+ context.window=context;
+ vm.runInNewContext(fs.readFileSync(require.resolve('../workout-completion.js'),'utf8'),context);
+ return{context,state,store,calls};
 }
-
-test('finish control falls back safely when a legacy finish wrapper throws',()=>{
-  const session={id:'s1',target:7,ex:[{n:'Жим ногами',set:[{w:120,r:10,rpe:'',rir:'',ok:true}]}]};
-  const {context,calls}=runtime(session,()=>{throw new Error('legacy wrapper')});
-  const button={textContent:'Завершить тренировку',setAttribute(){},removeAttribute(){}};
-  assert.equal(context.completeWorkoutV384(button),true);
-  assert.equal(context.st.current,null);
-  assert.equal(context.st.sessions.length,1);
-  assert.equal(context.st.sessions[0].ended>0,true);
-  assert.deepEqual(JSON.parse(JSON.stringify(context.st.sessions[0].suggest)),[]);
-  assert.equal(calls.some(call=>Array.isArray(call)&&call[0]==='summary'),true)
+test('completion ignores retired wrappers and accepts bodyweight zero without effort',async()=>{
+ const {context,state,calls}=runtime();await context.completeWorkout();
+ assert.equal(state.current,null);assert.equal(state.sessions.length,1);
+ assert.equal(state.sessions[0].ex[0].set[0].w,0);
+ assert.equal(calls.legacy,0);assert.equal(calls.summary,1);
 });
-
-test('fallback recommendations require an actual RPE or RIR value',()=>{
-  const session={id:'s2',target:7,ex:[{n:'Жим ногами',set:[{w:120,r:10,rpe:'',actualRir:4,ok:true}]}]};
-  const {context}=runtime(session,()=>{});
-  context.completeWorkoutV384({textContent:'Завершить тренировку',setAttribute(){},removeAttribute(){}});
-  assert.equal(context.st.sessions[0].suggest.length,1);
-  assert.equal(context.st.sessions[0].suggest[0].r,6)
+test('failed sync keeps the draft and does not publish a completed history entry',async()=>{
+ const {context,state,store}=runtime({signedIn:true,fail:true});await context.completeWorkout();
+ assert.equal(state.current.id,'same-session');assert.equal(state.sessions.length,0);
+ assert.equal(store.journal().owners.user.id,'same-session');
 });
-
-test('completion screen is restored when saving succeeded but a wrapper failed before the modal',()=>{
-  const session={id:'s3',target:7,ex:[{n:'Жим ногами',set:[{w:120,r:10,rpe:7,rir:3,ok:true}]}]};
-  let context;
-  const runtimeState=runtime(session,()=>{context.st.sessions.push(session);context.st.current=null;throw new Error('summary layer')});
-  context=runtimeState.context;
-  context.completeWorkoutV384({textContent:'Завершить тренировку',setAttribute(){},removeAttribute(){}});
-  assert.equal(context.st.current,null);
-  assert.equal(runtimeState.calls.filter(call=>Array.isArray(call)&&call[0]==='summary').length,1)
+test('summary render failure after successful save cannot duplicate the result',async()=>{
+ const {context,state,calls}=runtime({signedIn:true,modalFails:true});
+ await context.completeWorkout();await context.completeWorkout();
+ assert.equal(state.current,null);assert.equal(state.sessions.length,1);assert.equal(calls.uploads,1);
 });
-
-test('all workout renderers expose one delegated finish action loaded last',()=>{
-  for(const file of ['app.js','og-core.js','anton-plan-rules.js'])assert.match(read(file),/data-workout-finish="1"/,file);
-  const html=read('index.html');
-  assert.match(html,/trainer-client-clean\.js\?v=384"><\/script>\s*<script src="workout-completion\.js\?v=384"/);
-  assert.match(read('workout-completion.js'),/stopImmediatePropagation\(\)/)
+test('concurrent finish clicks use one transaction and one session ID',async()=>{
+ const {context,state,calls}=runtime({signedIn:true});
+ await Promise.all([context.completeWorkout(),context.completeWorkout()]);
+ assert.equal(calls.uploads,1);assert.equal(state.sessions.length,1);
+ assert.equal(state.sessions[0].id,'same-session');
 });

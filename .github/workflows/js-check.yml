@@ -19,5 +19,31 @@ jobs:
             echo "Checking $file"
             node --check "$file"
           done
-      - name: Test canonical program flow
-        run: node --test tests/program-flow-v386.test.cjs
+      - name: Test all current contracts
+        run: node --test tests/*.test.cjs
+      - name: Install isolated DOM test dependencies
+        run: npm install --prefix "$RUNNER_TEMP/unvrsl-tests" --no-audit --no-fund jsdom@26.1.0 @napi-rs/canvas@0.1.80
+      - name: Verify complete workout scenario
+        run: |
+          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
+          UNVRSL_CANVAS="$RUNNER_TEMP/unvrsl-tests/node_modules/@napi-rs/canvas" \
+          node tests/runtime-v392.cjs
+      - name: Audit catalog fields
+        run: node scripts/audit-exercises.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: workout-verification
+          path: |
+            docs/runtime-v392.json
+            docs/exercise-audit-v392.json
+            docs/share-fixture-v392.png
+  catalog-completeness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require media for every canonical exercise
+        run: node scripts/audit-exercises.cjs --strict

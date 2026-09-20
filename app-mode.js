@@ -139,7 +139,7 @@ function curatedBuiltinRecords(){
 }
 function visibleProgramExerciseNames(){const names=[];const ps=unvrslTrainerMode()?(st.programs||[]):assignedClientPrograms();ps.forEach(p=>p.weeks?.forEach(w=>w.days?.forEach(d=>d.ex?.forEach(e=>{if(e.n&&!names.includes(e.n))names.push(e.n)}))));if(unvrslTrainerMode())ROUTINES.forEach(r=>routineEntries(r).forEach(e=>{const b=baseExerciseName(e.n);if(b&&!names.includes(b))names.push(b)}));return names}
 window.customCatalog=function(){const names=visibleProgramExerciseNames();(st.customExercises||[]).forEach(e=>{if(e.n&&!names.includes(e.n))names.push(e.n)});return names.map(n=>({id:`custom:${n}`,n:displayExerciseName(n),raw:n,...inferCustomMeta(n),custom:true}))};
-window.catalogRecords=function(){const all=[...customCatalog(),...curatedBuiltinRecords()],seen=new Set();return all.filter(e=>{const k=(e.custom?displayExerciseName(e.n):e.n).toLowerCase();if(seen.has(k))return false;seen.add(k);return true})};
+
 
 const _modeExercisesPage=window.exercisesPage;
 window.exercisesPage=function(){_modeExercisesPage();const c=$('#catalogCount');if(c)c.textContent=ogLibraryLoaded?`Основная база · ${catalogRecords().length} упражнений`:'Загружаю упражнения…';const chip=document.querySelector('#exercises .catalog-head .chip');if(chip)chip.textContent='Отобранные'};
