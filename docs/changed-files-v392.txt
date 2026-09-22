@@ -5,6 +5,9 @@ advanced-training.js
 anatome-local.js
 app-mode.js
 app.js
+assets/exercises/box-jump-v392.jpg
+assets/exercises/weighted-hyperextension-v392.jpg
+assets/exercises/weighted-pushup-v392.jpg
 cardio-exercise-library.js
 client-final-runtime.js
 client-free-workout.js
@@ -13,6 +16,7 @@ cloud.js
 coach-programs.js
 coach-style.js
 docs/IMPLEMENTATION-v392.md
+docs/MEDIA-v392.md
 docs/changed-files-v392.txt
 docs/exercise-audit-v392.json
 docs/legacy-test-comparison-v392.json

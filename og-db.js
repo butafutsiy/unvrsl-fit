@@ -21,7 +21,7 @@ function ruExerciseName(name=''){
  for(const [a,b] of RU_REPL)s=s.split(a).join(b);
  s=s.replace(/\s+/g,' ').replace(/\s+([,.)])/g,'$1').trim();return s.charAt(0).toUpperCase()+s.slice(1)
 }
-function mediaUrl(path=''){if(!path)return'';return /^https?:/i.test(path)?path:OG_MEDIA_BASE+String(path).replace(/^\.?\//,'')}
+function mediaUrl(path=''){if(!path)return'';return /^(?:https?:|assets\/)/i.test(path)?path:OG_MEDIA_BASE+String(path).replace(/^\.?\//,'')}
 function normalizeExercise(x){return{id:String(x.id),n:x.name||x.n||'Exercise',bp:x.body_part||x.category||x.bp||'',tg:x.target||x.tg||'',eq:x.equipment||x.eq||'',secondary:x.secondary_muscles||[],instructions:x.instructions||{},image:x.image||'',gif:x.gif_url||x.gif||'',attribution:x.attribution||'',mediaId:x.media_id||'',custom:false}}
 function exercisesPage(){
  $('#exercises').innerHTML=`<div class="card catalog-head"><div class="row between"><div><div class="title">Упражнения</div><div class="muted" id="catalogCount">${ogLibraryLoaded?`Русская база · ${ogLibrary.length} упражнений`:'Загружаю базу упражнений…'}</div></div><span class="chip green">RU + GIF</span></div></div><input id="exSearch" class="search" placeholder="Поиск по-русски или по-английски" value="${esc(exQuery)}" oninput="setExerciseQuery(this.value)"><div id="bodyFilters" class="filterbar"></div><div id="exList"></div>`;

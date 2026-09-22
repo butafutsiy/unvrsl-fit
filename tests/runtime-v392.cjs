@@ -167,6 +167,19 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     assert.equal(gif.getAttribute("src"), null);
     w.closeModal();
     result.lazyMedia = true;
+    for (const id of ["canon:weighted_pushup", "canon:weighted_hyperextension", "canon:box_jump"]) {
+      const exercise = w.catalogRecords().find((x) => x.id === id);
+      assert.ok(exercise.image.startsWith("assets/exercises/"));
+      assert.equal(new URL(w.mediaUrl(exercise.image), w.location.href).pathname, "/" + exercise.image);
+      w.openExerciseDetail(id);
+      const media = w.document.querySelector("#sheet img[data-exercise-media]");
+      assert.ok(media);
+      observer.cb([{ target: media, isIntersecting: true }]);
+      assert.equal(new URL(media.src).pathname, "/" + exercise.image);
+      assert.ok(fs.existsSync(path.join(root, exercise.image)));
+      w.closeModal();
+    }
+    result.localIllustrations = true;
     w.st.current = {
       id: "test-pullup",
       started: Date.now() - 120000,

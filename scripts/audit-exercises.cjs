@@ -9,9 +9,12 @@ vm.runInNewContext(
   context,
 );
 const rows = context.window.UNVRSL_EXERCISES;
+const hasMedia = (value) => Boolean(value) && (value.startsWith("assets/")
+  ? fs.existsSync(path.join(root, value.split(/[?#]/)[0]))
+  : true);
 const fields = {
   id: (e) => e.id,
-  media: (e) => e.gif || e.image,
+  media: (e) => [e.gif, e.image].some(hasMedia),
   description: (e) => e.description,
   muscles: (e) => e.bp && e.tg && e.secondary?.length,
   equipment: (e) => e.eq,
@@ -40,13 +43,13 @@ const report = {
   incomplete,
   missingGIF: rows.filter((e) => !e.gif).map((e) => ({ id: e.id, name: e.n })),
   missingImage: rows
-    .filter((e) => !e.gif && !e.image)
+    .filter((e) => ![e.gif, e.image].some(hasMedia))
     .map((e) => ({ id: e.id, name: e.n })),
   missingStep: rows
     .filter((e) => !(e.weightProfile?.step > 0))
     .map((e) => ({ id: e.id, name: e.n })),
   duplicateIds: rows.map((e) => e.id).filter((id, i, a) => a.indexOf(id) !== i),
-  note: "Completeness checks fields, not media availability or coaching accuracy. No fallback satisfies a missing field.",
+  note: "Completeness checks fields and local media files, not external URL availability or coaching accuracy. No fallback satisfies a missing field.",
 };
 fs.mkdirSync(path.join(root, "docs"), { recursive: true });
 fs.writeFileSync(

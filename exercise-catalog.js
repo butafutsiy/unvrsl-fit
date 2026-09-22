@@ -1050,11 +1050,11 @@ window.UNVRSL_EXERCISES=[
     "tg": "spine",
     "eq": "weighted",
     "gif": "",
-    "image": "",
+    "image": "assets/exercises/weighted-hyperextension-v392.jpg",
     "instructions": {
       "ru": "Настрой опору ниже сгиба бёдер, закрепи стопы и прижми диск к груди. Наклоняйся за счёт движения в тазобедренных суставах, удерживая спину нейтрально. Поднимись до прямой линии корпуса и ног, без рывка и переразгибания поясницы."
     },
-    "mediaUnavailable": true,
+    "mediaUnavailable": false,
     "custom": false,
     "canonical": true,
     "canonicalKey": "weighted_hyperextension",
@@ -1106,7 +1106,13 @@ window.UNVRSL_EXERCISES=[
     },
     "legacyIds": [
       "canon:weighted_hyperextension"
-    ]
+    ],
+    "mediaProvenance": {
+      "kind": "generated_static_illustration",
+      "reviewed": "2026-09-22",
+      "referenceStyle": "white anatomical catalog thumbnail",
+      "note": "New illustration; not a restored GIF"
+    }
   },
   {
     "id": "og:1760",
@@ -3503,11 +3509,11 @@ window.UNVRSL_EXERCISES=[
     "tg": "quads",
     "eq": "body weight",
     "gif": "",
-    "image": "",
+    "image": "assets/exercises/box-jump-v392.jpg",
     "instructions": {
       "ru": "Выбери устойчивую тумбу подходящей высоты. Сделай небольшой подсед, оттолкнись двумя ногами и приземлись на тумбу обеими стопами с мягкими коленями. Выпрямись и спокойно сойди с тумбы. Это запрыгивание вверх, не спрыгивание вниз."
     },
-    "mediaUnavailable": true,
+    "mediaUnavailable": false,
     "custom": false,
     "canonical": true,
     "canonicalKey": "box_jump",
@@ -3560,7 +3566,13 @@ window.UNVRSL_EXERCISES=[
     },
     "legacyIds": [
       "canon:box_jump"
-    ]
+    ],
+    "mediaProvenance": {
+      "kind": "generated_static_illustration",
+      "reviewed": "2026-09-22",
+      "referenceStyle": "white anatomical catalog thumbnail",
+      "note": "New illustration; not a restored GIF"
+    }
   },
   {
     "id": "canon:stepup_db",
@@ -4604,11 +4616,11 @@ window.UNVRSL_EXERCISES=[
     "tg": "pectorals",
     "eq": "weighted",
     "gif": "",
-    "image": "",
+    "image": "assets/exercises/weighted-pushup-v392.jpg",
     "instructions": {
       "ru": "Надёжно закрепи дополнительное отягощение. Сохраняй корпус прямым, опускайся контролируемо и выжимай себя вверх без провисания поясницы."
     },
-    "mediaUnavailable": true,
+    "mediaUnavailable": false,
     "custom": false,
     "canonical": true,
     "canonicalKey": "weighted_pushup",
@@ -4660,7 +4672,13 @@ window.UNVRSL_EXERCISES=[
     },
     "legacyIds": [
       "canon:weighted_pushup"
-    ]
+    ],
+    "mediaProvenance": {
+      "kind": "generated_static_illustration",
+      "reviewed": "2026-09-22",
+      "referenceStyle": "white anatomical catalog thumbnail",
+      "note": "New illustration; not a restored GIF"
+    }
   },
   {
     "id": "og:3211",
@@ -11994,7 +12012,7 @@ window.UNVRSL_EXERCISES=[
     "instructions": {
       "ru": "Расположи верх спины на скамье, штангу – над тазом через мягкую накладку. Стопы поставь устойчиво; в верхней точке голени должны быть близки к вертикали. Опускай таз подконтрольно и разгибай его за счёт ягодичных до линии плечи – таз – колени. Удерживай штангу руками и не переразгибай поясницу."
     },
-    "mediaUnavailable": true,
+    "mediaUnavailable": false,
     "custom": false,
     "canonical": true,
     "canonicalKey": "barbell_hip_thrust",
