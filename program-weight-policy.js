@@ -7,7 +7,7 @@
     root.unvrslProgramWeightLabelV257=api.programWeightLabel;
   }
 })(typeof window!=='undefined'?window:null,function(){
-  const positive=value=>{const n=Number(value);return Number.isFinite(n)&&n>0?n:0};
+  const numeric=value=>{if(value===null||value===undefined||String(value).trim()==='')return null;const n=Number(value);return Number.isFinite(n)&&n>=0?n:null};
   const cardio=exercise=>/^(cardio|time|timer)$/i.test(String(exercise?.mode||exercise?.kind||''))||String(exercise?.kind||'').toLowerCase()==='cardio';
   function programExercises(input){
     const source=input?.p?.p||input?.program||input?.p||input||{};
@@ -18,10 +18,17 @@
   }
   function exerciseLoads(exercise){
     if(!exercise||cardio(exercise))return[];
-    if(Array.isArray(exercise.sets)&&exercise.sets.length)return exercise.sets.map(set=>positive(set?.w));
-    if(Array.isArray(exercise.set)&&exercise.set.length)return exercise.set.map(set=>positive(set?.w));
+    const mode=exercise.parameterOverrides?.weight?.mode||exercise.weightMode;
+    const bodyweight=/^bodyweight_|^repetitions_only$/.test(exercise.loadType||'');
+    const prescribed=set=>{
+      if(mode==='auto')return false;
+      const n=numeric(set?.w);
+      return n!==null&&(n>0||mode==='manual'||bodyweight);
+    };
+    if(Array.isArray(exercise.sets)&&exercise.sets.length)return exercise.sets.map(prescribed);
+    if(Array.isArray(exercise.set)&&exercise.set.length)return exercise.set.map(prescribed);
     const count=Math.max(1,Number(exercise.s)||1);
-    return Array.from({length:count},()=>positive(exercise.w))
+    return Array.from({length:count},()=>prescribed(exercise))
   }
   function programWeightProfile(input){
     const loads=programExercises(input).flatMap(exerciseLoads),prescribed=loads.filter(Boolean).length,empty=loads.length-prescribed;

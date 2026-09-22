@@ -23,16 +23,11 @@ test('Statistics contains progress only and history is owned by Plan',()=>{
   assert.doesNotMatch(home,/statsWeightSheet|statsGoalSheet|statsSaveWeight|statsSaveGoal/);
 });
 
-test('final Statistics authority loads after all asynchronous module chains',()=>{
-  const loader=read('frequent-patch.js');
-  const settled=loader.indexOf('Promise.allSettled([templateChain,programChain,cloudChain,uiChain])');
-  const authority=loader.indexOf("loadExternalScript('stats-authority.js')");
-  const postLoad=loader.indexOf("loadExternalScript('cardio-exercise-library.js')");
-  const trainerShell=loader.indexOf("loadExternalScript('trainer-shell.js')");
-  assert.ok(settled>=0&&postLoad>settled&&authority>postLoad&&trainerShell>authority);
-  assert.match(read('stats-authority.js'),/window\.statsPage=canonicalStatsPage/);
-  assert.equal((loader.match(/loadExternalScript\('trainer-self-plan-v110\.js\?v=260'\)/g)||[]).length,1);
-  assert.doesNotMatch(read('clients-action-layout.js'),/loadExternalScript\('trainer-self-plan-v110\.js'\)/);
+test('Statistics authority follows its dashboard in the deferred chain',()=>{
+ const loader=read('frequent-patch.js');
+ assert.match(loader,/'stats-dashboard\.js\?v=392','stats-authority\.js\?v=392'/);
+ assert.match(loader,/Promise\.allSettled\(\[templates,programs,workout,stats\]\)/);
+ assert.match(read('stats-authority.js'),/window\.statsPage=canonicalStatsPage/);
 });
 
 test('trainer shell uses one role predicate and restores both trainer tabs',()=>{
@@ -47,11 +42,9 @@ test('trainer shell uses one role predicate and restores both trainer tabs',()=>
   assert.match(shell,/renderTrainerPage\(p\)/);
 });
 
-test('v261 service worker removes old app caches and never writes responses',()=>{
-  const sw=read('sw.js');
-  assert.match(sw,/key\.startsWith\(CACHE_PREFIX\)/);
-  assert.match(sw,/fetch\(event\.request,\{cache:'no-store'\}\)/);
-  assert.doesNotMatch(sw,/cache\.put|caches\.match|caches\.open/);
+test('service worker stores versioned assets for offline use',()=>{
+ assert.match(read('sw.js'),/SHELL = `\$\{CACHE_PREFIX\}shell-\$\{SW_RELEASE\}`/);
+ assert.match(read('sw.js'),/MEDIA = `\$\{CACHE_PREFIX\}media-\$\{SW_RELEASE\}`/);
 });
 
 test('Anatomy is owned by the final Statistics renderer and every old block is rejected',()=>{

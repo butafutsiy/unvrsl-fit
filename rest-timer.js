@@ -3,8 +3,9 @@
   if(window.__unvrslRestTimerV2)return;window.__unvrslRestTimerV2=true;
   const KEY='unvrsl-rest-timer-end',LABEL_KEY='unvrsl-rest-timer-label';
   const TOTAL_KEY='unvrsl-rest-total-ms',ACTIVE_KEY='unvrsl-rest-active-start',WORKOUT_KEY='unvrsl-rest-workout-id';
-  let id=null,end=Number(sessionStorage.getItem(KEY)||0),currentLabel=sessionStorage.getItem(LABEL_KEY)||'Отдых между подходами';
-  let totalMs=Number(sessionStorage.getItem(TOTAL_KEY)||0),activeStarted=Number(sessionStorage.getItem(ACTIVE_KEY)||0),trackedWorkoutId=sessionStorage.getItem(WORKOUT_KEY)||'';
+  const persisted=window.st?.current?.timer||{};
+  let id=null,end=Number(persisted.end??sessionStorage.getItem(KEY)??0),currentLabel=persisted.label||sessionStorage.getItem(LABEL_KEY)||'Отдых между подходами';
+  let totalMs=Number(persisted.totalMs??sessionStorage.getItem(TOTAL_KEY)??0),activeStarted=Number(persisted.activeStarted??sessionStorage.getItem(ACTIVE_KEY)??0),trackedWorkoutId=persisted.workoutId||sessionStorage.getItem(WORKOUT_KEY)||'';
 
   const style=document.createElement('style');
   style.id='unvrsl-rest-timer-v2-style';
@@ -32,7 +33,10 @@
   function isWork(){return /^Работа\b/i.test(currentLabel)}
   function secondsLeft(){return Math.max(0,Math.ceil((end-Date.now())/1000))}
   function text(sec){sec=Math.max(0,Math.floor(Number(sec)||0));const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;return h?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
-  function saveTotals(){sessionStorage.setItem(TOTAL_KEY,String(Math.max(0,totalMs)));if(activeStarted>0)sessionStorage.setItem(ACTIVE_KEY,String(activeStarted));else sessionStorage.removeItem(ACTIVE_KEY);if(trackedWorkoutId)sessionStorage.setItem(WORKOUT_KEY,trackedWorkoutId);else sessionStorage.removeItem(WORKOUT_KEY)}
+  function snapshot(){return {end,label:currentLabel,totalMs,activeStarted,workoutId:trackedWorkoutId}}
+  window.workoutTimerSnapshot=snapshot;
+  function persist(){const cur=state()?.current;if(!cur||cur.id!==trackedWorkoutId)return;cur.timer=snapshot();cur.timerEnd=end;cur.restMs=totalRestMs();try{window.save({draftOnly:true})}catch(error){console.warn('Timer checkpoint failed',error)}}
+  function saveTotals(){sessionStorage.setItem(TOTAL_KEY,String(Math.max(0,totalMs)));if(activeStarted>0)sessionStorage.setItem(ACTIVE_KEY,String(activeStarted));else sessionStorage.removeItem(ACTIVE_KEY);if(trackedWorkoutId)sessionStorage.setItem(WORKOUT_KEY,trackedWorkoutId);else sessionStorage.removeItem(WORKOUT_KEY);persist()}
   function syncWorkout(){
     const wid=currentWorkoutId();
     if(!wid)return '';
@@ -89,24 +93,23 @@
     sessionStorage.setItem(KEY,String(end));sessionStorage.setItem(LABEL_KEY,currentLabel);saveTotals();
     const el=build();el?.classList.add('show');tickV2();id=setInterval(tickV2,250);
   }
-  function add(sec){if(!end||secondsLeft()<=0)return start(sec,currentLabel);end+=sec*1000;sessionStorage.setItem(KEY,String(end));tickV2()}
+  function add(sec){if(!end||secondsLeft()<=0)return start(sec,currentLabel);end+=sec*1000;sessionStorage.setItem(KEY,String(end));saveTotals();tickV2()}
   function stop(clear=true){
     if(id)clearInterval(id);id=null;if(activeStarted)commitActiveRest(Math.min(Date.now(),end||Date.now()));
-    end=0;sessionStorage.removeItem(KEY);sessionStorage.removeItem(LABEL_KEY);build()?.classList.remove('show');currentLabel='Отдых между подходами';headTotal();
+    end=0;sessionStorage.removeItem(KEY);sessionStorage.removeItem(LABEL_KEY);build()?.classList.remove('show');currentLabel='Отдых между подходами';saveTotals();headTotal();
   }
 
   window.timer=start;window.add30=()=>add(30);window.stopTimer=stop;
   try{timer=start;add30=window.add30;stopTimer=stop}catch(e){}
 
   function restore(){
-    syncWorkout();currentLabel=sessionStorage.getItem(LABEL_KEY)||currentLabel||'Отдых между подходами';build();
-    end=Number(sessionStorage.getItem(KEY)||end||0);totalMs=Number(sessionStorage.getItem(TOTAL_KEY)||totalMs||0);activeStarted=Number(sessionStorage.getItem(ACTIVE_KEY)||activeStarted||0);
+    const saved=state()?.current?.timer;if(saved&&saved.workoutId===currentWorkoutId()){end=saved.end||0;currentLabel=saved.label||'Отдых между подходами';totalMs=saved.totalMs||0;activeStarted=saved.activeStarted||0;trackedWorkoutId=saved.workoutId}syncWorkout();build();
     if(end>Date.now()){
       if(!isWork()&&!activeStarted){activeStarted=Date.now();saveTotals()}
       build()?.classList.add('show');if(id)clearInterval(id);id=setInterval(tickV2,250);tickV2();
     }else{
       if(end>0&&activeStarted)commitActiveRest(end);
-      end=0;activeStarted=0;sessionStorage.removeItem(KEY);sessionStorage.removeItem(LABEL_KEY);sessionStorage.removeItem(ACTIVE_KEY);build()?.classList.remove('show');currentLabel='Отдых между подходами';headTotal();
+      end=0;activeStarted=0;sessionStorage.removeItem(KEY);sessionStorage.removeItem(LABEL_KEY);sessionStorage.removeItem(ACTIVE_KEY);build()?.classList.remove('show');currentLabel='Отдых между подходами';saveTotals();headTotal();
     }
   }
   const oldStartPage=window.startPage;
@@ -119,6 +122,9 @@
     };
     wrapped.__restTimerStableSafe=true;wrapped.__restTimerV2=true;window.startPage=wrapped;try{startPage=wrapped}catch(e){}
   }
+  window.restoreWorkoutTimer=restore;
+  window.addEventListener("unvrsl:workout-rendered",headTotal);
+  window.addEventListener('pagehide',persist);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)restore()});
   window.addEventListener('focus',restore);
   setTimeout(restore,0);

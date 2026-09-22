@@ -1,0 +1,23 @@
+{
+  "total": 188,
+  "complete": 188,
+  "incomplete": [],
+  "missingGIF": [
+    {
+      "id": "canon:weighted_hyperextension",
+      "name": "Гиперэкстензия с дополнительным весом"
+    },
+    {
+      "id": "canon:box_jump",
+      "name": "Запрыгивания на тумбу"
+    },
+    {
+      "id": "canon:weighted_pushup",
+      "name": "Отжимания с дополнительным весом"
+    }
+  ],
+  "missingImage": [],
+  "missingStep": [],
+  "duplicateIds": [],
+  "note": "Completeness checks fields and local media files, not external URL availability or coaching accuracy. No fallback satisfies a missing field."
+}

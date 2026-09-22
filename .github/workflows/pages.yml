@@ -28,6 +28,10 @@ jobs:
           for file in *.js; do
             node --check "$file"
           done
+      - name: Test workout integrity
+        run: node --test tests/*.test.cjs
+      - name: Require complete canonical catalog
+        run: node scripts/audit-exercises.cjs --strict
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:

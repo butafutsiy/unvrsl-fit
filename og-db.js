@@ -11,7 +11,7 @@ const EXACT_RU={
 const RU_REPL=[
  ['romanian deadlift','румынская тяга'],['stiff leg deadlift','тяга на прямых ногах'],['deadlift','становая тяга'],['incline bench press','жим на наклонной скамье'],['decline bench press','жим на отрицательной скамье'],['bench press','жим лёжа'],['close-grip','узким хватом'],['wide-grip','широким хватом'],['reverse-grip','обратным хватом'],['underhand','обратным хватом'],['overhand','прямым хватом'],['bent over row','тяга в наклоне'],['seated row','тяга сидя'],['lat pulldown','тяга верхнего блока'],['pulldown','тяга верхнего блока'],['pull-up','подтягивания'],['chin-up','подтягивания обратным хватом'],['push-up','отжимания'],['split squat','сплит-присед'],['squat','приседания'],['leg press','жим ногами'],['leg extension','разгибание ног'],['leg curl','сгибание ног'],['calf raise','подъём на носки'],['hip thrust','ягодичный мост'],['glute bridge','ягодичный мост'],['lateral raise','махи в стороны'],['front raise','подъём перед собой'],['rear delt fly','разведение на заднюю дельту'],['reverse fly','обратное разведение'],['shoulder press','жим над головой'],['overhead press','жим над головой'],['military press','армейский жим'],['biceps curl','сгибание на бицепс'],['hammer curl','молотковые сгибания'],['triceps extension','разгибание на трицепс'],['triceps dip','отжимания на брусьях на трицепс'],['chest dip','отжимания на брусьях на грудь'],['wrist curl','сгибание кистей'],['shrug','шраги'],['fly','разведение'],['crunch','скручивания'],['sit-up','подъём корпуса'],['russian twist','русские повороты'],['step-up','зашагивания'],['lunge','выпад'],['good morning','наклоны good morning'],['face pull','тяга к лицу'],['plank','планка'],['standing','стоя'],['seated','сидя'],['lying','лёжа'],['kneeling','на коленях'],['one arm','одной рукой'],['single arm','одной рукой'],['single leg','на одной ноге'],['alternate','попеременно'],['alternating','попеременно'],['assisted','с поддержкой'],['barbell','со штангой'],['dumbbell','с гантелями'],['kettlebell','с гирей'],['cable','на блоке'],['band','с резиной'],['smith machine','в Смите'],['smith','в Смите'],['lever','в тренажёре'],['weighted','с отягощением'],['body weight','с собственным весом']
 ];
-let ogLibrary=[],ogLibraryLoaded=false,ogLibraryLoading=false,ogLibraryError='';
+let ogLibrary=window.UNVRSL_EXERCISES||[],ogLibraryLoaded=true,ogLibraryLoading=false,ogLibraryError='';
 let exQuery='',exBody='all';
 let rmState={id:null,w:20,r:5};
 function ruTarget(x=''){return TARGET_RU[String(x).toLowerCase()]||x||'—'}
@@ -21,17 +21,14 @@ function ruExerciseName(name=''){
  for(const [a,b] of RU_REPL)s=s.split(a).join(b);
  s=s.replace(/\s+/g,' ').replace(/\s+([,.)])/g,'$1').trim();return s.charAt(0).toUpperCase()+s.slice(1)
 }
-function mediaUrl(path=''){if(!path)return'';return /^https?:/i.test(path)?path:OG_MEDIA_BASE+String(path).replace(/^\.?\//,'')}
+function mediaUrl(path=''){if(!path)return'';return /^(?:https?:|assets\/)/i.test(path)?path:OG_MEDIA_BASE+String(path).replace(/^\.?\//,'')}
 function normalizeExercise(x){return{id:String(x.id),n:x.name||x.n||'Exercise',bp:x.body_part||x.category||x.bp||'',tg:x.target||x.tg||'',eq:x.equipment||x.eq||'',secondary:x.secondary_muscles||[],instructions:x.instructions||{},image:x.image||'',gif:x.gif_url||x.gif||'',attribution:x.attribution||'',mediaId:x.media_id||'',custom:false}}
 function exercisesPage(){
  $('#exercises').innerHTML=`<div class="card catalog-head"><div class="row between"><div><div class="title">Упражнения</div><div class="muted" id="catalogCount">${ogLibraryLoaded?`Русская база · ${ogLibrary.length} упражнений`:'Загружаю базу упражнений…'}</div></div><span class="chip green">RU + GIF</span></div></div><input id="exSearch" class="search" placeholder="Поиск по-русски или по-английски" value="${esc(exQuery)}" oninput="setExerciseQuery(this.value)"><div id="bodyFilters" class="filterbar"></div><div id="exList"></div>`;
  renderBodyFilters();renderExerciseResults();if(!ogLibraryLoaded&&!ogLibraryLoading)loadExerciseDB();
 }
-async function loadExerciseDB(force=false){
- if(ogLibraryLoading)return;if(ogLibraryLoaded&&!force)return;ogLibraryLoading=true;ogLibraryError='';
- try{const res=await fetch(OG_LIBRARY_URL,{cache:force?'reload':'default'});if(!res.ok)throw new Error(`HTTP ${res.status}`);const d=await res.json();const arr=Array.isArray(d)?d:d.exercises;if(!Array.isArray(arr)||arr.length<1000)throw new Error('Неполная база');ogLibrary=arr.map(normalizeExercise);ogLibraryLoaded=true}
- catch(e){ogLibraryError=String(e.message||e)}finally{ogLibraryLoading=false;refreshCatalogUI()}
-}
+async function loadExerciseDB(){ogLibrary=window.UNVRSL_EXERCISES||[];ogLibraryLoaded=true;ogLibraryLoading=false;refreshCatalogUI()}
+
 function refreshCatalogUI(){const c=$('#catalogCount');if(c)c.textContent=ogLibraryLoaded?`Русская база · ${ogLibrary.length} упражнений`:ogLibraryError?`Не удалось загрузить базу: ${ogLibraryError}`:'Загружаю базу упражнений…';renderBodyFilters();renderExerciseResults()}
 function setExerciseQuery(q){exQuery=q||'';renderExerciseResults()}
 function setExerciseBody(bp){exBody=bp;renderBodyFilters();renderExerciseResults()}

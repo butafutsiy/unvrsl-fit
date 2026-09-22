@@ -121,17 +121,17 @@
     if(rendering)return;const card=document.getElementById('anatomeMuscleCard');if(!card)return;const bodyData=await bodyPaths();if(!bodyData)return;
     rendering=true;try{
       const days=period(card),data=calculate(await sessions(),days),fig=card.querySelector('.anatome-figure'),top=card.querySelector('.anatome-top'),sub=card.querySelector('.anatome-sub');if(!fig)return;
-      if(sub)sub.textContent=`Последние ${days} дн. · ${data.sets} выполн. подходов`;
-      if(top)top.innerHTML=topHtml(data.rows);
-      if(!data.rows.length){fig.innerHTML='<div class="anatome-empty">Нет распознанных выполненных упражнений за этот период.</div>';return}
-      const sig=`${state()?.body||'male'}|${days}|`+data.rows.map(x=>x.join(':')).join('|');if(fig.dataset.full176Sig===sig&&fig.querySelector('.anatome-full-v176'))return;
+      const subtitle=`Последние ${days} дн. · ${data.sets} выполн. подходов`;if(sub&&sub.textContent!==subtitle)sub.textContent=subtitle;
+      const topContent=topHtml(data.rows);if(top&&top.innerHTML!==topContent)top.innerHTML=topContent;
+      if(!data.rows.length){if(fig.querySelector('.anatome-empty'))return;fig.innerHTML='<div class="anatome-empty">Нет распознанных выполненных упражнений за этот период.</div>';return}
+      const sig=`${state()?.body||'male'}|${accent()}|${days}|`+data.rows.map(x=>x.join(':')).join('|');if(fig.dataset.full176Sig===sig&&fig.querySelector('.anatome-full-v176'))return;
       fig.dataset.full176Sig=sig;fig.dataset.localSig=sig;
       fig.innerHTML=`<div class="anatome-full-v176" style="width:100%"><div class="anatome-local-dual">${side('front',data.scores,bodyData)}${side('back',data.scores,bodyData)}</div><div class="anatome-local-caption">СПЕРЕДИ · СЗАДИ</div></div>`;
     }finally{rendering=false}
   }
-  function schedule(){setTimeout(render,80);setTimeout(render,450)}
+  let scheduled=null;function schedule(){if(scheduled!=null)return;scheduled=setTimeout(()=>{scheduled=null;render()},80)}
   window.unvrslMuscleMapCalculate211=calculate;window.unvrslRefreshMuscleMap211=schedule;
-  const root=document.getElementById('stats');if(root)new MutationObserver(()=>{const fig=document.querySelector('#anatomeMuscleCard .anatome-figure');if(fig&&!fig.querySelector('.anatome-full-v176'))schedule()}).observe(root,{childList:true,subtree:true});
+  const root=document.getElementById('stats');if(root)new MutationObserver(()=>{const fig=document.querySelector('#anatomeMuscleCard .anatome-figure');if(fig&&!fig.querySelector('.anatome-full-v176,.anatome-empty'))schedule()}).observe(root,{childList:true,subtree:true});
   document.addEventListener('click',e=>{if(e.target?.closest?.('#anatomeMuscleCard [data-days]')){loadedAt=0;setTimeout(render,120)}},true);
   window.addEventListener('focus',()=>{loadedAt=0;schedule()});
   [1200,2600,5000].forEach(t=>setTimeout(render,t));

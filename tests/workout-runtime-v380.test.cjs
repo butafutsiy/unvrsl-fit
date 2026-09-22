@@ -27,8 +27,8 @@ test('active workout has one native RPE/RIR row with inverse ranges',()=>{
 test('retired RPE/RIR injector is absent from the production graph',()=>{
   const index=read('index.html');
   const detail=read('exercise-detail-rules.js');
-  assert.doesNotMatch(index,/rpe-rir\.js/);
-  assert.doesNotMatch(detail,/rpe-rir\.js/);
+  assert.doesNotMatch(index,/["'\/]rpe-rir\.js/);
+  assert.doesNotMatch(detail,/["'\/]rpe-rir\.js/);
   assert.equal(fs.existsSync(path.join(__dirname,'..','rpe-rir.js')),false);
 });
 

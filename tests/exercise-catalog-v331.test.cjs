@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const context={console,setTimeout:()=>0,setInterval:()=>0,clearInterval:()=>{},CustomEvent:function(){},document:{querySelector:()=>null},ROUTINES:[],st:{programs:[],planAdds:{}},save:()=>{throw new Error('registry must not persist plan repairs')}};
+const context={console,setTimeout:()=>0,setInterval:()=>0,clearInterval:()=>{},CustomEvent:function(){},document:{querySelector:()=>null,createElement:()=>({dataset:{}}),head:{appendChild:()=>{}},getElementById:()=>null},ROUTINES:[],st:{programs:[],planAdds:{}},save:()=>{throw new Error('registry must not persist plan repairs')}};
 context.window=context;context.globalThis=context;context.addEventListener=()=>{};
 for(const file of ['exercise-media-verified.js','exercise-picker.js','exercise-plan-canonical.js'])vm.runInNewContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file});
 const api=context.UNVRSL_EXERCISE_REGISTRY_V331;

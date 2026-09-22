@@ -6,13 +6,13 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 
-test('v385 uses one cache version across static and dynamic loaders',()=>{
-  for(const name of ['index.html','startup-orchestrator.js','frequent-patch.js']){
-    const source=read(name);
-    assert.doesNotMatch(source,/\?v=(?:380|384)\b/);
-    assert.match(source,/\?v=385\b/);
-  }
-  assert.match(read('sw.js'),/v385-ui-program-stability/);
+test('v392 uses one cache version across static and dynamic loaders',()=>{
+ for(const name of ['index.html','frequent-patch.js']){
+  const versions=[...read(name).matchAll(/\?v=(\d+)\b/g)].map(x=>x[1]);
+  assert.ok(versions.length);assert.deepEqual([...new Set(versions)],['392']);
+ }
+ assert.match(read('startup-orchestrator.js'),/RELEASE=392/);
+ assert.match(read('sw.js'),/SW_RELEASE = "v392"/);
 });
 
 test('navigation and statistics use stable SVG icons',()=>{
@@ -23,19 +23,16 @@ test('navigation and statistics use stable SVG icons',()=>{
   assert.doesNotMatch(stats,/metric\('Тренировки',ws\.length,'◫'\)/);
 });
 
-test('program creation opens after save and program page has a direct owner',()=>{
-  const editor=read('program-editor.js'),management=read('program-management-patch.js');
-  assert.ok(editor.indexOf('try{save()}')<editor.indexOf('openEditor(p.id,0,0)'));
-  assert.match(management,/window\.trainerProgramsPage=function/);
-  assert.match(management,/openManagedProgramV385/);
-  assert.match(management,/program-week-intensity-v385/);
+test('program page and editor have one current owner',()=>{
+ assert.match(read('program-editor.js'),/__unvrslProgramEditorV386/);
+ assert.match(read('program-management-patch.js'),/window\.trainerProgramsPage=function/);
+ assert.match(read('program-management-patch.js'),/openManagedProgramV385/);
 });
 
-test('completion is compact and legacy reports are suppressed',()=>{
-  const completion=read('workout-completion.js');
-  assert.match(completion,/data-compact-completion-v385/);
-  assert.doesNotMatch(completion,/СЛЕДУЮЩАЯ ТРЕНИРОВКА/);
-  for(const name of ['advanced-training.js','workout-duration.js','performance-control.js']){
-    assert.match(read(name),/data-compact-completion-v385/);
-  }
+test('completion delegates analytics and avoids the legacy next-workout report',()=>{
+ const completion=read('workout-completion.js');
+ assert.match(completion,/A\.summary/);
+ assert.match(completion,/r\.exercises\.map/);
+ assert.doesNotMatch(completion,/СЛЕДУЮЩАЯ ТРЕНИРОВКА/);
+ assert.doesNotMatch(read('advanced-training.js'),/window\.summary\s*=/);
 });

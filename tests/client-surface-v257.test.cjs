@@ -19,9 +19,9 @@ test('client programs are split into prescribed and autoweight groups',()=>{
   assert.equal(programWeightProfile(mixed).mode,'mixed');
   assert.equal(programWeightLabel(automatic).badge,'Автовес');
   const picker=read('client-program-picker.js');
-  assert.match(picker,/С ЗАДАННЫМИ ВЕСАМИ/);
-  assert.match(picker,/>АВТОВЕС</);
-  assert.match(picker,/selectedWeight\.detail/);
+  assert.match(picker,/МОИ ПРОГРАММЫ/);
+  assert.match(picker,/unvrslProgramWeightLabelV257/);
+  assert.match(picker,/weightInfo\(x\)\.detail/);
 });
 
 test('client Home contains no program card',()=>{
@@ -77,3 +77,9 @@ test('choosing plan keeps adaptive exercises in autoweight mode',()=>{
   assert.equal(current.ex[1].weightDecision,'adaptive_auto');
 });
 
+
+test('an explicit manual zero is prescribed, while auto remains a separate choice',()=>{
+ const program=mode=>({weeks:[{days:[{ex:[{weightMode:mode,loadType:'bodyweight_added',sets:[{w:0}]}]}]}]});
+ assert.equal(programWeightProfile(program('manual')).mode,'prescribed');
+ assert.equal(programWeightProfile(program('auto')).mode,'autoweight');
+});

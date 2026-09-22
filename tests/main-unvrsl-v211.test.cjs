@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const {aggregateRecommendation,expandPlanEntries}=require('../unvrsl-method.js');
+const {expandPlanEntries}=require('../unvrsl-method.js');
 
 const plan=[
   {n:'Жим лёжа — UNVRSL 1/3',s:1,r:3,w:130},
@@ -17,20 +17,18 @@ test('UNVRSL expands to three heavy-light rounds and two finishing sets',()=>{
   assert.deepEqual(result.sets.map(set=>set.r),[3,9,3,9,3,9,6,6]);
 });
 
-test('UNVRSL recommendation uses average weight and average reps of the whole block',()=>{
-  const expanded=expandPlanEntries(plan).sets;
-  const rows=expanded.map(set=>({w:set.w,r:set.r,rpe:8.5,rir:1.5}));
-  const result=aggregateRecommendation(rows,expanded.map(set=>set.w),expanded.map(set=>set.r),expanded.map(()=>8.5),2.5);
-  assert.equal(result.averageWeight,121.9);
-  assert.equal(result.averageReps,6);
-  assert.equal(result.averageRpe,8.5);
-  assert.deepEqual(result.weights,[130,115,130,115,130,115,120,120]);
+test('UNVRSL heavy and light phases are not averaged into one recommendation',()=>{
+ const A=require('../workout-domain.js'),reg=A.registry([]);
+ const heavy={n:'Жим',loadType:'external_total',method:'UNVRSL'};
+ const old=[1,2,3].map(i=>({id:'s'+i,started:i,ended:i+1,ex:[{...heavy,set:[{role:'light',w:10,r:9,ok:true}]}]}));
+ const recommendation=A.recommend(heavy,{role:'heavy',w:130,r:3},{id:'now'},old,reg);
+ assert.equal(recommendation.weight,130);
 });
 
 test('main workout session opens the complete eight-set UNVRSL block',()=>{
   const context={
     st:{planAdds:{},aliases:{}},BASEWORDS:['жим лёжа'],BASE:{3:120},ISO:{3:60},RPE:{3:8.5},
-    iso:()=> '2026-08-30',console
+    iso:()=> '2026-08-30',console,document:{querySelector:()=>({})}
   };
   vm.runInNewContext(fs.readFileSync(require.resolve('../og-core.js'),'utf8'),context);
   const routine={w:3,c:'B',t:'Грудь',p:'2-0-2',e:plan.map(entry=>({...entry,g:'bench-unvrsl'}))};
@@ -80,11 +78,13 @@ test('automatic readiness never raises the program weight at workout start',asyn
     programById:id=>id==='mine'?program:null,baseExerciseName:name=>String(name).replace(/\s+—\s+.*$/,'').trim(),save:()=>{},startPage:()=>{},UNVRSL_METHOD_V211:require('../unvrsl-method.js')
   };
   context.window=context;
+  context.WorkoutDomain=require('../workout-domain.js');context.workoutRegistry=context.WorkoutDomain.registry([]);context.addEventListener=()=>{};
   vm.runInNewContext(fs.readFileSync(require.resolve('../training-engine.js'),'utf8'),context);
+  vm.runInNewContext(fs.readFileSync(require.resolve('../training-load-model.js'),'utf8'),context);
   await context.trainingEngine200Tick();
   assert.deepEqual(JSON.parse(JSON.stringify(context.st.current.ex[0].set.map(set=>set.w))),[110,110]);
-  assert.equal(context.st.current.readiness.factor,1);
-  assert.equal(context.st.current.readinessAdjusted,false);
+  assert.equal(context.st.current.readiness.factor,1.1);
+  assert.equal(context.st.current.readinessAdjusted,true);
 });
 
 test('recommendation stays manual while autoweight is limited to missing program weight',async()=>{
@@ -106,7 +106,9 @@ test('recommendation stays manual while autoweight is limited to missing program
     programById:id=>id==='mine'?program:null,baseExerciseName:name=>String(name).replace(/\s+—\s+.*$/,'').trim(),save:()=>{},startPage:()=>{},UNVRSL_METHOD_V211:require('../unvrsl-method.js'),loadStepFor:()=>2.5
   };
   context.window=context;
+  context.WorkoutDomain=require('../workout-domain.js');context.workoutRegistry=context.WorkoutDomain.registry([]);context.addEventListener=()=>{};
   vm.runInNewContext(fs.readFileSync(require.resolve('../training-engine.js'),'utf8'),context);
+  vm.runInNewContext(fs.readFileSync(require.resolve('../training-load-model.js'),'utf8'),context);
   await context.trainingEngine200Tick();
   const [prescribed,adaptive]=context.st.current.ex;
   assert.equal(prescribed.programWeightMode,'prescribed');
@@ -115,7 +117,8 @@ test('recommendation stays manual while autoweight is limited to missing program
   assert.equal(prescribed.weightDecision,'program');
   assert.equal(adaptive.programWeightMode,'adaptive');
   assert.equal(adaptive.weightDecision,'adaptive_auto');
-  assert.ok(adaptive.set[0].w>0);
+  assert.equal(adaptive.set[0].w,0);
+  assert.match(adaptive.set[0].recommendation.reason,/Недостаточно/);
   assert.equal(adaptive.set[0].w,adaptive.set[0].plannedW);
   context.trainingApplyRecommendation200('id:bench');
   assert.equal(prescribed.set[0].w,prescribed.set[0].recommendedW);
@@ -158,7 +161,7 @@ test('Samsung client workout keeps native one-finger scrolling',()=>{
   const sheet={style:{transform:'translate3d(0,20px,0)'}};
   let scrollStyle='';
   const context={
-    console,setTimeout:()=>0,MutationObserver:class{observe(){}},
+    console,setTimeout:()=>0,requestAnimationFrame:()=>0,MutationObserver:class{observe(){}},
     cloud:{user:{id:'client'},profile:{role:'client'}},addEventListener:()=>{},
     document:{
       hidden:false,createElement:()=>({}),head:{appendChild:node=>{scrollStyle=node.textContent}},documentElement:{classList:makeClassList(htmlClasses)},body:{classList:makeClassList(bodyClasses)},
@@ -168,8 +171,8 @@ test('Samsung client workout keeps native one-finger scrolling',()=>{
   };
   context.window=context;
   vm.runInNewContext(fs.readFileSync(require.resolve('../client-workout-scroll.js'),'utf8'),context);
-  assert.ok(htmlClasses.has('unvrsl-client-workout-scroll-v261'));
-  assert.ok(bodyClasses.has('unvrsl-client-workout-scroll-v261'));
+  assert.ok(htmlClasses.has('unvrsl-client-workout-scroll-v268'));
+  assert.ok(bodyClasses.has('unvrsl-client-workout-scroll-v268'));
   assert.equal(listeners.some(x=>x.name==='touchmove'),false);
   assert.match(scrollStyle,/overflow-y:auto!important/);
   assert.match(scrollStyle,/#start\.page\.active \*\{touch-action:auto!important\}/);

@@ -67,7 +67,7 @@
       const extra=CARDIO.filter(x=>!seen.has(x.n.toLowerCase())).map(x=>({id:x.id,n:x.n,raw:x.n,rawId:x.id,bp:'cardio',tg:'cardiovascular system',eq:'cardio',secondary:[],instructions:{ru:[x.note]},image:'',gif:'',custom:true,cardioPreset:true,defaultSeconds:x.seconds,defaultSets:x.sets,defaultRpe:x.rpe,defaultRest:x.rest}));
       return [...extra,...rows]
     };
-    window.catalogRecords=wrapped;try{catalogRecords=wrapped}catch(e){}
+    // Canonical catalog is immutable; custom cardio stays in its program.
   }
 
   function cardioForm(x){

@@ -3,16 +3,8 @@ window.UNVRSL_ROUTINES=(window.UNVRSL_ROUTINES||[]).concat([{"w":1,"c":"A1","t":
   if(window.__unvrslClientWorkoutScrollLoaderV280)return;
   window.__unvrslClientWorkoutScrollLoaderV280=true;
   const s=document.createElement('script');
-  s.src='client-workout-scroll.js?v=380';
+  s.src='client-workout-scroll.js?v=392';
   s.async=false;
   (document.head||document.documentElement).appendChild(s);
 })();
-(()=>{
-  if(window.__unvrslWorkoutWeightIntegrityLoaderV280)return;
-  window.__unvrslWorkoutWeightIntegrityLoaderV280=true;
-  const s=document.createElement('script');
-  s.src='workout-weight-integrity.js?v=380';
-  s.async=false;
-  (document.head||document.documentElement).appendChild(s);
-})();
-
+// Weight recovery belongs to workout-domain and the draft journal.

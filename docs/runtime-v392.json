@@ -1,0 +1,26 @@
+{
+  "kind": "DOM integration simulation, not a browser or iPhone",
+  "loaded": 108,
+  "ready": true,
+  "catalog": 188,
+  "pages": {
+    "home": 4.702877000000171,
+    "exercises": 3.1640480000000935,
+    "plan": 5.791670000000067,
+    "start": 3.8132089999999152,
+    "stats": 3.289593999999852
+  },
+  "lazyMedia": true,
+  "localIllustrations": true,
+  "zeroCompleted": true,
+  "reload": true,
+  "timerRecovered": true,
+  "syncFailureRetainsEditableDraft": true,
+  "concurrentCompletionSingleUpload": true,
+  "finished": true,
+  "sharePreview": true,
+  "realProgramLaunch": true,
+  "freeWorkoutManualZero": true,
+  "programEditorManualZero": true,
+  "errors": []
+}
