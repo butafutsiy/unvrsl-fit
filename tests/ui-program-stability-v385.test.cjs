@@ -6,13 +6,13 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 
-test('v392 uses one cache version across static and dynamic loaders',()=>{
+test('v393 uses one cache version across static and dynamic loaders',()=>{
  for(const name of ['index.html','frequent-patch.js']){
   const versions=[...read(name).matchAll(/\?v=(\d+)\b/g)].map(x=>x[1]);
-  assert.ok(versions.length);assert.deepEqual([...new Set(versions)],['392']);
+  assert.ok(versions.length);assert.deepEqual([...new Set(versions)],['393']);
  }
- assert.match(read('startup-orchestrator.js'),/RELEASE=392/);
- assert.match(read('sw.js'),/SW_RELEASE = "v392"/);
+ assert.match(read('startup-orchestrator.js'),/RELEASE=393/);
+ assert.match(read('sw.js'),/SW_RELEASE = "v393"/);
 });
 
 test('navigation and statistics use stable SVG icons',()=>{

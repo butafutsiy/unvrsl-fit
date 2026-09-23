@@ -21,11 +21,12 @@ class Local extends ResourceLoader {
 }
 const logs = new VirtualConsole();
 logs.on("jsdomError", (e) => {
+  if (process.env.TRACE_RUNTIME) console.error(e.detail?.stack || e.stack);
   if (!/Not implemented: (window.scroll|HTMLCanvas)/.test(e.message))
     errors.push(e.message);
 });
 logs.on("error", (e) => errors.push(String(e)));
-function make(seed) {
+function make(seed, options = {}) {
   return new JSDOM(fs.readFileSync(path.join(root, "index.html"), "utf8"), {
     url: "http://app.test/",
     runScripts: "dangerously",
@@ -121,13 +122,28 @@ function make(seed) {
       w.scrollTo = () => {};
       w.structuredClone = structuredClone;
       w.confirm = () => true;
+      if (options.indexedDB) w.indexedDB = options.indexedDB;
       if (seed)
         for (const [k, v] of Object.entries(seed)) w.localStorage.setItem(k, v);
+      if (options.quota) {
+        const observers = [], NativeObserver = w.MutationObserver;
+        w.MutationObserver = class extends NativeObserver {
+          constructor(callback) { super(callback); observers.push(this); }
+        };
+        w.__disconnectTestObservers = () => observers.forEach(o => o.disconnect());
+        const original = w.Storage.prototype.setItem;
+        w.Storage.prototype.setItem = function (key, value) {
+          if (this === w.localStorage && /^(unvrsl-fit-v3|unvrsl-active-workout-v4)$/.test(key))
+            throw new w.DOMException("Quota exceeded", "QuotaExceededError");
+          return original.call(this, key, value);
+        };
+      }
     },
   });
 }
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-(async () => {
+module.exports = { make, wait, errors };
+if (require.main === module) (async () => {
   const dom = make();
   await wait(2600);
   const w = dom.window,

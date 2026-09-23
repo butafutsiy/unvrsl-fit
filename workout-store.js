@@ -21,9 +21,13 @@
       id = () => `s-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     } = {},
   ) {
+    let recoveredJournal = null;
+    function hydrateJournal(value) {
+      recoveredJournal = clone(value);
+    }
     function journal() {
       return (
-        parse(storage.getItem(DRAFT)) || {
+        recoveredJournal || parse(storage.getItem(DRAFT)) || {
           schemaVersion: 4,
           owners: {},
           closed: {},
@@ -49,6 +53,7 @@
         if (other !== key && draft.id === s.id) delete j.owners[other];
       j.owners[key] = clone(s);
       storage.setItem(DRAFT, JSON.stringify(j));
+      recoveredJournal = null;
     }
     function save(state) {
       checkpoint(state);
@@ -77,6 +82,7 @@
       storage.setItem(PRIMARY, JSON.stringify({ ...state, current: null }));
       try {
         storage.setItem(DRAFT, JSON.stringify(j));
+        recoveredJournal = null;
       } catch (error) {
         storage.setItem(PRIMARY, JSON.stringify(state));
         throw error;
@@ -178,6 +184,7 @@
       discard,
       finish,
       journal,
+      hydrateJournal,
       activateAccount,
     };
   }
