@@ -2,20 +2,7 @@
   "total": 188,
   "complete": 188,
   "incomplete": [],
-  "missingGIF": [
-    {
-      "id": "canon:weighted_hyperextension",
-      "name": "Гиперэкстензия с дополнительным весом"
-    },
-    {
-      "id": "canon:box_jump",
-      "name": "Запрыгивания на тумбу"
-    },
-    {
-      "id": "canon:weighted_pushup",
-      "name": "Отжимания с дополнительным весом"
-    }
-  ],
+  "missingGIF": [],
   "missingImage": [],
   "missingStep": [],
   "duplicateIds": [],
