@@ -58,6 +58,20 @@ function make(seed, options = {}) {
         w.HTMLCanvasElement.prototype.toDataURL = function () {
           return native(this).toDataURL("image/png");
         };
+        w.HTMLCanvasElement.prototype.toBlob = function (callback) {
+          const bytes = native(this).toBuffer("image/png");
+          w.__unvrslTestCanvasBytes = bytes;
+          setTimeout(() => callback(new w.Blob([bytes], { type: "image/png" })), 0);
+        };
+        const shareBlobs = new Map();
+        let blobId = 0;
+        w.URL.createObjectURL = (blob) => {
+          const url = `blob:http://app.test/share-${++blobId}`;
+          shareBlobs.set(url, blob);
+          return url;
+        };
+        w.URL.revokeObjectURL = (url) => shareBlobs.delete(url);
+        w.__unvrslTestShareBlobs = shareBlobs;
       }
 
       if (process.env.TRACE_OBSERVERS) {
@@ -296,13 +310,14 @@ if (require.main === module) (async () => {
     result.finished = true;
     if (process.env.UNVRSL_CANVAS) {
       recovered.window.previewWorkoutShare();
-      const preview = recovered.window.document.querySelector(".wc392-preview"),
-        download = recovered.window.document.querySelector("a[download]");
-      assert.equal(preview.src, download.href);
-      assert.match(preview.src, /^data:image\/png;base64,/);
+      await wait(100);
+      const preview = recovered.window.document.querySelector("#sp264Preview");
+      assert.ok(preview && !preview.hidden);
+      assert.match(preview.src, /^blob:http:\/\/app\.test\/share-/);
+      assert.equal(recovered.window.__unvrslTestShareBlobs.get(preview.src)?.type, "image/png");
       fs.writeFileSync(
         path.join(root, "docs/share-fixture-v392.png"),
-        Buffer.from(preview.src.split(",")[1], "base64"),
+        Buffer.from(recovered.window.__unvrslTestCanvasBytes),
       );
       result.sharePreview = true;
     }

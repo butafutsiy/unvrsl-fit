@@ -154,7 +154,7 @@
     if(m==='progress'){section('Прогресс',d.progress,'progress');if(d.exercises.length)section('Упражнения',d.exercises.slice(0,5),'exercises')}
     if(m==='record'&&d.record.hero){const r=d.record,h=r.hero;roundRect(x,72,y,936,190,28,'rgba(191,90,242,.10)','rgba(191,90,242,.70)');x.fillStyle='#d696f5';x.font='800 25px -apple-system,system-ui';x.textAlign='center';x.fillText(r.hasRealPr?'🏆 НОВЫЙ РЕКОРД':'★ ЛУЧШИЙ РЕЗУЛЬТАТ',540,y+48);x.fillStyle='#f5f5f7';x.font='800 36px -apple-system,system-ui';wrapLines(x,`${h.exercise} · ${h.value}`,820).slice(0,2).forEach((line,i)=>x.fillText(line,540,y+105+i*42));x.fillStyle='#8e8e93';x.font='22px -apple-system,system-ui';x.fillText(`${h.label} · 1ПМ ≈ ${plain(h.e1)} кг`,540,y+168);x.textAlign='left';y+=216;const extra=r.items.slice(0,2).map(q=>({name:`${q.exercise} · ${q.label}`,line:q.value}));if(extra.length)section('Достижения',extra,'exercises');if(d.exercises.length)section('Упражнения',d.exercises.slice(0,3),'exercises')}
     y+=18;x.fillStyle='#777';x.font='24px -apple-system,system-ui';x.textAlign='center';x.fillText('Сделано в UNVRSL FIT',540,y+32);x.textAlign='left';y+=72;
-    const out=D.createElement('canvas');out.width=WID;out.height=MAX;out.getContext('2d').drawImage(tmp,0,0);return out
+    return tmp
   }
   const canvasBlob=c=>new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('PNG не создан')),'image/png',.95));
 
