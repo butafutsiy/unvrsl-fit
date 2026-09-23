@@ -119,19 +119,27 @@
   function color(slug,scores){const v=scores.get(slug)||0;if(!v)return'#34343a';const max=Math.max(1,...scores.values()),q=v/max;return q>=.67?'#ff375f':accent()}
   function side(side,scores,bodyData){const sex=state()?.body==='female'?'female':'male',parts=bodyData?.[sex]?.[side]||[],paths=[];parts.forEach(part=>{const active=scores.has(part.slug),fill=color(part.slug,scores);Object.values(part.path||{}).flat().forEach(d=>{if(d)paths.push(`<path d="${String(d).replace(/"/g,'&quot;')}" fill="${fill}" opacity="${active?'.98':'.72'}" stroke="rgba(255,255,255,.16)" stroke-width="1.15" vector-effect="non-scaling-stroke"></path>`)})});const vb=side==='back'?'760 140 640 1230':'40 140 640 1230';return `<svg class="anatome-local-side" viewBox="${vb}" preserveAspectRatio="xMidYMid meet">${paths.join('')}</svg>`}
   async function render(){
-    if(rendering)return;const card=document.getElementById('anatomeMuscleCard');if(!card)return;const bodyData=await bodyPaths();if(!bodyData)return;
-    rendering=true;try{
-      const days=period(card),data=calculate(await sessions(),days),fig=card.querySelector('.anatome-figure'),top=card.querySelector('.anatome-top'),sub=card.querySelector('.anatome-sub');if(!fig)return;
+    if(rendering)return;const card=document.getElementById('anatomeMuscleCard');if(!card)return;rendering=true;
+    try{
+      const days=period(card),data=calculate(await sessions(),days),fig=card.querySelector('.anatome-figure'),top=card.querySelector('.anatome-top'),sub=card.querySelector('.anatome-sub');
+      // The numeric result does not depend on the optional anatomy illustration.
+      // Render it first so a missing/offline body-path asset cannot strand tonnage at “—”.
       const tonnage=card.querySelector('.anatome-tonnage-local'),tonnageValue=tonnage?.querySelector('b'),tonnageNote=tonnage?.querySelector('small');if(tonnage){const label=tonnage.querySelector('span');if(label)label.textContent=`Тоннаж за ${days} дней`;if(tonnageValue)tonnageValue.textContent=data.unknownVolumeSets&&data.volume===0?'— кг':`${data.volume.toLocaleString('ru-RU')} кг`;if(tonnageNote)tonnageNote.textContent=data.unknownVolumeSets?`Не включено подходов без известной нагрузки: ${data.unknownVolumeSets}`:'Только завершённые подходы'}
       const subtitle=`Последние ${days} дн. · ${data.sets} выполн. подходов`;if(sub&&sub.textContent!==subtitle)sub.textContent=subtitle;
       const topContent=topHtml(data.rows);if(top&&top.innerHTML!==topContent)top.innerHTML=topContent;
+      if(!fig)return;
       if(!data.rows.length){if(fig.querySelector('.anatome-empty'))return;fig.innerHTML='<div class="anatome-empty">Нет распознанных выполненных упражнений за этот период.</div>';return}
+      const bodyData=await bodyPaths();if(!bodyData){fig.innerHTML='<div class="anatome-error">Карта мышц временно недоступна. Тоннаж рассчитан по тренировкам.</div>';return}
       const sig=`${state()?.body||'male'}|${accent()}|${days}|`+data.rows.map(x=>x.join(':')).join('|');if(fig.dataset.full176Sig===sig&&fig.querySelector('.anatome-full-v176'))return;
       fig.dataset.full176Sig=sig;fig.dataset.localSig=sig;
       fig.innerHTML=`<div class="anatome-full-v176" style="width:100%"><div class="anatome-local-dual">${side('front',data.scores,bodyData)}${side('back',data.scores,bodyData)}</div><div class="anatome-local-caption">СПЕРЕДИ · СЗАДИ</div></div>`;
+    }catch(error){
+      console.warn('full muscle map render',error);
+      const card=document.getElementById('anatomeMuscleCard'),note=card?.querySelector('.anatome-tonnage-local small');if(note)note.textContent='Не удалось загрузить тренировочные данные';
+      const fig=card?.querySelector('.anatome-figure');if(fig)fig.innerHTML='<div class="anatome-error">Не удалось загрузить статистику. Попробуй открыть её ещё раз.</div>';
     }finally{rendering=false}
   }
-  let scheduled=null;function schedule(){if(scheduled!=null)return;scheduled=setTimeout(()=>{scheduled=null;render()},80)}
+  let scheduled=null;function schedule(){if(scheduled!=null)return;scheduled=setTimeout(()=>{scheduled=null;return render()},80)}
   window.unvrslMuscleMapCalculate211=calculate;window.unvrslRefreshMuscleMap211=schedule;
   const root=document.getElementById('stats');if(root)new MutationObserver(()=>{const fig=document.querySelector('#anatomeMuscleCard .anatome-figure');if(fig&&!fig.querySelector('.anatome-full-v176,.anatome-empty'))schedule()}).observe(root,{childList:true,subtree:true});
   document.addEventListener('click',e=>{if(e.target?.closest?.('#anatomeMuscleCard [data-days]')){loadedAt=0;setTimeout(render,120)}},true);
