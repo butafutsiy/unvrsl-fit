@@ -65,6 +65,20 @@ test("time-based exercise ignores a stray strength catalog load type",()=>{
  assert.match(read("training-load-model.js"),/\["time","distance"\]\.includes\(A\.loadType/);
  assert.match(read("training-engine.js"),/\['time','distance'\]\.includes\(WorkoutDomain\.loadType/);
 });
+test("equipment controls remain available for cardio and strength after a workout rerender",()=>{
+ const listeners={},card=()=>{const c={control:null,querySelector:s=>s===".eq405-control"?c.control:s===":scope > .row"?{insertAdjacentElement:(_,b)=>{c.control=b}}:null,prepend:b=>{c.control=b}};return c};
+ const root={cards:[card(),card()],querySelectorAll:s=>s===".exercise"?root.cards:[]};
+ const ctx={console,WorkoutDomain:A,workoutRegistry:reg,document:{head:{append:()=>{}},createElement:tag=>({tagName:tag}),getElementById:id=>id==="start"?root:null}};
+ ctx.window=ctx;ctx.st={current:{ex:[{n:"Аэробайк",mode:"cardio",set:[{min:5}]},{n:"Жим лёжа",set:[{w:60,r:8}]}]}};
+ ctx.addEventListener=(name,fn)=>{listeners[name]=fn};ctx.modal=markup=>{ctx.markup=markup};
+ vm.runInNewContext(read("equipment-profiles-v405.js"),ctx);
+ assert.equal(root.cards[0].control?.textContent,"＋ Оборудование");
+ assert.equal(root.cards[1].control?.textContent,"＋ Оборудование");
+ root.cards=[card(),card()];listeners["unvrsl:workout-rendered"]();
+ assert.equal(root.cards[0].control?.textContent,"＋ Оборудование");
+ ctx.equipmentEdit405(encodeURIComponent("legacy:аэробайк@0"),"");
+ assert.match(ctx.markup,/<option value="NONE" selected>/);
+});
 test("muscle labels are translated and settings retain only backup controls",()=>{
  const ctx={window:{}};vm.runInNewContext(read("og-db.js").split("function ruExerciseName")[0]+";this.translate=ruTarget;",ctx);
  assert.equal(ctx.translate("quadriceps"),"Квадрицепс");
