@@ -191,8 +191,9 @@ if (require.main === module) (async () => {
       const media = w.document.querySelector("#sheet img[data-exercise-media]");
       assert.ok(media);
       observer.cb([{ target: media, isIntersecting: true }]);
-      assert.equal(new URL(media.src).pathname, "/" + exercise.image);
+      assert.equal(new URL(media.src).pathname, "/" + exercise.gif);
       assert.ok(fs.existsSync(path.join(root, exercise.image)));
+      assert.ok(fs.existsSync(path.join(root, exercise.gif)));
       w.closeModal();
     }
     result.localIllustrations = true;
@@ -293,7 +294,7 @@ if (require.main === module) (async () => {
     assert.ok(recovered.window.st.current.ex.length);
     recovered.window.begin(1, "B");
     assert.equal(recovered.window.st.current.id, launchedId);
-    recovered.window.cancelWorkout();
+    await recovered.window.cancelWorkout();
     assert.equal(recovered.window.st.current, null);
     result.realProgramLaunch = true;
     const pullup = rw

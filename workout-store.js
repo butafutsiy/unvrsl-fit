@@ -136,7 +136,7 @@
     let completing = null;
     async function finish(
       state,
-      { persist = save, sync = null, userId = null } = {},
+      { persist = save, sync = null, userId = null, closeDraft = close } = {},
     ) {
       if (completing) return completing;
       const active = state.current;
@@ -144,7 +144,6 @@
       if (active.userId && userId && active.userId !== userId)
         throw new Error("Войдите в аккаунт владельца тренировки");
       completing = (async () => {
-        checkpoint(state);
         active.pendingCompletion = true;
         active.ended = active.ended || now();
         if ((await persist(state)) === false)
@@ -169,7 +168,8 @@
         else list[index] = result;
         if ((await persist(state)) === false)
           throw new Error("Не удалось сохранить результат");
-        close(state, active, "completed");
+        if ((await closeDraft(state, active, "completed")) === false)
+          throw new Error("Не удалось закрыть черновик");
         return result;
       })().finally(() => {
         completing = null;
@@ -182,6 +182,7 @@
       checkpoint,
       restore,
       discard,
+      close,
       finish,
       journal,
       hydrateJournal,

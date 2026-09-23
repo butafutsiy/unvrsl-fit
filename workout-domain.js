@@ -295,6 +295,13 @@
         : effectiveLoad(e, s, session, reg, weights);
     return w > 0 ? Math.round(w * (r === 1 ? 1 : 1 + r / 30) * 10) / 10 : null;
   }
+  function manualOneRepMax(e, weight, reps, reg, bodyWeight = null) {
+    const r = number(reps), w = number(weight), bw = number(bodyWeight);
+    if (!Number.isInteger(r) || r < 1 || r > 12 || w == null || w < 0)
+      return null;
+    const session = bw > 0 ? { bodyWeight: bw } : {};
+    return e1rm(e, { w, r, ok: true, method: "STANDARD" }, session, reg);
+  }
   function phase(e, s) {
     if (method(e, s) === "STANDARD") return "";
     return String(
@@ -860,6 +867,7 @@
     effectiveLoad,
     setLabel,
     e1rm,
+    manualOneRepMax,
     history,
     repRange,
     recommend,

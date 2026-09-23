@@ -1049,8 +1049,8 @@ window.UNVRSL_EXERCISES=[
     "bp": "back",
     "tg": "spine",
     "eq": "weighted",
-    "gif": "",
-    "image": "assets/exercises/weighted-hyperextension-v392.jpg",
+    "gif": "assets/exercises/weighted-hyperextension-v394.gif",
+    "image": "assets/exercises/weighted-hyperextension-v394-thumb.jpg",
     "instructions": {
       "ru": "Настрой опору ниже сгиба бёдер, закрепи стопы и прижми диск к груди. Наклоняйся за счёт движения в тазобедренных суставах, удерживая спину нейтрально. Поднимись до прямой линии корпуса и ног, без рывка и переразгибания поясницы."
     },
@@ -1108,10 +1108,10 @@ window.UNVRSL_EXERCISES=[
       "canon:weighted_hyperextension"
     ],
     "mediaProvenance": {
-      "kind": "generated_static_illustration",
+      "kind": "generated_animated_keyframes",
       "reviewed": "2026-09-22",
       "referenceStyle": "white anatomical catalog thumbnail",
-      "note": "New illustration; not a restored GIF"
+      "note": "Two anatomically distinct motion keyframes; barefoot"
     }
   },
   {
@@ -3508,8 +3508,8 @@ window.UNVRSL_EXERCISES=[
     "bp": "upper legs",
     "tg": "quads",
     "eq": "body weight",
-    "gif": "",
-    "image": "assets/exercises/box-jump-v392.jpg",
+    "gif": "assets/exercises/box-jump-v394.gif",
+    "image": "assets/exercises/box-jump-v394-thumb.jpg",
     "instructions": {
       "ru": "Выбери устойчивую тумбу подходящей высоты. Сделай небольшой подсед, оттолкнись двумя ногами и приземлись на тумбу обеими стопами с мягкими коленями. Выпрямись и спокойно сойди с тумбы. Это запрыгивание вверх, не спрыгивание вниз."
     },
@@ -3568,10 +3568,10 @@ window.UNVRSL_EXERCISES=[
       "canon:box_jump"
     ],
     "mediaProvenance": {
-      "kind": "generated_static_illustration",
+      "kind": "generated_animated_keyframes",
       "reviewed": "2026-09-22",
       "referenceStyle": "white anatomical catalog thumbnail",
-      "note": "New illustration; not a restored GIF"
+      "note": "Two anatomically distinct motion keyframes; barefoot"
     }
   },
   {
@@ -4615,8 +4615,8 @@ window.UNVRSL_EXERCISES=[
     "bp": "chest",
     "tg": "pectorals",
     "eq": "weighted",
-    "gif": "",
-    "image": "assets/exercises/weighted-pushup-v392.jpg",
+    "gif": "assets/exercises/weighted-pushup-v394.gif",
+    "image": "assets/exercises/weighted-pushup-v394-thumb.jpg",
     "instructions": {
       "ru": "Надёжно закрепи дополнительное отягощение. Сохраняй корпус прямым, опускайся контролируемо и выжимай себя вверх без провисания поясницы."
     },
@@ -4674,10 +4674,10 @@ window.UNVRSL_EXERCISES=[
       "canon:weighted_pushup"
     ],
     "mediaProvenance": {
-      "kind": "generated_static_illustration",
+      "kind": "generated_animated_keyframes",
       "reviewed": "2026-09-22",
       "referenceStyle": "white anatomical catalog thumbnail",
-      "note": "New illustration; not a restored GIF"
+      "note": "Two anatomically distinct motion keyframes; barefoot"
     }
   },
   {
@@ -11813,9 +11813,9 @@ window.UNVRSL_EXERCISES=[
     "eq": "smith machine",
     "tg": "glutes",
     "virtual": true,
-    "gif": "assets/hip-thrust-smith.gif?v=356",
-    "gif_url": "assets/hip-thrust-smith.gif?v=356",
-    "image": "",
+    "gif": "assets/exercises/hip-thrust-smith-v394.gif",
+    "gif_url": "assets/exercises/hip-thrust-smith-v394.gif",
+    "image": "assets/exercises/hip-thrust-smith-v394-thumb.jpg",
     "instructions": {
       "ru": "Расположи верх спины на скамье, гриф Смита – над тазом через мягкую накладку. Стопы поставь примерно на ширине таза так, чтобы в верхней точке голени были близки к вертикали. Опускай таз подконтрольно и разгибай его до нейтрального положения корпуса."
     },
@@ -11878,9 +11878,9 @@ window.UNVRSL_EXERCISES=[
     "eq": "leverage machine",
     "tg": "glutes",
     "virtual": true,
-    "gif": "assets/hip-thrust-machine.gif?v=356",
-    "gif_url": "assets/hip-thrust-machine.gif?v=356",
-    "image": "",
+    "gif": "assets/exercises/hip-thrust-machine-v394.gif",
+    "gif_url": "assets/exercises/hip-thrust-machine-v394.gif",
+    "image": "assets/exercises/hip-thrust-machine-v394-thumb.jpg",
     "instructions": {
       "ru": "Зафиксируй верх спины на опоре и поставь стопы устойчиво на платформу. Опускай таз подконтрольно, сохраняя нейтральное положение позвоночника. Разгибай таз за счёт ягодичных до линии плечи – таз – колени. В верхней точке сделай короткую фиксацию без переразгибания поясницы."
     },
@@ -12007,8 +12007,8 @@ window.UNVRSL_EXERCISES=[
     "bp": "upper legs",
     "tg": "glutes",
     "eq": "barbell",
-    "gif": "assets/hip-thrust-barbell.gif?v=356",
-    "image": "",
+    "gif": "assets/exercises/hip-thrust-barbell-v394.gif",
+    "image": "assets/exercises/hip-thrust-barbell-v394-thumb.jpg",
     "instructions": {
       "ru": "Расположи верх спины на скамье, штангу – над тазом через мягкую накладку. Стопы поставь устойчиво; в верхней точке голени должны быть близки к вертикали. Опускай таз подконтрольно и разгибай его за счёт ягодичных до линии плечи – таз – колени. Удерживай штангу руками и не переразгибай поясницу."
     },
@@ -12016,7 +12016,7 @@ window.UNVRSL_EXERCISES=[
     "custom": false,
     "canonical": true,
     "canonicalKey": "barbell_hip_thrust",
-    "gif_url": "assets/hip-thrust-barbell.gif?v=356",
+    "gif_url": "assets/exercises/hip-thrust-barbell-v394.gif",
     "unvrslHipKind": "barbell",
     "aliases": [
       "Ягодичный мост со штангой",

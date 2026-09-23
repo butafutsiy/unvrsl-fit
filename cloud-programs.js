@@ -46,23 +46,18 @@ async function cloudShareProgram(id){
   if(!cloudConfigured())return _cloudLocalShareProgram(id);
   if(!cloud.user)return cloudAccountSheet();
   if(!trainerIsTrainer())return alert('Включи роль «Тренер» в аккаунте.');
-  const snapshot=cloudProgramSnapshot(p);
   toast('Создаю ссылку…');
-  let planId=p.cloudPlanId||null,version=p.cloudVersion||1;
-  if(planId){
-    const q=await cloud.client.from('plans').select('version').eq('id',planId).maybeSingle();
-    version=q.data?.version||version
-  }else{
-    const ins=await cloud.client.from('plans').insert({trainer_id:cloud.user.id,title:p.name,version:1,snapshot}).select().single();
-    if(ins.error)return alert(ins.error.message);
-    planId=ins.data.id;version=1;
-    await cloud.client.from('plan_versions').insert({plan_id:planId,trainer_id:cloud.user.id,version,snapshot});
-    p.cloudPlanId=planId;p.cloudVersion=version;p.trainerId=cloud.user.id;save()
+  try{
+    // Assignment and link sharing must publish the same current snapshot.
+    const {planId}=await trainerCloudPlanForProgram(p);
+    const token=(crypto.randomUUID?.()||('t'+Date.now()+Math.random())).replaceAll('-','');
+    const inv=await cloud.client.from('plan_invites').insert({token,trainer_id:cloud.user.id,plan_id:planId,max_uses:1}).select().single();
+    if(inv.error)throw inv.error;
+    trainerShareSheet(p.name,`${location.origin}${location.pathname}?invite=${encodeURIComponent(token)}`)
+  }catch(error){
+    console.warn('Program sharing failed',error);
+    alert('Не удалось создать ссылку на программу: '+(error.message||error))
   }
-  const token=(crypto.randomUUID?.()||('t'+Date.now()+Math.random())).replaceAll('-','');
-  const inv=await cloud.client.from('plan_invites').insert({token,trainer_id:cloud.user.id,plan_id:planId,max_uses:1}).select().single();
-  if(inv.error)return alert(inv.error.message);
-  trainerShareSheet(p.name,`${location.origin}${location.pathname}?invite=${token}`)
 }
 const _cloudLocalShareProgram=window.shareProgram;
 if(typeof _cloudLocalShareProgram==='function')window.shareProgram=async function(id){
@@ -72,12 +67,18 @@ if(typeof _cloudLocalShareProgram==='function')window.shareProgram=async functio
   return cloudShareProgram(id)
 };
 
+let acceptingProgramInvite=false;
 async function cloudAcceptInviteProgramAware(){
   if(!cloud.user)return cloudAccountSheet();
+  if(acceptingProgramInvite)return;
+  acceptingProgramInvite=true;
+  try{
+  await cloudEnsureProfile();
   const {data,error}=await cloud.client.rpc('accept_plan_invite',{p_token:cloud.invite});
-  if(error)return alert('Не удалось принять программу: '+error.message);
-  if(!data)return alert('Приглашение недействительно или истекло');
+  if(error)throw error;
+  if(!data)throw new Error('Приглашение недействительно или истекло');
   const snap=data.snapshot||{};
+  if(snap.kind==='coach-program'&&!Array.isArray(snap.program?.weeks))throw new Error('План содержит неверные данные. Попроси тренера создать новую ссылку');
   if(snap.kind==='coach-program'&&snap.program&&Array.isArray(st.programs)){
     let p=JSON.parse(JSON.stringify(snap.program));
     p.id=typeof uid==='function'?uid('prog'):'prog-'+Date.now();
@@ -94,12 +95,15 @@ async function cloudAcceptInviteProgramAware(){
     if(i>=0)st.remotePlans[i]=obj;else st.remotePlans.push(obj)
   }
   allowAcceptedClientPlan(data.plan_id);
-  save();
+  const persisted=window.persistWorkoutState?await window.persistWorkoutState():save();
+  if(persisted===false)throw new Error('Программа получена, но пока не сохранилась на устройстве. Повтори добавление');
   history.replaceState({},'',location.pathname);
   cloud.invite=null;
   closeModal();
   render();
-  toast('Программа добавлена')
+  toast('Программа добавлена');
+  }catch(error){console.warn('Program invite failed',error);alert('Не удалось добавить программу: '+(error.message||error))}
+  finally{acceptingProgramInvite=false}
 }
 window.cloudAcceptInvite=cloudAcceptInviteProgramAware;
 

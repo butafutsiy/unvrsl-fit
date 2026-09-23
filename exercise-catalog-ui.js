@@ -220,6 +220,30 @@
   };
   const list = (items) =>
     `<ul>${(items || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  function maximumCard(e, historyEstimate, profile) {
+    const type = A.loadType(e, workoutRegistry);
+    if (e.resultRule?.e1rm === false || ["time", "distance", "repetitions_only", "bodyweight_only"].includes(type))
+      return `<section class="catalog394-estimate"><h3>Результаты</h3><p class="muted small">Для этого упражнения 1ПМ не рассчитывается. Лучший результат смотри в истории ниже.</p></section>`;
+    const body = type === "bodyweight_added" || type === "bodyweight_assisted";
+    const units = type === "per_dumbbell" ? "на одну гантель" : type === "per_side" ? "на одну сторону" : body ? "дополнительный вес" : "рабочий вес";
+    return `<section class="catalog394-estimate"><h3>Разовый максимум</h3><div class="catalog394-max"><span>По истории</span><b>${historyEstimate.length ? `${Math.max(...historyEstimate).toFixed(1)} кг` : "Пока нет данных"}</b></div><p class="muted small">Из завершённых рабочих подходов до 12 повторений. Формула Эпли, оценка не является подтверждённым рекордом.</p><h4>Посчитать вручную</h4><div class="catalog394-fields"><label>Вес, кг <small>${esc(units)}</small><input id="manualMaxWeight" inputmode="decimal" type="text" placeholder="Например, 60" value="${body ? "0" : ""}" oninput="calculateExerciseMaximum('${encodeURIComponent(e.id)}')"></label><label>Повторения <small>1–12</small><input id="manualMaxReps" inputmode="numeric" type="text" placeholder="Например, 8" oninput="calculateExerciseMaximum('${encodeURIComponent(e.id)}')"></label></div>${body ? `<label class="catalog394-body">Масса тела, кг <small>для расчёта эффективной нагрузки</small><input id="manualMaxBody" inputmode="decimal" type="text" placeholder="Укажи фактическую массу" oninput="calculateExerciseMaximum('${encodeURIComponent(e.id)}')"></label>` : ""}<p id="manualMaxResult" class="catalog394-result" aria-live="polite">Введи вес и количество повторений</p><p class="muted small">Шаг оборудования ${esc(profile.step)} кг. Ручной расчёт не меняет историю и автовес.</p></section>`;
+  }
+  W.calculateExerciseMaximum = (token) => {
+    const e = workoutRegistry.resolve(decodeURIComponent(token));
+    const output = D.getElementById("manualMaxResult");
+    if (!e || !output) return;
+    const weight = D.getElementById("manualMaxWeight")?.value.trim().replace(",", ".");
+    const reps = D.getElementById("manualMaxReps")?.value.trim();
+    const body = D.getElementById("manualMaxBody")?.value.trim().replace(",", ".");
+    if (weight === "" || reps === "") { output.textContent = "Введи вес и количество повторений"; return; }
+    const type = A.loadType(e, workoutRegistry);
+    if (["bodyweight_added", "bodyweight_assisted"].includes(type) && !(Number(body) > 0)) {
+      output.textContent = "Для оценки 1ПМ укажи массу тела";
+      return;
+    }
+    const result = A.manualOneRepMax(e, weight, reps, workoutRegistry, body || null);
+    output.textContent = result == null ? "Проверь вес и повторения (от 1 до 12)" : `Расчётный 1ПМ: ${result.toFixed(1)} кг${type === "per_dumbbell" ? " на гантель" : type === "per_side" ? " общей нагрузки" : ""}`;
+  };
   W.renderExerciseDetail = renderExerciseDetail = function (input) {
     const e = workoutRegistry.resolve(input) || input,
       c = e.coaching || {},
@@ -232,9 +256,10 @@
           A.e1rm(x.exercise, x.set, x.session, workoutRegistry, st.bw),
         )
         .filter((x) => x != null),
-      gif = url(e.gif || e.image);
+      gif = url(e.gif || e.image),
+      maxCard = maximumCard(e, est, p);
     modal(
-      `<div class="row between"><h2>${esc(e.n)}</h2><button class="btn" onclick="closeModal()" aria-label="Закрыть">✕</button></div><div class="exercise-media catalog392-media">${gif ? `<img data-exercise-media data-animated="${/\.gif(?:\?|$)/i.test(gif) ? 1 : 0}" data-src="${esc(gif)}" alt="${esc(e.n)}" width="400" height="400" decoding="async">` : "<span>Для этого упражнения ещё нет проверенного изображения</span>"}</div><p>${esc(ruTarget(e.tg))} · ${esc(EQ_RU[e.eq] || e.eq)}</p><p class="muted small">Дополнительные мышцы: ${esc((e.secondary || []).map(ruTarget).join(", "))}</p><p class="muted small">${e.type === "isolation" ? "Изолирующее" : "Многосуставное"} · ${esc({ external_total: "Общий внешний вес", per_dumbbell: "Вес одной гантели", per_side: "Вес на сторону", bodyweight_only: "Собственный вес", bodyweight_added: "Собственный вес и дополнительное отягощение", bodyweight_assisted: "Величина помощи", machine_stack: "Вес тренажёра", time: "Время", distance: "Дистанция", repetitions_only: "Повторения" }[e.loadType] || e.loadType)}</p><p>${esc(e.description || "Описание пока не заполнено")}</p><h3>Исходное положение</h3><p>${esc(c.start || "Не заполнено")}</p><h3>Движение</h3>${list(c.sequence)}<h3>Дыхание</h3><p>${esc(c.breathing || "Не заполнено")}</p><h3>Технические акценты</h3>${list(c.cues)}<h3>Частые ошибки</h3>${list(c.mistakes)}<h3>Безопасность</h3>${list(c.safety)}<div class="field"><label for="exerciseStep">Шаг веса, кг</label><input id="exerciseStep" type="number" min="0.1" step="0.1" value="${p.step}"></div><button class="btn" onclick="saveExerciseStep('${esc(e.id)}')">Сохранить шаг оборудования</button>${est.length ? `<h3>Расчётный 1ПМ</h3><b>${Math.max(...est).toFixed(1)} кг${e.loadType === "per_dumbbell" ? " / гантель" : ""}</b><p class="muted small">Только завершённые обычные рабочие подходы до 12 повторений.</p>` : ""}${
+      `<div class="row between"><h2>${esc(e.n)}</h2><button class="btn" onclick="closeModal()" aria-label="Закрыть">✕</button></div><div class="exercise-media catalog392-media">${gif ? `<img data-exercise-media data-animated="${/\.gif(?:\?|$)/i.test(gif) ? 1 : 0}" data-src="${esc(gif)}" alt="${esc(e.n)}" width="400" height="400" decoding="async">` : "<span>Для этого упражнения ещё нет проверенного изображения</span>"}</div><p>${esc(ruTarget(e.tg))} · ${esc(EQ_RU[e.eq] || e.eq)}</p><p class="muted small">Дополнительные мышцы: ${esc((e.secondary || []).map(ruTarget).join(", "))}</p><p class="muted small">${e.type === "isolation" ? "Изолирующее" : "Многосуставное"} · ${esc({ external_total: "Общий внешний вес", per_dumbbell: "Вес одной гантели", per_side: "Вес на сторону", bodyweight_only: "Собственный вес", bodyweight_added: "Собственный вес и дополнительное отягощение", bodyweight_assisted: "Величина помощи", machine_stack: "Вес тренажёра", time: "Время", distance: "Дистанция", repetitions_only: "Повторения" }[e.loadType] || e.loadType)}</p>${maxCard}<p>${esc(e.description || "Описание пока не заполнено")}</p><h3>Исходное положение</h3><p>${esc(c.start || "Не заполнено")}</p><h3>Движение</h3>${list(c.sequence)}<h3>Дыхание</h3><p>${esc(c.breathing || "Не заполнено")}</p><h3>Технические акценты</h3>${list(c.cues)}<h3>Частые ошибки</h3>${list(c.mistakes)}<h3>Безопасность</h3>${list(c.safety)}${
         hist.length
           ? "<h3>Лучшие результаты</h3>" +
             A.bestResults(e, hist, workoutRegistry)
@@ -251,19 +276,9 @@
               )
               .join("")
           : '<p class="muted">Завершённых рабочих подходов пока нет.</p>'
-      }<button class="btn primary full" onclick="addToPlanSheet('${encodeURIComponent(e.id)}')">Добавить в план</button><p class="muted small">Медиа © Gym visual. Источник: ExerciseDB dataset.</p>`,
+      }<button class="btn primary full" onclick="addToPlanSheet('${encodeURIComponent(e.id)}')">Добавить в план</button>${e.mediaProvenance?.kind?.startsWith('generated') ? '' : '<p class="muted small">Медиа © Gym visual. Источник: ExerciseDB dataset.</p>'}`,
     );
     observe();
-  };
-  W.saveExerciseStep = (id) => {
-    const step = A.number(D.getElementById("exerciseStep")?.value);
-    if (!(step > 0)) return toast("Шаг должен быть больше нуля");
-    (st.exerciseWeightProfiles || (st.exerciseWeightProfiles = {}))[id] = {
-      ...(st.exerciseWeightProfiles?.[id] || {}),
-      step,
-    };
-    save();
-    toast("Шаг сохранён");
   };
   W.historySetsFor = historySetsFor = (n, sourceId) =>
     A.history({ n, sourceId }, st.sessions, workoutRegistry).map((x) => ({
@@ -296,5 +311,6 @@
   const style = D.createElement("style");
   style.textContent =
     "#exercises{padding-bottom:calc(140px + env(safe-area-inset-bottom))}.catalog392-row{display:flex;align-items:center;gap:8px;content-visibility:auto;contain-intrinsic-size:auto 108px}.catalog392-open{display:flex;align-items:center;gap:14px;flex:1;text-align:left;min-width:0}.catalog392-open b{font-size:18px;line-height:1.3}.catalog392-open small{display:block;color:#999;margin-top:6px}.catalog392-thumb{display:grid;place-items:center;width:72px;height:72px;flex:none;background:#fafafa;border-radius:14px;overflow:hidden;color:#b9b9bf}.catalog392-thumb img{width:72px;height:72px;object-fit:contain}.catalog392-media{aspect-ratio:1;background:#fafafa!important;border-radius:22px;display:grid;place-items:center;overflow:hidden;color:#666}.catalog392-media img{width:100%;height:100%;object-fit:contain!important}.catalog392-media span{padding:32px;text-align:center}";
+  style.textContent += ".catalog394-estimate{background:#252229;border:1px solid #403846;border-radius:19px;padding:17px;margin:20px 0}.catalog394-estimate h3{margin:0 0 14px}.catalog394-estimate h4{margin:20px 0 12px}.catalog394-max{display:flex;justify-content:space-between;align-items:center;gap:10px}.catalog394-max b{font-size:22px;color:#bf5af2}.catalog394-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}.catalog394-fields label,.catalog394-body{display:block;font-size:14px;font-weight:600}.catalog394-fields small,.catalog394-body small{display:block;color:#999;font-weight:400;margin:3px 0}.catalog394-fields input,.catalog394-body input{width:100%;margin-top:8px;min-height:48px;border-radius:11px;text-align:center}.catalog394-body{margin-top:14px}.catalog394-result{background:#35283d;border-radius:12px;padding:15px;margin:14px 0;color:#f1d7ff;font-weight:700}";
   D.head.append(style);
 })();

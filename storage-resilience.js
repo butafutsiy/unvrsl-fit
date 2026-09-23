@@ -168,6 +168,49 @@
     save();
     return durable;
   };
+  W.closeWorkoutDraft = async (state, session, reason) => {
+    await recovery;
+    if (!session || state.current?.id !== session.id) return false;
+    const journal = clone(workoutStore.journal());
+    journal.schemaVersion = 4;
+    journal.owners ||= {};
+    journal.closed ||= {};
+    journal.closed[session.id] = { at: Date.now(), reason };
+    const owner = String(session.userId || "local");
+    if (journal.owners[owner]?.id === session.id) delete journal.owners[owner];
+    const closed = {
+      ...state,
+      current: null,
+      storageRevision: Math.max(Date.now(), Number(state.storageRevision || 0) + 1),
+    };
+    // Both records must commit in one IndexedDB transaction. A write failure
+    // leaves the in-memory draft untouched so the user can try again.
+    try {
+      pending = pending.catch(() => {}).then(() => mirror(clone(closed), "latest", journal));
+      await pending;
+    } catch (error) {
+      console.warn("Could not close workout draft", error);
+      // Private browsing can disable IndexedDB while localStorage still works.
+      const previousRevision = state.storageRevision;
+      try {
+        state.storageRevision = closed.storageRevision;
+        workoutStore.close(state, session, reason);
+        return true;
+      } catch (_) {
+        state.storageRevision = previousRevision;
+      }
+      return false;
+    }
+    workoutStore.hydrateJournal(journal);
+    Object.assign(state, { current: null, storageRevision: closed.storageRevision });
+    try {
+      localStorage.setItem(WorkoutStore.PRIMARY, JSON.stringify(closed));
+      localStorage.setItem(WorkoutStore.DRAFT, JSON.stringify(journal));
+    } catch (_) {
+      W.__unvrslStorageModeV393 = "indexeddb";
+    }
+    return true;
+  };
   const recovery = recover().finally(() => {
     hydrating = false;
     W.__unvrslStorageHydrationSettledV386 = true;

@@ -54,6 +54,14 @@ const prior = (weight, reps = 15, rpe = 7, extra = {}) =>
       { id: "s" + i, started: i, programId: "p" + i, ...extra },
     ),
   );
+test("manual maximum uses the same rules as completed sets without writing a record", () => {
+  assert.equal(A.manualOneRepMax(bar, 60, 8, reg), 76);
+  assert.equal(A.manualOneRepMax(pull, 0, 8, reg, 90), 114);
+  assert.equal(A.manualOneRepMax(pull, 10, 8, reg, 90), 126.7);
+  assert.equal(A.manualOneRepMax(assist, 25, 6, reg, 90), null);
+  assert.equal(A.manualOneRepMax(pull, 0, 8, reg), null);
+  assert.equal(A.manualOneRepMax(bar, 60, 13, reg), null);
+});
 test("1 + 27 + 28: bodyweight zero is a real value, never a fake 1 kg", () => {
   assert.equal(A.validSet(pull, set(0), reg), true);
   assert.equal(A.number(0), 0);
