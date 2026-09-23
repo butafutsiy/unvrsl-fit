@@ -59,6 +59,24 @@ test("a planned 135 kg progression is not silently replaced with old 115 kg",()=
  const rec=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,[old("1",bar,[set(115,8,8)])],reg);
  assert.equal(rec.weight,135);assert.equal(rec.planPreserved,true);
 });
+test("the same 115 kg × 12 RPE 8 supports about 135 kg for 5–7 reps",()=>{
+ const bar=p("romanian-bar"),past=[old("1",bar,[set(115,12,8)])];
+ const current=now(bar,[set(135,6,0,{ok:false,programW:135,targetRepMin:5,targetRepMax:7,targetRpeMin:8,targetRpeMax:9})]);
+ const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg);
+ assert.equal(rec.weight,135);assert.equal(rec.planPreserved,false);
+ assert.equal(rec.action,"range_adjust");assert.equal(rec.basis.estimatedOneRepMax,168.7);
+ assert.match(rec.reason,/115 кг × 12/);
+ const pastWithRir=[old("1",bar,[set(115,12,"",{rir:2})])];
+ assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,pastWithRir,reg).weight,135);
+});
+test("isolation and effort-free sets do not justify a large weight jump",()=>{
+ const bar=p("leg-curl"),past=[old("1",bar,[set(70,12,8)])];
+ const current=now(bar,[set(85,6,0,{ok:false,programW:85,targetRepMin:5,targetRepMax:7,targetRpeMin:8,targetRpeMax:9})]);
+ current.ex[0].type="isolation";past[0].ex[0].type="isolation";
+ assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg).planPreserved,true);
+ delete current.ex[0].type;delete past[0].ex[0].type;past[0].ex[0].set[0].rpe="";
+ assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg).planPreserved,true);
+});
 test("time-based exercise ignores a stray strength catalog load type",()=>{
  assert.equal(A.loadType({mode:"timer",loadType:"external_total"},reg),"time");
  assert.equal(A.loadType({kind:"timer",loadType:"external_total"},reg),"time");

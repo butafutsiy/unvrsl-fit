@@ -403,10 +403,6 @@
     // pull its next-session recommendation down to their median.
     const prior=latestWeights.length?(method(e,set)==="STANDARD"?Math.max(...latestWeights):median(latestWeights)):null;
     const seed=[set.programW,set.plannedW,set.w].map(number).find(x=>x>0)??0;
-    const anomalous=seed>0&&prior>0&&Math.abs(seed-prior)>Math.max(2*p.step,seed*.1);
-    let raw=anomalous?seed:(prior??seed??0),
-      reason = "Недостаточно сопоставимой истории: текущий вес сохранён",
-      action = "hold";
     const targetMin=number(set.targetRpeMin??e.targetRpeMin??session.programWeekRpeMin)??number(set.targetRpeMax??e.targetRpeMax??session.target)??7;
     const target=number(set.targetRpeMax??e.targetRpeMax??session.programWeekRpeMax)??number(session.target)??8;
     const groups = ids
@@ -417,21 +413,40 @@
       (number(x.set.actualRir ?? x.set.rir) == null
         ? null
         : 10 - number(x.set.actualRir ?? x.set.rir));
+    // Compare rep ranges through a within-exercise effort estimate. A 115×12
+    // set at RPE 8 can support 135×6 at RPE 8–9; comparing 115 and 135 alone
+    // would incorrectly reject the plan. Do not extrapolate isolation work.
+    const top=latest.find(x=>number(x.set.w)===prior),oldReps=number(top?.set.actualReps??top?.set.r),oldRpe=top?effort(top):null;
+    const targetReps=(range.lo+range.hi)/2,kind=String(e.type||reg?.resolve(e)?.type||"").toLowerCase();
+    const shift=oldReps!=null&&Math.abs(oldReps-targetReps)>=2;
+    const eligible=method(e,set)==="STANDARD"&&kind!=="isolation"&&
+      ["external_total","machine_stack","per_dumbbell"].includes(p.loadType)&&
+      shift&&oldReps>=3&&oldReps<=12&&oldRpe>=7&&oldRpe<=10&&
+      targetMin>=7&&target<=10&&targetMin<=target&&prior>0&&
+      (seed===0?Math.abs(oldReps-targetReps)>=3:Math.abs(seed-prior)>Math.max(2*p.step,seed*.1));
+    const estimatedOneRepMax=eligible?prior*(1+(oldReps+10-oldRpe)/30):null;
+    const projectedRaw=estimatedOneRepMax==null?null:estimatedOneRepMax/(1+(targetReps+10-(targetMin+target)/2)/30);
+    const projected=projectedRaw>=prior*.75&&projectedRaw<=prior*1.3?projectedRaw:null;
+    const reference=projected??prior;
+    const anomalous=seed>0&&reference>0&&Math.abs(seed-reference)>Math.max(2*p.step,seed*.1);
+    let raw=anomalous?seed:(projected??prior??seed??0),
+      reason = "Недостаточно сопоставимой истории: текущий вес сохранён",
+      action = projected!=null&&!anomalous?"range_adjust":"hold";
     const effortKnown = recent.filter((x) => effort(x) != null).length;
     const strong=groups.length>=2&&groups.every(g=>g.length>0&&g.every(x=>effort(x)!=null&&effort(x)<=target)&&g.filter(x=>number(x.set.actualReps??x.set.r)>=range.hi).length/g.length>=.75);
     const weak =
       latest.length > 0 &&
       latest.every(x=>number(x.set.actualReps??x.set.r)<range.lo&&effort(x)!=null&&effort(x)>target);
     if(ids.length){
-      reason=anomalous?`План ${seed} кг сильно отличается от прошлой рабочей нагрузки ${prior} кг: вес оставлен без автоматической замены`:"Сохранить вес последнего тяжёлого рабочего сета";
-      if (strong&&!anomalous) {
+      reason=anomalous?`План ${seed} кг отличается от ${projected!=null?`оценки для нового диапазона ${Number(projected.toFixed(1))}`:`прошлой рабочей нагрузки ${prior}`} кг: вес оставлен без автоматической замены`:projected!=null?`Прошлый рабочий сет ${prior} кг × ${oldReps} при RPE ${oldRpe}: расчётный 1ПМ ${Number(estimatedOneRepMax.toFixed(1))} кг, для ${range.lo}–${range.hi} повторений при RPE ${targetMin}–${target} ориентир ${Number(projected.toFixed(1))} кг`:"Сохранить вес последнего тяжёлого рабочего сета";
+      if (strong&&!anomalous&&projected==null) {
         action = "up";
         reason =
           "В двух последних тренировках достигнута верхняя граница повторений";
         raw = p.available?.length
           ? moveWeight(raw, p.loadType === "bodyweight_assisted" ? -1 : 1, p)
           : raw + (p.loadType === "bodyweight_assisted" ? -1 : 1) * p.step;
-      } else if (weak&&!anomalous) {
+      } else if (weak&&!anomalous&&projected==null) {
         action = "down";
         reason =
           "Последние рабочие подходы ниже диапазона или тяжелее целевого RPE";
@@ -460,11 +475,11 @@
       raw =
         p.loadType === "bodyweight_assisted"
           ? prior + p.step
-          : prior * 0.925;
+          : (projected??prior) * 0.925;
       reason = "Разгрузочная неделя";
       action = "down";
     }
-    if (ids.length >= 2 && prior != null && !deload && !anomalous) {
+    if (ids.length >= 2 && prior != null && !deload && !anomalous && projected==null) {
       const cap = p.step * (p.maxChangeSteps || 1);
       raw = Math.min(prior + cap, Math.max(0, prior - cap, raw));
     }
@@ -524,10 +539,10 @@
         nextSetSuggestion={weight:direction?moveWeight(used,direction,p):used,action:hard?"down":confirmedEasy?"up":"hold",reason:hard?"Ниже диапазона или тяжелее целевого RPE":confirmedEasy?"Два подхода подряд легче цели":"Подход в целевом диапазоне"};
       }
     }
-    const weight=ids.length&&!anomalous?roundWeight(raw,p,ids.length===1?"down":undefined):raw,
+    const weight=ids.length&&!anomalous?roundWeight(raw,p,ids.length===1&&projected==null?"down":undefined):raw,
       confidence =
         anomalous?"низкая":ids.length >= 3 && effortKnown === recent.length
-          ? "высокая"
+          ? projected!=null?"средняя":"высокая"
           : ids.length >= 2 && effortKnown
             ? "средняя"
             : "низкая";
@@ -535,7 +550,7 @@
       weight,
       raw,
       previous: prior,
-      basis:ids.length?{date:sessionDate(latest[0]?.session),weight:prior,planned:seed||null,sets:latest.map(x=>({weight:number(x.set.w),reps:number(x.set.actualReps??x.set.r),rpe:effort(x)}))}:null,
+      basis:ids.length?{date:sessionDate(latest[0]?.session),weight:prior,planned:seed||null,estimatedOneRepMax:projected!=null?Number(estimatedOneRepMax.toFixed(1)):null,sets:latest.map(x=>({weight:number(x.set.w),reps:number(x.set.actualReps??x.set.r),rpe:effort(x)}))}:null,
       delta: prior == null ? 0 : Number((weight - prior).toFixed(6)),
       step: p.step,
       action,
