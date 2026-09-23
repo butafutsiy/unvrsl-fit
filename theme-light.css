@@ -171,3 +171,33 @@ html[data-theme="light"] body .spv335-record>small{color:#70727a!important}
 html[data-theme="light"] body .spv335-record.on{background:#f6edfb!important;border-color:#bf5af2!important}
 html[data-theme="light"] body .spv335-grid{stroke:#dfe1e6!important}
 html[data-theme="light"] body .spv335-loading{background:#f5f6f8!important;color:#62656d!important;border-color:#dfe1e6!important}
+
+/* The first-card rule in mockup-ui has an ID and keeps its dark gradient. */
+html[data-theme="light"] body #home .card:first-of-type,
+html[data-theme="light"] body #home .weekly-checkin-card,
+html[data-theme="light"] body #clients .card:first-of-type,
+html[data-theme="light"] body #clients .trainer-clients-head,
+html[data-theme="light"] body #clients .checkin-overview,
+html[data-theme="light"] body #clients .client-card{
+  color:#19191d!important;background:#fff!important;background-image:none!important;
+  border-color:#dfe1e6!important;box-shadow:0 12px 28px rgba(30,35,45,.09)!important;
+}
+html[data-theme="light"] body #home .weekly-checkin-card .title,
+html[data-theme="light"] body #clients .trainer-clients-head .title,
+html[data-theme="light"] body #clients .checkin-overview .title,
+html[data-theme="light"] body #clients .client-card b,
+html[data-theme="light"] body #clients .checkin-overview .adv-stat b{color:#19191d!important}
+html[data-theme="light"] body #clients .client-tabs{background:#eceef2!important;border-color:#dfe1e6!important}
+html[data-theme="light"] body #clients .client-tabs button{color:#62656d!important;background:transparent!important}
+html[data-theme="light"] body #clients .client-tabs button.on{color:#fff!important;background:#bf5af2!important}
+html[data-theme="light"] body #clients .adv-stat{background:#f5f6f8!important;border-color:#dfe1e6!important}
+html[data-theme="light"] body #clients .adv-stat span,
+html[data-theme="light"] body #clients .client-card .catalog-meta{color:#70727a!important}
+html[data-theme="light"] body #clients .invite-client-btn{background:#f5f6f8!important;color:#19191d!important;border-color:#dfe1e6!important}
+html[data-theme="light"] body #home .bw190-chip{background:#f5f6f8!important;color:#70727a!important;border-color:#dfe1e6!important}
+html[data-theme="light"] body #home .bw190-chip b{color:#19191d!important}
+html[data-theme="light"] body #home .bw190-chip.on,
+html[data-theme="light"] body #home .bw190-point-info{background:#faf1ff!important;border-color:#bf5af2!important}
+html[data-theme="light"] body #home .bw190-chip.on b,
+html[data-theme="light"] body #home .bw190-point-info b{color:#9b37c9!important}
+html[data-theme="light"] body #home .bw190-edit{background:#fff!important;color:#19191d!important;border:1px solid #dfe1e6!important}

@@ -3,13 +3,9 @@
   if(window.__unvrslAnatomeLocalV2)return;
   window.__unvrslAnatomeLocalV2=true;
 
-  const BODY_URL='./data/anatome-body-paths.json';
   const EX_URL='./data/anatome-exercises.json';
   const OVERLOAD='#ff375f';
-  let bodyData=null,anatomeExercises=[];
-
-  const accent=()=>String(window.st?.accent||getComputedStyle(document.documentElement).getPropertyValue('--green')||'#30d158').trim()||'#30d158';
-  const rgba=(hex,a)=>{const m=String(hex).trim().match(/^#([0-9a-f]{6})$/i);if(!m)return`rgba(48,209,88,${a})`;const n=parseInt(m[1],16);return`rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`};
+  let anatomeExercises=[];
 
   const style=document.createElement('style');
   style.id='anatome-local-v2-style';
@@ -60,16 +56,5 @@
   async function loadExercises(){try{const r=await fetch(EX_URL,{cache:'default'});if(!r.ok)return;const d=await r.json();if(Array.isArray(d)){anatomeExercises=d.map(localExercise);window.UNVRSL_ANATOME_EXERCISES=anatomeExercises}}catch(e){console.warn('Anatomy metadata unavailable',e)}}
 
 
-  function scoresFromCard(card){
-    const rows=[];card.querySelectorAll('.anatome-muscle').forEach(el=>{const val=Number(String(el.querySelector('.anatome-muscle-row span')?.textContent||'0').replace(',','.'))||0;const drill=el.dataset.drilldown||'';if(drill&&val>0)rows.push([drill,val,el])});
-    rows.sort((a,b)=>b[1]-a[1]);const max=rows[0]?.[1]||1;rows.forEach(([,v,el])=>{const q=v/max;el.dataset.loadLevel=q>=.67?'3':q>=.34?'2':'1';const bar=el.querySelector('.anatome-bar i');if(bar&&q<.67)bar.style.setProperty('background',accent(),'important')});return new Map(rows.map(([s,v])=>[s,v]));
-  }
-  function colorFor(slug,scores){const v=scores.get(slug)||0;if(!v)return'#34343a';const max=Math.max(1,...scores.values()),q=v/max;return q>=.67?OVERLOAD:accent()}
-  function sideSvg(side,scores){const body=window.st?.body==='female'?'female':'male',parts=bodyData?.[body]?.[side]||[],paths=[];parts.forEach(part=>{const fill=colorFor(part.slug,scores),active=scores.has(part.slug),opacity=active?'.98':'.72';Object.values(part.path||{}).flat().forEach(d=>{if(d)paths.push(`<path d="${String(d).replace(/"/g,'&quot;')}" fill="${fill}" opacity="${opacity}" data-muscle="${part.slug}"></path>`)})});const viewBox=side==='back'?'760 140 640 1230':'40 140 640 1230';return `<svg class="anatome-local-side" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet" aria-label="${side==='front'?'Мышцы спереди':'Мышцы сзади'}">${paths.join('')}</svg>`}
-  async function loadBody(){if(bodyData)return bodyData;try{const r=await fetch(BODY_URL,{cache:'default'});if(!r.ok)throw new Error(`HTTP ${r.status}`);bodyData=await r.json();window.UNVRSL_ANATOME_BODY_PATHS=bodyData;return bodyData}catch(e){console.warn('local Anatome body',e);return null}}
-  async function upgradeCard(){const card=document.getElementById('anatomeMuscleCard');if(!card)return;const old=document.querySelector('#stats .stats-muscle-week');if(old)old.style.display='none';const a=accent();const fig=card.querySelector('.anatome-figure');if(fig)fig.style.background=`radial-gradient(circle at 50% 42%,${rgba(a,.10)},${rgba(a,.035)} 46%,transparent 72%)`;if(window.__unvrslMuscleMapFullV176)return;const scores=scoresFromCard(card);if(!scores.size)return;if(!await loadBody())return;if(!fig)return;const sig=`${window.st?.body||'male'}|${a}|`+[...scores.entries()].map(x=>x.join(':')).join('|');if(fig.dataset.localSig===sig)return;fig.dataset.localSig=sig;fig.innerHTML=`<div style="width:100%"><div class="anatome-local-dual">${sideSvg('front',scores)}${sideSvg('back',scores)}</div><div class="anatome-local-caption">СПЕРЕДИ · СЗАДИ</div></div>`}
-  function watch(){const root=document.getElementById('stats');if(!root)return;let queued=false;const run=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;upgradeCard()})};new MutationObserver(run).observe(root,{childList:true,subtree:true,characterData:true});run()}
-
-  function loadFullMuscleMap(){if(window.__unvrslMuscleMapFullV176||document.querySelector('script[data-unvrsl-muscle-map-full]'))return;const s=document.createElement('script');s.src='muscle-map-full.js?v=400';s.async=false;s.dataset.unvrslMuscleMapFull='1';document.body.appendChild(s)}
-  loadExercises();loadBody();loadFullMuscleMap();if(document.readyState==='loading')window.addEventListener('DOMContentLoaded',watch,{once:true});else watch();
+  loadExercises();
 })();

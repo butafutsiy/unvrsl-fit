@@ -35,7 +35,7 @@
   document.head.appendChild(css);
 
   const MEASURES=[['chest','Грудь'],['waist','Талия'],['abdomen','Живот'],['hips','Ягодицы'],['thigh','Бедро'],['arm','Рука'],['calf','Икра']];
-  const cloudCache={loaded:false,loading:false,workouts:[],checkins:[],ts:0};
+  const cloudCache={loaded:false,loading:false,workouts:[],checkins:[],ts:0,owner:null,token:0,status:'idle'};
   const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
   const fmt=(v,d=1)=>v==null?'—':Number(v).toFixed(d).replace('.0','').replace('.',',');
   const isoDate=d=>{const x=new Date(d);return Number.isNaN(x.getTime())?'':x.toISOString().slice(0,10)};
@@ -49,7 +49,7 @@
     })).filter(x=>x.date);
   }
   function dataWorkouts(){
-    const local=localWorkouts();if(!cloudCache.loaded)return local;
+    const local=localWorkouts();if(!cloudCache.loaded||cloudCache.owner!==window.cloud?.user?.id)return local;
     const cloud=cloudCache.workouts.map(w=>({id:String(w.external_id||w.payload?.id||''),date:w.workout_date,duration:Math.max(1,Math.round((((w.payload?.ended||0)-(w.payload?.started||0))/60000)||1))}));
     const out=[...cloud],keys=new Set(out.map(x=>x.id?`id:${x.id}`:`d:${x.date}:${x.duration}`));
     local.forEach(x=>{const k=x.id?`id:${x.id}`:`d:${x.date}:${x.duration}`;if(!keys.has(k)){keys.add(k);out.push(x)}});
@@ -58,12 +58,13 @@
   function workoutSessions(){
     const deleted=new Set((st.deletedSessionIds||[]).map(String));
     const local=(st.sessions||[]).filter(s=>s&&typeof s==='object'&&!deleted.has(String(s.id||'')));
-    const cloud=cloudCache.loaded?cloudCache.workouts.map(x=>x?.payload).filter(s=>s&&typeof s==='object'&&!deleted.has(String(s.id||''))):[];
+    const cloud=cloudCache.loaded&&cloudCache.owner===window.cloud?.user?.id?cloudCache.workouts.map(x=>x?.payload&&({...x.payload,date:x.workout_date,id:x.payload.id||x.external_id})).filter(s=>s&&typeof s==='object'&&!deleted.has(String(s.id||''))):[];
     const out=[...cloud],keys=new Set(out.map(s=>String(s.id||'')));
     local.forEach(s=>{const k=String(s.id||'');if(!k||!keys.has(k)){out.push(s);if(k)keys.add(k)}});
     return out.filter(s=>s?.ended&&(s.ex||[]).some(e=>(e.set||[]).some(x=>x?.ok))).sort((a,b)=>Number(a.ended||a.started||0)-Number(b.ended||b.started||0));
   }
   window.unvrslStatsSessions254=workoutSessions;
+  window.unvrslStatsHistoryState254=()=>({status:cloudCache.status,loaded:cloudCache.loaded,owner:cloudCache.owner});
 
   function monthCount(ws){const now=new Date(),ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;return ws.filter(x=>String(x.date).startsWith(ym)).length}
   function weekKey(d){const x=parseDate(d),day=(x.getDay()+6)%7;x.setDate(x.getDate()-day);return isoDate(x)}
@@ -99,20 +100,29 @@
 
   async function hydrateCloud(force=false){
     if(!window.cloud?.client||!window.cloud?.user)return;
+    const uid=window.cloud.user.id;
+    if(cloudCache.owner!==uid){cloudCache.owner=uid;cloudCache.token++;cloudCache.loaded=false;cloudCache.loading=false;cloudCache.workouts=[];cloudCache.checkins=[];cloudCache.status='idle'}
     if(cloudCache.loading)return;if(!force&&cloudCache.loaded&&Date.now()-cloudCache.ts<30000)return;
-    cloudCache.loading=true;
+    cloudCache.loading=true;cloudCache.status='loading';const token=++cloudCache.token;
+    const current=()=>cloudCache.token===token&&cloudCache.owner===uid;
+    const deadline=(query,ms=8000)=>{let timer;return Promise.race([query,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('История не ответила вовремя')),ms)})]).finally(()=>clearTimeout(timer))};
     try{
-      const c=window.cloud.client,uid=window.cloud.user.id;
-      const [wo,ci]=await Promise.all([
-        c.from('workouts').select('external_id,workout_date,payload').eq('user_id',uid).order('workout_date',{ascending:true}).limit(1000),
-        c.from('checkins').select('checkin_date,measurements').eq('user_id',uid).order('checkin_date',{ascending:true}).limit(500)
-      ]);
-      cloudCache.workouts=wo.data||[];cloudCache.checkins=ci.data||[];cloudCache.loaded=true;cloudCache.ts=Date.now();
-    }catch(e){console.warn('stats v254 hydrate',e)}finally{cloudCache.loading=false}
+      const c=window.cloud.client;
+      // Workout history drives tonnage. A slow check-in request must not block it.
+      const workouts=deadline(c.from('workouts').select('external_id,workout_date,payload').eq('user_id',uid).order('workout_date',{ascending:true}).limit(1000)).then(wo=>{
+        if(wo.error)throw wo.error;if(!current())return;
+        cloudCache.workouts=wo.data||[];cloudCache.loaded=true;cloudCache.ts=Date.now();cloudCache.status='ready';
+      }).catch(error=>{if(current()){cloudCache.status='error';console.warn('stats workouts',error)}}).finally(()=>{
+        if(!current())return;
+        if(typeof CustomEvent==='function')window.dispatchEvent?.(new CustomEvent('unvrsl:stats-history-ready'));
+        if(document.getElementById('stats')?.classList.contains('active'))renderDashboard();
+      });
+      const checkins=deadline(c.from('checkins').select('checkin_date,measurements').eq('user_id',uid).order('checkin_date',{ascending:true}).limit(500)).then(ci=>{if(ci.error)throw ci.error;if(current())cloudCache.checkins=ci.data||[]}).catch(error=>{if(current())console.warn('stats checkins',error)});
+      await Promise.all([workouts,checkins]);
+    }catch(e){if(current()){cloudCache.status='error';console.warn('stats v254 hydrate',e)}}finally{if(current())cloudCache.loading=false}
   }
 
   window.statsProgressRefresh=async function(force=true){if(force)cloudCache.loaded=false;await hydrateCloud(force);renderDashboard()};
   window.statsPage=function(){renderDashboard();hydrateCloud().then(()=>{if(document.getElementById('stats')?.classList.contains('active'))renderDashboard()})};
   try{statsPage=window.statsPage}catch(e){}
 })();
-
