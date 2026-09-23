@@ -118,7 +118,7 @@ test('recommendation stays manual while autoweight is limited to missing program
   assert.equal(adaptive.programWeightMode,'adaptive');
   assert.equal(adaptive.weightDecision,'adaptive_auto');
   assert.equal(adaptive.set[0].w,60);
-  assert.match(adaptive.set[0].recommendation.reason,/сохранить вес/);
+  assert.match(adaptive.set[0].recommendation.reason,/сохранить вес/i);
   assert.equal(adaptive.set[0].w,adaptive.set[0].plannedW);
   context.trainingApplyRecommendation200('id:bench');
   assert.equal(prescribed.set[0].w,prescribed.set[0].recommendedW);

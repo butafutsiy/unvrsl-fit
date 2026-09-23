@@ -78,6 +78,9 @@
     };
   }
   function loadType(e, reg) {
+    if (["timer", "time", "cardio"].includes(e?.mode) ||
+        ["timer", "time", "cardio"].includes(e?.kind)) return "time";
+    if (e?.mode === "distance" || e?.kind === "distance") return "distance";
     const unit=e?.equipmentProfile?.loadUnit;
     const profileType={TOTAL:"external_total",PER_HAND:"per_dumbbell",PER_SIDE:"per_side",ADDED_LOAD:"bodyweight_added",ASSISTANCE:"bodyweight_assisted",NONE:"bodyweight_only"}[unit];
     if(profileType)return profileType;
@@ -86,8 +89,6 @@
     if (types.has(row?.loadType)) return row.loadType;
     const n = norm(e?.n),
       eq = e?.eq || e?.equipment;
-    if (e?.mode === "timer" || e?.mode === "cardio" || e?.kind === "cardio")
-      return "time";
     if (/гравитрон/.test(n) || eq === "assisted") return "bodyweight_assisted";
     if (/подтяг|отжиман|брусь/.test(n)) return "bodyweight_added";
     if (eq === "body weight") return "bodyweight_only";
@@ -385,6 +386,8 @@
       i = Math.floor(b.length / 2);
     return b.length % 2 ? b[i] : (b[i - 1] + b[i]) / 2;
   };
+  const sessionDate = (s) =>
+    s?.date || (s?.started ? new Date(s.started).toISOString().slice(0, 10) : "");
   function recommend(e, set, session, sessions, reg, overrides = {}) {
     const p = profile(e, reg, overrides),
       range = repRange(e, set),
@@ -395,11 +398,12 @@
     const ids = [...new Set(rows.map((x) => x.session.id))].slice(0, 5),
       recent = rows.filter((x) => ids.includes(x.session.id));
     const latest = recent.filter((x) => x.session.id === ids[0]);
-    const prior = median(
-      latest.map((x) => number(x.set.w)).filter((x) => x != null),
-    );
-    const seed=number(set.programW)??number(set.plannedW)??number(set.w);
-    const anomalous=ids.length===1&&seed>0&&prior>0&&(prior<seed*.75||prior>seed*1.25);
+    const latestWeights=latest.map((x) => number(x.set.w)).filter((x) => x != null);
+    // A standard exercise has one top working load. Back-off sets must not
+    // pull its next-session recommendation down to their median.
+    const prior=latestWeights.length?(method(e,set)==="STANDARD"?Math.max(...latestWeights):median(latestWeights)):null;
+    const seed=[set.programW,set.plannedW,set.w].map(number).find(x=>x>0)??0;
+    const anomalous=seed>0&&prior>0&&Math.abs(seed-prior)>Math.max(2*p.step,seed*.1);
     let raw=anomalous?seed:(prior??seed??0),
       reason = "Недостаточно сопоставимой истории: текущий вес сохранён",
       action = "hold";
@@ -419,8 +423,8 @@
       latest.length > 0 &&
       latest.every(x=>number(x.set.actualReps??x.set.r)<range.lo&&effort(x)!=null&&effort(x)>target);
     if(ids.length){
-      reason=anomalous?"Одна нетипичная прошлая тренировка: исходный вес сохранён":"Повторы в целевом диапазоне: сохранить вес";
-      if (strong) {
+      reason=anomalous?`План ${seed} кг сильно отличается от прошлой рабочей нагрузки ${prior} кг: вес оставлен без автоматической замены`:"Сохранить вес последнего тяжёлого рабочего сета";
+      if (strong&&!anomalous) {
         action = "up";
         reason =
           "В двух последних тренировках достигнута верхняя граница повторений";
@@ -436,7 +440,7 @@
           : raw + (p.loadType === "bodyweight_assisted" ? 1 : -1) * p.step;
       }
     }
-    if(method(e,set)!=="STANDARD"&&strong){raw=prior??raw;action="hold";reason="Метод оценивается целиком: отдельные стадии не повышаются"}
+    if(method(e,set)!=="STANDARD"&&strong&&!anomalous){raw=prior??raw;action="hold";reason="Метод оценивается целиком: отдельные стадии не повышаются"}
     if (p.loadType === "bodyweight_only" || p.loadType === "repetitions_only") {
       raw = 0;
       action = "reps";
@@ -450,7 +454,7 @@
         number(session.programWeekIntensityMax) <= 70) || [4,6].includes(number(session.w));
     if (
       prior != null &&
-      deload &&
+      deload && !anomalous &&
       !["bodyweight_only", "repetitions_only"].includes(p.loadType)
     ) {
       raw =
@@ -460,19 +464,19 @@
       reason = "Разгрузочная неделя";
       action = "down";
     }
-    if (ids.length >= 2 && prior != null && !deload) {
+    if (ids.length >= 2 && prior != null && !deload && !anomalous) {
       const cap = p.step * (p.maxChangeSteps || 1);
       raw = Math.min(prior + cap, Math.max(0, prior - cap, raw));
     }
     let trend =
-      ids.length < 2
+      anomalous||ids.length < 2
         ? "insufficient"
         : strong
           ? "progress"
           : weak
             ? "regress"
             : "stable";
-    if (ids.length === 3 && action === "hold") {
+    if (ids.length === 3 && action === "hold" && !anomalous) {
       const scores = ids.map((id) => {
         const a = recent.filter((x) => x.session.id === id);
         return [
@@ -520,9 +524,9 @@
         nextSetSuggestion={weight:direction?moveWeight(used,direction,p):used,action:hard?"down":confirmedEasy?"up":"hold",reason:hard?"Ниже диапазона или тяжелее целевого RPE":confirmedEasy?"Два подхода подряд легче цели":"Подход в целевом диапазоне"};
       }
     }
-    const weight=ids.length?roundWeight(raw,p,ids.length===1&&!anomalous?"down":undefined):raw,
+    const weight=ids.length&&!anomalous?roundWeight(raw,p,ids.length===1?"down":undefined):raw,
       confidence =
-        ids.length >= 3 && effortKnown === recent.length
+        anomalous?"низкая":ids.length >= 3 && effortKnown === recent.length
           ? "высокая"
           : ids.length >= 2 && effortKnown
             ? "средняя"
@@ -531,22 +535,24 @@
       weight,
       raw,
       previous: prior,
+      basis:ids.length?{date:sessionDate(latest[0]?.session),weight:prior,planned:seed||null,sets:latest.map(x=>({weight:number(x.set.w),reps:number(x.set.actualReps??x.set.r),rpe:effort(x)}))}:null,
       delta: prior == null ? 0 : Number((weight - prior).toFixed(6)),
       step: p.step,
       action,
+      planPreserved: anomalous,
       nextSetSuggestion,
       trend,
       reason,
       confidence,
       sessionIds: ids,
       evidence: [
-        ...latest.map((x) => setLabel(x.exercise, x.set, reg)),
+        ...latest.map((x) => `${sessionDate(x.session)}: ${setLabel(x.exercise, x.set, reg)}`),
         ...(lastToday
           ? ["Сегодня: " + setLabel(lastToday.exercise, lastToday.set, reg)]
           : []),
       ],
       rounding:
-        ids.length>0
+        anomalous?"Плановый вес сохранён без округления: старая нагрузка не соответствует текущему плану":ids.length>0
           ? `Расчётное значение: ${Number(raw.toFixed(2))} кг. Рекомендация округлена до ${weight} кг с учётом шага ${p.step} кг`
           : "Исходный вес сохранён без округления: истории пока недостаточно",
       repRange: range,

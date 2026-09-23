@@ -136,9 +136,8 @@
 
   window.trainerSelfShare110=async token=>{
     await load();const r=find(token);if(!r)return;const s=r.payload||{};
-    if(typeof window.advShareWorkout==='function'&&A(window.st?.sessions).some(x=>String(x.id)===String(s.id))){window.advShareWorkout(s.id);return}
-    const text=[`UNVRSL FIT · ${title(s)}`,rd(date(s,r)),`Время: ${durationText(s)}`,`Тоннаж: ${ton(s).toLocaleString('ru-RU')} кг`,`Средний RPE: ${rpe(s)??'—'}`,`Рабочих подходов: ${done(s)}`].join('\n');
-    try{if(navigator.share)await navigator.share({title:'UNVRSL FIT',text});else{await navigator.clipboard.writeText(text);toast('Результат скопирован')}}catch(e){}
+    if(typeof window.openShareProgressV264==='function')window.openShareProgressV264({...s,date:s.date||date(s,r),id:s.id||r.external_id||r.id});
+    else window.toast?.('Создание PNG пока загружается. Повтори через пару секунд.');
   };
 
   window.trainerSelfDelete110=async token=>{
@@ -185,4 +184,3 @@
   [200,700,1600,3000,7000].forEach(t=>setTimeout(install,t));
   window.addEventListener('pageshow',()=>{install();if(isTrainer()&&document.getElementById('plan')?.classList.contains('active'))renderSelf()},{passive:true});
 })();
-

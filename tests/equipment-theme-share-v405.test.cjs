@@ -31,6 +31,40 @@ test("a difficult set suggests one lower step without replacing the exercise rec
  const rec=A.recommend(cur.ex[0],cur.ex[0].set[1],cur,past,reg);
  assert.equal(rec.weight,62.5);assert.equal(rec.nextSetSuggestion.weight,57.5);
 });
+test("back-off sets cannot turn a 70 kg top set into a 45 kg recommendation",()=>{
+ const bar=p("leg-curl"),past=[old("1",bar,[set(70,12,10),set(56,10,8),set(45,10,8)])];
+ const cur=now(bar,[set(72.5,8,9,{ok:false,programW:72.5,targetRepMin:8,targetRepMax:10,targetRpeMin:8,targetRpeMax:9})]);
+ const rec=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,past,reg);
+ assert.equal(rec.previous,70);assert.equal(rec.weight,70);
+ assert.equal(rec.basis.weight,70);assert.equal(rec.basis.sets.length,3);
+});
+test("RPE 9 stays in an 8–9 target range and does not lower the next set",()=>{
+ const bar=p("leg-curl"),past=[old("1",bar,[set(70,10,9)])];
+ const first=set(72.5,8,9,{targetRepMin:8,targetRepMax:10,targetRpeMin:8,targetRpeMax:9});
+ const waiting=set(72.5,10,0,{ok:false,targetRepMin:8,targetRepMax:10,targetRpeMin:8,targetRpeMax:9});
+ const cur=now(bar,[first,waiting]),rec=A.recommend(cur.ex[0],waiting,cur,past,reg);
+ assert.equal(rec.nextSetSuggestion.weight,72.5);
+ assert.equal(rec.nextSetSuggestion.action,"hold");
+});
+test("a far-off historical load does not replace the current program",()=>{
+ const bar=p("old-machine"),past=[old("1",bar,[set(35)]),old("2",bar,[set(35)])];
+ const cur=now(bar,[set(72.5,8,8,{ok:false,programW:72.5})]);
+ const rec=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,past,reg);
+ assert.equal(rec.weight,72.5);assert.equal(rec.confidence,"низкая");
+ assert.equal(rec.planPreserved,true);
+ assert.match(rec.reason,/План 72\.5 кг/);
+});
+test("a planned 135 kg progression is not silently replaced with old 115 kg",()=>{
+ const bar=p("barbell"),cur=now(bar,[set(135,8,8,{ok:false,programW:135})]);
+ const rec=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,[old("1",bar,[set(115,8,8)])],reg);
+ assert.equal(rec.weight,135);assert.equal(rec.planPreserved,true);
+});
+test("time-based exercise ignores a stray strength catalog load type",()=>{
+ assert.equal(A.loadType({mode:"timer",loadType:"external_total"},reg),"time");
+ assert.equal(A.loadType({kind:"timer",loadType:"external_total"},reg),"time");
+ assert.match(read("training-load-model.js"),/\["time","distance"\]\.includes\(A\.loadType/);
+ assert.match(read("training-engine.js"),/\['time','distance'\]\.includes\(WorkoutDomain\.loadType/);
+});
 test("muscle labels are translated and settings retain only backup controls",()=>{
  const ctx={window:{}};vm.runInNewContext(read("og-db.js").split("function ruExerciseName")[0]+";this.translate=ruTarget;",ctx);
  assert.equal(ctx.translate("quadriceps"),"Квадрицепс");
@@ -46,4 +80,12 @@ test("light theme covers screenshot surfaces; Universal Fit PNG has one preview/
  assert.match(share,/Universal Fit/);assert.doesNotMatch(share,/Universal Feed/);
  assert.match(share,/WID=1080,MAX=1920/);assert.match(share,/img\.src=previewUrl/);
  assert.match(read("workout-completion.js"),/W\.openShareProgressV264\?\.\(currentSession\)/);
+});
+test("the screenshot's dark surfaces are explicitly themed and trainer history uses PNG",()=>{
+ const css=read("theme-light.css");
+ for(const cls of ["#stats .strength-item",".start-program-choice","#start .exercise","#home .dash-streak .fire","#home .streak>button"])assert.ok(css.includes(cls),cls);
+ assert.match(read("trainer-self-plan.js"),/window\.openShareProgressV264\(\{\.\.\.s/);
+ assert.match(read("client-journal-profile.js"),/window\.openShareProgressV264\?\.\(\{\.\.\.s,date:/);
+ assert.match(read("training-engine.js"),/Почему этот вес\?/);
+ assert.doesNotMatch(read("trainer-self-plan.js").split("window.trainerSelfShare110=")[1].split("window.trainerSelfDelete110=")[0],/navigator\.share\(\{title:'UNVRSL FIT',text\}\)/);
 });

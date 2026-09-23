@@ -11,6 +11,13 @@
     let changed = false;
     try {
       for (const ex of cur.ex || []) {
+        if (["time","distance"].includes(A.loadType(ex,workoutRegistry))) {
+          for (const set of ex.set || []) {
+            if (set.recommendation || set.recommendedW != null) changed = true;
+            delete set.recommendation; delete set.recommendedW;
+          }
+          continue;
+        }
         const row = workoutRegistry.resolve(ex);
         if (row) {
           ex.exerciseId = row.id;
@@ -36,6 +43,7 @@
           if (
             ex.programWeightMode === "adaptive" &&
             rec.sessionIds.length>0 &&
+            !rec.planPreserved &&
             !set.manualOverride &&
             set.weightSource !== "manual"
           ) {

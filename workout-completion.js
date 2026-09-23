@@ -133,7 +133,8 @@
   W.sendWorkoutShare = () => W.shareProgressNativeV264?.();
   // Reuse the canonical summary for the old share entry points, without the old canvas renderer.
   W.advShareWorkout = (s) => {
-    currentSession = s || st.sessions.at(-1);
+    const id = typeof s === "string" ? decodeURIComponent(s) : null;
+    currentSession = id ? (st.sessions || []).find(x => String(x.id) === id) : s || st.sessions.at(-1);
     if (currentSession) {
       currentReport = report(currentSession);
       W.previewWorkoutShare();
