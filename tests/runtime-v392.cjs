@@ -168,6 +168,10 @@ if (require.main === module) (async () => {
     };
   try {
     assert.ok(result.ready);
+    assert.ok(loaded.includes("equipment-profiles-v405.js"),
+      "equipment module must be loaded from its real filename");
+    assert.equal(w.__equipmentProfilesV405, true,
+      "equipment module must initialize during startup");
     w.document.getElementById("gear").click();
     assert.ok(w.document.querySelector("#sheet [data-cloud-settings]"),
       "cloud controls remain on the canonical settings screen");
@@ -246,6 +250,9 @@ if (require.main === module) (async () => {
     };
     w.save();
     w.nav("start");
+    await wait(80);
+    assert.ok(w.document.querySelector("#start .exercise .eq405-control"),
+      "the active exercise must show its equipment control");
     w.toggleSet(0, 0);
     assert.equal(w.st.current.ex[0].set[0].ok, true);
     result.zeroCompleted = true;
