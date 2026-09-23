@@ -47,6 +47,12 @@
     base.favorites=[...new Set([...arr(remote.favorites),...arr(local.favorites)])];
     base.hiddenExercises=[...new Set([...arr(remote.hiddenExercises),...arr(local.hiddenExercises)])];
     base.aliases=preferRemote?{...(local.aliases||{}),...(remote.aliases||{})}:{...(remote.aliases||{}),...(local.aliases||{})};
+    base.equipmentProfiles={...(remote.equipmentProfiles||{}),...(local.equipmentProfiles||{})};
+    for(const [id,profile] of Object.entries(remote.equipmentProfiles||{})){
+      const other=local.equipmentProfiles?.[id];
+      if(other&&Number(profile.updatedAt||0)>Number(other.updatedAt||0))base.equipmentProfiles[id]=clone(profile);
+    }
+    base.equipmentDefaultByExercise=preferRemote?{...(local.equipmentDefaultByExercise||{}),...(remote.equipmentDefaultByExercise||{})}:{...(remote.equipmentDefaultByExercise||{}),...(local.equipmentDefaultByExercise||{})};
 
     // A session that is already present in history with `ended` can never be active again.
     // Also treat a fresh local `current: null` as an explicit completion/cancel state instead

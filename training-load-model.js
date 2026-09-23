@@ -35,6 +35,7 @@
           }
           if (
             ex.programWeightMode === "adaptive" &&
+            rec.sessionIds.length>0 &&
             !set.manualOverride &&
             set.weightSource !== "manual"
           ) {
@@ -44,7 +45,7 @@
             changed = changed || before !== set.w;
           }
           ex.trainingProgression292 = {
-            actualEffort: true,
+            actualEffort: rec.sessionIds.length>0,
             action: rec.action,
             reason: rec.reason,
           };

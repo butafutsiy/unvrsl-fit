@@ -411,8 +411,9 @@ test("next set recommendation uses actual current work and the same individual s
     },
     cur = session([e], { ended: null });
   const r = A.recommend(e, e.set[1], cur, prior(60), reg);
-  assert.equal(r.weight, 57.5);
-  assert.match(r.reason, /сегодня/);
+  assert.equal(r.nextSetSuggestion.weight, 57.5);
+  assert.equal(r.nextSetSuggestion.action, 'down');
+  assert.ok(r.weight >= 60);
   assert.ok(r.evidence.some((x) => x.startsWith("Сегодня:")));
 });
 test("three comparable stable workouts produce an explicit plateau explanation", () => {

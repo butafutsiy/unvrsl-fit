@@ -14,7 +14,8 @@ const RU_REPL=[
 let ogLibrary=window.UNVRSL_EXERCISES||[],ogLibraryLoaded=true,ogLibraryLoading=false,ogLibraryError='';
 let exQuery='',exBody='all';
 let rmState={id:null,w:20,r:5};
-function ruTarget(x=''){return TARGET_RU[String(x).toLowerCase()]||x||'—'}
+const EXTRA_MUSCLES_RU={'quadriceps':'Квадрицепс','upper chest':'Верх груди','chest':'Грудные','shoulders':'Плечи','deltoids':'Дельты','rear deltoids':'Задние дельты','latissimus dorsi':'Широчайшие','lower back':'Поясница','core':'Мышцы кора','obliques':'Косые мышцы живота','rhomboids':'Ромбовидные','trapezius':'Трапеции','brachialis':'Плечевая мышца','soleus':'Камбаловидная мышца','ankles':'Голеностоп','ankle stabilizers':'Стабилизаторы голеностопа','feet':'Мышцы стопы'};
+function ruTarget(x=''){const key=String(x||'').trim().toLowerCase();return TARGET_RU[key]||EXTRA_MUSCLES_RU[key]||x||'—'}
 function ruExerciseName(name=''){
  const raw=String(name||'').trim();if(!raw)return'Упражнение';if(/[А-Яа-яЁё]/.test(raw))return raw;
  let s=raw.toLowerCase().replace(/\((male|female)\)/g,'').replace(/\s+/g,' ').trim();if(EXACT_RU[s])return EXACT_RU[s];

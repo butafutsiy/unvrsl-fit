@@ -78,6 +78,9 @@
     };
   }
   function loadType(e, reg) {
+    const unit=e?.equipmentProfile?.loadUnit;
+    const profileType={TOTAL:"external_total",PER_HAND:"per_dumbbell",PER_SIDE:"per_side",ADDED_LOAD:"bodyweight_added",ASSISTANCE:"bodyweight_assisted",NONE:"bodyweight_only"}[unit];
+    if(profileType)return profileType;
     if (types.has(e?.loadType)) return e.loadType;
     const row = reg?.resolve(e);
     if (types.has(row?.loadType)) return row.loadType;
@@ -108,11 +111,15 @@
       rounding: "nearest",
       units: type,
     };
+    const equipment=e?.equipmentProfile||{},available=(equipment.availableLoads||[]).map(number).filter(x=>x!=null&&x>=0).sort((a,b)=>a-b);
     return {
       ...defaults,
       ...row?.weightProfile,
       ...e?.weightProfile,
       ...overrides[reg?.identity(e)],
+      ...(number(equipment.weightStep)>0?{step:number(equipment.weightStep)}:{}),
+      ...(available.length?{available}:{}),
+      ...(equipment.loadUnit==="TOTAL"&&number(equipment.implementWeight)>0?{min:number(equipment.implementWeight)}:{}),
       loadType: type,
     };
   }
@@ -316,13 +323,15 @@
     );
   }
   function comparable(a, b, reg, sa = {}, sb = {}) {
+    const equipmentA=String(sa?.equipmentProfileId||a?.equipmentProfileId||a?.equipmentProfile?.id||a?.machineId||"");
+    const equipmentB=String(sb?.equipmentProfileId||b?.equipmentProfileId||b?.equipmentProfile?.id||b?.machineId||"");
     return (
       reg.identity(a) === reg.identity(b) &&
       loadType(a, reg) === loadType(b, reg) &&
       method(a, sa) === method(b, sb) &&
       phase(a, sa) === phase(b, sb) &&
       String(a.tempo || "") === String(b.tempo || "") &&
-      String(a.machineId || "") === String(b.machineId || "") &&
+      equipmentA === equipmentB &&
       String(a.implementCount ?? reg.resolve(a)?.implementCount ?? "") ===
         String(b.implementCount ?? reg.resolve(b)?.implementCount ?? "") &&
       String(a.loadedSides ?? "") === String(b.loadedSides ?? "") &&
@@ -383,20 +392,19 @@
         userId: session.userId,
         excludeId: session.id,
       }).filter((x) => comparable(e, x.exercise, reg, set, x.set));
-    const ids = [...new Set(rows.map((x) => x.session.id))].slice(0, 3),
+    const ids = [...new Set(rows.map((x) => x.session.id))].slice(0, 5),
       recent = rows.filter((x) => ids.includes(x.session.id));
     const latest = recent.filter((x) => x.session.id === ids[0]);
     const prior = median(
       latest.map((x) => number(x.set.w)).filter((x) => x != null),
     );
-    let raw =
-        ids.length >= 2
-          ? (prior ?? number(set.w) ?? 0)
-          : (number(set.w) ?? prior ?? 0),
+    const seed=number(set.programW)??number(set.plannedW)??number(set.w);
+    const anomalous=ids.length===1&&seed>0&&prior>0&&(prior<seed*.75||prior>seed*1.25);
+    let raw=anomalous?seed:(prior??seed??0),
       reason = "Недостаточно сопоставимой истории: текущий вес сохранён",
       action = "hold";
-    const target =
-      number(set.targetRpeMax ?? e.targetRpeMax ?? session.target) ?? 8;
+    const targetMin=number(set.targetRpeMin??e.targetRpeMin??session.programWeekRpeMin)??number(set.targetRpeMax??e.targetRpeMax??session.target)??7;
+    const target=number(set.targetRpeMax??e.targetRpeMax??session.programWeekRpeMax)??number(session.target)??8;
     const groups = ids
       .slice(0, 2)
       .map((id) => recent.filter((x) => x.session.id === id));
@@ -406,24 +414,12 @@
         ? null
         : 10 - number(x.set.actualRir ?? x.set.rir));
     const effortKnown = recent.filter((x) => effort(x) != null).length;
-    const strong =
-      groups.length >= 2 &&
-      groups.every((g) =>
-        g.every(
-          (x) =>
-            number(x.set.actualReps ?? x.set.r) >= range.hi &&
-            (effort(x) == null || effort(x) < target),
-        ),
-      );
+    const strong=groups.length>=2&&groups.every(g=>g.length>0&&g.every(x=>effort(x)!=null&&effort(x)<=target)&&g.filter(x=>number(x.set.actualReps??x.set.r)>=range.hi).length/g.length>=.75);
     const weak =
       latest.length > 0 &&
-      latest.every(
-        (x) =>
-          number(x.set.actualReps ?? x.set.r) < range.lo ||
-          (effort(x) != null && effort(x) > target + 1),
-      );
-    if (ids.length >= 2) {
-      reason = "Повторы в целевом диапазоне: сохранить вес";
+      latest.every(x=>number(x.set.actualReps??x.set.r)<range.lo&&effort(x)!=null&&effort(x)>target);
+    if(ids.length){
+      reason=anomalous?"Одна нетипичная прошлая тренировка: исходный вес сохранён":"Повторы в целевом диапазоне: сохранить вес";
       if (strong) {
         action = "up";
         reason =
@@ -431,7 +427,7 @@
         raw = p.available?.length
           ? moveWeight(raw, p.loadType === "bodyweight_assisted" ? -1 : 1, p)
           : raw + (p.loadType === "bodyweight_assisted" ? -1 : 1) * p.step;
-      } else if (weak) {
+      } else if (weak&&!anomalous) {
         action = "down";
         reason =
           "Последние рабочие подходы ниже диапазона или тяжелее целевого RPE";
@@ -440,6 +436,7 @@
           : raw + (p.loadType === "bodyweight_assisted" ? 1 : -1) * p.step;
       }
     }
+    if(method(e,set)!=="STANDARD"&&strong){raw=prior??raw;action="hold";reason="Метод оценивается целиком: отдельные стадии не повышаются"}
     if (p.loadType === "bodyweight_only" || p.loadType === "repetitions_only") {
       raw = 0;
       action = "reps";
@@ -447,24 +444,23 @@
         ? "Верх диапазона достигнут: можно выбрать вариант с дополнительным весом"
         : "Сначала увеличивай повторы в заданном диапазоне";
     }
-    const f = number(session.readiness?.factor) ?? 1;
     const deload =
       session.deload === true ||
       (number(session.programWeekIntensityMax) > 0 &&
-        number(session.programWeekIntensityMax) <= 67);
+        number(session.programWeekIntensityMax) <= 70) || [4,6].includes(number(session.w));
     if (
       prior != null &&
-      (f < 1 || deload) &&
+      deload &&
       !["bodyweight_only", "repetitions_only"].includes(p.loadType)
     ) {
       raw =
         p.loadType === "bodyweight_assisted"
           ? prior + p.step
-          : prior * Math.max(0.8, Math.min(f, deload ? 0.9 : 1));
-      reason = deload ? "Разгрузочная неделя" : "Снижение по самочувствию";
+          : prior * 0.925;
+      reason = "Разгрузочная неделя";
       action = "down";
     }
-    if (ids.length >= 2 && prior != null && !deload && f >= 1) {
+    if (ids.length >= 2 && prior != null && !deload) {
       const cap = p.step * (p.maxChangeSteps || 1);
       raw = Math.min(prior + cap, Math.max(0, prior - cap, raw));
     }
@@ -506,30 +502,25 @@
       }
     }
     const lastToday = currentRows.at(-1);
-    let nextSet = false;
+    let nextSetSuggestion=null;
     if (
-      lastToday &&
+      lastToday && method(e,set)==="STANDARD" &&
       !["time", "distance", "bodyweight_only", "repetitions_only"].includes(
         p.loadType,
       )
     ) {
       const used = number(lastToday.set.w);
-      if (used != null) {
-        nextSet = true;
+      if (used != null&&effort(lastToday)!=null) {
         const hard =
           number(lastToday.set.actualReps ?? lastToday.set.r) < range.lo ||
-          (effort(lastToday) != null && effort(lastToday) > target + 1);
-        raw = hard
-          ? used + (p.loadType === "bodyweight_assisted" ? 1 : -1) * p.step
-          : used;
-        raw = Math.max(0, raw);
-        action = hard ? "down" : "hold";
-        reason = hard
-          ? "Последний подход сегодня был тяжелее цели: снизить нагрузку на один шаг"
-          : "Для следующего подхода сохранить фактически использованную нагрузку";
+          effort(lastToday)>target;
+        const easy=number(lastToday.set.actualReps??lastToday.set.r)>=range.hi&&effort(lastToday)<targetMin;
+        const prev=currentRows.at(-2),confirmedEasy=easy&&prev&&number(prev.set.actualReps??prev.set.r)>=range.hi&&effort(prev)!=null&&effort(prev)<targetMin;
+        const direction=hard?(p.loadType==="bodyweight_assisted"?1:-1):confirmedEasy?(p.loadType==="bodyweight_assisted"?-1:1):0;
+        nextSetSuggestion={weight:direction?moveWeight(used,direction,p):used,action:hard?"down":confirmedEasy?"up":"hold",reason:hard?"Ниже диапазона или тяжелее целевого RPE":confirmedEasy?"Два подхода подряд легче цели":"Подход в целевом диапазоне"};
       }
     }
-    const weight = ids.length >= 2 || nextSet ? roundWeight(raw, p) : raw,
+    const weight=ids.length?roundWeight(raw,p,ids.length===1&&!anomalous?"down":undefined):raw,
       confidence =
         ids.length >= 3 && effortKnown === recent.length
           ? "высокая"
@@ -543,6 +534,7 @@
       delta: prior == null ? 0 : Number((weight - prior).toFixed(6)),
       step: p.step,
       action,
+      nextSetSuggestion,
       trend,
       reason,
       confidence,
@@ -554,7 +546,7 @@
           : []),
       ],
       rounding:
-        ids.length >= 2 || nextSet
+        ids.length>0
           ? `Расчётное значение: ${Number(raw.toFixed(2))} кг. Рекомендация округлена до ${weight} кг с учётом шага ${p.step} кг`
           : "Исходный вес сохранён без округления: истории пока недостаточно",
       repRange: range,

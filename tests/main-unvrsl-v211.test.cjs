@@ -117,8 +117,8 @@ test('recommendation stays manual while autoweight is limited to missing program
   assert.equal(prescribed.weightDecision,'program');
   assert.equal(adaptive.programWeightMode,'adaptive');
   assert.equal(adaptive.weightDecision,'adaptive_auto');
-  assert.equal(adaptive.set[0].w,0);
-  assert.match(adaptive.set[0].recommendation.reason,/Недостаточно/);
+  assert.equal(adaptive.set[0].w,60);
+  assert.match(adaptive.set[0].recommendation.reason,/сохранить вес/);
   assert.equal(adaptive.set[0].w,adaptive.set[0].plannedW);
   context.trainingApplyRecommendation200('id:bench');
   assert.equal(prescribed.set[0].w,prescribed.set[0].recommendedW);
@@ -224,4 +224,3 @@ test('calendar planner can remove, restore and replace a planned workout',()=>{
   context.calendarPlannerPreviewDateV234(encodeURIComponent('2026-09-02'));
   assert.deepEqual(calls,[['builtin',2,'B'],['program','custom',0,0]]);
 });
-

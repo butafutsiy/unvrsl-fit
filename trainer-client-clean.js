@@ -121,7 +121,7 @@ try{document.getElementById('adaptive-effort-v2-style')?.remove()}catch(e){}
 (()=>{
   if(document.querySelector('script[data-unvrsl-exercise-detail-rules]'))return;
   const s=document.createElement('script');
-  s.src='exercise-detail-rules.js?v=404';
+  s.src='exercise-detail-rules.js?v=405';
   s.async=false;
   s.dataset.unvrslExerciseDetailRules='1';
   document.body.appendChild(s);
@@ -195,7 +195,7 @@ try{document.getElementById('adaptive-effort-v2-style')?.remove()}catch(e){}
 (()=>{
   if(document.querySelector('script[data-unvrsl-offline-strength-search-v341]'))return;
   const s=document.createElement('script');
-  s.src='offline-strength-search.js?v=404';
+  s.src='offline-strength-search.js?v=405';
   s.async=false;
   s.dataset.unvrslOfflineStrengthSearchV341='1';
   document.body.appendChild(s);

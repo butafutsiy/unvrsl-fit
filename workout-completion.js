@@ -7,6 +7,13 @@
     A.summary(s, st.sessions || [], workoutRegistry, st.bw || []);
   const duration = (ms) =>
     `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
+  const nextWeight=(s,entry)=>{
+    const ex=entry.best.exercise,set=entry.best.set;
+    if(ex.mode==='cardio')return null;
+    const future={...s,id:`next-${s.id}`,started:(Number(s.ended)||Date.now())+1,ended:null,ex:[]};
+    const rec=A.recommend(ex,{...set,ok:false},future,st.sessions||[],workoutRegistry,st.exerciseWeightProfiles||{});
+    return rec.sessionIds.length&&rec.action!=='reps'?`В следующий раз: ${String(rec.weight).replace('.',',')} кг · ${rec.reason}`:null;
+  };
   let currentReport = null,
     currentSession = null;
   W.renderWorkoutSummary = function (s) {
@@ -28,7 +35,7 @@
         .map(([label, v]) => `<div><small>${label}</small><b>${v}</b></div>`)
         .join(
           "",
-        )}</div>${r.unknownVolumeSets ? '<p class="muted small">Объём включает только подходы с известной эффективной нагрузкой.</p>' : ""}${r.comparison ? `<p class="muted small">По сравнению с ${esc(r.comparison.date)}: подходы ${r.comparison.setDelta > 0 ? "+" : ""}${r.comparison.setDelta}${r.comparison.volumeDelta == null ? "" : `, объём ${r.comparison.volumeDelta > 0 ? "+" : ""}${r.comparison.volumeDelta} кг`}</p>` : ""}${r.exercises.map((e) => `<div class="listline"><b>${esc(e.name)}</b>${e.sets.map((x) => `<p class="small">${esc(x.label)}</p>`).join("")}<p class="muted small">Лучший подход: ${esc(e.best.label)}</p>${e.records.length ? '<span class="chip">Новый рекорд</span>' : ""}</div>`).join("")}<button class="btn primary full" onclick="previewWorkoutShare()">Поделиться результатом</button><button class="btn full" onclick="closeModal();nav('stats')">К статистике</button></div>`,
+        )}</div>${r.unknownVolumeSets ? '<p class="muted small">Объём включает только подходы с известной эффективной нагрузкой.</p>' : ""}${r.comparison ? `<p class="muted small">По сравнению с ${esc(r.comparison.date)}: подходы ${r.comparison.setDelta > 0 ? "+" : ""}${r.comparison.setDelta}${r.comparison.volumeDelta == null ? "" : `, объём ${r.comparison.volumeDelta > 0 ? "+" : ""}${r.comparison.volumeDelta} кг`}</p>` : ""}${r.exercises.map((e) => `<div class="listline"><b>${esc(e.name)}</b>${e.sets.map((x) => `<p class="small">${esc(x.label)}</p>`).join("")}<p class="muted small">Лучший подход: ${esc(e.best.label)}</p>${nextWeight(s,e)?`<p class="small green">${esc(nextWeight(s,e))}</p>`:""}${e.records.length ? '<span class="chip">Новый рекорд</span>' : ""}</div>`).join("")}<button class="btn primary full" onclick="previewWorkoutShare()">Поделиться результатом</button><button class="btn full" onclick="closeModal();nav('stats')">К статистике</button></div>`,
     );
   };
   W.completeWorkout = async function () {
@@ -122,111 +129,8 @@
       `<h2>Незавершённая тренировка</h2><p>${esc(s.name || s.c)}</p>${(s.ex || []).map((e) => `<div class="listline"><b>${esc(e.n)}</b>${(e.set || []).map((x) => `<p>${x.ok ? "✓" : "○"} ${esc(A.setLabel(e, x, workoutRegistry))}</p>`).join("")}</div>`).join("")}<button class="btn primary full" onclick="resumeWorkoutDraft()">Продолжить</button>`,
     );
   };
-  W.previewWorkoutShare = function () {
-    if (!currentReport) return;
-    const r = currentReport,
-      c = D.createElement("canvas");
-    c.width = 1080;
-    c.height = 1350;
-    const ctx = c.getContext("2d");
-    ctx.fillStyle = "#0c0b10";
-    ctx.fillRect(0, 0, c.width, c.height);
-    ctx.fillStyle = "#bf5af2";
-    ctx.fillRect(64, 64, 96, 8);
-    ctx.font = "bold 38px Arial, sans-serif";
-    ctx.fillText("UNVRSL FIT", 64, 140);
-    ctx.fillStyle = "#f5f5f7";
-    ctx.font = "bold 64px Arial, sans-serif";
-    const fit = (text, width) => {
-      text = String(text);
-      if (ctx.measureText(text).width <= width) return text;
-      while (text && ctx.measureText(text + "…").width > width)
-        text = text.slice(0, -1);
-      return text + "…";
-    };
-    const words = r.name.split(" "),
-      lines = [];
-    let line = "";
-    for (const word of words) {
-      const next = (line ? line + " " : "") + word;
-      if (line && ctx.measureText(next).width > 920) {
-        lines.push(line);
-        line = word;
-      } else line = next;
-    }
-    if (line) lines.push(line);
-    let y = 250;
-    for (const [i, title] of lines.slice(0, 2).entries()) {
-      ctx.fillText(
-        fit(title + (i === 1 && lines.length > 2 ? "…" : ""), 920),
-        64,
-        y,
-      );
-      if (i === 0 && lines.length > 1) y += 76;
-    }
-    ctx.fillStyle = "#96909f";
-    ctx.font = "28px Arial, sans-serif";
-    ctx.fillText(r.date, 64, y + 54);
-    let by = Math.max(450, y + 150);
-    for (const [i, [value, label]] of [
-      [duration(r.durationMs), "Время"],
-      [String(r.exerciseCount), "Упражнения"],
-      [String(r.setCount), "Рабочие подходы"],
-      [
-        r.unknownVolumeSets && r.volume === 0
-          ? "—"
-          : `${r.volume.toLocaleString("ru-RU")} кг`,
-        r.unknownVolumeSets ? "Объём с известной нагрузкой" : "Объём",
-      ],
-    ].entries()) {
-      const x = i % 2 ? 570 : 64,
-        yy = by + Math.floor(i / 2) * 170;
-      ctx.fillStyle = "#fff";
-      ctx.font = "bold 60px Arial, sans-serif";
-      ctx.fillText(fit(value, 440), x, yy);
-      ctx.fillStyle = "#96909f";
-      ctx.font = "24px Arial, sans-serif";
-      ctx.fillText(label, x, yy + 48);
-    }
-    by += 380;
-    const highlights = r.records.length
-      ? r.records.slice(0, 2)
-      : r.exercises
-          .slice(0, 2)
-          .map((e) => ({ name: e.name, label: e.best.label }));
-    if (r.records.length) {
-      ctx.fillStyle = "#bf5af2";
-      ctx.font = "bold 28px Arial, sans-serif";
-      ctx.fillText(`НОВЫЕ РЕКОРДЫ · ${r.records.length}`, 64, by);
-      by += 55;
-    }
-    ctx.font = "28px Arial, sans-serif";
-    for (const h of highlights) {
-      ctx.fillStyle = "#c6c1cc";
-      ctx.fillText(fit(h.name, 940), 64, by);
-      ctx.fillStyle = "#fff";
-      ctx.fillText(fit(h.label, 940), 64, by + 44);
-      by += 114;
-    }
-    const data = c.toDataURL("image/png");
-    W.__workoutShareCanvas = c;
-    modal(
-      `<h2>Поделиться результатом</h2><img class="wc392-preview" src="${data}" alt="Точный предпросмотр результата"><a class="btn primary full" download="UNVRSL-FIT-${esc(r.date)}.png" href="${data}">Сохранить изображение</a><button class="btn full" onclick="sendWorkoutShare()">Отправить</button>`,
-    );
-  };
-  W.sendWorkoutShare = async () => {
-    const c = W.__workoutShareCanvas;
-    if (!c) return;
-    const blob = await new Promise((resolve) => c.toBlob(resolve, "image/png")),
-      file = new File([blob], "UNVRSL-FIT.png", { type: "image/png" });
-    if (navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: "UNVRSL FIT" });
-      } catch (e) {
-        if (e.name !== "AbortError") toast("Не удалось открыть отправку");
-      }
-    } else toast("Сохраните изображение и отправьте его из галереи");
-  };
+  W.previewWorkoutShare = () => { if (currentSession) W.openShareProgressV264?.(currentSession); };
+  W.sendWorkoutShare = () => W.shareProgressNativeV264?.();
   // Reuse the canonical summary for the old share entry points, without the old canvas renderer.
   W.advShareWorkout = (s) => {
     currentSession = s || st.sessions.at(-1);
