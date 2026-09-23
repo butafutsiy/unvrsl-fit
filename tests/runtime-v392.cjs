@@ -310,9 +310,12 @@ if (require.main === module) (async () => {
     result.finished = true;
     if (process.env.UNVRSL_CANVAS) {
       recovered.window.previewWorkoutShare();
-      await wait(100);
-      const preview = recovered.window.document.querySelector("#sp264Preview");
-      assert.ok(preview && !preview.hidden);
+      let preview = recovered.window.document.querySelector("#sp264Preview");
+      for (let attempt = 0; attempt < 30 && (!preview || preview.hidden); attempt++) {
+        await wait(100);
+        preview = recovered.window.document.querySelector("#sp264Preview");
+      }
+      assert.ok(preview && !preview.hidden, `PNG preview: ${recovered.window.document.querySelector("#sp264Status")?.textContent || "no status"}; element: ${preview?.outerHTML || "missing"}`);
       assert.match(preview.src, /^blob:http:\/\/app\.test\/share-/);
       assert.equal(recovered.window.__unvrslTestShareBlobs.get(preview.src)?.type, "image/png");
       fs.writeFileSync(
