@@ -154,6 +154,22 @@ if (require.main === module) (async () => {
     };
   try {
     assert.ok(result.ready);
+    w.document.getElementById("gear").click();
+    assert.ok(w.document.querySelector("#sheet [data-cloud-settings]"),
+      "cloud controls remain on the canonical settings screen");
+    const lightTheme = [...w.document.querySelectorAll("#sheet .seg button")]
+      .find((button) => button.textContent.includes("Светлая"));
+    assert.ok(lightTheme, "settings expose the active light-theme control");
+    assert.equal(lightTheme.disabled, false, "the light-theme control is enabled");
+    lightTheme.click();
+    assert.equal(w.document.documentElement.dataset.theme, "light");
+    assert.equal(w.document.getElementById("modal").classList.contains("show"), false,
+      "choosing a theme closes the settings overlay so navigation is available");
+    assert.match(w.localStorage.getItem("unvrsl-fit-v3"), /"theme":"light"/,
+      "theme preference is persisted");
+    w.nav("stats");
+    assert.equal(w.document.querySelector(".page.active")?.id, "stats");
+    result.settingsThemeAndNavigation = true;
     assert.equal(w.catalogRecords().length, 188);
     result.catalog = 188;
     result.pages = {};
@@ -184,9 +200,9 @@ if (require.main === module) (async () => {
     w.closeModal();
     result.lazyMedia = true;
     const localGifById = {
-      "canon:weighted_pushup": "assets/exercises/weighted-pushup-v395.gif",
-      "canon:weighted_hyperextension": "assets/exercises/weighted-hyperextension-v395.gif",
-      "canon:box_jump": "assets/exercises/box-jump-v395.gif",
+      "canon:weighted_pushup": "assets/exercises/weighted-pushup-v396.gif",
+      "canon:weighted_hyperextension": "assets/exercises/weighted-hyperextension-v396.gif",
+      "canon:box_jump": "assets/exercises/box-jump-v396.gif",
     };
     for (const id of Object.keys(localGifById)) {
       const exercise = w.catalogRecords().find((x) => x.id === id);

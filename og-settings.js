@@ -3,11 +3,17 @@ function cloudSettingsLabel(){
   if(window.cloud?.user)return window.cloud.profile?.display_name||window.cloud.user.email||'Аккаунт подключён';
   return 'Вход и облачное сохранение данных';
 }
-function settingsSheet(){
-  modal(`<div class="row between"><h2>Настройки</h2><button class="btn tiny" onclick="closeModal()">✕</button></div>
-  <div class="section">АККАУНТ</div><div class="settings-card"><div class="setting"><div><b>UNVRSL Cloud</b><div class="muted small">${esc(cloudSettingsLabel())}</div></div><button class="btn tiny" onclick="openCloudAccount()">${window.cloud?.user?'Открыть':'Войти'}</button></div>${window.cloud?.user?`<div class="setting"><div><b>Облачная копия</b><div class="muted small">Тренировки, прогресс, вес, программы и настройки</div></div><button class="btn tiny" onclick="accountSyncNow?.()">Синхр.</button></div>`:''}</div>
-  <div class="section">ВНЕШНИЙ ВИД</div><div class="settings-card"><div class="setting"><div>Тема</div><div class="seg"><button class="on">☾ Тёмная</button><button disabled>☀ Светлая</button></div></div><div class="setting"><div>Схема тела</div><div class="seg"><button class="${st.body==='male'?'on':''}" onclick="st.body='male';save();settingsSheet()">Мужской</button><button class="${st.body==='female'?'on':''}" onclick="st.body='female';save();settingsSheet()">Женский</button></div></div><div class="setting" style="display:block"><div>Акцентный цвет</div><div class="colors">${COLORS.map(c=>`<button class="color ${st.accent===c?'on':''}" style="background:${c}" onclick="setAccent('${c}')"></button>`).join('')}</div></div></div>
-  <div class="section">РЕЗЕРВНАЯ КОПИЯ</div><div class="settings-card"><div class="setting"><div><b>Экспорт резервной копии</b><div class="muted small">Все локальные данные</div></div><button class="btn tiny" onclick="backup()">Файл</button></div><div class="setting"><div><b>Импорт резервной копии</b></div><label class="btn tiny" for="bkImport">Импорт</label><input id="bkImport" type="file" accept=".json,application/json" hidden onchange="restoreBackup(this.files[0])"></div></div>`)
+const canonicalSettingsSheet=window.settingsSheet;
+if(typeof canonicalSettingsSheet==='function'){
+  window.settingsSheet=function(){
+    const result=canonicalSettingsSheet.apply(this,arguments),sheet=document.getElementById('sheet');
+    if(!sheet||sheet.querySelector('[data-cloud-settings]'))return result;
+    const account=document.createElement('div');account.dataset.cloudSettings='1';
+    account.innerHTML=`<div class="section">АККАУНТ И ОБЛАКО</div><div class="settings-card"><div class="setting"><div><b>UNVRSL Cloud</b><div class="muted small">${esc(cloudSettingsLabel())}</div></div><button class="btn tiny" onclick="openCloudAccount()">${window.cloud?.user?'Открыть':'Войти'}</button></div>${window.cloud?.user?`<div class="setting"><div><b>Облачная копия</b><div class="muted small">Тренировки, прогресс, вес, программы и настройки</div></div><button class="btn tiny" onclick="accountSyncNow?.()">Синхр.</button></div>`:''}</div>`;
+    const firstSection=sheet.querySelector('.section');if(firstSection)firstSection.before(account);else sheet.append(account);
+    return result;
+  };
+  try{settingsSheet=window.settingsSheet}catch(_){}
 }
 async function importOpenGym(file){
   if(!file)return;try{const d=JSON.parse(await file.text());await loadExerciseDB();let imported=0;
@@ -41,7 +47,7 @@ async function openCloudAccount(){await loadCloudModules();if(typeof cloudAccoun
   if(window.__unvrslPreviewAuthorityLoaderV281)return;
   window.__unvrslPreviewAuthorityLoaderV281=true;
   const s=document.createElement('script');
-  s.src='./preview-authority.js?v=395';
+  s.src='./preview-authority.js?v=396';
   s.async=false;
   s.dataset.unvrslPreviewAuthority='281';
   document.body.appendChild(s);
@@ -53,7 +59,7 @@ async function openCloudAccount(){await loadCloudModules();if(typeof cloudAccoun
   if(window.__unvrslRepRangeGhostLoaderV283)return;
   window.__unvrslRepRangeGhostLoaderV283=true;
   const s=document.createElement('script');
-  s.src='./rep-range-ghost.js?v=395';
+  s.src='./rep-range-ghost.js?v=396';
   s.async=false;
   s.dataset.unvrslRepRangeGhost='283';
   document.body.appendChild(s);

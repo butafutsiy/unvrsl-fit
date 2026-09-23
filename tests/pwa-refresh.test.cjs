@@ -21,15 +21,15 @@ test('manifest has a stable GitHub Pages identity and installable PNG icons',()=
 
 test('iOS uses a PNG touch icon and a versioned service worker',()=>{
   const html=read('index.html');
-  assert.match(html,/apple-touch-icon[^>]+apple-touch-icon\.png\?v=395/);
-  assert.match(html,/serviceWorker\.register\('\.\/sw\.js\?v=395'/);
+  assert.match(html,/apple-touch-icon[^>]+apple-touch-icon\.png\?v=396/);
+  assert.match(html,/serviceWorker\.register\('\.\/sw\.js\?v=396'/);
   assert.match(html,/updateViaCache:'none'/);
   assert.doesNotMatch(html,/controllerchange|location\.reload\(\)/);
 });
 
 test('service worker isolates current shell and media from user data',()=>{
  const sw=read('sw.js');
- assert.match(sw,/SW_RELEASE = "v395"/);
+ assert.match(sw,/SW_RELEASE = "v396"/);
  assert.match(sw,/cache\.put/);
  assert.doesNotMatch(sw,/localStorage\.clear|indexedDB\.deleteDatabase/);
 });
