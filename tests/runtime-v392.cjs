@@ -183,7 +183,12 @@ if (require.main === module) (async () => {
     assert.equal(gif.getAttribute("src"), null);
     w.closeModal();
     result.lazyMedia = true;
-    for (const id of ["canon:weighted_pushup", "canon:weighted_hyperextension", "canon:box_jump"]) {
+    const localGifById = {
+      "canon:weighted_pushup": "assets/exercises/weighted-pushup-v395.gif",
+      "canon:weighted_hyperextension": "assets/exercises/weighted-hyperextension-v395.gif",
+      "canon:box_jump": "assets/exercises/box-jump-v395.gif",
+    };
+    for (const id of Object.keys(localGifById)) {
       const exercise = w.catalogRecords().find((x) => x.id === id);
       assert.ok(exercise.image.startsWith("assets/exercises/"));
       assert.equal(new URL(w.mediaUrl(exercise.image), w.location.href).pathname, "/" + exercise.image);
@@ -191,9 +196,9 @@ if (require.main === module) (async () => {
       const media = w.document.querySelector("#sheet img[data-exercise-media]");
       assert.ok(media);
       observer.cb([{ target: media, isIntersecting: true }]);
-      assert.equal(new URL(media.src).pathname, "/" + exercise.gif);
+      assert.equal(new URL(media.src).pathname, "/" + localGifById[id]);
       assert.ok(fs.existsSync(path.join(root, exercise.image)));
-      assert.ok(fs.existsSync(path.join(root, exercise.gif)));
+      assert.ok(fs.existsSync(path.join(root, localGifById[id])));
       w.closeModal();
     }
     result.localIllustrations = true;

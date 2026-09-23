@@ -53,8 +53,17 @@
   function favorite(e) {
     return (st.favorites || []).some((id) => id === e.id || id === e.rawId);
   }
+  const LOCAL_GIF_BY_ID = Object.freeze({
+    "canon:weighted_hyperextension": "assets/exercises/weighted-hyperextension-v395.gif",
+    "canon:box_jump": "assets/exercises/box-jump-v395.gif",
+    "canon:weighted_pushup": "assets/exercises/weighted-pushup-v395.gif",
+    "unvrsl:hip-thrust-smith": "assets/exercises/hip-thrust-smith-v395.gif",
+    "unvrsl:hip-thrust-machine": "assets/exercises/hip-thrust-machine-v395.gif",
+    "canon:barbell_hip_thrust": "assets/exercises/hip-thrust-barbell-v395.gif",
+  });
+  const exerciseGif = (e) => LOCAL_GIF_BY_ID[e.id] || e.gif || e.gif_url || "";
   const media = (e) =>
-    e.image || (e.gif && !/\.gif(?:\?|$)/i.test(e.gif) ? e.gif : "");
+    LOCAL_GIF_BY_ID[e.id] || e.image || (e.gif && !/\.gif(?:\?|$)/i.test(e.gif) ? e.gif : "");
   const url = (path) =>
     !path
       ? ""
@@ -93,7 +102,8 @@
     }
   }
   function card(e) {
-    return `<article class="card exlib catalog392-row" data-id="${esc(e.id)}"><button class="catalog392-open" onclick="openExerciseDetail('${encodeURIComponent(e.id)}')"><span class="catalog392-thumb">${media(e) ? `<img data-exercise-media data-src="${esc(url(media(e)))}" alt="" width="72" height="72" loading="lazy" decoding="async">` : '<span aria-label="Изображение пока отсутствует">◇</span>'}</span><span><b>${esc(e.n)}</b><small>${esc(BP_RU[e.bp] || e.bp)} · ${esc(EQ_RU[e.eq] || e.eq)}</small></span></button><button class="star-btn ${favorite(e) ? "on" : ""}" aria-label="Избранное: ${esc(e.n)}" onclick="toggleFavorite('${esc(e.id)}')">★</button></article>`;
+    const src = media(e), gif = exerciseGif(e), animated = src && src === gif && /\.gif(?:\?|$)/i.test(src);
+    return `<article class="card exlib catalog392-row" data-id="${esc(e.id)}"><button class="catalog392-open" onclick="openExerciseDetail('${encodeURIComponent(e.id)}')"><span class="catalog392-thumb">${src ? `<img data-exercise-media ${animated ? 'data-animated="1"' : ''} data-src="${esc(url(src))}" alt="" width="72" height="72" loading="lazy" decoding="async">` : '<span aria-label="Изображение пока отсутствует">◇</span>'}</span><span><b>${esc(e.n)}</b><small>${esc(BP_RU[e.bp] || e.bp)} · ${esc(EQ_RU[e.eq] || e.eq)}</small></span></button><button class="star-btn ${favorite(e) ? "on" : ""}" aria-label="Избранное: ${esc(e.n)}" onclick="toggleFavorite('${esc(e.id)}')">★</button></article>`;
   }
   function filtered() {
     const u = usage(),
@@ -256,7 +266,7 @@
           A.e1rm(x.exercise, x.set, x.session, workoutRegistry, st.bw),
         )
         .filter((x) => x != null),
-      gif = url(e.gif || e.image),
+      gif = url(exerciseGif(e) || e.image),
       maxCard = maximumCard(e, est, p);
     modal(
       `<div class="row between"><h2>${esc(e.n)}</h2><button class="btn" onclick="closeModal()" aria-label="Закрыть">✕</button></div><div class="exercise-media catalog392-media">${gif ? `<img data-exercise-media data-animated="${/\.gif(?:\?|$)/i.test(gif) ? 1 : 0}" data-src="${esc(gif)}" alt="${esc(e.n)}" width="400" height="400" decoding="async">` : "<span>Для этого упражнения ещё нет проверенного изображения</span>"}</div><p>${esc(ruTarget(e.tg))} · ${esc(EQ_RU[e.eq] || e.eq)}</p><p class="muted small">Дополнительные мышцы: ${esc((e.secondary || []).map(ruTarget).join(", "))}</p><p class="muted small">${e.type === "isolation" ? "Изолирующее" : "Многосуставное"} · ${esc({ external_total: "Общий внешний вес", per_dumbbell: "Вес одной гантели", per_side: "Вес на сторону", bodyweight_only: "Собственный вес", bodyweight_added: "Собственный вес и дополнительное отягощение", bodyweight_assisted: "Величина помощи", machine_stack: "Вес тренажёра", time: "Время", distance: "Дистанция", repetitions_only: "Повторения" }[e.loadType] || e.loadType)}</p>${maxCard}<p>${esc(e.description || "Описание пока не заполнено")}</p><h3>Исходное положение</h3><p>${esc(c.start || "Не заполнено")}</p><h3>Движение</h3>${list(c.sequence)}<h3>Дыхание</h3><p>${esc(c.breathing || "Не заполнено")}</p><h3>Технические акценты</h3>${list(c.cues)}<h3>Частые ошибки</h3>${list(c.mistakes)}<h3>Безопасность</h3>${list(c.safety)}${

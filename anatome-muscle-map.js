@@ -202,7 +202,7 @@
     }
   }
 
-  function cardHtml(){return `<div id="anatomeMuscleCard" class="sd2-card anatome-card"><div class="anatome-head"><div><div class="anatome-title">Нагрузка по мышцам</div><div class="anatome-sub">Последние ${periodDays} дн.</div></div><div class="anatome-seg"><button data-days="7" class="${periodDays===7?'on':''}">7 дн.</button><button data-days="28" class="${periodDays===28?'on':''}">28 дн.</button></div></div><div class="anatome-body"><div class="anatome-figure"><div class="anatome-loading">Строю карту…</div></div><div class="anatome-top"></div></div><div class="anatome-foot">Визуализация: Anatome · интенсивность рассчитана UNVRSL FIT по выполненным подходам, включая вспомогательную нагрузку.</div></div>`}
+  function cardHtml(){return `<div id="anatomeMuscleCard" class="sd2-card anatome-card"><div class="anatome-head"><div><div class="anatome-title">Нагрузка по мышцам</div><div class="anatome-sub">Последние ${periodDays} дн.</div></div><div class="anatome-seg"><button data-days="7" class="${periodDays===7?'on':''}">7 дн.</button><button data-days="28" class="${periodDays===28?'on':''}">28 дн.</button></div></div><div class="anatome-tonnage-local"><span>Тоннаж за ${periodDays} дней</span><b>—</b><small>Считаю по выполненным подходам…</small></div><div class="anatome-body"><div class="anatome-figure"><div class="anatome-loading">Строю карту…</div></div><div class="anatome-top"></div></div><div class="anatome-foot">Тоннаж рассчитан по завершённым подходам с фактически указанной нагрузкой. Вес тела учитывается только если он сохранён.</div></div>`}
 
   function bindCard(card){
     if(!card||card.dataset.anatomeBound==='254')return false;

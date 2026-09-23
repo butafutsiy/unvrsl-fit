@@ -2,7 +2,7 @@ window.UNVRSL_ROUTINES=(window.UNVRSL_ROUTINES||[]).concat([{"w":8,"c":"A1","t":
 (()=>{
   if(document.querySelector('script[data-unvrsl-method-preview-collapse-v368]'))return;
   const s=document.createElement('script');
-  s.src='method-preview-collapse.js?v=394';
+  s.src='method-preview-collapse.js?v=395';
   s.async=false;
   s.dataset.unvrslMethodPreviewCollapseV368='1';
   (document.head||document.documentElement).appendChild(s);
