@@ -7,7 +7,7 @@ const read = (name) => fs.readFileSync(path.join(root, name), "utf8");
 
 test("light theme is selectable, applied, persisted, and included in PWA shell cache", () => {
   const html = read("index.html"), app = read("app.js"), sw = read("sw.js"), css = read("theme-light.css");
-  assert.match(html, /theme-light\.css\?v=396/);
+  assert.match(html, /theme-light\.css\?v=397/);
   assert.match(app, /function setTheme\(theme\)/);
   assert.match(app, /document\.documentElement\.dataset\.theme=theme/);
   assert.match(app, /onclick="setTheme\('light'\)"/);
@@ -19,5 +19,8 @@ test("light theme is selectable, applied, persisted, and included in PWA shell c
   assert.match(app, /#gear'\)\.addEventListener\('click',\(\)=>settingsSheet\(\)\)/);
   assert.doesNotMatch(read("cloud-patch.js"), /stopImmediatePropagation|cloudSettingsSheet/);
   assert.match(css, /html\[data-theme="light"\]/);
+  assert.match(css, /html\[data-theme="light"\] body \.nav\{background:[^}]+!important/);
+  assert.match(css, /html\[data-theme="light"\] body \.search,[\s\S]*?background:#fff!important;color:#19191d!important/);
+  assert.match(css, /html\[data-theme="light"\] body\{background:#f3f4f6!important;color:#19191d!important\}/);
   assert.match(sw, /<link rel="stylesheet" href="\(\[\^"\]\+\)"/);
 });

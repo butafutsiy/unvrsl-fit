@@ -97,7 +97,7 @@ function quickWeek(w){const el=$('#quickList');if(!el)return;el.innerHTML=ROUTIN
 (()=>{
   if(document.querySelector('script[data-unvrsl-offline-strength-search-v341]'))return;
   const s=document.createElement('script');
-  s.src='offline-strength-search.js?v=396';
+  s.src='offline-strength-search.js?v=397';
   s.async=false;
   s.dataset.unvrslOfflineStrengthSearchV341='1';
   document.body.appendChild(s);
