@@ -10,8 +10,8 @@
   async function boot(){
     const load=window.loadExternalScript||globalThis.loadExternalScript;
     if(typeof load!=='function')return;
-    await load('exercise-library-strict.js?v=400');
-    await load('exercise-library-additions.js?v=400');
+    await load('exercise-library-strict.js?v=401');
+    await load('exercise-library-additions.js?v=401');
   }
   boot().catch(e=>console.warn('exercise catalog loader',e));
 })();

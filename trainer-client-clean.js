@@ -119,18 +119,9 @@ try{document.getElementById('adaptive-effort-v2-style')?.remove()}catch(e){}
 })();
 
 (()=>{
-  if(document.querySelector('script[data-unvrsl-anatome-local]'))return;
-  const s=document.createElement('script');
-  s.src='anatome-local.js';
-  s.async=false;
-  s.dataset.unvrslAnatomeLocal='1';
-  document.body.appendChild(s);
-})();
-
-(()=>{
   if(document.querySelector('script[data-unvrsl-exercise-detail-rules]'))return;
   const s=document.createElement('script');
-  s.src='exercise-detail-rules.js?v=400';
+  s.src='exercise-detail-rules.js?v=401';
   s.async=false;
   s.dataset.unvrslExerciseDetailRules='1';
   document.body.appendChild(s);
@@ -204,9 +195,8 @@ try{document.getElementById('adaptive-effort-v2-style')?.remove()}catch(e){}
 (()=>{
   if(document.querySelector('script[data-unvrsl-offline-strength-search-v341]'))return;
   const s=document.createElement('script');
-  s.src='offline-strength-search.js?v=400';
+  s.src='offline-strength-search.js?v=401';
   s.async=false;
   s.dataset.unvrslOfflineStrengthSearchV341='1';
   document.body.appendChild(s);
 })();
-

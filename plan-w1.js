@@ -3,7 +3,7 @@ window.UNVRSL_ROUTINES=(window.UNVRSL_ROUTINES||[]).concat([{"w":1,"c":"A1","t":
   if(window.__unvrslClientWorkoutScrollLoaderV280)return;
   window.__unvrslClientWorkoutScrollLoaderV280=true;
   const s=document.createElement('script');
-  s.src='client-workout-scroll.js?v=400';
+  s.src='client-workout-scroll.js?v=401';
   s.async=false;
   (document.head||document.documentElement).appendChild(s);
 })();

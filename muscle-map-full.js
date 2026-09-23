@@ -8,9 +8,8 @@
   const norm=s=>String(s||'').toLowerCase().replace(/ё/g,'е').replace(/[–—]/g,'-').replace(/\s+/g,' ').trim();
   const state=()=>{try{if(typeof st!=='undefined'){window.st=st;return st}}catch(e){}return window.st||null};
   const done=e=>Array.isArray(e?.set)?e.set.filter(x=>x?.ok).length:0;
-  const iso=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?'':d.toISOString().slice(0,10)};
   const accent=()=>String(state()?.accent||getComputedStyle(document.documentElement).getPropertyValue('--green')||'#30d158').trim()||'#30d158';
-  let remote=[],loadedAt=0,rendering=false,bodyCache=null,bodyLoading=null;
+  let rendering=false,bodyCache=null,bodyLoading=null,rerender=false;
 
   function targetSlug(t){
     t=norm(t);if(!t)return'';
@@ -93,20 +92,14 @@
 
   async function bodyPaths(){
     if(window.UNVRSL_ANATOME_BODY_PATHS)return window.UNVRSL_ANATOME_BODY_PATHS;if(bodyCache)return bodyCache;if(bodyLoading)return bodyLoading;
-    bodyLoading=fetch(BODY_URL,{cache:'default'}).then(r=>{if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json()}).then(x=>{bodyCache=x;window.UNVRSL_ANATOME_BODY_PATHS=x;return x}).catch(e=>{console.warn('full muscle body',e);return null}).finally(()=>{bodyLoading=null});return bodyLoading
+    let timer;
+    const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Карта мышц не ответила вовремя')),8000)});
+    bodyLoading=Promise.race([fetch(BODY_URL,{cache:'default'}),timeout]).then(r=>{if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json()}).then(x=>{bodyCache=x;window.UNVRSL_ANATOME_BODY_PATHS=x;return x}).catch(e=>{console.warn('full muscle body',e);return null}).finally(()=>{clearTimeout(timer);bodyLoading=null});return bodyLoading
   }
 
-  async function sessions(){
-    const s=state(),local=Array.isArray(s?.sessions)?s.sessions:[];
-    if(!window.cloud?.client||!window.cloud?.user)return local;
-    if(Date.now()-loadedAt>15000){
-      try{
-        const cut=new Date();cut.setDate(cut.getDate()-35);
-        const q=await window.cloud.client.from('workouts').select('external_id,workout_date,payload').eq('user_id',window.cloud.user.id).gte('workout_date',iso(cut)).order('workout_date',{ascending:true}).limit(250);
-        if(!q.error){remote=(q.data||[]).map(x=>({...x.payload,date:x.workout_date,id:x.payload?.id||x.external_id})).filter(x=>Array.isArray(x.ex));loadedAt=Date.now()}
-      }catch(e){console.warn('full muscle sessions',e)}
-    }
-    const map=new Map();[...remote,...local].forEach(x=>{const k=String(x?.id||`${x?.date}-${x?.started||Math.random()}`);map.set(k,x)});return [...map.values()];
+  function sessions(){
+    if(typeof window.unvrslStatsSessions254==='function')return window.unvrslStatsSessions254();
+    return Array.isArray(state()?.sessions)?state().sessions:[];
   }
   function sessionDay(session){const raw=session?.date||session?.workout_date||session?.started||session?.payload?.started;if(raw==null)return null;const date=new Date(raw);return Number.isNaN(date.getTime())?null:new Date(date.getFullYear(),date.getMonth(),date.getDate())}
   function calculate(list,days){
@@ -119,17 +112,19 @@
   function color(slug,scores){const v=scores.get(slug)||0;if(!v)return'#34343a';const max=Math.max(1,...scores.values()),q=v/max;return q>=.67?'#ff375f':accent()}
   function side(side,scores,bodyData){const sex=state()?.body==='female'?'female':'male',parts=bodyData?.[sex]?.[side]||[],paths=[];parts.forEach(part=>{const active=scores.has(part.slug),fill=color(part.slug,scores);Object.values(part.path||{}).flat().forEach(d=>{if(d)paths.push(`<path d="${String(d).replace(/"/g,'&quot;')}" fill="${fill}" opacity="${active?'.98':'.72'}" stroke="rgba(255,255,255,.16)" stroke-width="1.15" vector-effect="non-scaling-stroke"></path>`)})});const vb=side==='back'?'760 140 640 1230':'40 140 640 1230';return `<svg class="anatome-local-side" viewBox="${vb}" preserveAspectRatio="xMidYMid meet">${paths.join('')}</svg>`}
   async function render(){
-    if(rendering)return;const card=document.getElementById('anatomeMuscleCard');if(!card)return;rendering=true;
+    if(rendering){rerender=true;return}const card=document.getElementById('anatomeMuscleCard');if(!card)return;rendering=true;
     try{
-      const days=period(card),data=calculate(await sessions(),days),fig=card.querySelector('.anatome-figure'),top=card.querySelector('.anatome-top'),sub=card.querySelector('.anatome-sub');
+      const days=period(card),list=sessions(),data=calculate(list,days),fig=card.querySelector('.anatome-figure'),top=card.querySelector('.anatome-top'),sub=card.querySelector('.anatome-sub');
       // The numeric result does not depend on the optional anatomy illustration.
       // Render it first so a missing/offline body-path asset cannot strand tonnage at “—”.
-      const tonnage=card.querySelector('.anatome-tonnage-local'),tonnageValue=tonnage?.querySelector('b'),tonnageNote=tonnage?.querySelector('small');if(tonnage){const label=tonnage.querySelector('span');if(label)label.textContent=`Тоннаж за ${days} дней`;if(tonnageValue)tonnageValue.textContent=data.unknownVolumeSets&&data.volume===0?'— кг':`${data.volume.toLocaleString('ru-RU')} кг`;if(tonnageNote)tonnageNote.textContent=data.unknownVolumeSets?`Не включено подходов без известной нагрузки: ${data.unknownVolumeSets}`:'Только завершённые подходы'}
+      const history=window.unvrslStatsHistoryState254?.(),remoteStatus=history?.status||'ready';
+      const waiting=remoteStatus==='loading'&&!list.length,failed=remoteStatus==='error'&&!list.length;
+      const tonnage=card.querySelector('.anatome-tonnage-local'),tonnageValue=tonnage?.querySelector('b'),tonnageNote=tonnage?.querySelector('small');if(tonnage){const label=tonnage.querySelector('span');if(label)label.textContent=`Тоннаж за ${days} дней`;if(tonnageValue)tonnageValue.textContent=waiting||failed||data.unknownVolumeSets&&data.volume===0?'— кг':`${data.volume.toLocaleString('ru-RU')} кг`;if(tonnageNote)tonnageNote.textContent=failed?'История пока недоступна. Открой статистику повторно при подключении.':remoteStatus==='loading'?'Синхронизирую историю тренировок…':data.unknownVolumeSets?`Не включено подходов без известной нагрузки: ${data.unknownVolumeSets}`:'Только завершённые подходы'}
       const subtitle=`Последние ${days} дн. · ${data.sets} выполн. подходов`;if(sub&&sub.textContent!==subtitle)sub.textContent=subtitle;
       const topContent=topHtml(data.rows);if(top&&top.innerHTML!==topContent)top.innerHTML=topContent;
       if(!fig)return;
-      if(!data.rows.length){if(fig.querySelector('.anatome-empty'))return;fig.innerHTML='<div class="anatome-empty">Нет распознанных выполненных упражнений за этот период.</div>';return}
-      const bodyData=await bodyPaths();if(!bodyData){fig.innerHTML='<div class="anatome-error">Карта мышц временно недоступна. Тоннаж рассчитан по тренировкам.</div>';return}
+      if(!data.rows.length){const message=waiting?'Синхронизирую историю тренировок…':failed?'История временно недоступна. Попробуй открыть статистику позже.':'Нет распознанных выполненных упражнений за этот период.';const content=`<div class="anatome-empty">${message}</div>`;if(fig.innerHTML!==content)fig.innerHTML=content;return}
+      const bodyData=await bodyPaths();if(!bodyData){const content='<div class="anatome-error">Карта мышц временно недоступна. Тоннаж рассчитан по тренировкам.</div>';if(fig.innerHTML!==content)fig.innerHTML=content;return}
       const sig=`${state()?.body||'male'}|${accent()}|${days}|`+data.rows.map(x=>x.join(':')).join('|');if(fig.dataset.full176Sig===sig&&fig.querySelector('.anatome-full-v176'))return;
       fig.dataset.full176Sig=sig;fig.dataset.localSig=sig;
       fig.innerHTML=`<div class="anatome-full-v176" style="width:100%"><div class="anatome-local-dual">${side('front',data.scores,bodyData)}${side('back',data.scores,bodyData)}</div><div class="anatome-local-caption">СПЕРЕДИ · СЗАДИ</div></div>`;
@@ -137,12 +132,13 @@
       console.warn('full muscle map render',error);
       const card=document.getElementById('anatomeMuscleCard'),note=card?.querySelector('.anatome-tonnage-local small');if(note)note.textContent='Не удалось загрузить тренировочные данные';
       const fig=card?.querySelector('.anatome-figure');if(fig)fig.innerHTML='<div class="anatome-error">Не удалось загрузить статистику. Попробуй открыть её ещё раз.</div>';
-    }finally{rendering=false}
+    }finally{rendering=false;if(rerender){rerender=false;schedule()}}
   }
   let scheduled=null;function schedule(){if(scheduled!=null)return;scheduled=setTimeout(()=>{scheduled=null;return render()},80)}
   window.unvrslMuscleMapCalculate211=calculate;window.unvrslRefreshMuscleMap211=schedule;
-  const root=document.getElementById('stats');if(root)new MutationObserver(()=>{const fig=document.querySelector('#anatomeMuscleCard .anatome-figure');if(fig&&!fig.querySelector('.anatome-full-v176,.anatome-empty'))schedule()}).observe(root,{childList:true,subtree:true});
+  const root=document.getElementById('stats');if(root)new MutationObserver(()=>{const fig=document.querySelector('#anatomeMuscleCard .anatome-figure');if(fig&&!fig.querySelector('.anatome-full-v176,.anatome-empty,.anatome-error'))schedule()}).observe(root,{childList:true,subtree:true});
   document.addEventListener('click',e=>{if(e.target?.closest?.('#anatomeMuscleCard [data-days]')){loadedAt=0;setTimeout(render,120)}},true);
-  window.addEventListener('focus',()=>{loadedAt=0;schedule()});
-  [1200,2600,5000].forEach(t=>setTimeout(render,t));
+  window.addEventListener('focus',schedule);
+  window.addEventListener('unvrsl:stats-history-ready',schedule);
+  schedule();
 })();
