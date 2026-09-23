@@ -90,5 +90,5 @@ async function cloudAcceptInvite(){if(!cloud.user)return cloudAccountSheet();con
 setTimeout(()=>{window.__unvrslCloudInitPromiseV257=cloudInit()},0);
 
 // Crash-safe local persistence is loaded separately so completed sessions and an active workout survive app updates/reloads.
-(()=>{if(document.querySelector('script[data-unvrsl-persistence]'))return;const s=document.createElement('script');s.src='./persistence-safety.js?v=399';s.dataset.unvrslPersistence='1';document.head.appendChild(s)})();
+(()=>{if(document.querySelector('script[data-unvrsl-persistence]'))return;const s=document.createElement('script');s.src='./persistence-safety.js?v=400';s.dataset.unvrslPersistence='1';document.head.appendChild(s)})();
 
