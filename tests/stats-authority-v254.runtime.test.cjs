@@ -20,10 +20,11 @@ test('late legacy renderer cannot restore history, weight, or another Statistics
     }
   };
   const legacy=()=>{root.canonical=false;root.foreign=true;root.textContent='Вес тела · ИСТОРИЯ ТРЕНИРОВОК · старый экран'};
+  let renders=0;
   const window={
     statsPage:legacy,
     nav:p=>{if(p==='stats')legacy()},
-    statsDashboardRender(){root.canonical=true;root.foreign=false;root.dataset.statsAuthority='254';root.textContent='Статистика · Средний RPE · СИЛОВЫЕ'},
+    statsDashboardRender(){renders++;root.canonical=true;root.foreign=false;root.dataset.statsAuthority='254';root.textContent='Статистика · Средний RPE · СИЛОВЫЕ'},
     statsCleanupPatchV254(){root.foreign=false},anatomeMountCardV254(){root.anatomy=true},statsProgressRefresh(){},
     addEventListener:(name,fn)=>{listeners.window[name]=fn}
   };
@@ -37,6 +38,10 @@ test('late legacy renderer cannot restore history, weight, or another Statistics
   assert.equal(root.canonical,true);
   assert.equal(root.anatomy,true);
   assert.equal(window.statsPage.__statsAuthorityV254,true);
+  const stableRenders=renders;
+  root.textContent+=' · Вес тела учитывается только если он сохранён.';
+  window.statsEnsureCanonicalV254();
+  assert.equal(renders,stableRenders,'the current muscle-map caption must not rebuild Statistics');
 
   window.statsPage=legacy;context.statsPage=legacy;legacy();
   listeners.window.pageshow();
@@ -48,4 +53,3 @@ test('late legacy renderer cannot restore history, weight, or another Statistics
   assert.equal(root.canonical,true);
   assert.doesNotMatch(root.textContent,/Вес тела|ИСТОРИЯ ТРЕНИРОВОК/);
 });
-

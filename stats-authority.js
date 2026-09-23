@@ -8,8 +8,10 @@
   let reconciling=false,queued=false;
 
   function hasCore(r){
-    const text=r?.textContent||'';
-    return !!(r&&r.dataset.statsAuthority==='254'&&r.querySelector('.sd2-head')&&r.querySelector('.sd2-grid')&&r.querySelector('.sd2-strength-host')&&!r.querySelector(FORBIDDEN)&&!/Вес тела|Вес 30 дн\.|Вес и обхваты|ИСТОРИЯ ТРЕНИРОВОК/i.test(text));
+    // The anatomy card itself explains when body weight is included in tonnage.
+    // Text matching "Вес тела" here makes a valid dashboard look obsolete and
+    // creates an endless render loop before the muscle map can finish.
+    return !!(r&&r.dataset.statsAuthority==='254'&&r.querySelector('.sd2-head')&&r.querySelector('.sd2-grid')&&r.querySelector('.sd2-strength-host')&&!r.querySelector(FORBIDDEN));
   }
   function isFinal(r){return !!(hasCore(r)&&r.querySelector('#anatomeMuscleCard'))}
 
@@ -54,4 +56,3 @@
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){installOwner();schedule()}},{passive:true});
   schedule();
 })();
-
