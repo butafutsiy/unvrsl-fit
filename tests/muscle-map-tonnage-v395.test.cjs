@@ -53,3 +53,26 @@ test("tonnage surfaces unknown loads without presenting them as zero kg", () => 
   assert.equal(result.volume, 0);
   assert.equal(result.unknownVolumeSets, 3);
 });
+
+test("legacy exercises and sets are included in the muscle map without mutating history", () => {
+  const today = new Date();
+  const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const result = calculate([
+    {
+      workout_date: date,
+      exercises: [
+        {
+          name: "Жим штанги лёжа",
+          sets: [
+            { completed: true, weight: "60", reps: "10" },
+            { status: "completed", weight: 60, reps: 10 },
+          ],
+        },
+      ],
+    },
+  ]);
+  assert.equal(result.sets, 2);
+  assert.equal(result.volume, 1200);
+  assert.equal(result.unknownVolumeSets, 0);
+  assert.ok(result.scores.get("chest") > 0);
+});

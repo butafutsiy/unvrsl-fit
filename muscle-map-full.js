@@ -7,7 +7,18 @@
   const LABELS={chest:'Грудь',deltoids:'Дельты',triceps:'Трицепс',biceps:'Бицепс',forearm:'Предплечья','upper-back':'Широчайшие / верх спины',trapezius:'Трапеции','lower-back':'Поясница',abs:'Пресс',obliques:'Косые',quadriceps:'Квадрицепс',hamstring:'Бицепс бедра',gluteal:'Ягодичные',adductors:'Приводящие',calves:'Икры',tibialis:'Передняя голень',neck:'Шея'};
   const norm=s=>String(s||'').toLowerCase().replace(/ё/g,'е').replace(/[–—]/g,'-').replace(/\s+/g,' ').trim();
   const state=()=>{try{if(typeof st!=='undefined'){window.st=st;return st}}catch(e){}return window.st||null};
-  const done=e=>Array.isArray(e?.set)?e.set.filter(x=>x?.ok).length:0;
+  // Sessions created before the current training engine used `exercises`,
+  // `sets`, `weight`, `reps` and sometimes `completed` instead of the newer
+  // short fields. Read both formats here. Statistics must never require a
+  // migration of a user's saved training history.
+  const rows=v=>Array.isArray(v)?v:[];
+  const exercises=s=>rows(s?.ex||s?.exercises);
+  const setRows=e=>rows(e?.set||e?.sets);
+  const completed=x=>x?.ok===true||x?.completed===true||x?.done===true||x?.isCompleted===true||String(x?.status||'').toLowerCase()==='completed';
+  const done=e=>setRows(e).filter(completed).length;
+  const numeric=v=>{if(v==null||String(v).trim()==='')return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
+  const repsOf=x=>numeric(x?.actualReps??x?.r??x?.reps);
+  const weightOf=x=>numeric(x?.w??x?.weight??x?.load??x?.kg);
   const accent=()=>String(state()?.accent||getComputedStyle(document.documentElement).getPropertyValue('--green')||'#30d158').trim()||'#30d158';
   let rendering=false,bodyCache=null,bodyLoading=null,rerender=false;
 
@@ -102,9 +113,43 @@
     return Array.isArray(state()?.sessions)?state().sessions:[];
   }
   function sessionDay(session){const raw=session?.date||session?.workout_date||session?.started||session?.payload?.started;if(raw==null)return null;const date=new Date(raw);return Number.isNaN(date.getTime())?null:new Date(date.getFullYear(),date.getMonth(),date.getDate())}
+  function legacySession(session){
+    return {...session,ex:exercises(session).map(ex=>({...ex,set:setRows(ex).map(set=>({...set,ok:completed(set),w:weightOf(set)??set?.w,r:repsOf(set)??set?.r}))}))};
+  }
+  function directVolume(session){
+    let volume=0,unknown=0;
+    for(const ex of exercises(session))for(const set of setRows(ex)){
+      if(!completed(set)||set?.warmup===true||set?.isWarmup===true)continue;
+      const reps=repsOf(set);if(!(reps>0)){unknown++;continue}
+      const type=String(ex?.loadType||ex?.weightProfile?.loadType||'');
+      if(/^(time|distance|repetitions_only)$/.test(type)){unknown++;continue}
+      const weight=weightOf(set);
+      if(/^(bodyweight_only|bodyweight_added|bodyweight_assisted)$/.test(type)){
+        const direct=numeric(session?.bodyWeight);const date=String(session?.date||session?.workout_date||'').slice(0,10);
+        const history=rows(state()?.bw).filter(row=>String(row?.d||row?.date||'').slice(0,10)<=date).sort((a,b)=>String(a?.d||a?.date||'').localeCompare(String(b?.d||b?.date||'')));
+        const body=direct>0?direct:numeric(history.at(-1)?.w??history.at(-1)?.weight);
+        if(!(body>0)){unknown++;continue}
+        volume+=Math.max(0,body+(type==='bodyweight_assisted'?-(weight??0):(type==='bodyweight_added'?(weight??0):0)))*reps;
+      }else if(weight!=null){volume+=weight*reps}
+      else unknown++;
+    }
+    return {volume,unknownVolumeSets:unknown};
+  }
+  function sessionVolume(session){
+    const legacy=legacySession(session);
+    try{
+      if(window.WorkoutDomain&&typeof workoutRegistry!=='undefined'){
+        const result=window.WorkoutDomain.summary(legacy,[],workoutRegistry,state()?.bw||[],{records:false,comparison:false});
+        if(Number(result?.volume)>0||Number(result?.unknownVolumeSets)>0)return {volume:Number(result.volume)||0,unknownVolumeSets:Number(result.unknownVolumeSets)||0};
+      }
+    }catch(error){console.warn('Muscle map canonical tonnage calculation',error)}
+    const saved=numeric(session?.advancedMetrics?.tonnage??session?.tonnage);
+    if(saved>0)return {volume:saved,unknownVolumeSets:0};
+    return directVolume(session);
+  }
   function calculate(list,days){
     const cut=new Date();cut.setHours(0,0,0,0);cut.setDate(cut.getDate()-(days-1));const scores=new Map(),lookup=catalogLookup();let sets=0,volume=0,unknownVolumeSets=0;
-    list.forEach(s=>{const d=sessionDay(s);if(!d||d<cut||s?.pendingCompletion)return;(s.ex||[]).forEach(ex=>{const n=done(ex);if(!n)return;const meta=catalogMeta(ex,lookup),p=primary(ex,lookup);if(p)weights(ex,p,meta).forEach((w,slug)=>scores.set(slug,(scores.get(slug)||0)+n*w));sets+=n});try{if(window.WorkoutDomain&&typeof workoutRegistry!=='undefined'){const result=window.WorkoutDomain.summary(s,[],workoutRegistry,state()?.bw||[],{records:false,comparison:false});volume+=Number(result?.volume)||0;unknownVolumeSets+=Number(result?.unknownVolumeSets)||0}}catch(error){console.warn('Muscle map tonnage calculation',error)}});
+    list.forEach(s=>{const d=sessionDay(s);if(!d||d<cut||s?.pendingCompletion)return;exercises(s).forEach(ex=>{const n=done(ex);if(!n)return;const meta=catalogMeta(ex,lookup),p=primary(ex,lookup);if(p)weights(ex,p,meta).forEach((w,slug)=>scores.set(slug,(scores.get(slug)||0)+n*w));sets+=n});const result=sessionVolume(s);volume+=result.volume;unknownVolumeSets+=result.unknownVolumeSets});
     return{scores,sets,volume,unknownVolumeSets,rows:[...scores.entries()].filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1])};
   }
   function period(card){return Number(card?.querySelector('[data-days].on')?.dataset.days)||7}
@@ -137,7 +182,7 @@
   let scheduled=null;function schedule(){if(scheduled!=null)return;scheduled=setTimeout(()=>{scheduled=null;return render()},80)}
   window.unvrslMuscleMapCalculate211=calculate;window.unvrslRefreshMuscleMap211=schedule;
   const root=document.getElementById('stats');if(root)new MutationObserver(()=>{const fig=document.querySelector('#anatomeMuscleCard .anatome-figure');if(fig&&!fig.querySelector('.anatome-full-v176,.anatome-empty,.anatome-error'))schedule()}).observe(root,{childList:true,subtree:true});
-  document.addEventListener('click',e=>{if(e.target?.closest?.('#anatomeMuscleCard [data-days]')){loadedAt=0;setTimeout(render,120)}},true);
+  document.addEventListener('click',e=>{if(e.target?.closest?.('#anatomeMuscleCard [data-days]'))setTimeout(render,120)},true);
   window.addEventListener('focus',schedule);
   window.addEventListener('unvrsl:stats-history-ready',schedule);
   schedule();
