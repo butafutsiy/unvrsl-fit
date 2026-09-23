@@ -15,12 +15,14 @@
     if(card.dataset.anatomeBound!=='401'){
       card.dataset.anatomeBound='401';
       card.querySelectorAll('[data-days]').forEach(button=>button.addEventListener('click',()=>{
-        if(button.classList.contains('on'))return;
         card.querySelectorAll('[data-days]').forEach(item=>item.classList.toggle('on',item===button));
         window.unvrslRefreshMuscleMap211?.();
       }));
-      window.unvrslRefreshMuscleMap211?.();
     }
+    // A dashboard redraw replaces the card without reloading this script.
+    // Refresh whenever the new card still contains its initial placeholders.
+    if(card.querySelector('.anatome-loading')||card.querySelector('.anatome-tonnage-local small')?.textContent?.includes('Считаю по выполненным'))
+      window.unvrslRefreshMuscleMap211?.();
     return card;
   }
   window.anatomeMuscleCardHtmlV254=cardHtml;

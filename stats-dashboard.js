@@ -61,7 +61,10 @@
     const cloud=cloudCache.loaded&&cloudCache.owner===window.cloud?.user?.id?cloudCache.workouts.map(x=>x?.payload&&({...x.payload,date:x.workout_date,id:x.payload.id||x.external_id})).filter(s=>s&&typeof s==='object'&&!deleted.has(String(s.id||''))):[];
     const out=[...cloud],keys=new Set(out.map(s=>String(s.id||'')));
     local.forEach(s=>{const k=String(s.id||'');if(!k||!keys.has(k)){out.push(s);if(k)keys.add(k)}});
-    return out.filter(s=>s?.ended&&(s.ex||[]).some(e=>(e.set||[]).some(x=>x?.ok))).sort((a,b)=>Number(a.ended||a.started||0)-Number(b.ended||b.started||0));
+    const finished=s=>Boolean(s?.ended||s?.completedAt||s?.finishedAt||s?.status==='completed');
+    const completedSet=x=>x?.ok===true||x?.completed===true||x?.done===true||x?.isCompleted===true||x?.status==='completed';
+    return out.filter(s=>finished(s)&&(s.ex||s.exercises||[]).some(e=>(e.set||e.sets||[]).some(completedSet)))
+      .sort((a,b)=>Number(a.ended||a.started||0)-Number(b.ended||b.started||0));
   }
   window.unvrslStatsSessions254=workoutSessions;
   window.unvrslStatsHistoryState254=()=>({status:cloudCache.status,loaded:cloudCache.loaded,owner:cloudCache.owner});

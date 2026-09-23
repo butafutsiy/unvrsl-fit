@@ -185,5 +185,7 @@
   document.addEventListener('click',e=>{if(e.target?.closest?.('#anatomeMuscleCard [data-days]'))setTimeout(render,120)},true);
   window.addEventListener('focus',schedule);
   window.addEventListener('unvrsl:stats-history-ready',schedule);
+  window.addEventListener('unvrsl:app-ready',schedule);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule()});
   schedule();
 })();
