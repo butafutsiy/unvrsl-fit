@@ -100,13 +100,22 @@
     const row = reg?.resolve(e),
       type = loadType(e, reg),
       eq = e?.eq || row?.eq;
+    const kind = String(e?.type || row?.type || "compound").toLowerCase();
+    const muscle = norm(e?.tg || row?.tg || e?.bp || row?.bp);
+    const inferredStep =
+      type === "per_dumbbell"
+        ? 2
+        : type === "bodyweight_assisted"
+          ? 5
+          : kind === "isolation" && /delt|shoulder|biceps|triceps|предплеч/.test(muscle)
+            ? 1
+            : kind === "isolation"
+              ? 2.5
+              : ["cable", "leverage machine", "sled machine"].includes(eq)
+                ? 5
+                : 2.5;
     const defaults = {
-      step:
-        eq === "dumbbell"
-          ? 2
-          : ["cable", "leverage machine", "sled machine"].includes(eq)
-            ? 5
-            : 2.5,
+      step: inferredStep,
       min: 0,
       maxChangeSteps: 1,
       rounding: "nearest",
@@ -380,6 +389,26 @@
       hi = number(s.targetRepMax ?? s.rMax ?? e.repMax) ?? (raw ? +raw[2] : lo);
     return { lo: Math.min(lo, hi), hi: Math.max(lo, hi) };
   }
+  function effortRpe(s) {
+    const rpe = number(s?.actualRpe ?? s?.rpe);
+    if (rpe != null) return rpe;
+    const rir = number(s?.actualRir ?? s?.rir);
+    return rir == null ? null : 10 - rir;
+  }
+  function estimateMaxFromSet(s) {
+    const weight = number(s?.w ?? s?.weight), reps = number(s?.actualReps ?? s?.r), rpe = effortRpe(s);
+    if (!(weight > 0) || !(reps >= 1 && reps <= 12) || !(rpe >= 6 && rpe <= 10)) return null;
+    return weight * (1 + (reps + 10 - rpe) / 30);
+  }
+  function intensityBand(session) {
+    if (session?.programWeekUseIntensity === false) return null;
+    let lo = number(session?.programWeekIntensityMin), hi = number(session?.programWeekIntensityMax);
+    if (!(lo > 0) || !(hi > 0)) return null;
+    if (lo > 1) lo /= 100;
+    if (hi > 1) hi /= 100;
+    lo = Math.max(.4, Math.min(1, lo)); hi = Math.max(.4, Math.min(1, hi));
+    return { lo: Math.min(lo, hi), hi: Math.max(lo, hi) };
+  }
   const median = (a) => {
     if (!a.length) return null;
     const b = [...a].sort((a, b) => a - b),
@@ -408,25 +437,37 @@
     const groups = ids
       .slice(0, 2)
       .map((id) => recent.filter((x) => x.session.id === id));
-    const effort = (x) =>
-      number(x.set.actualRpe ?? x.set.rpe) ??
-      (number(x.set.actualRir ?? x.set.rir) == null
-        ? null
-        : 10 - number(x.set.actualRir ?? x.set.rir));
+    const effort = (x) => effortRpe(x.set);
     // Compare rep ranges through a within-exercise effort estimate. A 115×12
     // set at RPE 8 can support 135×6 at RPE 8–9; comparing 115 and 135 alone
     // would incorrectly reject the plan. Do not extrapolate isolation work.
     const top=latest.find(x=>number(x.set.w)===prior),oldReps=number(top?.set.actualReps??top?.set.r),oldRpe=top?effort(top):null;
     const targetReps=(range.lo+range.hi)/2,kind=String(e.type||reg?.resolve(e)?.type||"").toLowerCase();
+    const explicitRange=[set.targetRepMin,set.targetRepMax,set.rMin,set.rMax,e.repMin,e.repMax,e.reps].some(v=>v!=null&&String(v).trim()!=="");
+    const compound=kind!=="isolation";
     const shift=oldReps!=null&&Math.abs(oldReps-targetReps)>=2;
-    const eligible=method(e,set)==="STANDARD"&&kind!=="isolation"&&
-      ["external_total","machine_stack","per_dumbbell"].includes(p.loadType)&&
+    const eligible=method(e,set)==="STANDARD"&&compound&&
+      ["external_total","machine_stack","per_dumbbell","per_side"].includes(p.loadType)&&
       shift&&oldReps>=3&&oldReps<=12&&oldRpe>=7&&oldRpe<=10&&
       targetMin>=7&&target<=10&&targetMin<=target&&prior>0&&
       (seed===0?Math.abs(oldReps-targetReps)>=3:Math.abs(seed-prior)>Math.max(2*p.step,seed*.1));
-    const estimatedOneRepMax=eligible?prior*(1+(oldReps+10-oldRpe)/30):null;
+    const sessionMaxes=ids.map(id=>{
+      const values=recent.filter(x=>x.session.id===id).map(x=>estimateMaxFromSet(x.set)).filter(x=>x>0);
+      return values.length?Math.max(...values):null;
+    }).filter(x=>x>0).slice(0,3);
+    const stableOneRepMax=compound&&method(e,set)==="STANDARD"&&sessionMaxes.length?median(sessionMaxes):null;
+    const estimatedOneRepMax=eligible?(stableOneRepMax??prior*(1+(oldReps+10-oldRpe)/30)):null;
     const projectedRaw=estimatedOneRepMax==null?null:estimatedOneRepMax/(1+(targetReps+10-(targetMin+target)/2)/30);
-    const projected=projectedRaw>=prior*.75&&projectedRaw<=prior*1.3?projectedRaw:null;
+    let projected=projectedRaw>=prior*.75&&projectedRaw<=prior*1.3?projectedRaw:null;
+    const band=intensityBand(session),weekMid=band?((band.lo+band.hi)/2):null;
+    const weeklyRaw=stableOneRepMax!=null&&weekMid!=null?stableOneRepMax*weekMid:null;
+    const weeklyCorridor=stableOneRepMax!=null&&band?{min:stableOneRepMax*band.lo,max:stableOneRepMax*band.hi}:null;
+    let weeklyApplied=false;
+    if(compound&&weeklyRaw!=null&&projected==null&&seed===0&&prior>0&&!explicitRange){
+      projected=weeklyRaw;weeklyApplied=true;
+    }else if(projected!=null&&weeklyCorridor&&projected>=weeklyCorridor.min-p.step&&projected<=weeklyCorridor.max+p.step){
+      projected=(projected+weeklyRaw)/2;weeklyApplied=true;
+    }
     const reference=projected??prior;
     const anomalous=seed>0&&reference>0&&Math.abs(seed-reference)>Math.max(2*p.step,seed*.1);
     let raw=anomalous?seed:(projected??prior??seed??0),
@@ -438,7 +479,7 @@
       latest.length > 0 &&
       latest.every(x=>number(x.set.actualReps??x.set.r)<range.lo&&effort(x)!=null&&effort(x)>target);
     if(ids.length){
-      reason=anomalous?`План ${seed} кг отличается от ${projected!=null?`оценки для нового диапазона ${Number(projected.toFixed(1))}`:`прошлой рабочей нагрузки ${prior}`} кг: вес оставлен без автоматической замены`:projected!=null?`Прошлый рабочий сет ${prior} кг × ${oldReps} при RPE ${oldRpe}: расчётный 1ПМ ${Number(estimatedOneRepMax.toFixed(1))} кг, для ${range.lo}–${range.hi} повторений при RPE ${targetMin}–${target} ориентир ${Number(projected.toFixed(1))} кг`:"Сохранить вес последнего тяжёлого рабочего сета";
+      reason=anomalous?`План ${seed} кг отличается от ${projected!=null?`оценки для нового диапазона ${Number(projected.toFixed(1))}`:`прошлой рабочей нагрузки ${prior}`} кг: вес оставлен без автоматической замены`:projected!=null?`${oldReps&&oldRpe?`Прошлый рабочий сет ${prior} кг × ${oldReps} при RPE ${oldRpe}. `:""}Расчётный 1ПМ ${Number((stableOneRepMax??estimatedOneRepMax).toFixed(1))} кг, для ${range.lo}–${range.hi} повторений при RPE ${targetMin}–${target} ориентир ${Number(projected.toFixed(1))} кг${weeklyApplied?` с учётом недели ${Number((band.lo*100).toFixed(1))}–${Number((band.hi*100).toFixed(1))}%`:""}`:"Сохранить вес последнего тяжёлого рабочего сета";
       if (strong&&!anomalous&&projected==null) {
         action = "up";
         reason =
@@ -550,7 +591,7 @@
       weight,
       raw,
       previous: prior,
-      basis:ids.length?{date:sessionDate(latest[0]?.session),weight:prior,planned:seed||null,estimatedOneRepMax:projected!=null?Number(estimatedOneRepMax.toFixed(1)):null,sets:latest.map(x=>({weight:number(x.set.w),reps:number(x.set.actualReps??x.set.r),rpe:effort(x)}))}:null,
+      basis:ids.length?{date:sessionDate(latest[0]?.session),weight:prior,planned:seed||null,estimatedOneRepMax:stableOneRepMax!=null?Number(stableOneRepMax.toFixed(1)):null,sets:latest.map(x=>({weight:number(x.set.w),reps:number(x.set.actualReps??x.set.r),rpe:effort(x)}))}:null,
       delta: prior == null ? 0 : Number((weight - prior).toFixed(6)),
       step: p.step,
       action,
@@ -571,6 +612,15 @@
           ? `Расчётное значение: ${Number(raw.toFixed(2))} кг. Рекомендация округлена до ${weight} кг с учётом шага ${p.step} кг`
           : "Исходный вес сохранён без округления: истории пока недостаточно",
       repRange: range,
+      weeklyIntensity: band?{
+        min:Number((band.lo*100).toFixed(1)),max:Number((band.hi*100).toFixed(1)),
+        estimatedMin:weeklyCorridor?Number(weeklyCorridor.min.toFixed(1)):null,
+        estimatedMax:weeklyCorridor?Number(weeklyCorridor.max.toFixed(1)):null,
+        applied:weeklyApplied
+      }:null,
+      exerciseKind:compound?"base":"isolation",
+      equipmentId:String(e?.equipmentProfileId||e?.equipmentProfile?.id||""),
+      equipmentName:String(e?.equipmentProfile?.name||""),
     };
   }
   function applyAuto(set, result) {
@@ -883,6 +933,9 @@
     manualOneRepMax,
     history,
     repRange,
+    effortRpe,
+    estimateMaxFromSet,
+    intensityBand,
     recommend,
     applyAuto,
     summary,

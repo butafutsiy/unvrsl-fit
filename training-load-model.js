@@ -71,11 +71,16 @@
       running = false;
     }
   }
-  const readinessWeight = (v, ex, cur) =>
-    A.roundWeight(
-      v,
+  const readinessWeight = (v, ex, cur) => {
+    const factor = cur?.trainingReadinessDone && cur?.readinessAdjusted
+      ? (A.number(cur?.readiness?.factor) || 1)
+      : 1;
+    return A.roundWeight(
+      (A.number(v) || 0) * Math.min(1, Math.max(.85, factor)),
       A.profile(ex, workoutRegistry, st.exerciseWeightProfiles || {}),
+      factor < 1 ? "down" : undefined,
     );
+  };
   const api = { run, readinessWeight, version: 392 };
   W.trainingLoadModel292 = api;
   W.trainingLoadModel258 = api;

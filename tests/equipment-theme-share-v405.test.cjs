@@ -77,6 +77,37 @@ test("isolation and effort-free sets do not justify a large weight jump",()=>{
  delete current.ex[0].type;delete past[0].ex[0].type;past[0].ex[0].set[0].rpe="";
  assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg).planPreserved,true);
 });
+test("weekly percentage, rep range and RPE/RIR share one compound calculation",()=>{
+ const bar=p("matrix-hack"),past=[old("1",bar,[set(100,10,8)]),old("2",bar,[set(100,10,"",{rir:2})])];
+ const current=now(bar,[set(0,6,"",{ok:false,targetRepMin:5,targetRepMax:7,targetRpeMin:8,targetRpeMax:9})]);
+ current.programWeekUseIntensity=true;current.programWeekIntensityMin=80;current.programWeekIntensityMax=85;
+ const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg);
+ assert.equal(rec.weight,115);assert.equal(rec.basis.estimatedOneRepMax,140);
+ assert.deepEqual(rec.weeklyIntensity,{min:80,max:85,estimatedMin:112,estimatedMax:119,applied:true});
+ assert.equal(rec.exerciseKind,"base");assert.equal(A.effortRpe({rir:2}),8);
+});
+test("an explicit repetition range wins when weekly percentage conflicts with it",()=>{
+ const bar=p("matrix-row"),past=[old("1",bar,[set(100,8,8)]),old("2",bar,[set(100,8,8)])];
+ const current=now(bar,[set(0,8,"",{ok:false,targetRepMin:8,targetRepMax:10,targetRpeMin:7,targetRpeMax:8})]);
+ current.programWeekUseIntensity=true;current.programWeekIntensityMin=88;current.programWeekIntensityMax=90;
+ const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg);
+ assert.equal(rec.weight,100);assert.equal(rec.weeklyIntensity.applied,false);
+});
+test("isolation uses double progression and does not convert the weekly percent into weight",()=>{
+ const machine=p("matrix-leg-extension"),past=[old("1",machine,[set(50,15,8)]),old("2",machine,[set(50,15,8)])];
+ const current=now(machine,[set(50,15,"",{ok:false,targetRepMin:12,targetRepMax:15,targetRpeMin:7,targetRpeMax:8})]);
+ current.ex[0].type="isolation";past.forEach(x=>x.ex[0].type="isolation");
+ current.programWeekUseIntensity=true;current.programWeekIntensityMin=85;current.programWeekIntensityMax=88;
+ const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg);
+ assert.equal(rec.weight,52.5);assert.equal(rec.action,"up");assert.equal(rec.exerciseKind,"isolation");
+ assert.equal(rec.weeklyIntensity.estimatedMin,null);assert.equal(rec.weeklyIntensity.applied,false);
+});
+test("default increments depend on load type and exercise class until equipment overrides them",()=>{
+ assert.equal(A.profile({n:"Разгибание ног",type:"isolation",eq:"leverage machine",tg:"quadriceps"},reg).step,2.5);
+ assert.equal(A.profile({n:"Жим ногами",type:"compound",eq:"sled machine",tg:"quadriceps"},reg).step,5);
+ assert.equal(A.profile({n:"Махи в блоке",type:"isolation",eq:"cable",tg:"delts"},reg).step,1);
+ assert.equal(A.profile(ex({...p("foreman"),weightStep:7.5},[]),reg).step,7.5);
+});
 test("time-based exercise ignores a stray strength catalog load type",()=>{
  assert.equal(A.loadType({mode:"timer",loadType:"external_total"},reg),"time");
  assert.equal(A.loadType({kind:"timer",loadType:"external_total"},reg),"time");
@@ -96,6 +127,7 @@ test("equipment controls remain available for cardio and strength after a workou
  assert.equal(root.cards[0].control?.textContent,"＋ Оборудование");
  ctx.equipmentEdit405(encodeURIComponent("legacy:аэробайк@0"),"");
  assert.match(ctx.markup,/<option value="NONE" selected>/);
+ assert.match(ctx.markup,/Matrix Leg Extension/);
 });
 test("muscle labels are translated and settings retain only backup controls",()=>{
  const ctx={window:{}};vm.runInNewContext(read("og-db.js").split("function ruExerciseName")[0]+";this.translate=ruTarget;",ctx);
@@ -119,5 +151,6 @@ test("the screenshot's dark surfaces are explicitly themed and trainer history u
  assert.match(read("trainer-self-plan.js"),/window\.openShareProgressV264\(\{\.\.\.s/);
  assert.match(read("client-journal-profile.js"),/window\.openShareProgressV264\?\.\(\{\.\.\.s,date:/);
  assert.match(read("training-engine.js"),/Почему этот вес\?/);
+ assert.match(read("training-load-model.js"),/Math\.min\(1, Math\.max\(\.85, factor\)\)/);
  assert.doesNotMatch(read("trainer-self-plan.js").split("window.trainerSelfShare110=")[1].split("window.trainerSelfDelete110=")[0],/navigator\.share\(\{title:'UNVRSL FIT',text\}\)/);
 });
