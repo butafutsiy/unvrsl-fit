@@ -51,6 +51,7 @@
       const result = await workoutStore.finish(st, {
         persist: () =>
           W.persistWorkoutState ? W.persistWorkoutState() : save(),
+        closeDraft: W.closeWorkoutDraft,
         userId,
         sync: mustSync
           ? async (result) => {

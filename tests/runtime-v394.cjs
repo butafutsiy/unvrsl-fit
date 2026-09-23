@@ -1,0 +1,45 @@
+"use strict";
+const assert = require("node:assert/strict");
+const { make, wait, errors } = require("./runtime-v392.cjs");
+const { memoryIndexedDB } = require("./storage-fixture.cjs");
+(async () => {
+  const indexedDB = memoryIndexedDB();
+  const seed = {};
+  const first = make(seed, { indexedDB, quota: true });
+  await wait(2600);
+  const w = first.window;
+  assert.equal(w.__unvrslStartupComplete, true);
+  w.openExerciseDetail("og:0086");
+  assert.ok(w.document.querySelector("#manualMaxWeight"));
+  assert.ok(!w.document.querySelector("#exerciseStep"));
+  w.document.querySelector("#manualMaxWeight").value = "60";
+  w.document.querySelector("#manualMaxReps").value = "8";
+  w.calculateExerciseMaximum("og:0086");
+  assert.match(w.document.querySelector("#manualMaxResult").textContent, /76\.0 кг/);
+  w.closeModal();
+  w.st.current = { id: "ios-cancel-394", started: Date.now(), date: "2026-09-23", name: "Cancel test",
+    ex: [{ n: "Подтягивания", loadType: "bodyweight_added", set: [{ w: 0, r: 8, rpe: "", rir: "", ok: false }] }] };
+  w.document.querySelector('.nav button[data-p="start"]').click();
+  assert.ok(w.document.querySelector('.workout-finish-card button[onclick="cancelWorkout()"]'));
+  assert.equal(w.document.querySelectorAll('.weight392 button').length, 0);
+  assert.doesNotMatch(w.document.querySelector('#start').textContent, /RPE и RIR необязательны/);
+  assert.equal(await w.persistWorkoutState(), true);
+  const originalClose = w.closeWorkoutDraft;
+  w.confirm = () => true;
+  w.closeWorkoutDraft = async () => false;
+  await w.cancelWorkout();
+  assert.equal(w.st.current.id, "ios-cancel-394", "failed durable close must retain draft");
+  w.closeWorkoutDraft = originalClose;
+  await w.cancelWorkout();
+  assert.equal(w.st.current, null);
+  w.__disconnectTestObservers();
+  w.close();
+
+  const second = make(seed, { indexedDB, quota: true });
+  await wait(2600);
+  assert.equal(second.window.st.current, null, "cancelled workout must not resurrect after reload");
+  second.window.__disconnectTestObservers();
+  second.window.close();
+  assert.deepEqual(errors, []);
+  console.log("PASS: manual 1RM, direct weight input, cancellation failure/retry and quota-safe reload");
+})().then(() => process.exit(0), e => { console.error(e, errors); process.exit(1); });
