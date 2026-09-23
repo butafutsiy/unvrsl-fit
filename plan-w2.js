@@ -8,7 +8,7 @@ window.UNVRSL_ROUTINES=(window.UNVRSL_ROUTINES||[]).concat([{"w":2,"c":"A1","t":
   window.__unvrslOfflineStrengthSearchV344=true;
   if(document.querySelector('script[data-unvrsl-offline-strength-search-v345]'))return;
   const s=document.createElement('script');
-  s.src='offline-strength-search.js?v=398';
+  s.src='offline-strength-search.js?v=399';
   s.async=false;
   s.dataset.unvrslOfflineStrengthSearchV345='1';
   document.body.appendChild(s);

@@ -7,7 +7,7 @@ const read = (name) => fs.readFileSync(path.join(root, name), "utf8");
 
 test("light theme is selectable, applied, persisted, and included in PWA shell cache", () => {
   const html = read("index.html"), app = read("app.js"), sw = read("sw.js"), css = read("theme-light.css");
-  assert.match(html, /theme-light\.css\?v=398/);
+  assert.match(html, /theme-light\.css\?v=399/);
   assert.match(app, /function setTheme\(theme\)/);
   assert.match(app, /document\.documentElement\.dataset\.theme=theme/);
   assert.match(app, /onclick="setTheme\('light'\)"/);
@@ -24,5 +24,7 @@ test("light theme is selectable, applied, persisted, and included in PWA shell c
   assert.match(css, /html\[data-theme="light"\] body\{background:#f3f4f6!important;color:#19191d!important\}/);
   assert.match(css, /html\[data-theme="light"\] body \.brand\{color:#19191d!important\}/);
   assert.match(css, /html\[data-theme="light"\] body \.filterchip\.on\{background:[^}]+!important/);
+  assert.match(css, /html\[data-theme="light"\] body \.card,[\s\S]*?background-image:none!important/);
+  assert.match(css, /html\[data-theme="light"\] body \.star-btn\{background:#eceef2!important/);
   assert.match(sw, /<link rel="stylesheet" href="\(\[\^"\]\+\)"/);
 });

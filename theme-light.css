@@ -110,6 +110,11 @@ html[data-theme="light"] body{background:#f3f4f6!important;color:#19191d!importa
 html[data-theme="light"] body .app{background:#f3f4f6!important;color:#19191d!important}
 html[data-theme="light"] body .topbar{background:linear-gradient(#f3f4f6 78%,rgba(243,244,246,0))!important}
 html[data-theme="light"] body .brand{color:#19191d!important}
+html[data-theme="light"] body .card,
+html[data-theme="light"] body .exlib,
+html[data-theme="light"] body .exercise,
+html[data-theme="light"] body [class*="-card"],
+html[data-theme="light"] body [class*="-panel"]{background-image:none!important}
 html[data-theme="light"] body .nav{background:rgba(255,255,255,.97)!important;color:#19191d!important;border-color:#e0e2e7!important;box-shadow:0 -6px 24px rgba(30,35,45,.08)!important}
 html[data-theme="light"] body .nav button{color:#777b84!important}
 html[data-theme="light"] body .nav button.active{color:#16853a!important}
@@ -125,3 +130,4 @@ html[data-theme="light"] body .btn{color:#19191d!important}
 html[data-theme="light"] body .btn.primary{background:#30d158!important;color:#061108!important}
 html[data-theme="light"] body .filterchip{background:#eceef2!important;color:#565961!important;border:1px solid #d9dce2!important}
 html[data-theme="light"] body .filterchip.on{background:rgba(22,133,58,.12)!important;color:#16853a!important;border-color:rgba(22,133,58,.22)!important}
+html[data-theme="light"] body .star-btn{background:#eceef2!important;color:#777b84!important;border-color:#d9dce2!important}
