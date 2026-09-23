@@ -1,5 +1,5 @@
 "use strict";
-const SW_RELEASE = "v394",
+const SW_RELEASE = "v395",
   CACHE_PREFIX = "unvrsl-",
   SHELL = `${CACHE_PREFIX}shell-${SW_RELEASE}`,
   MEDIA = `${CACHE_PREFIX}media-${SW_RELEASE}`;
@@ -11,9 +11,10 @@ self.addEventListener("install", (event) => {
       const response = await fetch("./index.html", { cache: "reload" });
       if (!response.ok) throw new Error("Shell download failed");
       const html = await response.clone().text();
-      const urls = [...html.matchAll(/<script src="([^"]+)"/g)].map(
-        (x) => x[1],
-      );
+      const urls = [
+        ...[...html.matchAll(/<script src="([^"]+)"/g)].map((x) => x[1]),
+        ...[...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((x) => x[1]),
+      ];
       await cache.addAll(urls);
       // The boot gate also needs dynamically loaded local owners when offline.
       // Resolve their exact current URLs from the installed loader itself.

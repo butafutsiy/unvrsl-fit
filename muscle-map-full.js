@@ -108,10 +108,11 @@
     }
     const map=new Map();[...remote,...local].forEach(x=>{const k=String(x?.id||`${x?.date}-${x?.started||Math.random()}`);map.set(k,x)});return [...map.values()];
   }
+  function sessionDay(session){const raw=session?.date||session?.workout_date||session?.started||session?.payload?.started;if(raw==null)return null;const date=new Date(raw);return Number.isNaN(date.getTime())?null:new Date(date.getFullYear(),date.getMonth(),date.getDate())}
   function calculate(list,days){
-    const cut=new Date();cut.setHours(0,0,0,0);cut.setDate(cut.getDate()-(days-1));const scores=new Map(),lookup=catalogLookup();let sets=0;
-    list.forEach(s=>{const d=new Date(`${s?.date||iso(s?.started)}T12:00:00`);if(Number.isNaN(d.getTime())||d<cut)return;(s.ex||[]).forEach(ex=>{const n=done(ex);if(!n)return;const meta=catalogMeta(ex,lookup),p=primary(ex,lookup);if(!p)return;sets+=n;weights(ex,p,meta).forEach((w,slug)=>scores.set(slug,(scores.get(slug)||0)+n*w))})});
-    return{scores,sets,rows:[...scores.entries()].filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1])};
+    const cut=new Date();cut.setHours(0,0,0,0);cut.setDate(cut.getDate()-(days-1));const scores=new Map(),lookup=catalogLookup();let sets=0,volume=0,unknownVolumeSets=0;
+    list.forEach(s=>{const d=sessionDay(s);if(!d||d<cut||s?.pendingCompletion)return;(s.ex||[]).forEach(ex=>{const n=done(ex);if(!n)return;const meta=catalogMeta(ex,lookup),p=primary(ex,lookup);if(p)weights(ex,p,meta).forEach((w,slug)=>scores.set(slug,(scores.get(slug)||0)+n*w));sets+=n});try{if(window.WorkoutDomain&&typeof workoutRegistry!=='undefined'){const result=window.WorkoutDomain.summary(s,[],workoutRegistry,state()?.bw||[],{records:false,comparison:false});volume+=Number(result?.volume)||0;unknownVolumeSets+=Number(result?.unknownVolumeSets)||0}}catch(error){console.warn('Muscle map tonnage calculation',error)}});
+    return{scores,sets,volume,unknownVolumeSets,rows:[...scores.entries()].filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1])};
   }
   function period(card){return Number(card?.querySelector('[data-days].on')?.dataset.days)||7}
   function topHtml(rows){const max=rows[0]?.[1]||1;return rows.map(([slug,v])=>`<div class="anatome-muscle" data-drilldown="${slug}"><div class="anatome-muscle-row"><b>${LABELS[slug]||slug}</b><span>${v.toFixed(1).replace('.0','')}</span></div><div class="anatome-bar"><i style="width:${Math.max(5,Math.round(v/max*100))}%"></i></div></div>`).join('')}
@@ -121,6 +122,7 @@
     if(rendering)return;const card=document.getElementById('anatomeMuscleCard');if(!card)return;const bodyData=await bodyPaths();if(!bodyData)return;
     rendering=true;try{
       const days=period(card),data=calculate(await sessions(),days),fig=card.querySelector('.anatome-figure'),top=card.querySelector('.anatome-top'),sub=card.querySelector('.anatome-sub');if(!fig)return;
+      const tonnage=card.querySelector('.anatome-tonnage-local'),tonnageValue=tonnage?.querySelector('b'),tonnageNote=tonnage?.querySelector('small');if(tonnage){const label=tonnage.querySelector('span');if(label)label.textContent=`Тоннаж за ${days} дней`;if(tonnageValue)tonnageValue.textContent=data.unknownVolumeSets&&data.volume===0?'— кг':`${data.volume.toLocaleString('ru-RU')} кг`;if(tonnageNote)tonnageNote.textContent=data.unknownVolumeSets?`Не включено подходов без известной нагрузки: ${data.unknownVolumeSets}`:'Только завершённые подходы'}
       const subtitle=`Последние ${days} дн. · ${data.sets} выполн. подходов`;if(sub&&sub.textContent!==subtitle)sub.textContent=subtitle;
       const topContent=topHtml(data.rows);if(top&&top.innerHTML!==topContent)top.innerHTML=topContent;
       if(!data.rows.length){if(fig.querySelector('.anatome-empty'))return;fig.innerHTML='<div class="anatome-empty">Нет распознанных выполненных упражнений за этот период.</div>';return}
@@ -136,4 +138,3 @@
   window.addEventListener('focus',()=>{loadedAt=0;schedule()});
   [1200,2600,5000].forEach(t=>setTimeout(render,t));
 })();
-
