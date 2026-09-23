@@ -28,6 +28,10 @@ jobs:
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
           UNVRSL_CANVAS="$RUNNER_TEMP/unvrsl-tests/node_modules/@napi-rs/canvas" \
           node tests/runtime-v392.cjs
+      - name: Verify iOS quota recovery and navigation
+        run: |
+          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
+          node tests/runtime-storage-v393.cjs
       - name: Audit catalog fields
         run: node scripts/audit-exercises.cjs
       - uses: actions/upload-artifact@v4

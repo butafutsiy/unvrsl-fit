@@ -1,6 +1,8 @@
 "use strict";
 (() => {
   const W = window;
+  const initialRevision = Number(st.storageRevision || 0);
+  let hydrating = true;
   W.__unvrslStorageResilienceV386 = true;
   let dbPromise;
   function db() {
@@ -18,10 +20,11 @@
     const d = await db();
     await new Promise((resolve, reject) => {
       const tx = d.transaction("state", "readwrite");
-      tx.objectStore("state").put(
-        { savedAt: Date.now(), state: snapshot },
-        key,
-      );
+      if (snapshot)
+        tx.objectStore("state").put(
+          { savedAt: Date.now(), state: snapshot },
+          key,
+        );
       if (drafts)
         tx.objectStore("state").put(
           { savedAt: Date.now(), state: drafts },
@@ -32,30 +35,64 @@
       tx.onabort = () => reject(tx.error);
     });
   }
-  async function recover() {
-    if (W.__unvrslHadPrimaryStorageV386) return;
+  async function readMirror(key) {
+    const d = await db();
+    return new Promise((resolve, reject) => {
+      const q = d.transaction("state").objectStore("state").get(key);
+      q.onsuccess = () => resolve(q.result || null);
+      q.onerror = () => reject(q.error);
+    });
+  }
+  const clone = (value) => JSON.parse(JSON.stringify(value));
+  function draftSnapshot() {
+    let journal;
     try {
-      const d = await db(),
-        record = await new Promise((resolve, reject) => {
-          const q = d.transaction("state").objectStore("state").get("latest");
-          q.onsuccess = () => resolve(q.result);
-          q.onerror = () => reject(q.error);
-        });
-      if (record?.state) {
-        const draftRecord = await new Promise((resolve, reject) => {
-          const q = d.transaction("state").objectStore("state").get("drafts");
-          q.onsuccess = () => resolve(q.result);
-          q.onerror = () => reject(q.error);
-        });
-        if (draftRecord?.state && !localStorage.getItem(WorkoutStore.DRAFT))
-          localStorage.setItem(
-            WorkoutStore.DRAFT,
-            JSON.stringify(draftRecord.state),
-          );
+      journal = clone(workoutStore.journal());
+    } catch (_) {
+      journal = { schemaVersion: 4, owners: {}, closed: {} };
+    }
+    journal.schemaVersion = 4;
+    journal.owners = journal.owners || {};
+    journal.closed = journal.closed || {};
+    if (st.current) {
+      const key = String(st.current.userId || "local"),
+        old = journal.owners[key];
+      if (old && old.id !== st.current.id && !journal.closed[old.id]) {
+        // Never replace an existing active workout implicitly.
+        return journal;
+      }
+      journal.owners[key] = clone(st.current);
+    }
+    return journal;
+  }
+  async function recover() {
+    try {
+      const [record, draftRecord] = await Promise.all([
+        readMirror("latest"),
+        readMirror("drafts"),
+      ]);
+      const localRevision = initialRevision,
+        mirrorRevision = Number(record?.state?.storageRevision || 0),
+        shouldRestore =
+          !!record?.state &&
+          (!W.__unvrslHadPrimaryStorageV386 || mirrorRevision > localRevision);
+      if (shouldRestore) {
+        if (draftRecord?.state) workoutStore.hydrateJournal?.(draftRecord.state);
+        if (draftRecord?.state)
+          try {
+            localStorage.setItem(
+              WorkoutStore.DRAFT,
+              JSON.stringify(draftRecord.state),
+            );
+          } catch (_) {}
         st = record.state;
         WorkoutDomain.migrate(st, workoutRegistry);
         workoutStore.restore(st);
-        workoutStore.save(st);
+        try {
+          workoutStore.save(st);
+        } catch (_) {
+          // The IndexedDB copy remains authoritative when Safari storage is full.
+        }
       }
     } catch (e) {
       console.warn("Recovery unavailable", e);
@@ -63,39 +100,76 @@
   }
   const base = save;
   let pending = Promise.resolve();
+  let durable = Promise.resolve(true),
+    fallbackNoticeShown = false,
+    fallbackErrorShown = false;
   W.save = save = function (options = {}) {
+    if (hydrating) {
+      // Boot migrations must not overwrite a newer durable fallback before
+      // its read transaction has finished.
+      durable = recovery.then(() => {
+        save(options);
+        return durable;
+      });
+      return true;
+    }
+    st.storageRevision = Math.max(
+      Date.now(),
+      Number(st.storageRevision || 0) + 1,
+    );
     let localError = null;
     try {
       base(options);
     } catch (e) {
       localError = e;
     }
-    const snapshot = JSON.parse(
-      JSON.stringify(options.draftOnly ? workoutStore.journal() : st),
-    );
-    const drafts = options.draftOnly
-      ? null
-      : JSON.parse(JSON.stringify(workoutStore.journal()));
+    if (localError && !/QuotaExceeded|SecurityError|NS_ERROR_DOM_QUOTA_REACHED/.test(localError.name || "")) {
+      console.error("UNVRSL save conflict", localError);
+      toast(String(localError.message || "Не удалось сохранить изменения"));
+      durable = Promise.resolve(false);
+      return false;
+    }
+    const snapshot = !options.draftOnly || localError ? clone(st) : null;
+    const drafts = draftSnapshot();
     pending = pending
       .catch(() => {})
-      .then(() =>
-        mirror(snapshot, options.draftOnly ? "drafts" : "latest", drafts),
-      );
+      .then(() => mirror(snapshot, "latest", drafts));
     pending.catch(() => {});
     if (localError) {
-      toast(
-        "Не удалось записать локальные данные. Не закрывайте тренировку до сохранения.",
+      durable = pending.then(
+        () => {
+          W.__unvrslStorageModeV393 = "indexeddb";
+          if (!fallbackNoticeShown) {
+            fallbackNoticeShown = true;
+            toast("Данные сохранены в резервное хранилище");
+          }
+          return true;
+        },
+        (error) => {
+          W.__unvrslStorageModeV393 = "memory-only";
+          if (!fallbackErrorShown) {
+            fallbackErrorShown = true;
+            toast("Не удалось сохранить данные. Оставьте приложение открытым");
+          }
+          console.error("UNVRSL durable storage unavailable", error, localError);
+          return false;
+        },
       );
-      throw localError;
+      // Do not interrupt navigation or opening a workout/exercise. Callers
+      // that finalize a workout await persistWorkoutState below.
+      return true;
     }
+    W.__unvrslStorageModeV393 = "localstorage";
+    durable = Promise.resolve(true);
     return true;
   };
   W.persistWorkoutState = async () => {
+    await recovery;
     save();
-    await pending.catch(() => {});
-    return true;
+    return durable;
   };
-  recover().finally(() => {
+  const recovery = recover().finally(() => {
+    hydrating = false;
     W.__unvrslStorageHydrationSettledV386 = true;
     W.dispatchEvent(new CustomEvent("unvrsl:storage-hydrated"));
   });
@@ -108,7 +182,7 @@
         st.current.timer = snapshot;
         st.current.timerEnd = snapshot.end;
       }
-      workoutStore.checkpoint(st);
+      save({ draftOnly: true });
     } catch (e) {
       console.warn("Workout checkpoint failed", e);
     }

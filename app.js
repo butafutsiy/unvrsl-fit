@@ -42,7 +42,7 @@ function effortTargets(s,e,x){let rpeMin=effortNumber(x?.targetRpeMin??e?.target
 function workoutRepTargetText(x){if(x?.targetRepLabel)return String(x.targetRepLabel);const value=v=>{if(v===''||v==null)return null;const n=Number(v);return Number.isFinite(n)&&n>0?n:null},lo=value(x?.targetRepMin??x?.rMin),hi=value(x?.targetRepMax??x?.rMax??lo);if(lo==null&&hi==null)return'';const a=Math.min(lo??hi,hi??lo),b=Math.max(lo??hi,hi??lo);return Math.abs(a-b)<.001?String(a):`${a}–${b}`}
 function migrateEffortState(){let changed=false;[...(st.sessions||[]),st.current].filter(Boolean).forEach(s=>(s.ex||[]).forEach(e=>(e.set||[]).forEach(x=>{let rpe=effortNumber(x.rpe),rir=effortNumber(x.rir);if(rpe==null&&rir!=null){rpe=Math.round((10-rir)*10)/10;x.rpe=rpe;changed=true}if(rir==null&&rpe!=null){rir=Math.round((10-rpe)*10)/10;x.rir=rir;changed=true}const actualRpe=rpe==null?null:rpe,actualRir=rir==null?null:rir;if(x.actualRpe!==actualRpe){x.actualRpe=actualRpe;changed=true}if(x.actualRir!==actualRir){x.actualRir=actualRir;changed=true}})));if(changed)save()}
 function workoutRendered(){queueMicrotask(()=>window.dispatchEvent(new CustomEvent('unvrsl:workout-rendered',{detail:{sessionId:st.current?.id||null}})))}
-migrateEffortState();
+try{migrateEffortState()}catch(error){console.warn("Effort migration remains in memory until durable storage is ready",error)}
 function nav(p){$$('.page').forEach(x=>x.classList.toggle('active',x.id===p));$$('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.p===p));render()}
 $$('.nav button').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.p)));
 $('#gear').addEventListener('click',settingsSheet);
