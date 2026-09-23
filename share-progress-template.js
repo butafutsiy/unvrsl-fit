@@ -13,6 +13,7 @@
   const plain=v=>String(fmt(v)).replace(/\u00a0/g,' ');
   const baseName=n=>typeof W.baseExerciseName==='function'?W.baseExerciseName(n):String(n||'').replace(/\s+—\s+.*$/,'').trim();
   const norm=n=>baseName(n).toLowerCase().replace(/ё/g,'е').replace(/[^a-zа-я0-9]+/gi,' ').trim();
+  const sessionTime=s=>{for(const value of [s?.started,s?.startedAt,s?.date,s?.ended,s?.endedAt]){if(typeof value==='number'&&Number.isFinite(value))return value;const n=Number(value);if(Number.isFinite(n)&&n>1e11)return n;const parsed=typeof value==='string'?Date.parse(value):NaN;if(Number.isFinite(parsed))return parsed}return 0};
   const sessionTitle=s=>[s?.c,s?.name].filter(Boolean).join(' · ')||s?.programName||s?.name||s?.c||'Тренировка';
   const dateText=s=>{const raw=s?.date||s?.endedAt||s?.ended||Date.now();try{const d=typeof raw==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(raw)?new Date(raw+'T12:00:00'):new Date(raw);return new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',year:'numeric'}).format(d)}catch(_){return String(raw||'')}};
   const durationMs=s=>{const direct=[s?.advancedMetrics?.duration,s?.finalDurationMs,s?.durationMs].map(N).find(x=>x!=null&&x>=0);if(direct!=null)return direct;const a=N(s?.started),b=N(s?.ended);if(a!=null&&b!=null&&b>=a)return b-a;const a2=Date.parse(s?.startedAt||s?.start||''),b2=Date.parse(s?.endedAt||s?.end||'');return Number.isFinite(a2)&&Number.isFinite(b2)&&b2>=a2?b2-a2:0};
@@ -51,7 +52,7 @@
   function overlapRatio(a,b){const A=exerciseKeySet(a),B=exerciseKeySet(b);if(!A.size||!B.size)return 0;let common=0;for(const k of A)if(B.has(k))common++;return common/Math.max(A.size,B.size)}
   function exactSignature(s){return `${String(s?.programName||'').trim().toLowerCase()}|${String(s?.c||'').trim().toLowerCase()}|${String(s?.name||'').trim().toLowerCase()}`}
   function previousComparable(s){
-    const hist=(W.st?.sessions||[]).filter(x=>x?.ended&&String(x?.id||'')!==String(s?.id||'')&&setCount(x)>0).sort((a,b)=>Number(a.ended||a.started||0)-Number(b.ended||b.started||0));
+    const hist=(W.st?.sessions||[]).filter(x=>x?.ended&&String(x?.id||'')!==String(s?.id||'')&&(!sessionTime(s)||sessionTime(x)<sessionTime(s))&&setCount(x)>0).sort((a,b)=>sessionTime(a)-sessionTime(b));
     const sig=exactSignature(s);
     for(let i=hist.length-1;i>=0;i--)if(exactSignature(hist[i])===sig)return{session:hist[i],overlap:overlapRatio(s,hist[i]),exact:true};
     let best=null;
@@ -89,13 +90,13 @@
   }
 
   function historyForExercise(s,z){
-    const sessions=(W.st?.sessions||[]).filter(x=>x?.ended&&String(x?.id||'')!==String(s?.id||''));const a=[];
+    const sessions=(W.st?.sessions||[]).filter(x=>x?.ended&&String(x?.id||'')!==String(s?.id||'')&&(!sessionTime(s)||sessionTime(x)<sessionTime(s)));const a=[];
     for(const sess of sessions)for(const q of completedStrength(sess))if(q.key===z.key)a.push(q);
     return a
   }
   function realRecords(s){
     const byEx=new Map();
-    for(const z of completedStrength(s).filter(x=>x.w>0&&x.reps>0)){
+    for(const z of completedStrength(s).filter(x=>x.w>0&&x.reps>0&&A.method(x.e,x.x)==='STANDARD')){
       if(!byEx.has(z.key))byEx.set(z.key,[]);byEx.get(z.key).push(z)
     }
     const records=[];
@@ -104,7 +105,7 @@
       const histMaxW=Math.max(...hist.map(x=>x.w)),histMaxE=Math.max(...hist.map(e1rm));
       const currentBest=[...sets].sort((a,b)=>e1rm(b)-e1rm(a))[0],currentMaxW=Math.max(...sets.map(x=>x.w)),types=[];
       if(currentMaxW>histMaxW+.001)types.push({type:'weight',label:'Рекорд по весу',value:`${fmt(currentMaxW)} кг`,priority:90});
-      if(e1rm(currentBest)>histMaxE+.4)types.push({type:'e1rm',label:'Расчётный 1ПМ',value:`${fmt(e1rm(currentBest))} кг`,priority:100});
+      if(String(currentBest.e.type||workoutRegistry.resolve(currentBest.e)?.type||'').toLowerCase()!=='isolation'&&e1rm(currentBest)>histMaxE+.4)types.push({type:'e1rm',label:'Расчётный 1ПМ',value:`${fmt(e1rm(currentBest))} кг`,priority:100});
       if(!types.length)continue;
       records.push({key,exercise:currentBest.name,set:`${fmt(currentBest.w)}×${fmt(currentBest.reps)}`,e1:e1rm(currentBest),types,priority:Math.max(...types.map(x=>x.priority))})
     }
@@ -119,7 +120,7 @@
       const uniq=[];const seen=new Set();for(const x of items.sort((a,b)=>b.priority-a.priority)){const k=`${norm(x.exercise)}|${x.type}`;if(!seen.has(k)){seen.add(k);uniq.push(x)}}
       return{hasRealPr:true,hero:{exercise:hero.exercise,label:'Новый рекорд',value:hero.set,e1:hero.e1},items:uniq.slice(0,3)}
     }
-    if(best)return{hasRealPr:false,hero:{exercise:best.name,label:'Лучший результат тренировки',value:`${fmt(best.w)}×${fmt(best.reps)}`,e1:e1rm(best)},items:[{exercise:best.name,type:'e1rm',label:'Расчётный 1ПМ',value:`${fmt(e1rm(best))} кг`,set:`${fmt(best.w)}×${fmt(best.reps)}`,priority:1}]};
+    if(best)return{hasRealPr:false,hero:{exercise:best.name,label:'Лучший результат тренировки',value:`${fmt(best.w)}×${fmt(best.reps)}`,e1:e1rm(best)},items:[]};
     return{hasRealPr:false,hero:null,items:[]}
   }
 
@@ -135,7 +136,7 @@
   const metrics=d=>[['Тоннаж',d.tonnage>0?`${fmt(d.tonnage)} кг`:'–'],['Средний RPE',d.rpe!=null?fmt(d.rpe):'–'],['Подходов',String(d.sets)],['Время',d.time]];
   function headerHtml(d){return `<div class="sp264-top"><div><div class="sp264-brand">UNVRSL FIT</div><div class="sp264-title">${esc(d.title)}</div><div class="sp264-date">${esc(d.date)}</div></div><div class="sp264-chips"><span class="sp264-chip">${d.exercises.length} упражнений</span>${d.rpe!=null?`<span class="sp264-chip">RPE ${fmt(d.rpe)}</span>`:''}</div></div><div class="sp264-metrics">${metrics(d).map(([a,b])=>`<div class="sp264-metric"><span>${a}</span><b>${b}</b></div>`).join('')}</div>`}
   function exercisesHtml(d,limit){if(!d.exercises.length)return'';return `<div class="sp264-section"><div class="sp264-section-title">Упражнения</div>${d.exercises.slice(0,limit).map((x,i)=>`<div class="sp264-ex"><div class="sp264-num">${i+1}</div><div style="min-width:0"><b>${esc(x.name)}</b><span>${esc(x.line)}</span></div></div>`).join('')}</div>`}
-  function compactBody(d){return d.best?`<div class="sp264-highlight"><small>ЛУЧШИЙ СЕТ</small><b>${esc(d.best.name)} · ${fmt(d.best.w)}×${fmt(d.best.reps)}</b></div>`:''}
+  function compactBody(d){return `${d.best?`<div class="sp264-highlight"><small>ЛУЧШИЙ СЕТ</small><b>${esc(d.best.name)} · ${fmt(d.best.w)}×${fmt(d.best.reps)}</b></div>`:''}${exercisesHtml(d,5)}`}
   function progressBody(d){return `<div class="sp264-section"><div class="sp264-section-title">Прогресс</div><div class="sp264-progress">${d.progress.map(x=>`<div class="sp264-p"><i>${esc(x.icon)}</i><b>${esc(x.title)}</b><small>${esc(x.sub)}</small></div>`).join('')}</div></div>${exercisesHtml(d,5)}`}
   function recordBody(d){const r=d.record;if(!r.hero)return `<div class="sp264-section"><div class="muted small">Нет силовых результатов для карточки.</div></div>`;const items=r.items.filter(x=>!(x.exercise===r.hero.exercise&&x.label===r.hero.label)).slice(0,2);return `<div class="sp264-highlight sp264-record-hero"><small>${r.hasRealPr?'🏆 НОВЫЙ РЕКОРД':'★ ЛУЧШИЙ РЕЗУЛЬТАТ'}</small><b>${esc(r.hero.exercise)} · ${esc(r.hero.value)}</b><div class="sp264-record-note">${esc(r.hero.label)} · 1ПМ ≈ ${fmt(r.hero.e1)} кг</div></div>${items.length?`<div class="sp264-records">${items.map(x=>`<div class="sp264-record"><small>${esc(x.exercise)} · ${esc(x.label)}</small><b>${esc(x.value)}</b></div>`).join('')}</div>`:''}${exercisesHtml(d,3)}`}
   function renderCard(s,m){const d=data(s),body=m==='compact'?compactBody(d):m==='record'?recordBody(d):progressBody(d);return `<div class="sp264-card" data-share-card-v264>${headerHtml(d)}${body}<div class="sp264-foot">Сделано в UNVRSL FIT</div></div>`}
@@ -151,10 +152,12 @@
     const ms=metrics(d),gap=18,cw=(936-gap)/2,ch=142;ms.forEach(([lab,val],i)=>{const col=i%2,row=Math.floor(i/2),px=72+col*(cw+gap),py=y+row*(ch+16);roundRect(x,px,py,cw,ch,26,'#1b1c20','#35373d');x.fillStyle='#8e8e93';x.font='25px -apple-system,system-ui';x.fillText(lab,px+25,py+42);x.fillStyle='#f5f5f7';x.font='800 40px -apple-system,system-ui';x.fillText(String(val).replace(/\u00a0/g,' '),px+25,py+96)});y+=2*(ch+16)+12;
     const section=(title,items,kind)=>{const h=kind==='progress'?Math.max(170,items.length*105+75):Math.max(150,items.length*94+72);roundRect(x,72,y,936,h,28,'#17181b','#35373d');x.fillStyle='#f5f5f7';x.font='800 28px -apple-system,system-ui';x.fillText(title,102,y+48);let yy=y+84;items.forEach((it,i)=>{if(i){x.strokeStyle='#303238';x.beginPath();x.moveTo(102,yy-14);x.lineTo(978,yy-14);x.stroke()}if(kind==='progress'){x.fillStyle='#d696f5';x.font='700 28px -apple-system,system-ui';x.fillText(it.icon,104,yy+18);x.fillStyle='#f5f5f7';x.font='700 27px -apple-system,system-ui';x.fillText(it.title,155,yy+12);x.fillStyle='#8e8e93';x.font='22px -apple-system,system-ui';x.fillText(it.sub,155,yy+43);yy+=100}else{x.fillStyle='#d696f5';x.font='800 23px -apple-system,system-ui';x.fillText(String(i+1),110,yy+16);x.fillStyle='#f5f5f7';x.font='700 26px -apple-system,system-ui';x.fillText(it.name,158,yy+10);x.fillStyle='#8e8e93';x.font='21px -apple-system,system-ui';x.fillText(it.line.slice(0,68),158,yy+41);yy+=90}});y+=h+24};
     if(m==='compact'&&d.best){roundRect(x,72,y,936,150,28,'rgba(191,90,242,.10)','rgba(191,90,242,.70)');x.fillStyle='#d696f5';x.font='800 25px -apple-system,system-ui';x.fillText('ЛУЧШИЙ СЕТ',102,y+48);x.fillStyle='#f5f5f7';x.font='800 34px -apple-system,system-ui';x.fillText(`${d.best.name} · ${plain(d.best.w)}×${plain(d.best.reps)}`.slice(0,52),102,y+103);y+=176}
+    if(m==='compact'&&d.exercises.length)section('Упражнения',d.exercises.slice(0,5),'exercises');
     if(m==='progress'){section('Прогресс',d.progress,'progress');if(d.exercises.length)section('Упражнения',d.exercises.slice(0,5),'exercises')}
-    if(m==='record'&&d.record.hero){const r=d.record,h=r.hero;roundRect(x,72,y,936,190,28,'rgba(191,90,242,.10)','rgba(191,90,242,.70)');x.fillStyle='#d696f5';x.font='800 25px -apple-system,system-ui';x.textAlign='center';x.fillText(r.hasRealPr?'🏆 НОВЫЙ РЕКОРД':'★ ЛУЧШИЙ РЕЗУЛЬТАТ',540,y+48);x.fillStyle='#f5f5f7';x.font='800 36px -apple-system,system-ui';wrapLines(x,`${h.exercise} · ${h.value}`,820).slice(0,2).forEach((line,i)=>x.fillText(line,540,y+105+i*42));x.fillStyle='#8e8e93';x.font='22px -apple-system,system-ui';x.fillText(`${h.label} · 1ПМ ≈ ${plain(h.e1)} кг`,540,y+168);x.textAlign='left';y+=216;const extra=r.items.slice(0,2).map(q=>({name:`${q.exercise} · ${q.label}`,line:q.value}));if(extra.length)section('Достижения',extra,'exercises');if(d.exercises.length)section('Упражнения',d.exercises.slice(0,3),'exercises')}
+    if(m==='record'&&d.record.hero){const r=d.record,h=r.hero;roundRect(x,72,y,936,190,28,'rgba(191,90,242,.10)','rgba(191,90,242,.70)');x.fillStyle='#d696f5';x.font='800 25px -apple-system,system-ui';x.textAlign='center';x.fillText(r.hasRealPr?'НОВЫЙ РЕКОРД':'ЛУЧШИЙ РЕЗУЛЬТАТ',540,y+48);x.fillStyle='#f5f5f7';x.font='800 36px -apple-system,system-ui';wrapLines(x,`${h.exercise} · ${h.value}`,820).slice(0,2).forEach((line,i)=>x.fillText(line,540,y+105+i*42));x.fillStyle='#8e8e93';x.font='22px -apple-system,system-ui';x.fillText(`${h.label}${h.e1>0?` · 1ПМ ≈ ${plain(h.e1)} кг`:''}`,540,y+168);x.textAlign='left';y+=216;const extra=r.items.filter(q=>q.exercise!==h.exercise).slice(0,2).map(q=>({name:`${q.exercise} · ${q.label}`,line:q.value}));if(extra.length)section('Достижения',extra,'exercises');if(d.exercises.length)section('Упражнения',d.exercises.slice(0,4),'exercises')}
     y+=18;x.fillStyle='#777';x.font='24px -apple-system,system-ui';x.textAlign='center';x.fillText('Сделано в UNVRSL FIT',540,y+32);x.textAlign='left';y+=72;
-    return tmp
+    const height=Math.min(MAX,Math.max(980,Math.ceil(y+70))),out=D.createElement('canvas');out.width=WID;out.height=height;out.getContext('2d').drawImage(tmp,0,0,WID,height,0,0,WID,height);
+    return out
   }
   const canvasBlob=c=>new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('PNG не создан')),'image/png',.95));
 
@@ -162,7 +165,7 @@
   const status=t=>{const e=D.getElementById('sp264Status');if(e)e.textContent=t||''};
   const busy=v=>{for(const id of ['sp264Save','sp264Share']){const b=D.getElementById(id);if(b)b.disabled=!!v}};
   function shareText(){if(!active)return'UNVRSL FIT';const d=data(active),a=[`UNVRSL FIT · ${d.title}`,d.date,`${plain(d.tonnage)} кг · ${d.sets} подходов · ${d.time}`];if(d.rpe!=null)a.push(`Средний RPE ${plain(d.rpe)}`);return a.join('\n')}
-  async function prepareExport(){if(!active)return null;const token=++prepareToken;prepared=null;busy(true);status('Готовим PNG 1080 × 1920…');try{const blob=await canvasBlob(buildCanvas(active,mode));if(token!==prepareToken)return null;if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=URL.createObjectURL(blob);const img=D.getElementById('sp264Preview');if(img){img.src=previewUrl;img.hidden=false;img.previousElementSibling?.remove()}prepared={blob,file:new File([blob],`universal-fit-${String(active.date||new Date().toISOString().slice(0,10))}.png`,{type:'image/png'}),mode,id:String(active.id||'')};status('PNG готов · 1080 × 1920');return prepared}catch(e){console.error('share v264',e);status('Не удалось подготовить изображение');return null}finally{if(token===prepareToken)busy(false)}}
+  async function prepareExport(){if(!active)return null;const token=++prepareToken;prepared=null;busy(true);status('Готовим PNG…');try{const canvas=buildCanvas(active,mode),blob=await canvasBlob(canvas);if(token!==prepareToken)return null;if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=URL.createObjectURL(blob);const img=D.getElementById('sp264Preview');if(img){img.src=previewUrl;img.hidden=false;img.previousElementSibling?.remove()}prepared={blob,file:new File([blob],`universal-fit-${String(active.date||new Date().toISOString().slice(0,10))}.png`,{type:'image/png'}),mode,id:String(active.id||'')};status(`PNG готов · ${canvas.width} × ${canvas.height}`);return prepared}catch(e){console.error('share v264',e);status('Не удалось подготовить изображение');return null}finally{if(token===prepareToken)busy(false)}}
   const ready=()=>prepared&&prepared.mode===mode&&prepared.id===String(active?.id||'')?prepared:null;
   function download(blob){const u=URL.createObjectURL(blob),a=D.createElement('a');a.href=u;a.download=`unvrsl-fit-${String(active?.date||new Date().toISOString().slice(0,10))}.png`;a.rel='noopener';D.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
   function nativeShare(file,text){if(!navigator.share)return null;try{if(navigator.canShare&&!navigator.canShare({files:[file]}))return null;return navigator.share({files:[file],title:'UNVRSL FIT',text})}catch(_){return null}}

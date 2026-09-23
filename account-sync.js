@@ -20,7 +20,8 @@
   function markLocal(){if(!suppress)setMeta({localModifiedAt:Date.now()})}
   function arr(x){return Array.isArray(x)?x:[]}
   function doneCount(session){return arr(session?.ex).reduce((sum,e)=>sum+arr(e?.set).filter(x=>x?.ok).length,0)}
-  function sessionScore(s){return Number(s?.updatedAt||s?.ended||s?.started||0)+doneCount(s)*10}
+  function sessionTime(s){for(const value of [s?.ended,s?.endedAt,s?.started,s?.startedAt,s?.date]){if(typeof value==='number'&&Number.isFinite(value))return value;const num=Number(value);if(Number.isFinite(num)&&num>1e11)return num;const parsed=typeof value==='string'?Date.parse(value):NaN;if(Number.isFinite(parsed))return parsed}return 0}
+  function sessionScore(s){return sessionTime(s)+doneCount(s)*10}
   function mergeByKey(first,second,keyFn,scoreFn){
     const map=new Map();
     for(const item of [...arr(first),...arr(second)]){
@@ -34,7 +35,7 @@
     const lm=Number(meta().localModifiedAt||0),preferRemote=remoteStamp>lm;
     const first=preferRemote?remote:local,second=preferRemote?local:remote;
     const base=preferRemote?{...local,...remote}:{...remote,...local};
-    base.sessions=mergeByKey(first.sessions,second.sessions,x=>String(x.id||''),sessionScore).sort((a,b)=>(a.started||0)-(b.started||0));
+    base.sessions=mergeByKey(first.sessions,second.sessions,x=>String(x.id||''),sessionScore).sort((a,b)=>sessionTime(a)-sessionTime(b));
     base.bw=mergeByKey(first.bw,second.bw,x=>String(x.d||''),x=>Number(x.updatedAt||x.t||x.ts||0)).sort((a,b)=>String(a.d||'').localeCompare(String(b.d||'')));
     base.deletedBodyweights=mergeByKey(first.deletedBodyweights,second.deletedBodyweights,x=>String(x?.d||x||''),x=>Number(x?.at||x?.t||0));
     const weightStamp=new Map(base.bw.map(x=>[String(x.d||'').slice(0,10),Number(x.updatedAt||x.t||x.ts||0)]));
@@ -117,6 +118,7 @@
         if(typeof cloudSyncBodyweights==='function')await cloudSyncBodyweights();
         setMeta({lastSyncedAt:Date.now(),lastUserId:user.id});
         if(!quiet)try{toast(remoteExists?'Данные аккаунта синхронизированы':'Облачная копия создана')}catch(e){}
+        window.dispatchEvent?.(new CustomEvent('unvrsl:history-updated',{detail:{sessions:arr(st.sessions).length}}));
         try{render()}catch(e){}
         return true;
       }catch(e){console.warn('UNVRSL account sync',e);if(!quiet)try{toast('Не удалось синхронизировать аккаунт')}catch(_){}return false}

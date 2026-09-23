@@ -13,6 +13,22 @@ test("different physical equipment has separate history and load steps",()=>{
  const other=now(b,[set(0,10,"",{ok:false})]);
  assert.deepEqual(A.recommend(other.ex[0],other.ex[0].set[0],other,past,reg).sessionIds,[]);
 });
+test("latest saved workout wins with mixed timestamp formats and a changed tempo",()=>{
+ const bar=p('rdl-bar'),first=old('12',bar,[set(115,12,8)]),last=old('21',bar,[set(140,7,8)]);
+ first.date='2026-09-12';first.started=Date.parse('2026-09-12T09:00:00Z');
+ last.date='2026-09-21';last.started='2026-09-21T06:15:00Z';last.ended='2026-09-21T07:00:00Z';last.ex[0].tempo='3-1-2';
+ const current=now(bar,[set(135,6,0,{ok:false,programW:135,targetRepMin:5,targetRepMax:7,targetRpeMin:8,targetRpeMax:9})]);
+ current.ex[0].tempo='2-0-2';
+ const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,[last,first],reg);
+ assert.equal(rec.previous,140);assert.equal(rec.basis.date,'2026-09-21');
+ assert.equal(rec.sessionIds[0],'21');assert.match(rec.evidence[0],/140 кг × 7/);
+});
+test("separate Matrix and Foreman machines never transfer recent working weights",()=>{
+ const matrix=p('matrix-leg'),foreman=p('foreman-leg');
+ const earlier=old('12',matrix,[set(70,12,8)]),last=old('21',foreman,[set(90,10,8)]);
+ const current=now(matrix,[set(70,10,0,{ok:false})]);
+ assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,[last,earlier],reg).previous,70);
+});
 test("per-hand rack loads are recommended as a single dumbbell weight",()=>{
  const d=p("rack-db","PER_HAND"),past=[old("1",d,[set(12)]),old("2",d,[set(12)])],cur=now(d,[set(12,10,7,{ok:false})]);
  assert.equal(A.loadType(cur.ex[0],reg),"per_dumbbell");
@@ -153,4 +169,24 @@ test("the screenshot's dark surfaces are explicitly themed and trainer history u
  assert.match(read("training-engine.js"),/Почему этот вес\?/);
  assert.match(read("training-load-model.js"),/Math\.min\(1, Math\.max\(\.85, factor\)\)/);
  assert.doesNotMatch(read("trainer-self-plan.js").split("window.trainerSelfShare110=")[1].split("window.trainerSelfDelete110=")[0],/navigator\.share\(\{title:'UNVRSL FIT',text\}\)/);
+});
+test("PNG preview contains the exercises and trims unused portrait space",async()=>{
+ const canvases=[],drawn=[];
+ const context=()=>({fillText:s=>drawn.push(String(s)),fillRect(){},drawImage(){},beginPath(){},roundRect(){},fill(){},stroke(){},moveTo(){},lineTo(){},measureText:s=>({width:String(s).length*15}),createRadialGradient:()=>({addColorStop(){}})});
+ const els={sp264Status:{textContent:""},sp264Preview:{hidden:true,previousElementSibling:{remove(){}}},sp264Save:{},sp264Share:{},sheet:{scrollTop:0}};
+ const document={head:{appendChild(){}},getElementById:id=>els[id]||null,createElement:tag=>tag==='canvas'?((c)=>{canvases.push(c);return c})({width:0,height:0,getContext:context,toBlob:callback=>callback(new Blob(['png'],{type:'image/png'}))}):{id:'',textContent:'',remove(){}}};
+ const session={id:'sep21',date:'2026-09-21',started:'2026-09-21T05:30:00Z',ended:'2026-09-21T06:15:00Z',c:'A2',name:'Бицепс бедра',ex:[{n:'Румынская тяга со штангой',set:[{w:140,r:7,rpe:8,ok:true}]},{n:'Сгибание ног лёжа в тренажёре',set:[{w:72.5,r:10,rpe:8,ok:true}]}]};
+ const win={WorkoutDomain:A,st:{sessions:[session]},modal(){},addEventListener(){}};
+ const scope={window:win,document,workoutRegistry:reg,URL:{createObjectURL:()=>"blob:test",revokeObjectURL(){}},File:class{},Blob,console,requestAnimationFrame:callback=>callback(),setInterval:()=>0,setTimeout:()=>0,clearInterval(){},navigator:{}};
+ vm.runInNewContext(read('share-progress-template.js'),scope);
+ win.openShareProgressV264(session);
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.ok(canvases.at(-1).height<1920);
+ assert.match(drawn.join(' '),/Румынская тяга со штангой/);
+ assert.match(drawn.join(' '),/Сгибание ног лёжа/);
+ assert.match(els.sp264Status.textContent,/1080 ×/);
+ win.shareProgressModeV264('compact');
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.ok(canvases.at(-1).height<1920);
+ assert.match(drawn.join(' '),/ЛУЧШИЙ СЕТ/);
 });

@@ -92,5 +92,6 @@
     "unvrsl:training-engine-ready",
     "unvrsl:readiness-ready",
     "unvrsl:cloud-ready",
+    "unvrsl:history-updated",
   ].forEach((name) => W.addEventListener(name, () => run()));
 })();

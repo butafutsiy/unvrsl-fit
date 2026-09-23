@@ -1,5 +1,5 @@
 "use strict";
-const SW_RELEASE = "v410",
+const SW_RELEASE = "v411",
   CACHE_PREFIX = "unvrsl-",
   SHELL = `${CACHE_PREFIX}shell-${SW_RELEASE}`,
   MEDIA = `${CACHE_PREFIX}media-${SW_RELEASE}`;

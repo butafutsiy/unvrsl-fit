@@ -340,7 +340,6 @@
       loadType(a, reg) === loadType(b, reg) &&
       method(a, sa) === method(b, sb) &&
       phase(a, sa) === phase(b, sb) &&
-      String(a.tempo || "") === String(b.tempo || "") &&
       equipmentA === equipmentB &&
       String(a.implementCount ?? reg.resolve(a)?.implementCount ?? "") ===
         String(b.implementCount ?? reg.resolve(b)?.implementCount ?? "") &&
@@ -348,17 +347,23 @@
       String(a.implementWeight ?? "") === String(b.implementWeight ?? "")
     );
   }
+  function sessionTime(s) {
+    for (const value of [s?.started, s?.startedAt, s?.date, s?.ended, s?.endedAt]) {
+      if (typeof value === 'number' && Number.isFinite(value)) return value;
+      const n = number(value);
+      if (n != null && n > 1e11) return n;
+      const parsed = typeof value === 'string' ? Date.parse(value) : NaN;
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return 0;
+  }
   function history(e, sessions, reg, { userId, excludeId, before } = {}) {
     const out = [],
       seen = new Set();
-    for (const session of [...sessions].sort(
-      (a, b) =>
-        (b.started || Date.parse(b.date) || 0) -
-        (a.started || Date.parse(a.date) || 0),
-    )) {
+    for (const session of [...sessions].sort((a, b) => sessionTime(b) - sessionTime(a))) {
       if (
         before != null &&
-        (session.started || Date.parse(session.date) || 0) >= before
+        sessionTime(session) >= before
       )
         continue;
       if (
@@ -416,7 +421,7 @@
     return b.length % 2 ? b[i] : (b[i - 1] + b[i]) / 2;
   };
   const sessionDate = (s) =>
-    s?.date || (s?.started ? new Date(s.started).toISOString().slice(0, 10) : "");
+    s?.date || (sessionTime(s) ? new Date(sessionTime(s)).toISOString().slice(0, 10) : "");
   function recommend(e, set, session, sessions, reg, overrides = {}) {
     const p = profile(e, reg, overrides),
       range = repRange(e, set),
