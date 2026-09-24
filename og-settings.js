@@ -30,7 +30,7 @@ const _ruExercisesPage=exercisesPage;
 exercisesPage=function(){_ruExercisesPage();const search=document.getElementById('exSearch');if(search)search.placeholder='Поиск упражнений';const chip=document.querySelector('#exercises .catalog-head .chip');if(chip)chip.textContent='Русский · анимации'};
 const _ruRenderExerciseDetail=renderExerciseDetail;
 renderExerciseDetail=function(ex){_ruRenderExerciseDetail(ex);document.querySelectorAll('.detail-en').forEach(el=>el.remove())};
-function dynamicScript(src){return new Promise(resolve=>{const key=String(src).replace(/^\.\//,'');if(document.querySelector(`script[data-dyn="${src}"],script[data-dyn="${key}"],script[data-unvrsl-src="${src}"],script[data-unvrsl-src="${key}"]`))return resolve();const s=document.createElement('script');s.src=src+(src.includes('?')?'&':'?')+'v='+String(window.__unvrslRelease||'v419').replace(/^v/,'');s.dataset.dyn=key;s.onload=resolve;s.onerror=resolve;document.body.appendChild(s)})}
+function dynamicScript(src){return new Promise(resolve=>{const key=String(src).replace(/^\.\//,'');if(document.querySelector(`script[data-dyn="${src}"],script[data-dyn="${key}"],script[data-unvrsl-src="${src}"],script[data-unvrsl-src="${key}"]`))return resolve();const s=document.createElement('script');s.src=src+(src.includes('?')?'&':'?')+'v='+String(window.__unvrslRelease||'v420').replace(/^v/,'');s.dataset.dyn=key;s.onload=resolve;s.onerror=resolve;document.body.appendChild(s)})}
 async function loadCloudModules(){
   if(!window.UNVRSL_CLOUD)await dynamicScript('./cloud-config.js');
   if(!window.supabase?.createClient){await dynamicScript('./supabase-loader.js');if(window.UNVRSL_SUPABASE_READY)try{await window.UNVRSL_SUPABASE_READY}catch(e){}}
@@ -47,7 +47,7 @@ async function openCloudAccount(){await loadCloudModules();if(typeof cloudAccoun
   if(window.__unvrslPreviewAuthorityLoaderV281)return;
   window.__unvrslPreviewAuthorityLoaderV281=true;
   const s=document.createElement('script');
-  s.src='./preview-authority.js?v=419';
+  s.src='./preview-authority.js?v=420';
   s.async=false;
   s.dataset.unvrslPreviewAuthority='281';
   document.body.appendChild(s);
@@ -59,7 +59,7 @@ async function openCloudAccount(){await loadCloudModules();if(typeof cloudAccoun
   if(window.__unvrslRepRangeGhostLoaderV283)return;
   window.__unvrslRepRangeGhostLoaderV283=true;
   const s=document.createElement('script');
-  s.src='./rep-range-ghost.js?v=419';
+  s.src='./rep-range-ghost.js?v=420';
   s.async=false;
   s.dataset.unvrslRepRangeGhost='283';
   document.body.appendChild(s);

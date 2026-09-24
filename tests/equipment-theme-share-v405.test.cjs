@@ -296,3 +296,25 @@ test("two story PNGs use the same completed sets and the selected profile accent
  assert.ok(fills.some(x=>x[2]===1080&&x[3]===1920));
  assert.match(drawn.join(' '),/ЛУЧШИЙ ПОДХОД/);
 });
+test("saving and sharing a story send only the PNG to the iPhone share sheet",async()=>{
+ const sent=[],copied=[];
+ const els={sp264Status:{textContent:""},sp264Preview:{hidden:true,previousElementSibling:{remove(){}}},sp264Save:{},sp264Share:{},sheet:{scrollTop:0}};
+ const context={fillText(){},fillRect(){},beginPath(){},roundRect(){},fill(){},stroke(){},save(){},restore(){},measureText:s=>({width:String(s).length*15}),createRadialGradient:()=>({addColorStop(){}})};
+ const document={head:{appendChild(){}},getElementById:id=>els[id]||null,createElement:tag=>tag==='canvas'?{width:0,height:0,getContext:()=>context,toBlob:callback=>callback(new Blob(['png'],{type:'image/png'}))}:{remove(){}}};
+ const session={id:'share-test',date:'2026-09-21',name:'Программа',ex:[{n:'Румынская тяга',set:[{w:140,r:7,rpe:8,ok:true}]}]};
+ const win={WorkoutDomain:A,st:{sessions:[session],accent:'#0a84ff'},modal(){},addEventListener(){}};
+ const navigator={userAgent:'iPhone',canShare:payload=>Object.keys(payload).join(',')==='files',share:payload=>{sent.push(payload);return Promise.resolve()},clipboard:{writeText:text=>{copied.push(text);return Promise.resolve()}}};
+ const scope={window:win,document,workoutRegistry:reg,URL:{createObjectURL:()=>"blob:test",revokeObjectURL(){}},File:class{constructor(parts,name,options){this.parts=parts;this.name=name;this.type=options.type}},Blob,console,requestAnimationFrame:callback=>callback(),setInterval:()=>0,setTimeout:()=>0,clearInterval(){},navigator};
+ vm.runInNewContext(read('share-progress-template.js'),scope);
+ win.openShareProgressV264(session);
+ await new Promise(resolve=>setImmediate(resolve));
+ win.shareProgressSaveV264();
+ win.shareProgressNativeV264();
+ win.shareProgressModeV264('background');
+ await new Promise(resolve=>setImmediate(resolve));
+ win.shareProgressSaveV264();
+ win.shareProgressNativeV264();
+ assert.equal(sent.length,4);
+ for(const payload of sent){assert.deepEqual(Object.keys(payload),['files']);assert.equal(payload.files.length,1);assert.equal(payload.files[0].type,'image/png')}
+ assert.equal(copied.length,0);
+});
