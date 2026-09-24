@@ -332,15 +332,23 @@
         "",
     );
   }
+  function sameExercise(a, b, reg) {
+    if (reg.identity(a) === reg.identity(b)) return true;
+    const nameA = norm(a?.n || a?.name), nameB = norm(b?.n || b?.name);
+    if (nameA && nameA === nameB) return true;
+    // An old session may carry a stale exerciseId while its saved name is a
+    // known alias of the current exercise. Resolve the names independently.
+    const canonicalA = nameA && reg.resolve(a?.n || a?.name)?.id;
+    const canonicalB = nameB && reg.resolve(b?.n || b?.name)?.id;
+    return !!(canonicalA && canonicalA === canonicalB);
+  }
   function comparable(a, b, reg, sa = {}, sb = {}) {
     const equipmentA=String(sa?.equipmentProfileId||a?.equipmentProfileId||a?.equipmentProfile?.id||a?.machineId||"");
     const equipmentB=String(sb?.equipmentProfileId||b?.equipmentProfileId||b?.equipmentProfile?.id||b?.machineId||"");
     const typeA=loadType(a,reg),typeB=loadType(b,reg);
-    const sameExercise=reg.identity(a)===reg.identity(b)||(
-      norm(a?.n||a?.name)&&norm(a?.n||a?.name)===norm(b?.n||b?.name)
-    );
+    const matchingExercise=sameExercise(a,b,reg);
     return (
-      sameExercise &&
+      matchingExercise &&
       typeA === typeB &&
       method(a, sa) === method(b, sb) &&
       phase(a, sa) === phase(b, sb) &&
@@ -372,7 +380,10 @@
       )
         continue;
       if (
-        !session.ended ||
+        // Imported and older history rows can omit `ended` even though their
+        // completed working sets are saved in the sessions collection.
+        (!session.ended && !(session.ex || []).some((ex) =>
+          (ex.set || []).some((set) => complete(ex, set, reg)))) ||
         session.pendingCompletion ||
         (excludeId != null && String(session.id) === String(excludeId)) ||
         seen.has(session.id ? String(session.id) : session)
@@ -381,7 +392,7 @@
       if (userId && session.userId && session.userId !== userId) continue;
       seen.add(session.id ? String(session.id) : session);
       for (const ex of session.ex || []) {
-        if (reg.identity(ex) !== reg.identity(e) && norm(ex?.n||ex?.name)!==norm(e?.n||e?.name)) continue;
+        if (!sameExercise(ex,e,reg)) continue;
         for (const set of ex.set || [])
           if (complete(ex, set, reg)) out.push({ exercise: ex, set, session });
       }

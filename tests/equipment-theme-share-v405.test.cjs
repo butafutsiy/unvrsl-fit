@@ -102,6 +102,26 @@ test("restoring a week-five draft recomputes its saved recommendation from Septe
  assert.deepEqual(JSON.parse(JSON.stringify(waiting.recommendation.repRange)),{lo:4,hi:6});
  assert.ok(waiting.recommendedW>135);assert.equal(waiting.w,135);assert.ok(saves>0);assert.ok(refreshes>0);
 });
+test("completed sets in legacy history count even if the old session lacks an ended timestamp",()=>{
+ const bar=p('rdl-bar'),earlier=old('12',bar,[set(115,12,8)]),recent=old('21',bar,[set(140,7,8)]);
+ earlier.date='2026-09-12';recent.date='2026-09-21';earlier.started=Date.parse('2026-09-12T05:30:00Z');recent.started=Date.parse('2026-09-21T05:30:00Z');
+ delete recent.ended;
+ const pending=now(bar,[set(135,'','',{ok:false,programW:135,targetRepLabel:'4–6',targetRpeMin:8,targetRpeMax:9})]);
+ const rec=A.recommend(pending.ex[0],pending.ex[0].set[0],pending,[earlier,recent],reg);
+ assert.equal(rec.basis.date,'2026-09-21');assert.equal(rec.basis.estimatedOneRepMax,182);
+ recent.pendingCompletion=true;
+ assert.equal(A.recommend(pending.ex[0],pending.ex[0].set[0],pending,[earlier,recent],reg).basis.date,'2026-09-12');
+});
+test("a saved legacy exercise ID does not hide its known Romanian deadlift alias",()=>{
+ const aliases=A.registry([{id:'rdl',n:'Румынская тяга со штангой',aliases:['Румынская тяга']}]);
+ const earlier=old('12',p('rdl-bar'),[set(115,12,8)]),latest=old('21',p('rdl-bar'),[set(140,7,8)]);
+ earlier.date='2026-09-12';earlier.started=Date.parse('2026-09-12T05:30:00Z');
+ latest.date='2026-09-21';latest.started=Date.parse('2026-09-21T05:30:00Z');
+ latest.ex[0].n='Румынская тяга со штангой';latest.ex[0].exerciseId='old-import-id';
+ const current=now(p('rdl-bar'),[set(135,'','',{ok:false,programW:135,targetRepLabel:'4–6',targetRpeMin:8,targetRpeMax:9})]);
+ current.ex[0].n='Румынская тяга';current.ex[0].exerciseId='new-plan-id';
+ assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,[earlier,latest],aliases).basis.date,'2026-09-21');
+});
 test("separate Matrix and Foreman machines never transfer recent working weights",()=>{
  const matrix=p('matrix-leg'),foreman=p('foreman-leg');
  const earlier=old('12',matrix,[set(70,12,8)]),last=old('21',foreman,[set(90,10,8)]);

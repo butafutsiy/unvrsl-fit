@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=path.resolve(__dirname,'..'),read=name=>fs.readFileSync(path.join(root,name),'utf8');
 
-test('W5 Romanian deadlift shows 4–6 in preview and repairs a started workout',()=>{
+test('W5 Romanian deadlift uses September 21 for its 4–6 recommendation after a wrapped preview',async()=>{
   let previewHtml='',saves=0;
   const oldSet={w:135,r:7,ok:false,targetRepMin:5,targetRepMax:7,targetRepLabel:'5–7'};
   const finished={w:135,r:5,ok:true,targetRepMin:5,targetRepMax:7,targetRepLabel:'5–7'};
@@ -34,10 +34,26 @@ test('W5 Romanian deadlift shows 4–6 in preview and repairs a started workout'
   assert.equal(context.unvrslActiveRepRangeV316(5,source).min,4);
   const ghostMap=JSON.parse(read('rep-range-ghost.js').match(/const R=(\{.*?\});/)[1]);
   assert.deepEqual(ghostMap['5']['Румынская тяга'],[4,6]);
+  const decoratedPreview=function(w,c){return context.previewBeforeCollapse(w,c)};
+  context.previewBeforeCollapse=context.preview;
+  decoratedPreview.__methodPreviewCollapseBase=context.preview;
+  context.preview=decoratedPreview;
   vm.runInNewContext(read('training-prescription-bridge.js'),context);
   assert.equal(context.unvrslTrainingPrescriptionPrepareV292(current),true);
   assert.deepEqual([oldSet.targetRepMin,oldSet.targetRepMax,oldSet.targetRepLabel,oldSet.r],[4,6,'4–6','']);
   assert.equal(finished.r,5);
   assert.deepEqual([manual.r,manual.targetRepMin,manual.targetRepMax],[7,4,6]);
+  context.WorkoutDomain=require('../workout-domain.js');
+  context.workoutRegistry=context.WorkoutDomain.registry([{id:'rdl',n:'Румынская тяга со штангой',aliases:['Румынская тяга']}]);
+  current.id='w5-active';
+  context.st.sessions=[
+    {id:'sep-12',date:'2026-09-12',ended:Date.parse('2026-09-12T06:00:00Z'),ex:[{n:'Румынская тяга',set:[{w:115,r:12,rpe:8,ok:true}]}]},
+    {id:'sep-21',date:'2026-09-21',ex:[{n:'Румынская тяга со штангой',set:[{w:140,r:7,rpe:8,ok:true}]}]}
+  ];
+  vm.runInNewContext(read('training-load-model.js'),context);
+  await Promise.resolve();
+  assert.deepEqual(JSON.parse(JSON.stringify(oldSet.recommendation.repRange)),{lo:4,hi:6});
+  assert.equal(oldSet.recommendation.basis.date,'2026-09-21');
+  assert.equal(oldSet.recommendation.basis.estimatedOneRepMax,182);
   assert.ok(saves>0);
 });

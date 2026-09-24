@@ -24,10 +24,21 @@
 
   function captureBuiltInRanges(cur){
     if(!isBuiltIn(cur))return null;const key=`${cur.w}:${cur.c}`;if(cache.has(key))return cache.get(key);
+    // Read the same plan source as the active set placeholders. Preview can
+    // have several decorators, so it is not a reliable source of targets.
+    const routine=(W.UNVRSL_ROUTINES||[]).find(r=>N(r?.w)===N(cur.w)&&String(r?.c)===String(cur.c));
+    const direct=new Map();
+    for(const entry of routine?.e||[]){
+      if(SPECIAL.test(String(entry?.n||''))||entry?.m)continue;
+      const target=W.unvrslActiveRepRangeV316?.(cur.w,entry);
+      const lo=N(target?.min),hi=N(target?.max),name=base(entry.n);
+      if(name&&lo>0&&hi>=lo&&!direct.has(name))direct.set(name,[lo,hi]);
+    }
+    if(direct.size){cache.set(key,direct);return direct}
     let fn=W.preview;
     // The mobile preview decorator wraps the canonical preview. Read the
     // original prescription, otherwise an active workout keeps stale targets.
-    while(typeof fn==='function'&&!fn.__unvrslPreviewAuthorityV281&&fn.__unvrslNativePreviewBaseV280)fn=fn.__unvrslNativePreviewBaseV280;
+    while(typeof fn==='function'&&!fn.__unvrslPreviewAuthorityV281&&(fn.__unvrslNativePreviewBaseV280||fn.__methodPreviewCollapseBase))fn=fn.__unvrslNativePreviewBaseV280||fn.__methodPreviewCollapseBase;
     if(typeof fn!=='function'||!fn.__unvrslPreviewAuthorityV281)return null;
     let html='';const capture=x=>{html=String(x||'');return html},oldWindowModal=W.modal;let oldBinding=null,hasBinding=false;
     try{oldBinding=modal;hasBinding=true;modal=capture}catch(_){ }
