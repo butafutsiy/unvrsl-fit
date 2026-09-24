@@ -23,7 +23,12 @@
   function isBuiltIn(cur){if(!cur||isProgramWorkout(cur))return false;const week=N(cur.w);return week>=1&&week<=8&&!!cur.c}
 
   function captureBuiltInRanges(cur){
-    if(!isBuiltIn(cur))return null;const key=`${cur.w}:${cur.c}`;if(cache.has(key))return cache.get(key);const fn=W.preview;if(typeof fn!=='function'||!fn.__unvrslPreviewAuthorityV281)return null;
+    if(!isBuiltIn(cur))return null;const key=`${cur.w}:${cur.c}`;if(cache.has(key))return cache.get(key);
+    let fn=W.preview;
+    // The mobile preview decorator wraps the canonical preview. Read the
+    // original prescription, otherwise an active workout keeps stale targets.
+    while(typeof fn==='function'&&!fn.__unvrslPreviewAuthorityV281&&fn.__unvrslNativePreviewBaseV280)fn=fn.__unvrslNativePreviewBaseV280;
+    if(typeof fn!=='function'||!fn.__unvrslPreviewAuthorityV281)return null;
     let html='';const capture=x=>{html=String(x||'');return html},oldWindowModal=W.modal;let oldBinding=null,hasBinding=false;
     try{oldBinding=modal;hasBinding=true;modal=capture}catch(_){ }
     try{W.modal=capture;fn(cur.w,cur.c)}catch(_){html=''}finally{W.modal=oldWindowModal;if(hasBinding)try{modal=oldBinding}catch(_){ }}
@@ -38,7 +43,7 @@
     const ctx=programWeek(cur),w=ctx?.w;if(!w)return null;let days=w.days||[],day=days.find(d=>String(d?.name||'')===String(cur?.c||''));if(day)days=[day,...days.filter(d=>d!==day)];const id=String(ex?.sourceId||''),bn=base(ex?.n).toLowerCase();
     for(const d of days){const list=d?.ex||[],hit=list.find(x=>(id&&String(x?.sourceId||'')===id)||base(x?.n).toLowerCase()===bn);if(hit)return hit}return null
   }
-  function repsAreManual(set){return !!(set?.ok||set?.manualFields?.r||set?.repEntered||set?.__repManualV272||set?.__repManualV283||set?.__repManualV287)}
+  function repsAreManual(set){return !!(set?.ok||set?.manualFields?.r||set?.actualReps!=null||set?.repEntered||set?.__repManualV272||set?.__repManualV283||set?.__repManualV287)}
 
   function annotateProgramRanges(cur){
     let changed=false;const ctx=programWeek(cur),p=ctx?.p,w=ctx?.w;if(p&&cur.programId==null&&p.id!=null){cur.programId=p.id;changed=true}
