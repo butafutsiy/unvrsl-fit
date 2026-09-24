@@ -26,7 +26,7 @@
       if(e?.mode==='cardio')return[];
       return (e.set||[]).filter(x=>A.complete(e,x,workoutRegistry)).map(x=>({
         e,x,name:baseName(e.n),key:String(e.sourceId||norm(e.n))+'|'+String(x.equipmentProfileId||e.equipmentProfileId||e.equipmentProfile?.id||''),sourceId:e.sourceId||null,
-        w:N(x.w)||0,reps:N(x.actualReps??x.r)||0,rpe:setRpe(x)
+        w:N(x.w)||0,reps:N(x.actualReps??x.r)||0,rpe:setRpe(x),rir:N(x.actualRir??x.rir)??(setRpe(x)==null?null:Math.max(0,10-setRpe(x)))
       }))
     })
   }
@@ -140,38 +140,93 @@
   function progressBody(d){return `<div class="sp264-section"><div class="sp264-section-title">Прогресс</div><div class="sp264-progress">${d.progress.map(x=>`<div class="sp264-p"><i>${esc(x.icon)}</i><b>${esc(x.title)}</b><small>${esc(x.sub)}</small></div>`).join('')}</div></div>${exercisesHtml(d,5)}`}
   function recordBody(d){const r=d.record;if(!r.hero)return `<div class="sp264-section"><div class="muted small">Нет силовых результатов для карточки.</div></div>`;const items=r.items.filter(x=>!(x.exercise===r.hero.exercise&&x.label===r.hero.label)).slice(0,2);return `<div class="sp264-highlight sp264-record-hero"><small>${r.hasRealPr?'🏆 НОВЫЙ РЕКОРД':'★ ЛУЧШИЙ РЕЗУЛЬТАТ'}</small><b>${esc(r.hero.exercise)} · ${esc(r.hero.value)}</b><div class="sp264-record-note">${esc(r.hero.label)} · 1ПМ ≈ ${fmt(r.hero.e1)} кг</div></div>${items.length?`<div class="sp264-records">${items.map(x=>`<div class="sp264-record"><small>${esc(x.exercise)} · ${esc(x.label)}</small><b>${esc(x.value)}</b></div>`).join('')}</div>`:''}${exercisesHtml(d,3)}`}
   function renderCard(s,m){const d=data(s),body=m==='compact'?compactBody(d):m==='record'?recordBody(d):progressBody(d);return `<div class="sp264-card" data-share-card-v264>${headerHtml(d)}${body}<div class="sp264-foot">Сделано в UNVRSL FIT</div></div>`}
-  function markup(s,m){return `<div class="sp264"><div class="sp264-head"><button class="sp264-close" onclick="closeModal()" aria-label="Закрыть">×</button><h2>Universal Fit</h2><span style="width:42px"></span></div><div class="sp264-tabs"><button class="${m==='compact'?'on':''}" onclick="shareProgressModeV264('compact')">Итог</button><button class="${m==='progress'?'on':''}" onclick="shareProgressModeV264('progress')">Прогресс</button><button class="${m==='record'?'on':''}" onclick="shareProgressModeV264('record')">Рекорды</button></div><div class="sp264-preview"><span>Готовим изображение…</span><img id="sp264Preview" hidden alt="Предпросмотр PNG Universal Fit"></div><div class="sp264-actions"><button id="sp264Save" class="btn full" onclick="shareProgressSaveV264()">Сохранить PNG</button><button id="sp264Share" class="btn primary full" onclick="shareProgressNativeV264()">Поделиться</button><div id="sp264Status" class="sp264-status"></div></div></div>`}
+  function accentColor(){const value=String(W.st?.accent||W.getComputedStyle?.(D.documentElement)?.getPropertyValue('--green')||'#bf5af2').trim();return /^#[0-9a-f]{6}$/i.test(value)?value:'#bf5af2'}
+  function markup(s,m){return `<div class="sp264" style="--share-accent:${accentColor()}"><div class="sp264-head"><button class="sp264-close" onclick="closeModal()" aria-label="Закрыть">×</button><h2>Universal Fit</h2><span style="width:42px"></span></div><div class="sp264-tabs"><button class="${m==='transparent'?'on':''}" onclick="shareProgressModeV264('transparent')">Без фона</button><button class="${m==='background'?'on':''}" onclick="shareProgressModeV264('background')">С фоном</button></div><div class="sp264-preview"><span>Готовим изображение…</span><img id="sp264Preview" hidden alt="Предпросмотр PNG Universal Fit"></div><div class="sp264-actions"><button id="sp264Save" class="btn full" onclick="shareProgressSaveV264()">Сохранить PNG</button><button id="sp264Share" class="btn primary full" onclick="shareProgressNativeV264()">Поделиться</button><div id="sp264Status" class="sp264-status"></div></div></div>`}
 
   function roundRect(ctx,x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke()}}
   function wrapLines(ctx,text,maxWidth){const words=String(text||'').split(/\s+/),lines=[];let line='';for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word}else line=test}if(line)lines.push(line);return lines}
   function drawTextBlock(ctx,text,x,y,maxWidth,lineHeight,maxLines=3){const lines=wrapLines(ctx,text,maxWidth).slice(0,maxLines);lines.forEach((line,i)=>ctx.fillText(line,x,y+i*lineHeight));return y+lines.length*lineHeight}
-  function buildCanvas(s,m,heightOverride){
-    const d=data(s),tmp=D.createElement('canvas'),WID=1080,MAX=1920;tmp.width=WID;tmp.height=heightOverride||MAX;const x=tmp.getContext('2d');
-    x.fillStyle='#08090a';x.fillRect(0,0,WID,tmp.height);const grad=x.createRadialGradient(980,60,0,980,60,430);grad.addColorStop(0,'rgba(191,90,242,.12)');grad.addColorStop(1,'rgba(191,90,242,0)');x.fillStyle=grad;x.fillRect(0,0,WID,tmp.height);
-    let y=82;x.fillStyle='#f5f5f7';x.font='900 52px Arial,sans-serif';x.fillText('UNVRSL FIT',72,y);y+=64;x.font='800 46px Arial,sans-serif';y=drawTextBlock(x,d.title,72,y,900,54,2)+8;x.fillStyle='#8e8e93';x.font='30px Arial,sans-serif';x.fillText(d.date,72,y);y+=54;
-    const ms=metrics(d),gap=18,cw=(936-gap)/2,ch=142;ms.forEach(([lab,val],i)=>{const col=i%2,row=Math.floor(i/2),px=72+col*(cw+gap),py=y+row*(ch+16);roundRect(x,px,py,cw,ch,26,'#1b1c20','#35373d');x.fillStyle='#8e8e93';x.font='25px Arial,sans-serif';x.fillText(lab,px+25,py+42);x.fillStyle='#f5f5f7';x.font='800 40px Arial,sans-serif';x.fillText(String(val).replace(/\u00a0/g,' '),px+25,py+96)});y+=2*(ch+16)+12;
-    const section=(title,items,kind)=>{const h=kind==='progress'?Math.max(170,items.length*105+75):Math.max(150,items.length*94+72);roundRect(x,72,y,936,h,28,'#17181b','#35373d');x.fillStyle='#f5f5f7';x.font='800 28px Arial,sans-serif';x.fillText(title,102,y+48);let yy=y+84;items.forEach((it,i)=>{if(i){x.strokeStyle='#303238';x.beginPath();x.moveTo(102,yy-14);x.lineTo(978,yy-14);x.stroke()}if(kind==='progress'){x.fillStyle='#d696f5';x.font='700 28px Arial,sans-serif';x.fillText(it.icon,104,yy+18);x.fillStyle='#f5f5f7';x.font='700 27px Arial,sans-serif';x.fillText(it.title,155,yy+12);x.fillStyle='#8e8e93';x.font='22px Arial,sans-serif';x.fillText(it.sub,155,yy+43);yy+=100}else{x.fillStyle='#d696f5';x.font='800 23px Arial,sans-serif';x.fillText(String(i+1),110,yy+16);x.fillStyle='#f5f5f7';x.font='700 26px Arial,sans-serif';x.fillText(it.name,158,yy+10);x.fillStyle='#8e8e93';x.font='21px Arial,sans-serif';x.fillText(it.line.slice(0,68),158,yy+41);yy+=90}});y+=h+24};
-    if(m==='compact'&&d.best){roundRect(x,72,y,936,150,28,'rgba(191,90,242,.10)','rgba(191,90,242,.70)');x.fillStyle='#d696f5';x.font='800 25px Arial,sans-serif';x.fillText('ЛУЧШИЙ СЕТ',102,y+48);x.fillStyle='#f5f5f7';x.font='800 34px Arial,sans-serif';x.fillText(`${d.best.name} · ${plain(d.best.w)}×${plain(d.best.reps)}`.slice(0,52),102,y+103);y+=176}
-    if(m==='compact'&&d.exercises.length)section('Упражнения',d.exercises.slice(0,5),'exercises');
-    if(m==='progress'){section('Прогресс',d.progress,'progress');if(d.exercises.length)section('Упражнения',d.exercises.slice(0,5),'exercises')}
-    if(m==='record'&&d.record.hero){const r=d.record,h=r.hero;roundRect(x,72,y,936,190,28,'rgba(191,90,242,.10)','rgba(191,90,242,.70)');x.fillStyle='#d696f5';x.font='800 25px Arial,sans-serif';x.textAlign='center';x.fillText(r.hasRealPr?'НОВЫЙ РЕКОРД':'ЛУЧШИЙ РЕЗУЛЬТАТ',540,y+48);x.fillStyle='#f5f5f7';x.font='800 36px Arial,sans-serif';wrapLines(x,`${h.exercise} · ${h.value}`,820).slice(0,2).forEach((line,i)=>x.fillText(line,540,y+105+i*42));x.fillStyle='#8e8e93';x.font='22px Arial,sans-serif';x.fillText(`${h.label}${h.e1>0?` · 1ПМ ≈ ${plain(h.e1)} кг`:''}`,540,y+168);x.textAlign='left';y+=216;const extra=r.items.filter(q=>q.exercise!==h.exercise).slice(0,2).map(q=>({name:`${q.exercise} · ${q.label}`,line:q.value}));if(extra.length)section('Достижения',extra,'exercises');if(d.exercises.length)section('Упражнения',d.exercises.slice(0,4),'exercises')}
-    y+=18;x.fillStyle='#777';x.font='24px Arial,sans-serif';x.textAlign='center';x.fillText('Сделано в UNVRSL FIT',540,y+32);x.textAlign='left';y+=72;
-    const height=Math.min(MAX,Math.max(980,Math.ceil(y+70)));
-    return heightOverride||height===MAX?tmp:buildCanvas(s,m,height)
+  function buildStoryCanvas(s,variant){
+    const d=data(s),canvas=D.createElement('canvas'),WID=1080,MAX=1920,accent=accentColor();
+    canvas.width=WID;canvas.height=MAX;
+    const x=canvas.getContext('2d'),rgb=[1,3,5].map(i=>parseInt(accent.slice(i,i+2),16));
+    const rgba=a=>`rgba(${rgb.join(',')},${a})`;
+    if(variant==='background'){
+      x.fillStyle='#101014';x.fillRect(0,0,WID,MAX);
+      const glow=x.createRadialGradient(850,370,10,850,370,1050);
+      glow.addColorStop(0,rgba(.28));glow.addColorStop(1,rgba(0));
+      x.fillStyle=glow;x.fillRect(0,0,WID,MAX);
+      const lower=x.createRadialGradient(160,1600,10,160,1600,680);
+      lower.addColorStop(0,rgba(.12));lower.addColorStop(1,rgba(0));
+      x.fillStyle=lower;x.fillRect(0,1100,WID,820);
+    }
+    const ink='#f8f7fb',muted='#b9b6c1',left=86,right=994;
+    function label(value,px,py,font,color=ink,spacing=0){
+      x.save();x.fillStyle=color;x.font=font;x.shadowColor='rgba(0,0,0,.85)';x.shadowBlur=variant==='transparent'?20:8;
+      x.shadowOffsetY=variant==='transparent'?4:2;
+      if(spacing&&'letterSpacing'in x)x.letterSpacing=spacing+'px';
+      x.fillText(String(value),px,py);x.restore();
+    }
+    function clipped(value,maxWidth){let result=String(value||'');while(result.length>1&&x.measureText(result).width>maxWidth)result=result.slice(0,-2);return result===String(value||'')?result:result.trimEnd()+'…'}
+    const shortDate=String(s?.date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const date=shortDate?`${shortDate[3]}.${shortDate[2]}.${shortDate[1]}`:d.date;
+    label('UNVRSL FIT',left,188,'700 28px Arial,sans-serif',ink,6);
+    x.save();x.textAlign='right';label(date,right,188,'26px Arial,sans-serif',muted,3);x.restore();
+    const code=String(s?.c||'').trim().slice(0,8),title=code?String(s?.name||'Тренировка'):d.title;
+    if(code){roundRect(x,left,268,112,62,31,rgba(.33),rgba(.65));label(code,left+22,311,'800 37px Arial,sans-serif',accent)}
+    x.font='800 78px Arial,sans-serif';const lines=wrapLines(x,title,900).slice(0,3);
+    lines.forEach((line,i)=>label(line,left,415+i*83,'800 78px Arial,sans-serif',ink));
+    if(d.tonnage>0){
+      const value=plain(d.tonnage),size=value.length>6?140:180;
+      label(value,left,790,`900 ${size}px Arial,sans-serif`,accent);
+      x.font=`900 ${size}px Arial,sans-serif`;const end=Math.min(835,left+x.measureText(value).width+20);
+      label('кг',end,783,'800 78px Arial,sans-serif',accent);
+      label('Т О Н Н А Ж',left,843,'22px Arial,sans-serif',muted);
+    }else{
+      label('ТРЕНИРОВКА',left,755,'800 78px Arial,sans-serif',accent);
+      label('ИТОГ ЗАНЯТИЯ',left,843,'24px Arial,sans-serif',muted);
+    }
+    const cells=[['ПОДХОДОВ',String(d.sets)],['ВРЕМЯ',d.time],['СРЕДНИЙ RPE',d.rpe==null?'–':fmt(d.rpe)]];
+    cells.forEach(([key,value],i)=>{const px=left+i*314;
+      if(i){x.fillStyle='rgba(255,255,255,.2)';x.fillRect(px-20,902,1,92)}
+      label(value,px,955,'800 56px Arial,sans-serif',ink);
+      label(key,px,992,'19px Arial,sans-serif',muted);
+    });
+    const best=d.best;
+    if(best){
+      roundRect(x,left,1070,right-left,158,26,variant==='transparent'?'rgba(24,21,30,.76)':'rgba(255,255,255,.09)',rgba(.65));
+      label('ЛУЧШИЙ ПОДХОД',left+30,1118,'700 20px Arial,sans-serif',accent,2);
+      x.font='700 36px Arial,sans-serif';label(clipped(best.name,465),left+30,1177,'700 36px Arial,sans-serif',ink);
+      x.save();x.textAlign='right';label(`${plain(best.w)} × ${plain(best.reps)}`,right-160,1175,'800 44px Arial,sans-serif',accent);
+      label(`RPE ${best.rpe==null?'–':fmt(best.rpe)}   RIR ${best.rir==null?'–':fmt(best.rir)}`,right-25,1207,'19px Arial,sans-serif',ink);x.restore();
+    }
+    d.exercises.slice(0,4).forEach((row,i)=>{
+      const yy=1338+i*118,effort=row.best;
+      label(String(i+1).padStart(2,'0'),left,yy,'700 28px Arial,sans-serif',accent);
+      x.font='700 35px Arial,sans-serif';label(clipped(row.name,680),left+95,yy,'700 35px Arial,sans-serif',ink);
+      x.font='25px Arial,sans-serif';const sets=row.sets.map(z=>`${plain(z.w)}×${plain(z.reps)}`).join(' · ');
+      label(clipped(sets,710),left+95,yy+39,'25px Arial,sans-serif',muted);
+      x.save();x.textAlign='right';label(`RPE ${effort?.rpe==null?'–':fmt(effort.rpe)}`,right,yy,'21px Arial,sans-serif',ink);
+      label(`RIR ${effort?.rir==null?'–':fmt(effort.rir)}`,right,yy+35,'21px Arial,sans-serif',muted);x.restore();
+    });
+    if(d.exercises.length>4)label(`И ещё ${d.exercises.length-4} упражнений`,left+95,1800,'23px Arial,sans-serif',muted);
+    label('UNVRSL FIT',left,1850,'700 23px Arial,sans-serif',muted,4);
+    return canvas;
   }
   const canvasBlob=c=>new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('PNG не создан')),'image/png',.95));
 
-  let active=null,mode='progress',prepared=null,prepareToken=0,previewUrl=null;
+  function installStoryCss(){const style=D.getElementById('share-progress-v264-style');if(style)style.textContent+=`.sp264-tabs{grid-template-columns:repeat(2,1fr)}.sp264-tabs button.on,.sp264-actions .primary{background:var(--share-accent)!important;color:#101014!important}.sp264-preview{background:radial-gradient(circle at 50% 40%,#323039,#141318 75%);border-radius:18px}.sp264-preview img{box-shadow:0 12px 42px rgba(0,0,0,.55)}.sp264-preview img[hidden]{display:none}`}
+  let active=null,mode='transparent',prepared=null,prepareToken=0,previewUrl=null;
   const status=t=>{const e=D.getElementById('sp264Status');if(e)e.textContent=t||''};
   const busy=v=>{for(const id of ['sp264Save','sp264Share']){const b=D.getElementById(id);if(b)b.disabled=!!v}};
   function shareText(){if(!active)return'UNVRSL FIT';const d=data(active),a=[`UNVRSL FIT · ${d.title}`,d.date,`${plain(d.tonnage)} кг · ${d.sets} подходов · ${d.time}`];if(d.rpe!=null)a.push(`Средний RPE ${plain(d.rpe)}`);return a.join('\n')}
-  async function prepareExport(){if(!active)return null;const token=++prepareToken;prepared=null;busy(true);status('Готовим PNG…');try{const canvas=buildCanvas(active,mode),blob=await canvasBlob(canvas);if(token!==prepareToken)return null;if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=URL.createObjectURL(blob);const img=D.getElementById('sp264Preview');if(img){img.src=previewUrl;img.hidden=false;img.previousElementSibling?.remove()}prepared={blob,file:new File([blob],`universal-fit-${String(active.date||new Date().toISOString().slice(0,10))}.png`,{type:'image/png'}),mode,id:String(active.id||'')};status(`PNG готов · ${canvas.width} × ${canvas.height}`);return prepared}catch(e){console.error('share v264: '+(e?.stack||e));status('Не удалось подготовить изображение');return null}finally{if(token===prepareToken)busy(false)}}
-  const ready=()=>prepared&&prepared.mode===mode&&prepared.id===String(active?.id||'')?prepared:null;
+  async function prepareExport(){if(!active)return null;const token=++prepareToken;prepared=null;busy(true);status('Готовим PNG…');try{const canvas=buildStoryCanvas(active,mode),blob=await canvasBlob(canvas);if(token!==prepareToken)return null;if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=URL.createObjectURL(blob);const img=D.getElementById('sp264Preview');if(img){img.src=previewUrl;img.hidden=false;img.previousElementSibling?.remove()}prepared={blob,file:new File([blob],`universal-fit-${String(active.date||new Date().toISOString().slice(0,10))}-${mode}.png`,{type:'image/png'}),mode,id:String(active.id||''),accent:accentColor()};status(`PNG готов · ${canvas.width} × ${canvas.height}`);return prepared}catch(e){console.error('share v264: '+(e?.stack||e));status('Не удалось подготовить изображение');return null}finally{if(token===prepareToken)busy(false)}}
+  const ready=()=>prepared&&prepared.mode===mode&&prepared.id===String(active?.id||'')&&prepared.accent===accentColor()?prepared:null;
   function download(blob){const u=URL.createObjectURL(blob),a=D.createElement('a');a.href=u;a.download=`unvrsl-fit-${String(active?.date||new Date().toISOString().slice(0,10))}.png`;a.rel='noopener';D.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
   function nativeShare(file,text){if(!navigator.share)return null;try{if(navigator.canShare&&!navigator.canShare({files:[file]}))return null;return navigator.share({files:[file],title:'UNVRSL FIT',text})}catch(_){return null}}
 
-  W.openShareProgressV264=s=>{installCss();active=s||W.st?.current||null;if(!active)return W.toast?.('Нет данных тренировки');mode=data(active).record.hasRealPr?'record':'progress';prepared=null;W.modal?.(markup(active,mode));const sh=D.getElementById('sheet');if(sh)sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
-  W.shareProgressModeV264=m=>{if(!['compact','progress','record'].includes(m)||!active)return;mode=m;prepared=null;const sh=D.getElementById('sheet');if(!sh)return;sh.innerHTML=markup(active,mode);sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
+  W.openShareProgressV264=s=>{installCss();installStoryCss();active=s||W.st?.current||null;if(!active)return W.toast?.('Нет данных тренировки');mode='transparent';prepared=null;W.modal?.(markup(active,mode));const sh=D.getElementById('sheet');if(sh)sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
+  W.shareProgressModeV264=m=>{if(!['transparent','background'].includes(m)||!active)return;mode=m;prepared=null;const sh=D.getElementById('sheet');if(!sh)return;sh.innerHTML=markup(active,mode);sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
   W.shareProgressSaveV264=()=>{const p=ready();if(!p)return status('Изображение ещё готовится…');if(/iPad|iPhone|iPod/.test(navigator.userAgent)){const r=nativeShare(p.file,'');if(r){r.catch(e=>{if(e?.name!=='AbortError')download(p.blob)});return}}download(p.blob);W.toast?.('Изображение сохранено')};
   W.shareProgressNativeV264=()=>{const p=ready();if(!p)return status('Изображение ещё готовится…');const r=nativeShare(p.file,shareText());if(r){r.catch(e=>{if(e?.name!=='AbortError'){console.warn(e);download(p.blob)}});return}download(p.blob);navigator.clipboard?.writeText(shareText()).catch(()=>{});W.toast?.('Карточка сохранена')};
   W.openShareProgressV262=W.openShareProgressV264;W.shareProgressModeV262=W.shareProgressModeV264;W.shareProgressSaveV262=W.shareProgressSaveV264;W.shareProgressNativeV262=W.shareProgressNativeV264;

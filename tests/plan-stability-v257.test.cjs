@@ -11,7 +11,7 @@ const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 test('startup reveals the current shell after storage and program hydration',()=>{
  const html=read('index.html'),boot=read('startup-orchestrator.js');
  assert.equal((html.match(/id="unvrsl-startup-v258"/g)||[]).length,1);
- assert.equal((html.match(/src="startup-orchestrator\.js\?v=418"/g)||[]).length,1);
+ assert.equal((html.match(/src="startup-orchestrator\.js\?v=419"/g)||[]).length,1);
  assert.match(boot,/__unvrslStorageHydrationSettledV386!==true/);
  assert.match(boot,/__unvrslProgramsMigratedV386/);
  assert.match(boot,/await paintFinalInterface\(\)/);
@@ -22,7 +22,7 @@ test('trainer Plan has one deferred owner and no polling renderer',()=>{
  const trainer=read('trainer-self-plan.js'),loader=read('frequent-patch.js');
  assert.match(trainer,/stableHtml\(hosts\.history/);
  assert.doesNotMatch(trainer,/setInterval\([^\n]*renderSelf/);
- assert.equal((loader.match(/'trainer-self-plan\.js\?v=418'/g)||[]).length,1);
+ assert.equal((loader.match(/'trainer-self-plan\.js\?v=419'/g)||[]).length,1);
  assert.doesNotMatch(loader,/trainer-self-plan-v110/);
 });
 

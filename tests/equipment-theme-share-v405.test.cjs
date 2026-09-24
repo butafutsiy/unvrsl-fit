@@ -271,23 +271,28 @@ test("the screenshot's dark surfaces are explicitly themed and trainer history u
  assert.match(read("training-load-model.js"),/Math\.min\(1, Math\.max\(\.85, factor\)\)/);
  assert.doesNotMatch(read("trainer-self-plan.js").split("window.trainerSelfShare110=")[1].split("window.trainerSelfDelete110=")[0],/navigator\.share\(\{title:'UNVRSL FIT',text\}\)/);
 });
-test("PNG preview contains the exercises and trims unused portrait space",async()=>{
- const canvases=[],drawn=[];
- const context=()=>({fillText:s=>drawn.push(String(s)),fillRect(){},drawImage(){},beginPath(){},roundRect(){},fill(){},stroke(){},moveTo(){},lineTo(){},measureText:s=>({width:String(s).length*15}),createRadialGradient:()=>({addColorStop(){}})});
+test("two story PNGs use the same completed sets and the selected profile accent",async()=>{
+ const canvases=[],drawn=[],fills=[];
+ const context=()=>({fillText:s=>drawn.push(String(s)),fillRect(...args){fills.push(args)},drawImage(){},beginPath(){},roundRect(){},fill(){},stroke(){},moveTo(){},lineTo(){},save(){},restore(){},measureText:s=>({width:String(s).length*15}),createRadialGradient:()=>({addColorStop(){}})});
  const els={sp264Status:{textContent:""},sp264Preview:{hidden:true,previousElementSibling:{remove(){}}},sp264Save:{},sp264Share:{},sheet:{scrollTop:0}};
  const document={head:{appendChild(){}},getElementById:id=>els[id]||null,createElement:tag=>tag==='canvas'?((c)=>{canvases.push(c);return c})({width:0,height:0,getContext:context,toBlob:callback=>callback(new Blob(['png'],{type:'image/png'}))}):{id:'',textContent:'',remove(){}}};
  const session={id:'sep21',date:'2026-09-21',started:'2026-09-21T05:30:00Z',ended:'2026-09-21T06:15:00Z',c:'A2',name:'Бицепс бедра',ex:[{n:'Румынская тяга со штангой',set:[{w:140,r:7,rpe:8,ok:true}]},{n:'Сгибание ног лёжа в тренажёре',set:[{w:72.5,r:10,rpe:8,ok:true}]}]};
- const win={WorkoutDomain:A,st:{sessions:[session]},modal(){},addEventListener(){}};
+ const win={WorkoutDomain:A,st:{sessions:[session],accent:'#0a84ff'},modal(){},addEventListener(){}};
  const scope={window:win,document,workoutRegistry:reg,URL:{createObjectURL:()=>"blob:test",revokeObjectURL(){}},File:class{},Blob,console,requestAnimationFrame:callback=>callback(),setInterval:()=>0,setTimeout:()=>0,clearInterval(){},navigator:{}};
  vm.runInNewContext(read('share-progress-template.js'),scope);
  win.openShareProgressV264(session);
  await new Promise(resolve=>setImmediate(resolve));
- assert.ok(canvases.at(-1).height<1920);
+ assert.equal(canvases.at(-1).height,1920);
+ assert.equal(fills.some(x=>x[2]===1080&&x[3]===1920),false);
  assert.match(drawn.join(' '),/Румынская тяга со штангой/);
  assert.match(drawn.join(' '),/Сгибание ног лёжа/);
- assert.match(els.sp264Status.textContent,/1080 ×/);
- win.shareProgressModeV264('compact');
+ assert.match(drawn.join(' '),/RPE 8/);
+ assert.match(drawn.join(' '),/RIR 2/);
+ assert.match(els.sp264Status.textContent,/1080 × 1920/);
+ assert.match(read('share-progress-template.js'),/accent=accentColor\(\)/);
+ win.shareProgressModeV264('background');
  await new Promise(resolve=>setImmediate(resolve));
- assert.ok(canvases.at(-1).height<1920);
- assert.match(drawn.join(' '),/ЛУЧШИЙ СЕТ/);
+ assert.equal(canvases.at(-1).height,1920);
+ assert.ok(fills.some(x=>x[2]===1080&&x[3]===1920));
+ assert.match(drawn.join(' '),/ЛУЧШИЙ ПОДХОД/);
 });
