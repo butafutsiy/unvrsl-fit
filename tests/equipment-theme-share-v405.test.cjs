@@ -80,6 +80,28 @@ test("autoweight uses the completed set for the next set and refreshes after a n
  pending.manualOverride=true;pending.w=80;listeners['unvrsl:workout-set-changed']();
  assert.equal(pending.w,80);
 });
+test("restoring a week-five draft recomputes its saved recommendation from September 21",async()=>{
+ const earlier=old('12',p('rdl-bar'),[set(115,12,8)]);
+ earlier.date='2026-09-12';earlier.started=Date.parse('2026-09-12T09:00:00Z');
+ const latest=old('21',p('rdl-bar'),[set(140,7,8),set(140,6,8),set(140,5,8),set(140,5,8)]);
+ latest.date='2026-09-21';latest.started=Date.parse('2026-09-21T05:30:00Z');
+ for(const saved of [earlier,latest]){saved.ex[0].n='Румынская тяга со штангой';delete saved.ex[0].equipmentProfile;delete saved.ex[0].equipmentProfileId}
+ const waiting=set(135,'','',{ok:false,programW:135,targetRepLabel:'4–6',targetRpeMin:8,targetRpeMax:9,
+   recommendation:{basis:{date:'2026-09-12',weight:115}}});
+ const current=now(p('rdl-bar'),[waiting]);current.ex[0].n='Румынская тяга';
+ delete current.ex[0].equipmentProfile;delete current.ex[0].equipmentProfileId;
+ current.programWeekIntensityMin=85;current.programWeekIntensityMax=88;
+ const aliases=A.registry([{id:'rdl',n:'Румынская тяга со штангой',aliases:['Румынская тяга']}]);
+ let saves=0,refreshes=0;
+ const ctx={WorkoutDomain:A,workoutRegistry:aliases,st:{current,sessions:[earlier,latest],exerciseWeightProfiles:{}},
+   save(){saves++},window:{addEventListener(){},trainingEngine200Tick(){refreshes++}}};
+ vm.runInNewContext(read('training-load-model.js'),ctx);
+ await Promise.resolve();
+ assert.equal(waiting.recommendation.basis.date,'2026-09-21');
+ assert.equal(waiting.recommendation.basis.estimatedOneRepMax,182);
+ assert.deepEqual(JSON.parse(JSON.stringify(waiting.recommendation.repRange)),{lo:4,hi:6});
+ assert.ok(waiting.recommendedW>135);assert.equal(waiting.w,135);assert.ok(saves>0);assert.ok(refreshes>0);
+});
 test("separate Matrix and Foreman machines never transfer recent working weights",()=>{
  const matrix=p('matrix-leg'),foreman=p('foreman-leg');
  const earlier=old('12',matrix,[set(70,12,8)]),last=old('21',foreman,[set(90,10,8)]);

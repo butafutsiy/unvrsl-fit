@@ -36,7 +36,7 @@ test('W5 Romanian deadlift shows 4–6 in preview and repairs a started workout'
   assert.deepEqual(ghostMap['5']['Румынская тяга'],[4,6]);
   vm.runInNewContext(read('training-prescription-bridge.js'),context);
   assert.equal(context.unvrslTrainingPrescriptionPrepareV292(current),true);
-  assert.deepEqual([oldSet.targetRepMin,oldSet.targetRepMax,oldSet.r],[4,6,'']);
+  assert.deepEqual([oldSet.targetRepMin,oldSet.targetRepMax,oldSet.targetRepLabel,oldSet.r],[4,6,'4–6','']);
   assert.equal(finished.r,5);
   assert.deepEqual([manual.r,manual.targetRepMin,manual.targetRepMax],[7,4,6]);
   assert.ok(saves>0);

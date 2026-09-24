@@ -66,7 +66,10 @@
       }
       cur.trainingLoadModelRevision = 292;
       cur.trainingMathOwner = "workout-domain";
-      if (changed) save({ draftOnly: true });
+      if (changed) {
+        save({ draftOnly: true });
+        W.trainingEngine200Tick?.();
+      }
       return changed;
     } finally {
       running = false;
@@ -96,4 +99,7 @@
     "unvrsl:history-updated",
     "unvrsl:prescription-updated",
   ].forEach((name) => W.addEventListener(name, () => run()));
+  // A restored workout can already contain yesterday's recommendation. The
+  // engine's initial ready event may have fired before this module loaded.
+  Promise.resolve().then(run);
 })();
