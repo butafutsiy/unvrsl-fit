@@ -23,11 +23,70 @@ test("latest saved workout wins with mixed timestamp formats and a changed tempo
  assert.equal(rec.previous,140);assert.equal(rec.basis.date,'2026-09-21');
  assert.equal(rec.sessionIds[0],'21');assert.match(rec.evidence[0],/140 кг × 7/);
 });
+test("the September 21 workout drives the next week's 5–7 reps despite stale metadata",()=>{
+ const name='Румынская тяга со штангой',bar=p('legacy-bar');
+ const first={...old('12',bar,[set(115,12,8)]),date:'2026-09-12',started:Date.parse('2026-09-12T09:00:00Z')};
+ const last={...old('21',bar,[set(140,7,8),set(140,6,8),set(140,5,8),set(140,5,8)]),date:'2026-09-21',started:'2026-09-21T05:30:00Z',ended:'2026-09-21T06:15:00Z'};
+ first.ex[0].n=name;last.ex[0].n=name;last.ex[0].implementWeight=20;
+ delete first.ex[0].equipmentProfile;delete first.ex[0].equipmentProfileId;
+ delete last.ex[0].equipmentProfile;delete last.ex[0].equipmentProfileId;
+ const current=now(bar,[set(135,'', '',{ok:false,programW:135,targetRepMin:8,targetRepMax:8,targetRepLabel:'5–7',targetRpeMin:8,targetRpeMax:9})]);
+ current.ex[0].n=name;delete current.ex[0].equipmentProfile;delete current.ex[0].equipmentProfileId;
+ current.programWeekIntensityMin=85;current.programWeekIntensityMax=88;
+ const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,[first,last],reg);
+ assert.equal(rec.basis.date,'2026-09-21');assert.equal(rec.basis.weight,140);
+ assert.equal(rec.basis.estimatedOneRepMax,182);
+ assert.equal(rec.sessionIds[0],'21');assert.deepEqual(rec.repRange,{lo:5,hi:7});
+ assert.ok(rec.weight>=140&&rec.weight<=145);assert.equal(rec.planPreserved,false);
+ assert.equal(rec.weeklyIntensity.applied,false);
+});
+test("four working sets and an under-target final set limit the next load",()=>{
+ const bar=p('four-set'),last=old('21',bar,[set(140,8,8),set(140,7,8),set(140,5,9)]);
+ const cur=now(bar,[set(140,'','',{ok:false,targetRepMin:6,targetRepMax:8,targetRpeMin:8,targetRpeMax:9})]);
+ const rec=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,[last],reg);
+ assert.ok(rec.weight<140);assert.equal(rec.basis.weight,140);
+});
+test("body mass is required for effective-load 1RM and assistance has inverse progression",()=>{
+ const current=now(p('grav','ASSISTANCE'),[set(25,'','',{ok:false,targetRepMin:6,targetRepMax:8,targetRpeMin:8,targetRpeMax:9})]);
+ const past=old('21',p('grav','ASSISTANCE'),[set(30,8,8)]);
+ current.bodyWeight=100;past.bodyWeight=100;
+ const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,[past],reg);
+ assert.ok(rec.basis.estimatedOneRepMax>90);
+ assert.ok(rec.weight<=30);
+ delete past.bodyWeight;
+ assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,[past],reg).basis.estimatedOneRepMax,null);
+});
+test("bodyweight plus zero external load uses known body mass without inventing kilograms",()=>{
+ const e={n:'Подтягивания',loadType:'bodyweight_added',set:[set(0,8,8)]};
+ const past={id:'pull-1',started:100,ended:200,bodyWeight:90,ex:[e]};
+ const cur={id:'pull-2',started:300,ended:null,bodyWeight:90,ex:[{...e,set:[set(0,'','',{ok:false,targetRepMin:6,targetRepMax:8,targetRpeMin:8,targetRpeMax:9})]}]};
+ const rec=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,[past],reg);
+ assert.equal(rec.previous,0);assert.equal(rec.basis.estimatedOneRepMax,120);
+ assert.ok(rec.weight>=0&&rec.weight<=5);
+ delete past.bodyWeight;
+ assert.equal(A.recommend(cur.ex[0],cur.ex[0].set[0],cur,[past],reg).basis.estimatedOneRepMax,null);
+});
+test("autoweight uses the completed set for the next set and refreshes after a new rep target",()=>{
+ const bar=p('adaptive-bar'),past=[old('1',bar,[set(70,10,7)])];
+ const completed=set(70,5,10),pending=set(70,'','',{ok:false,targetRepMin:8,targetRepMax:10,targetRpeMin:8,targetRpeMax:9});
+ const cur=now(bar,[completed,pending]);cur.ex[0].programWeightMode='adaptive';
+ const listeners={},ctx={WorkoutDomain:A,workoutRegistry:reg,st:{current:cur,sessions:past,exerciseWeightProfiles:{}},save(){},window:{addEventListener:(name,fn)=>{listeners[name]=fn}}};
+ vm.runInNewContext(read('training-load-model.js'),ctx);
+ ctx.window.trainingLoadModel292.run();
+ assert.equal(completed.w,70);assert.equal(pending.w,67.5);
+ assert.equal(pending.recommendedW,67.5);
+ pending.targetRepLabel='6–8';listeners['unvrsl:prescription-updated']();
+ assert.deepEqual(JSON.parse(JSON.stringify(pending.recommendation.repRange)),{lo:6,hi:8});
+ pending.manualOverride=true;pending.w=80;listeners['unvrsl:workout-set-changed']();
+ assert.equal(pending.w,80);
+});
 test("separate Matrix and Foreman machines never transfer recent working weights",()=>{
  const matrix=p('matrix-leg'),foreman=p('foreman-leg');
  const earlier=old('12',matrix,[set(70,12,8)]),last=old('21',foreman,[set(90,10,8)]);
  const current=now(matrix,[set(70,10,0,{ok:false})]);
- assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,[last,earlier],reg).previous,70);
+ const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,[last,earlier],reg);
+ assert.equal(rec.previous,70);
+ assert.equal(rec.excludedHistory.id,'21');assert.equal(rec.excludedHistory.reason,'другое оборудование');
 });
 test("per-hand rack loads are recommended as a single dumbbell weight",()=>{
  const d=p("rack-db","PER_HAND"),past=[old("1",d,[set(12)]),old("2",d,[set(12)])],cur=now(d,[set(12,10,7,{ok:false})]);

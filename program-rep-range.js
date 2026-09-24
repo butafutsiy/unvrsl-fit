@@ -67,6 +67,8 @@
 
   function sourceTargets(p,wi,di,current){
     const d=p?.weeks?.[Number(wi)]?.days?.[Number(di)];if(!d||!current)return false;let cursor=0;
+    const snapshot=()=>JSON.stringify((current.ex||[]).map(e=>({rpe:[e.targetRpeMin,e.targetRpeMax],sets:(e.set||[]).map(s=>[s.targetRepMin,s.targetRepMax,s.targetRepLabel,s.targetRpeMin,s.targetRpeMax,s.repMode,s.r])})));
+    const before=snapshot();
     (d.ex||[]).forEach(block=>{
       const method=String(block?.method||'STANDARD').toUpperCase(),auto=autoRange(p,wi,block),sets=block?.sets||[];
       if(method==='STANDARD'||method==='FST-7'){
@@ -80,19 +82,19 @@
         })
       }
     });
-    current.repPolicyRevision=REV;return true
+    current.repPolicyRevision=REV;return before!==snapshot()
   }
   function findCurrentDay(p,s){
     const wi=Math.max(0,Number(s?.w||1)-1),w=p?.weeks?.[wi];if(!w)return null;
     let di=w.days?.findIndex(d=>String(d?.name||'')===String(s?.c||''));if(di==null||di<0)di=0;return{wi,di}
   }
   function repairCurrent(){
-    const s=state()?.current;if(!s?.programId)return false;const p=program(s.programId);if(!p)return false;const x=findCurrentDay(p,s);if(!x)return false;const ok=sourceTargets(p,x.wi,x.di,s);if(ok)saveState();return ok
+    const s=state()?.current;if(!s?.programId)return false;const p=program(s.programId);if(!p)return false;const x=findCurrentDay(p,s);if(!x)return false;const ok=sourceTargets(p,x.wi,x.di,s);if(ok){saveState();W.dispatchEvent?.(new CustomEvent('unvrsl:prescription-updated'));W.startPage?.()}return ok
   }
   function installBegin(){
     let cur=W.beginProgramDay;try{if(typeof beginProgramDay==='function')cur=beginProgramDay}catch(_){ }
     if(typeof cur!=='function'||cur.__pr373)return false;
-    const wrapped=function(pid,wi,di){const out=cur.apply(this,arguments),s=state()?.current,p=program(pid);if(s&&p&&String(s.programId)===String(pid)){sourceTargets(p,wi,di,s);saveState();try{W.startPage?.()}catch(_){ }}return out};
+    const wrapped=function(pid,wi,di){const out=cur.apply(this,arguments),s=state()?.current,p=program(pid);if(s&&p&&String(s.programId)===String(pid)){if(sourceTargets(p,wi,di,s)){saveState();W.dispatchEvent?.(new CustomEvent('unvrsl:prescription-updated'))}try{W.startPage?.()}catch(_){ }}return out};
     wrapped.__pr373=true;wrapped.__pr373Base=cur;W.beginProgramDay=wrapped;try{beginProgramDay=wrapped}catch(_){ }return true
   }
 

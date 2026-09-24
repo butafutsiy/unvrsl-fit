@@ -34,9 +34,10 @@
             workoutRegistry,
             st.exerciseWeightProfiles || {},
           );
-          if (JSON.stringify(set.recommendation) !== JSON.stringify(rec)) {
+          const suggested=rec.nextSetSuggestion?.weight??rec.weight;
+          if (JSON.stringify(set.recommendation) !== JSON.stringify(rec) || set.recommendedW !== suggested) {
             set.recommendation = rec;
-            set.recommendedW = rec.weight;
+            set.recommendedW = suggested;
             set.trainingIntensity292 = { owner: "workout-domain" };
             changed = true;
           }
@@ -48,7 +49,7 @@
             set.weightSource !== "manual"
           ) {
             const before = set.w;
-            A.applyAuto(set, rec);
+            A.applyAuto(set, {...rec,weight:suggested});
             set.plannedW = set.w;
             changed = changed || before !== set.w;
           }
@@ -93,5 +94,6 @@
     "unvrsl:readiness-ready",
     "unvrsl:cloud-ready",
     "unvrsl:history-updated",
+    "unvrsl:prescription-updated",
   ].forEach((name) => W.addEventListener(name, () => run()));
 })();

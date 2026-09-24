@@ -6,13 +6,13 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 
-test('v412 uses one cache version across static and dynamic loaders',()=>{
+test('v413 uses one cache version across static and dynamic loaders',()=>{
  for(const name of ['index.html','frequent-patch.js']){
   const versions=[...read(name).matchAll(/\?v=(\d+)\b/g)].map(x=>x[1]);
-  assert.ok(versions.length);assert.deepEqual([...new Set(versions)],['412']);
+  assert.ok(versions.length);assert.deepEqual([...new Set(versions)],['413']);
  }
- assert.match(read('startup-orchestrator.js'),/RELEASE=412/);
- assert.match(read('sw.js'),/SW_RELEASE = "v412"/);
+ assert.match(read('startup-orchestrator.js'),/RELEASE=413/);
+ assert.match(read('sw.js'),/SW_RELEASE = "v413"/);
  assert.match(read('frequent-patch.js'),/searchParams\.set\('v',String\(window\.__unvrslRelease/);
  assert.doesNotMatch(read('frequent-patch.js'),/searchParams\.set\('v','392'\)/);
 });
