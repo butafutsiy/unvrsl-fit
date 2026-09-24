@@ -107,7 +107,30 @@
         day.id=day.id==null||day.id===''?idFactory('day'):String(day.id);
         day.name=String(day.name||`День ${dayIndex+1}`);
         if(!Array.isArray(day.ex))day.ex=[];
-        day.ex=day.ex.filter(Boolean).map(normalizeExercise)
+        day.ex=day.ex.filter(Boolean).map(exercise=>{
+          // Older women's templates stored the week's suggested point RPE and
+          // repetitions as bare numbers. v386 interpreted those suggestions
+          // as manual overrides, pinning every client to that one number.
+          // An exercise edited in the program editor has an explicit mode;
+          // keep that choice, including a deliberately fixed rep target.
+          if(program.femaleTemplate===true){
+            const first=exercise.sets?.[0];
+            const unedited=exercise.parameterOverrides?.version==null;
+            const fromLegacySets=unedited&&first&&number(first.r)!=null&&
+              (!exercise.reps||exercise.reps.mode===MANUAL&&
+                Number(exercise.reps.min)===Number(first.r)&&Number(exercise.reps.max)===Number(first.r))&&
+              !exercise.parameterOverrides?.reps&&
+              !exercise.repRange&&!exercise.targetReps&&!exercise.repLabel&&
+              exercise.repMin==null&&exercise.repMax==null;
+            if(fromLegacySets)exercise.reps={mode:AUTO,min:null,max:null};
+            if(unedited&&!exercise.effortSourceMode&&!exercise.rpeMode&&
+               !exercise.parameterOverrides?.effort&&exercise.rpeMin==null&&exercise.rpeMax==null&&
+               number(exercise.rpe)!=null){
+              exercise.effortSourceMode=AUTO;
+            }
+          }
+          return normalizeExercise(exercise)
+        })
       })
     });
     program.schemaVersion=SCHEMA_VERSION;

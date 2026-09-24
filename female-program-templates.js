@@ -4,7 +4,7 @@
 
   const WAVE=[7,7.5,8,8,8.5,7.5,8.5,7];
   const id=(p='id')=>typeof uid==='function'?uid(p):`${p}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
-  const ex=(n,s,r,opt={})=>({id:id('pex'),n,sourceId:null,bp:'',tg:'',eq:'',method:'STANDARD',rpe:opt.rpe??8,tempo:opt.tempo||'2-0-2',rest:opt.rest??90,note:opt.note||'',sets:Array.from({length:s},()=>({label:'',w:0,r,rest:opt.rest??90}))});
+  const ex=(n,s,r,opt={})=>({id:id('pex'),n,sourceId:null,bp:'',tg:'',eq:'',method:'STANDARD',reps:{mode:'auto',min:null,max:null},effortSourceMode:'auto',rpe:opt.rpe??8,tempo:opt.tempo||'2-0-2',rest:opt.rest??90,note:opt.note||'',sets:Array.from({length:s},()=>({label:'',w:0,r,rest:opt.rest??90}))});
   const E=(n,s,r,rpe,rest=90,note='')=>ex(n,s,r,{rpe,rest,note});
   const day=(name,items)=>({id:id('day'),name,ex:items});
   const program=(key,title,weeks,daysFactory,meta,source,sourceName)=>({

@@ -71,14 +71,18 @@
     const before=snapshot();
     (d.ex||[]).forEach(block=>{
       const method=String(block?.method||'STANDARD').toUpperCase(),auto=autoRange(p,wi,block),sets=block?.sets||[];
+      const resolved=typeof W.programResolveExerciseParametersV381==='function'?W.programResolveExerciseParametersV381(p.id,wi,block):null;
+      const rpeMin=resolved?.effort?.rpeMin,rpeMax=resolved?.effort?.rpeMax;
       if(method==='STANDARD'||method==='FST-7'){
-        const e=current.ex?.[cursor++];if(!e)return;const resolved=typeof W.programResolveExerciseParametersV381==='function'?W.programResolveExerciseParametersV381(p.id,wi,block):null,lo=resolved?.reps?.min??(block.repMode==='manual'?N(block.repMin):null)??auto[0],hi=resolved?.reps?.max??(block.repMode==='manual'?N(block.repMax):null)??auto[1],lab=label(lo,hi),rpeMin=resolved?.effort?.rpeMin,rpeMax=resolved?.effort?.rpeMax;
+        const e=current.ex?.[cursor++];if(!e)return;const lo=resolved?.reps?.min??(block.repMode==='manual'?N(block.repMin):null)??auto[0],hi=resolved?.reps?.max??(block.repMode==='manual'?N(block.repMax):null)??auto[1],lab=label(lo,hi);
         if(rpeMin!=null&&rpeMax!=null){e.targetRpeMin=rpeMin;e.targetRpeMax=rpeMax;e.targetRirMin=Math.max(0,10-rpeMax);e.targetRirMax=Math.max(0,10-rpeMin)}
-        (e.set||[]).forEach(set=>{set.targetRepMin=lo;set.targetRepMax=hi;set.targetRepLabel=lab;set.repMode=block.repMode||'auto';if(rpeMin!=null&&rpeMax!=null){set.targetRpeMin=rpeMin;set.targetRpeMax=rpeMax;set.targetRirMin=Math.max(0,10-rpeMax);set.targetRirMax=Math.max(0,10-rpeMin)}if(!set.ok&&!set.manualFields?.r&&!set.repEntered)set.r=''})
+        (e.set||[]).forEach(set=>{set.targetRepMin=lo;set.targetRepMax=hi;set.targetRepLabel=lab;set.repMode=resolved?.reps?.mode||block.repMode||'auto';if(rpeMin!=null&&rpeMax!=null){set.targetRpeMin=rpeMin;set.targetRpeMax=rpeMax;set.targetRirMin=Math.max(0,10-rpeMax);set.targetRirMax=Math.max(0,10-rpeMin)}if(!set.ok&&!set.manualFields?.r&&!set.repEntered)set.r=''})
       }else{
         sets.forEach((src)=>{
           const e=current.ex?.[cursor++],set=e?.set?.[0];if(!set)return;
-          const r=Math.max(1,N(src?.r)||1);set.targetRepMin=N(src.targetRepMin)??r;set.targetRepMax=N(src.targetRepMax)??r;set.targetRepLabel=src.targetRepLabel||String(r);set.repMode=block.repMode||'method';if(!set.ok&&!set.manualFields?.r&&!set.repEntered)set.r=''
+          const r=Math.max(1,N(src?.r)||1);set.targetRepMin=N(src.targetRepMin)??r;set.targetRepMax=N(src.targetRepMax)??r;set.targetRepLabel=src.targetRepLabel||String(r);set.repMode=block.repMode||'method';
+          if(rpeMin!=null&&rpeMax!=null){e.targetRpeMin=rpeMin;e.targetRpeMax=rpeMax;e.targetRirMin=Math.max(0,10-rpeMax);e.targetRirMax=Math.max(0,10-rpeMin);set.targetRpeMin=rpeMin;set.targetRpeMax=rpeMax;set.targetRirMin=Math.max(0,10-rpeMax);set.targetRirMax=Math.max(0,10-rpeMin)}
+          if(!set.ok&&!set.manualFields?.r&&!set.repEntered)set.r=''
         })
       }
     });

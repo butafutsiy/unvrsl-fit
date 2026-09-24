@@ -21,6 +21,71 @@ function loadResolver(program){
   return context.programResolveExerciseParametersV381;
 }
 
+test('previously assigned women templates inherit W4 rep and RPE ranges for every client',()=>{
+  const model=require('../program-model.js');
+  const week={n:4,intensityMin:78,intensityMax:82,rpeMin:8,rpeMax:8.5,
+    baseRepMin:6,baseRepMax:8,isolationRepMin:10,isolationRepMax:12,
+    days:[{ex:[
+      {n:'Тяга верхнего блока',method:'STANDARD',reps:{mode:'manual',min:10,max:10},rpe:8.5,sets:[{r:10,w:35}]},
+      {n:'Махи гантелями в стороны',method:'STANDARD',reps:{mode:'manual',min:15,max:15},rpe:8.5,sets:[{r:15,w:5}]}
+    ]}]};
+  for(const client of ['алёна','лиза']){
+    const program={id:client,femaleTemplate:true,weeks:[structuredClone(week)]};
+    model.normalizeProgram(program);
+    model.normalizeProgram(program);
+    const resolve=loadResolver(program);
+    const [compound,isolation]=program.weeks[0].days[0].ex.map(ex=>resolve(client,0,ex));
+    assert.deepEqual([compound.reps.min,compound.reps.max,compound.effort.rpeMin,compound.effort.rpeMax],[6,8,8,8.5]);
+    assert.deepEqual([isolation.reps.min,isolation.reps.max,isolation.effort.rpeMin,isolation.effort.rpeMax],[10,12,8,8.5]);
+    assert.equal(program.weeks[0].days[0].ex[0].sets[0].w,35);
+  }
+});
+
+test('template exercise overrides and fixed repetition plans remain manual',()=>{
+  const model=require('../program-model.js');
+  const exercise={n:'Тяга верхнего блока',method:'STANDARD',reps:{mode:'manual',min:10,max:10},parameterOverrides:{version:386},
+    effortSourceMode:'manual',rpeMin:7,rpeMax:8,sets:[{r:10,w:35}]};
+  const program={id:'manual',femaleTemplate:true,weeks:[{n:4,rpeMin:8,rpeMax:8.5,baseRepMin:6,baseRepMax:8,days:[{ex:[exercise]}]}]};
+  model.normalizeProgram(program);
+  const result=loadResolver(program)('manual',0,exercise);
+  assert.deepEqual([result.reps.min,result.reps.max,result.effort.rpeMin,result.effort.rpeMax],[10,10,7,8]);
+  const fixed={id:'strength',internetTemplate:true,weeks:[{n:4,baseRepMin:6,baseRepMax:8,days:[{ex:[{n:'Присед',reps:{mode:'manual',min:5,max:5},sets:[{r:5}]}]}]}]};
+  model.normalizeProgram(fixed);
+  assert.deepEqual([fixed.weeks[0].days[0].ex[0].reps.min,fixed.weeks[0].days[0].ex[0].reps.max],[5,5]);
+  const partlyEdited={id:'partly-edited',femaleTemplate:true,weeks:[{n:4,rpeMin:8,rpeMax:8.5,baseRepMin:6,baseRepMax:8,
+    days:[{ex:[{n:'Тяга верхнего блока',method:'STANDARD',reps:{mode:'manual',min:10,max:10},
+      effortSourceMode:'manual',rpeMin:7,rpeMax:8,sets:[{r:10,w:35}]}]}]}]};
+  model.normalizeProgram(partlyEdited);
+  const partial=loadResolver(partlyEdited)('partly-edited',0,partlyEdited.weeks[0].days[0].ex[0]);
+  assert.deepEqual([partial.reps.min,partial.reps.max,partial.effort.rpeMin,partial.effort.rpeMax],[6,8,7,8]);
+});
+
+test('an already opened client workout replaces old point placeholders with weekly ranges',()=>{
+  const model=require('../program-model.js');
+  const program={id:'assigned',femaleTemplate:true,weeks:Array.from({length:4},(_,i)=>({n:i+1,
+    intensityMin:78,intensityMax:82,rpeMin:8,rpeMax:8.5,baseRepMin:6,baseRepMax:8,
+    days:[{name:'Upper A',ex:[{n:'Тяга верхнего блока',method:'STANDARD',reps:{mode:'manual',min:10,max:10},rpe:8.5,sets:[{r:10,w:35},{r:10,w:35}]}]}]
+  }))};
+  model.normalizeProgram(program);
+  const resolve=loadResolver(program);
+  const pending={r:'',w:35,ok:false,targetRepMin:10,targetRepMax:10,targetRepLabel:'10'};
+  const completed={r:10,w:35,ok:true,targetRepMin:10,targetRepMax:10,targetRepLabel:'10'};
+  const current={programId:'assigned',w:4,c:'Upper A',ex:[{n:'Тяга верхнего блока',set:[completed,pending]}]};
+  let saved=0;
+  const context={console,st:{programs:[program],current},save:()=>{saved++},programById:()=>program,
+    requestAnimationFrame:()=>0,setTimeout:(fn,ms)=>{if(ms===0)fn();return 0},setInterval:()=>0,CustomEvent:function(type){this.type=type}};
+  context.window=context;context.addEventListener=()=>{};context.dispatchEvent=()=>{};
+  context.programResolveExerciseParametersV381=resolve;
+  context.document={documentElement:{},head:{appendChild:()=>{}},createElement:()=>({}),getElementById:()=>null,
+    querySelector:()=>null,querySelectorAll:()=>[]};
+  vm.runInNewContext(read('program-rep-range.js'),context);
+  assert.deepEqual([pending.targetRepMin,pending.targetRepMax,pending.targetRepLabel],[6,8,'6–8']);
+  assert.deepEqual([pending.targetRpeMin,pending.targetRpeMax,pending.targetRirMin,pending.targetRirMax],[8,8.5,1.5,2]);
+  assert.equal(pending.r,'');
+  assert.equal(completed.r,10);
+  assert.ok(saved>0);
+});
+
 test('auto exercise parameters inherit the current week ranges',()=>{
   const program={id:'p1',weeks:[{n:1,intensityMin:70,intensityMax:75,rpeMin:7,rpeMax:8,tempo:'3-1-2',baseRepMin:8,baseRepMax:10,baseRestMin:120,baseRestMax:180,days:[]}]};
   const resolve=loadResolver(program),exercise={id:'e1',n:'Присед со штангой',kind:'compound',method:'STANDARD',parameterOverrides:{reps:{mode:'auto'},effort:{mode:'auto',type:'rpe'},tempo:{mode:'auto'},rest:{mode:'auto'},weight:{mode:'auto'}},sets:[{w:0,r:8}]};
