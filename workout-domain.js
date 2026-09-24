@@ -219,7 +219,8 @@
     return w != null && w >= 0;
   }
   const complete = (e, s, reg) =>
-    s?.ok === true && !warmup(s) && validSet(e, s, reg);
+    (s?.ok === true || s?.ok === 1 || s?.ok === 'true') &&
+    !warmup(s) && validSet(e, s, reg);
   function bodyWeightAt(session, weights = []) {
     const direct = number(session.bodyWeight);
     if (direct > 0) return direct;
