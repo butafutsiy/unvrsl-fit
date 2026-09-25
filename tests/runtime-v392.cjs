@@ -236,6 +236,10 @@ if (require.main === module) (async () => {
       w.closeModal();
     }
     result.localIllustrations = true;
+    assert.equal(w.findExercise("canon:weighted_dip")?.id, "canon:weighted_dip");
+    w.openExerciseDetail("canon:weighted_dip");
+    assert.match(w.document.querySelector("#sheet")?.textContent || "", /Отжимания на брусьях с дополнительным весом/);
+    w.closeModal();
     w.st.current = {
       id: "test-pullup",
       started: Date.now() - 120000,
