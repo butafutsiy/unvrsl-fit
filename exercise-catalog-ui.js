@@ -54,12 +54,13 @@
     return (st.favorites || []).some((id) => id === e.id || id === e.rawId);
   }
   const LOCAL_GIF_BY_ID = Object.freeze({
-    "canon:weighted_hyperextension": "assets/exercises/weighted-hyperextension-v423.gif",
-    "canon:box_jump": "assets/exercises/box-jump-v423.gif",
-    "canon:weighted_pushup": "assets/exercises/weighted-pushup-v423.gif",
-    "unvrsl:hip-thrust-smith": "assets/exercises/hip-thrust-smith-v396.gif",
-    "unvrsl:hip-thrust-machine": "assets/exercises/hip-thrust-machine-v396.gif",
-    "canon:barbell_hip_thrust": "assets/exercises/hip-thrust-barbell-v396.gif",
+    "canon:weighted_hyperextension": "assets/exercises/weighted-hyperextension-v424.gif",
+    "canon:box_jump": "assets/exercises/box-jump-v424.gif",
+    "canon:weighted_pushup": "assets/exercises/weighted-pushup-v424.gif",
+    "canon:weighted_dip": "assets/exercises/weighted-dip-v424.gif",
+    "unvrsl:hip-thrust-smith": "assets/exercises/hip-thrust-smith-v424.gif",
+    "unvrsl:hip-thrust-machine": "assets/exercises/hip-thrust-machine-v424.gif",
+    "canon:barbell_hip_thrust": "assets/exercises/hip-thrust-barbell-v424.gif",
   });
   const exerciseGif = (e) => LOCAL_GIF_BY_ID[e.id] || e.gif || e.gif_url || "";
   const media = (e) =>
@@ -269,7 +270,7 @@
       gif = url(exerciseGif(e) || e.image),
       maxCard = maximumCard(e, est, p);
     modal(
-      `<div class="row between"><h2>${esc(e.n)}</h2><button class="btn" onclick="closeModal()" aria-label="Закрыть">✕</button></div><div class="exercise-media catalog392-media">${gif ? `<img data-exercise-media data-animated="${/\.gif(?:\?|$)/i.test(gif) ? 1 : 0}" data-src="${esc(gif)}" alt="${esc(e.n)}" width="400" height="400" decoding="async">` : "<span>Для этого упражнения ещё нет проверенного изображения</span>"}</div><p>${esc(ruTarget(e.tg))} · ${esc(EQ_RU[e.eq] || e.eq)}</p><p class="muted small">Дополнительные мышцы: ${esc((e.secondary || []).map(ruTarget).join(", "))}</p><p class="muted small">${e.type === "isolation" ? "Изолирующее" : "Многосуставное"} · ${esc({ external_total: "Общий внешний вес", per_dumbbell: "Вес одной гантели", per_side: "Вес на сторону", bodyweight_only: "Собственный вес", bodyweight_added: "Собственный вес и дополнительное отягощение", bodyweight_assisted: "Величина помощи", machine_stack: "Вес тренажёра", time: "Время", distance: "Дистанция", repetitions_only: "Повторения" }[e.loadType] || e.loadType)}</p>${maxCard}<p>${esc(e.description || "Описание пока не заполнено")}</p><h3>Исходное положение</h3><p>${esc(c.start || "Не заполнено")}</p><h3>Движение</h3>${list(c.sequence)}<h3>Дыхание</h3><p>${esc(c.breathing || "Не заполнено")}</p><h3>Технические акценты</h3>${list(c.cues)}<h3>Частые ошибки</h3>${list(c.mistakes)}<h3>Безопасность</h3>${list(c.safety)}${
+      `<div class="row between"><h2>${esc(e.n)}</h2><button class="btn" onclick="closeModal()" aria-label="Закрыть">✕</button></div><div class="exercise-media catalog392-media">${gif ? `<img data-exercise-media data-animated="${/\.gif(?:\?|$)/i.test(gif) ? 1 : 0}" data-src="${esc(gif)}" alt="${esc(e.n)}" width="400" height="400" decoding="async">` : "<span>Для этого упражнения ещё нет проверенного изображения</span>"}</div><p>${esc(ruTarget(e.tg))} · ${esc(EQ_RU[e.eq] || e.eq)}</p><p class="muted small">Дополнительные мышцы: ${esc((e.secondary || []).map(ruTarget).join(", "))}</p><p class="muted small">${e.type === "isolation" ? "Изолирующее" : "Многосуставное"} · ${esc({ external_total: "Общий внешний вес", per_dumbbell: "Вес одной гантели", per_side: "Вес на сторону", bodyweight_only: "Собственный вес", bodyweight_added: "Собственный вес и дополнительное отягощение", bodyweight_assisted: "Величина помощи", machine_stack: "Вес тренажёра", time: "Время", distance: "Дистанция", repetitions_only: "Повторения" }[e.loadType] || e.loadType)}</p>${maxCard}<p>${esc(e.description || "Описание пока не заполнено")}</p>${e.effortGuide ? `<p class="muted small">${esc(e.effortGuide)}</p>` : ""}<h3>Исходное положение</h3><p>${esc(c.start || "Не заполнено")}</p><h3>Движение</h3>${list(c.sequence)}<h3>Дыхание</h3><p>${esc(c.breathing || "Не заполнено")}</p><h3>Технические акценты</h3>${list(c.cues)}<h3>Частые ошибки</h3>${list(c.mistakes)}<h3>Безопасность</h3>${list(c.safety)}${
         hist.length
           ? "<h3>Лучшие результаты</h3>" +
             A.bestResults(e, hist, workoutRegistry)

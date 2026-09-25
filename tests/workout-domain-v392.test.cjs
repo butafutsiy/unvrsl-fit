@@ -324,9 +324,9 @@ test("replacement session cannot silently overwrite a draft", () => {
   assert.throws(() => db.save(state), /Сначала/);
   assert.equal(db.journal().owners.local.id, "current");
 });
-test("all 188 stable catalog IDs are unique and weight profiles are explicit", () => {
-  assert.equal(catalog.length, 188);
-  assert.equal(new Set(catalog.map((x) => x.id)).size, 188);
+test("all 189 stable catalog IDs are unique and weight profiles are explicit", () => {
+  assert.equal(catalog.length, 189);
+  assert.equal(new Set(catalog.map((x) => x.id)).size, 189);
   for (const e of catalog) {
     assert.ok(e.loadType, e.n);
     assert.ok(e.weightProfile.step > 0, e.n);
@@ -426,4 +426,13 @@ test("three comparable stable workouts produce an explicit plateau explanation",
   );
   assert.equal(r.trend, "plateau");
   assert.equal(r.weight, 60);
+});
+
+test("weighted dips record the plate separately and calculate 1RM from actual body mass", () => {
+  const dip = reg.resolve("canon:weighted_dip");
+  assert.equal(dip.loadType, "bodyweight_added");
+  assert.equal(dip.weightProfile.step, 2.5);
+  assert.equal(A.manualOneRepMax(dip, 20, 6, reg, 80), 120);
+  assert.equal(A.manualOneRepMax(dip, 0, 6, reg), null);
+  assert.equal(A.manualOneRepMax(dip, 0, 6, reg, 80), 96);
 });
