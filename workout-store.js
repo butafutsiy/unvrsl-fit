@@ -118,8 +118,8 @@
           nextSuggestions: {},
           current: null,
           week: 1,
-          accent: state.accent || "#30d158",
-          theme: state.theme || "dark",
+          accent: "#30d158",
+          theme: "dark",
           body: state.body || "male",
           created: now(),
         };

@@ -275,3 +275,36 @@ html[data-theme="light"] body .start-program-choice .start-program-kind.primary-
 html[data-theme="light"] body #home .dash-streak .fire,
 html[data-theme="light"] body #home .streak>button{background:#f0f1f5!important;color:#19191d!important;border-color:#dfe1e6!important}
 html[data-theme="light"] body #home .streak>button::before{color:#a635d1!important}
+
+/* Workout history, profile and client detail sheets inject their own dark cards. */
+html[data-theme="light"] body #modal .cj107-metric,
+html[data-theme="light"] body #modal .cj107-profile>div,
+html[data-theme="light"] body #modal .cj107-home>div,
+html[data-theme="light"] body #modal .tcv3-session-metric,
+html[data-theme="light"] body #modal .tcv3-set-row{
+  background:#f4f5f8!important;color:#19191d!important;border-color:#dfe1e6!important;
+}
+html[data-theme="light"] body #modal .cj107-metric b,
+html[data-theme="light"] body #modal .cj107-profile b,
+html[data-theme="light"] body #modal .cj107-home b,
+html[data-theme="light"] body #modal .tcv3-session-metric b,
+html[data-theme="light"] body #modal .tcv3-set-values{color:#19191d!important}
+html[data-theme="light"] body #modal .cj107-metric span,
+html[data-theme="light"] body #modal .cj107-profile span,
+html[data-theme="light"] body #modal .cj107-home span,
+html[data-theme="light"] body #modal .cj107-set,
+html[data-theme="light"] body #modal .tcv3-session-metric span,
+html[data-theme="light"] body #modal .tcv3-set-row span,
+html[data-theme="light"] body #modal .tcv3-session-note{color:#666a73!important}
+html[data-theme="light"] body #modal .cj107-row,
+html[data-theme="light"] body #modal .cj107-ex,
+html[data-theme="light"] body #modal .tcv3-session-ex{border-color:#dfe1e6!important}
+
+/* Active controls use each person's chosen accent in the light theme. */
+html[data-theme="light"] body .nav button.active{color:var(--green)!important}
+html[data-theme="light"] body .nav .start .ico,
+html[data-theme="light"] body .btn.primary,
+html[data-theme="light"] body .te200-rec-apply{background:var(--green)!important;color:#061108!important}
+html[data-theme="light"] body #stats .anatome-seg button.on,
+html[data-theme="light"] body #home .sd2-seg button.on,
+html[data-theme="light"] body #clients .client-tabs button.on{background:var(--green)!important;color:#061108!important}

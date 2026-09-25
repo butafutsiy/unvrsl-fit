@@ -108,7 +108,7 @@
         let merged=clone(st)||{};
         if(remoteExists)merged=mergeStates(st,appState,remoteStamp);merged.accountOwnerId=user.id;workoutStore.restore(merged,user.id);
         suppress=true;
-        try{st=merged;if(typeof save==='function')save()}finally{suppress=false}
+        try{st=merged;restoreAppearance(user.id);if(typeof save==='function')save()}finally{suppress=false}
         const stamp=Math.max(Date.now(),Number(meta().localModifiedAt||0),remoteStamp||0);
         setMeta({localModifiedAt:stamp});
         const payload={user_id:user.id,state:clone(st),client_updated_at:new Date(stamp).toISOString(),device_id:deviceId()};
@@ -149,7 +149,7 @@
     try{cloudSyncAll=window.cloudSyncAll}catch(e){}
   }
 
-  window.accountSyncNow=()=>reconcile({quiet:false});
+  window.accountSyncNow=options=>reconcile(options||{quiet:false});
 
   (async()=>{
     const c=await waitCloud();if(!c?.client)return;

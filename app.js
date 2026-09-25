@@ -1,6 +1,7 @@
 'use strict';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const KEY='unvrsl-fit-v3', OLDKEY='unvrsl-fit-v2';
+const APPEARANCE_KEY='unvrsl-appearance-v1';
 window.__unvrslHadPrimaryStorageV386=(()=>{try{return localStorage.getItem(KEY)!==null||localStorage.getItem(OLDKEY)!==null}catch(_){return false}})();window.__unvrslStorageHydrationSettledV386=false;
 const DAYCODE={1:'A1',2:'B',4:'C',5:'A2',6:'D'};
 const RPE={1:7,2:8,3:8.5,4:6.5,5:8.5,6:6.5,7:9,8:9};
@@ -13,14 +14,18 @@ const CYCLE_START='2026-08-31';
 const COLORS=['#30d158','#0a84ff','#ff9f0a','#bf5af2','#ff375f','#ff453a','#64d2ff','#ffd60a'];
 let viewDate=new Date();
 let timerId=null,timerEnd=0;
+function savedAppearance(ownerId){try{const all=JSON.parse(localStorage.getItem(APPEARANCE_KEY)||'{}');return all?.[String(ownerId||'local')]||null}catch(_){return null}}
+function restoreAppearance(ownerId){const choice=savedAppearance(ownerId);if(choice?.theme==='light'||choice?.theme==='dark')st.theme=choice.theme;if(COLORS.includes(choice?.accent))st.accent=choice.accent;applyAccent();applyTheme()}
+function rememberAppearance(){try{const owner=String(window.cloud?.user?.id||st.accountOwnerId||'local');const all=JSON.parse(localStorage.getItem(APPEARANCE_KEY)||'{}');all[owner]={theme:st.theme,accent:st.accent};localStorage.setItem(APPEARANCE_KEY,JSON.stringify(all))}catch(error){console.warn('Appearance preference unavailable',error)}}
 function loadState(){for(const key of [KEY,OLDKEY]){try{const value=JSON.parse(localStorage.getItem(key));if(value&&typeof value==='object')return value}catch(e){}}return {bw:[],goal:null,sessions:[],current:null,week:1,accent:'#30d158',body:'male',theme:'dark',created:Date.now()}}
 const workoutRegistry=WorkoutDomain.registry(window.UNVRSL_EXERCISES||[]);
 const workoutStore=WorkoutStore.create(localStorage);
 let st=loadState();
 WorkoutDomain.migrate(st,workoutRegistry);workoutStore.restore(st);timerEnd=st.current?.timerEnd||0;
-Object.defineProperty(window,'st',{configurable:true,get:()=>st,set:value=>{st=value;workoutStore.restore(st)}});
+Object.defineProperty(window,'st',{configurable:true,get:()=>st,set:value=>{st=value;workoutStore.restore(st);restoreAppearance(st.accountOwnerId)}});
 if(!Array.isArray(st.bw))st.bw=[];if(!Array.isArray(st.sessions))st.sessions=[];if(!st.week)st.week=1;
-applyAccent();applyTheme();try{save()}catch(error){console.warn('Local persistence unavailable',error)}
+if(st.accountOwnerId&&!savedAppearance(st.accountOwnerId))rememberAppearance();
+restoreAppearance(st.accountOwnerId);try{save()}catch(error){console.warn('Local persistence unavailable',error)}
 function save(options={}){if(st.current){st.current.userId=st.current.userId||window.cloud?.user?.id||null;const snapshot=window.workoutTimerSnapshot?.();if(snapshot&&snapshot.workoutId===String(st.current.id)){st.current.timer=snapshot;st.current.timerEnd=snapshot.end}else if(!st.current.timer)st.current.timerEnd=timerEnd;if(document.querySelector('#start.active'))st.current.scrollY=window.scrollY||0}if(options.draftOnly){workoutStore.checkpoint(st);return true}return workoutStore.save(st)}
 function applyAccent(){document.documentElement.style.setProperty('--green',st.accent||'#30d158')}
 function applyTheme(){const theme=st.theme==='light'?'light':'dark';document.documentElement.dataset.theme=theme;document.documentElement.style.colorScheme=theme;const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=theme==='light'?'#f4f5f7':'#050505';const scheme=document.querySelector('meta[name="color-scheme"]');if(scheme)scheme.content=theme}
@@ -81,15 +86,15 @@ function saveWeight(){const el=$('#weightInput'),v=Number(String(el.value).repla
 function goalWeight(){modal(`<h2>Цель по весу</h2><div class="field"><label>Цель, кг</label><input id="goalInput" inputmode="decimal" value="${st.goal??''}"></div><button class="btn primary full" onclick="saveGoal()">Сохранить</button>`)}
 function saveGoal(){const v=Number(String($('#goalInput').value).replace(',','.'));st.goal=v||null;save();closeModal();render();toast('Цель сохранена')}
 function settingsSheet(){modal(`<div class="row between"><h2>Настройки</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="section">ВНЕШНИЙ ВИД</div><div class="settings-card"><div class="setting"><div>Тема</div><div class="seg"><button class="${st.theme!=='light'?'on':''}" onclick="setTheme('dark')">☾ Тёмная</button><button class="${st.theme==='light'?'on':''}" onclick="setTheme('light')">☀ Светлая</button></div></div><div class="setting"><div>Схема тела</div><div class="seg"><button class="${st.body==='male'?'on':''}" onclick="st.body='male';save();settingsSheet()">Мужской</button><button class="${st.body==='female'?'on':''}" onclick="st.body='female';save();settingsSheet()">Женский</button></div></div><div class="setting" style="display:block"><div>Акцентный цвет</div><div class="colors">${COLORS.map(c=>`<button class="color ${st.accent===c?'on':''}" style="background:${c}" onclick="setAccent('${c}')"></button>`).join('')}</div></div></div><div class="section">ДАННЫЕ</div><div class="settings-card"><div class="setting"><div><b>Экспорт резервной копии</b><div class="muted small">Все локальные данные</div></div><button class="btn tiny" onclick="backup()">JSON</button></div><div class="setting"><div><b>Импорт резервной копии</b></div><label class="btn tiny" for="bkImport">Импорт</label><input id="bkImport" type="file" accept=".json,application/json" hidden onchange="restoreBackup(this.files[0])"></div></div>`)}
-function setTheme(theme){st.theme=theme==='light'?'light':'dark';applyTheme();try{save()}catch(error){console.warn('Local persistence unavailable',error)}closeModal();toast(st.theme==='light'?'Светлая тема включена':'Тёмная тема включена')}
-function setAccent(c){st.accent=c;applyAccent();try{save()}catch(error){console.warn('Local persistence unavailable',error)}settingsSheet();render()}
+function setTheme(theme){st.theme=theme==='light'?'light':'dark';applyTheme();rememberAppearance();try{save()}catch(error){console.warn('Local persistence unavailable',error)}closeModal();toast(st.theme==='light'?'Светлая тема включена':'Тёмная тема включена')}
+function setAccent(c){if(!COLORS.includes(c))return;st.accent=c;applyAccent();rememberAppearance();try{save()}catch(error){console.warn('Local persistence unavailable',error)}settingsSheet();render()}
 function download(name,obj){const b=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),500)}
 function exportChat(){download(`unvrsl-fit-chatgpt-${iso()}.json`,{format:'unvrsl-fit-chatgpt-v2',exportedAt:new Date().toISOString(),bodyweight:st.bw,goal:st.goal,sessions:st.sessions,current:st.current,cycleStart:CYCLE_START})}
 function backup(){download(`unvrsl-fit-backup-${iso()}.json`,{format:'unvrsl-fit-backup-v3',state:st})}
-async function restoreBackup(file){if(!file)return;try{const d=JSON.parse(await file.text());if(!d.state)throw new Error('Нет state');st=d.state;applyAccent();applyTheme();try{save()}catch(error){console.warn('Local persistence unavailable',error)}closeModal();render();toast('Копия восстановлена')}catch(e){alert('Не удалось импортировать: '+e.message)}}
+async function restoreBackup(file){if(!file)return;try{const d=JSON.parse(await file.text());if(!d.state)throw new Error('Нет state');st=d.state;applyAccent();applyTheme();rememberAppearance();try{save()}catch(error){console.warn('Local persistence unavailable',error)}closeModal();render();toast('Копия восстановлена')}catch(e){alert('Не удалось импортировать: '+e.message)}}
 async function importOpenGym(file){if(!file)return;try{const d=JSON.parse(await file.text());let imported=0;if(Array.isArray(d.bodyweight)&&d.bodyweight.length){st.bw=d.bodyweight.map(x=>({d:x.d,w:Number(x.w),t:x.t||Date.now()})).filter(x=>x.d&&x.w);imported+=st.bw.length}if(Array.isArray(d.workouts)&&d.workouts.length){const conv=d.workouts.map(convertOpenGymWorkout).filter(Boolean);st.sessions.push(...conv);imported+=conv.length}save();closeModal();render();toast(`Импортировано: ${imported}`)}catch(e){alert('Не удалось прочитать openGym JSON: '+e.message)}}
 function convertOpenGymWorkout(w){try{return {id:'og'+(w.id||Date.now()+Math.random()),date:w.d||w.date||iso(),w:0,c:'OG',name:w.name||w.n||'openGym',target:8,started:w.t||Date.now(),ended:w.t||Date.now(),ex:(w.ex||w.exercises||[]).map(e=>({n:e.n||e.name||e.id||'Упражнение',d:'Импортировано из openGym',rest:90,set:(e.set||e.sets||[]).map((s,i)=>({n:i+1,w:+(s.w??s.weight??0),r:+(s.r??s.reps??0),rpe:s.rpe??'',ok:true}))}))}}catch(e){return null}}
-function resetAll(){if(confirm('Удалить все локальные тренировки, вес и настройки?')){localStorage.removeItem(KEY);localStorage.removeItem(OLDKEY);location.reload()}}
+function resetAll(){if(confirm('Удалить все локальные тренировки, вес и настройки?')){localStorage.removeItem(KEY);localStorage.removeItem(OLDKEY);localStorage.removeItem(APPEARANCE_KEY);location.reload()}}
 function modal(html){$('#sheet').innerHTML=html;$('#modal').classList.remove('px-program-modal','px-exercise-modal');$('#modal').classList.add('show')}
 function closeModal(){$('#modal').classList.remove('show')}
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1800)}

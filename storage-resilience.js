@@ -88,6 +88,7 @@
         st = record.state;
         WorkoutDomain.migrate(st, workoutRegistry);
         workoutStore.restore(st);
+        restoreAppearance(st.accountOwnerId);
         try {
           workoutStore.save(st);
         } catch (_) {
