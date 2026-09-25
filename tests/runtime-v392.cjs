@@ -188,8 +188,8 @@ if (require.main === module) (async () => {
     w.nav("stats");
     assert.equal(w.document.querySelector(".page.active")?.id, "stats");
     result.settingsThemeAndNavigation = true;
-    assert.equal(w.catalogRecords().length, 188);
-    result.catalog = 188;
+    assert.equal(w.catalogRecords().length, 189);
+    result.catalog = 189;
     result.pages = {};
     for (const p of ["home", "exercises", "plan", "start", "stats"]) {
       const times = [];
@@ -218,9 +218,9 @@ if (require.main === module) (async () => {
     w.closeModal();
     result.lazyMedia = true;
     const localGifById = {
-      "canon:weighted_pushup": "assets/exercises/weighted-pushup-v396.gif",
-      "canon:weighted_hyperextension": "assets/exercises/weighted-hyperextension-v396.gif",
-      "canon:box_jump": "assets/exercises/box-jump-v396.gif",
+      "canon:weighted_pushup": "assets/exercises/weighted-pushup-v424.gif",
+      "canon:weighted_hyperextension": "assets/exercises/weighted-hyperextension-v424.gif",
+      "canon:box_jump": "assets/exercises/box-jump-v424.gif",
     };
     for (const id of Object.keys(localGifById)) {
       const exercise = w.catalogRecords().find((x) => x.id === id);
