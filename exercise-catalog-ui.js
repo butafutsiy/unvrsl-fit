@@ -54,9 +54,9 @@
     return (st.favorites || []).some((id) => id === e.id || id === e.rawId);
   }
   const LOCAL_GIF_BY_ID = Object.freeze({
-    "canon:weighted_hyperextension": "assets/exercises/weighted-hyperextension-v396.gif",
-    "canon:box_jump": "assets/exercises/box-jump-v396.gif",
-    "canon:weighted_pushup": "assets/exercises/weighted-pushup-v396.gif",
+    "canon:weighted_hyperextension": "assets/exercises/weighted-hyperextension-v423.gif",
+    "canon:box_jump": "assets/exercises/box-jump-v423.gif",
+    "canon:weighted_pushup": "assets/exercises/weighted-pushup-v423.gif",
     "unvrsl:hip-thrust-smith": "assets/exercises/hip-thrust-smith-v396.gif",
     "unvrsl:hip-thrust-machine": "assets/exercises/hip-thrust-machine-v396.gif",
     "canon:barbell_hip_thrust": "assets/exercises/hip-thrust-barbell-v396.gif",

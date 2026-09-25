@@ -316,3 +316,14 @@ html[data-theme="light"] body #home .datecell:active{background:#eceef2}
 html[data-theme="light"] body #stats .anatome-seg button.on,
 html[data-theme="light"] body #home .sd2-seg button.on,
 html[data-theme="light"] body #clients .client-tabs button.on{background:var(--green)!important;color:#061108!important}
+
+/* Keep client history and tabs on light surfaces, including pressed rows. */
+html[data-theme="light"] body #modal .tcv3-tabs{background:#f1f2f5!important;border-color:#e0e2e7!important}
+html[data-theme="light"] body #modal .tcv3-tab{color:#666a73!important}
+html[data-theme="light"] body #modal .tcv3-tab.on{background:#fff!important;color:#19191d!important;box-shadow:0 1px 4px rgba(20,24,31,.08)}
+html[data-theme="light"] body #modal .tcv3-workout{background:#fff!important;color:#19191d!important;border-color:#e4e6eb!important}
+html[data-theme="light"] body #modal .tcv3-workout:active{background:#f4f5f8!important}
+html[data-theme="light"] body #modal .tcv3-workout b{color:#19191d!important}
+html[data-theme="light"] body #modal .tcv3-workout .tcv3-meta,
+html[data-theme="light"] body #modal .tcv3-workout .tcv3-workout-date{color:#666a73!important}
+html[data-theme="light"] body #modal .tcv3-workout .tcv3-chevron{color:#858992!important}
