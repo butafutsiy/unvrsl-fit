@@ -1049,7 +1049,7 @@ window.UNVRSL_EXERCISES=[
     "bp": "back",
     "tg": "spine",
     "eq": "weighted",
-    "gif": "assets/exercises/weighted-hyperextension-v394.gif",
+    "gif": "assets/exercises/weighted-hyperextension-v424.gif",
     "image": "assets/exercises/weighted-hyperextension-v394-thumb.jpg",
     "instructions": {
       "ru": "Настрой опору ниже сгиба бёдер, закрепи стопы и прижми диск к груди. Наклоняйся за счёт движения в тазобедренных суставах, удерживая спину нейтрально. Поднимись до прямой линии корпуса и ног, без рывка и переразгибания поясницы."
@@ -3508,7 +3508,7 @@ window.UNVRSL_EXERCISES=[
     "bp": "upper legs",
     "tg": "quads",
     "eq": "body weight",
-    "gif": "assets/exercises/box-jump-v394.gif",
+    "gif": "assets/exercises/box-jump-v424.gif",
     "image": "assets/exercises/box-jump-v394-thumb.jpg",
     "instructions": {
       "ru": "Выбери устойчивую тумбу подходящей высоты. Сделай небольшой подсед, оттолкнись двумя ногами и приземлись на тумбу обеими стопами с мягкими коленями. Выпрямись и спокойно сойди с тумбы. Это запрыгивание вверх, не спрыгивание вниз."
@@ -4605,6 +4605,53 @@ window.UNVRSL_EXERCISES=[
     }
   },
   {
+    "id": "canon:weighted_dip",
+    "n": "Отжимания на брусьях с дополнительным весом",
+    "strictName": "Отжимания на брусьях с дополнительным весом",
+    "raw": "Отжимания на брусьях с дополнительным весом",
+    "rawId": "",
+    "sourceId": null,
+    "sourceName": "weighted parallel bar dip",
+    "bp": "chest",
+    "tg": "pectorals",
+    "eq": "weighted",
+    "secondary": ["triceps", "delts"],
+    "gif": "assets/exercises/weighted-dip-v424.gif",
+    "image": "assets/exercises/weighted-dip-v424.gif",
+    "instructions": {
+      "ru": "Закрепи диск на поясе так, чтобы он свободно висел и не касался опор. Возьмись за параллельные брусья, выжми себя в упор и слегка наклони корпус вперёд. Опускайся подконтрольно до комфортной глубины, затем поднимись без раскачивания."
+    },
+    "mediaUnavailable": false,
+    "custom": false,
+    "canonical": true,
+    "canonicalKey": "weighted_dip",
+    "aliases": ["Отжимания на брусьях с весом", "Брусья с отягощением", "weighted dip"],
+    "loadType": "bodyweight_added",
+    "implementCount": 1,
+    "weightProfile": {
+      "step": 2.5,
+      "min": 0,
+      "maxChangeSteps": 1,
+      "rounding": "nearest",
+      "units": "bodyweight_added",
+      "configurable": true
+    },
+    "resultRule": {"e1rm": true, "metric": "load_reps"},
+    "type": "compound",
+    "description": "Записывай только дополнительный вес: 0 кг означает подход без отягощения. Для расчётного 1ПМ нужна фактическая масса тела; RPE и RIR можно указывать по желанию.",
+    "effortGuide": "Ориентир для рабочих подходов: RPE 7–8 (RIR 2–3). Подбирай вес по технике и самочувствию.",
+    "coaching": {
+      "movement": "dip",
+      "start": "Проверь крепление пояса и диска. Возьмись за устойчивые параллельные брусья, опусти плечи, слегка наклони корпус и удерживай ноги вместе.",
+      "sequence": ["Сгибай локти, опускаясь до контролируемой глубины без болезненного натяжения плеча.", "Выжми себя вверх, не раскачивая груз и не закидывая ноги."],
+      "breathing": "Вдох на опускании, выдох на подъёме; не задерживай дыхание надолго.",
+      "cues": ["Держи плечи вдали от ушей", "Сохраняй умеренный наклон корпуса", "Веди предплечья близко к вертикали", "Контролируй диск и одинаковую глубину повторений"],
+      "mistakes": ["Рывки ногами и раскачивание груза", "Провал плеч вперёд и слишком глубокое опускание", "Разведение локтей строго в стороны", "Слишком большой вес в ущерб амплитуде"],
+      "safety": ["Убедись, что брусья устойчивы, а пояс и диск закреплены.", "Уменьши амплитуду или останови подход при боли в передней части плеча.", "Начни с собственного веса и добавляй нагрузку только при устойчивой технике."]
+    },
+    "mediaProvenance": {"kind": "generated_animated_keyframes", "reviewed": "2026-09-25", "referenceStyle": "white anatomical catalog thumbnail", "note": "Two dip poses; barefoot; belt with plate"}
+  },
+  {
     "id": "canon:weighted_pushup",
     "n": "Отжимания с дополнительным весом",
     "strictName": "Отжимания с дополнительным весом",
@@ -4615,7 +4662,7 @@ window.UNVRSL_EXERCISES=[
     "bp": "chest",
     "tg": "pectorals",
     "eq": "weighted",
-    "gif": "assets/exercises/weighted-pushup-v394.gif",
+    "gif": "assets/exercises/weighted-pushup-v424.gif",
     "image": "assets/exercises/weighted-pushup-v394-thumb.jpg",
     "instructions": {
       "ru": "Надёжно закрепи дополнительное отягощение. Сохраняй корпус прямым, опускайся контролируемо и выжимай себя вверх без провисания поясницы."
@@ -11813,8 +11860,8 @@ window.UNVRSL_EXERCISES=[
     "eq": "smith machine",
     "tg": "glutes",
     "virtual": true,
-    "gif": "assets/exercises/hip-thrust-smith-v394.gif",
-    "gif_url": "assets/exercises/hip-thrust-smith-v394.gif",
+    "gif": "assets/exercises/hip-thrust-smith-v424.gif",
+    "gif_url": "assets/exercises/hip-thrust-smith-v424.gif",
     "image": "assets/exercises/hip-thrust-smith-v394-thumb.jpg",
     "instructions": {
       "ru": "Расположи верх спины на скамье, гриф Смита – над тазом через мягкую накладку. Стопы поставь примерно на ширине таза так, чтобы в верхней точке голени были близки к вертикали. Опускай таз подконтрольно и разгибай его до нейтрального положения корпуса."
@@ -11878,8 +11925,8 @@ window.UNVRSL_EXERCISES=[
     "eq": "leverage machine",
     "tg": "glutes",
     "virtual": true,
-    "gif": "assets/exercises/hip-thrust-machine-v394.gif",
-    "gif_url": "assets/exercises/hip-thrust-machine-v394.gif",
+    "gif": "assets/exercises/hip-thrust-machine-v424.gif",
+    "gif_url": "assets/exercises/hip-thrust-machine-v424.gif",
     "image": "assets/exercises/hip-thrust-machine-v394-thumb.jpg",
     "instructions": {
       "ru": "Зафиксируй верх спины на опоре и поставь стопы устойчиво на платформу. Опускай таз подконтрольно, сохраняя нейтральное положение позвоночника. Разгибай таз за счёт ягодичных до линии плечи – таз – колени. В верхней точке сделай короткую фиксацию без переразгибания поясницы."
@@ -12007,7 +12054,7 @@ window.UNVRSL_EXERCISES=[
     "bp": "upper legs",
     "tg": "glutes",
     "eq": "barbell",
-    "gif": "assets/exercises/hip-thrust-barbell-v394.gif",
+    "gif": "assets/exercises/hip-thrust-barbell-v424.gif",
     "image": "assets/exercises/hip-thrust-barbell-v394-thumb.jpg",
     "instructions": {
       "ru": "Расположи верх спины на скамье, штангу – над тазом через мягкую накладку. Стопы поставь устойчиво; в верхней точке голени должны быть близки к вертикали. Опускай таз подконтрольно и разгибай его за счёт ягодичных до линии плечи – таз – колени. Удерживай штангу руками и не переразгибай поясницу."
@@ -12016,7 +12063,7 @@ window.UNVRSL_EXERCISES=[
     "custom": false,
     "canonical": true,
     "canonicalKey": "barbell_hip_thrust",
-    "gif_url": "assets/exercises/hip-thrust-barbell-v394.gif",
+    "gif_url": "assets/exercises/hip-thrust-barbell-v424.gif",
     "unvrslHipKind": "barbell",
     "aliases": [
       "Ягодичный мост со штангой",

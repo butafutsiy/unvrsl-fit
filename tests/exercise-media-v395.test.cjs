@@ -42,8 +42,8 @@ function inspectGif(relative) {
 
 test("exercise animations use one square canvas and loop indefinitely", () => {
   const assets = [
-    "box-jump-v396.gif", "hip-thrust-barbell-v396.gif", "hip-thrust-machine-v396.gif",
-    "hip-thrust-smith-v396.gif", "weighted-hyperextension-v396.gif", "weighted-pushup-v396.gif",
+    "box-jump-v424.gif", "hip-thrust-barbell-v424.gif", "hip-thrust-machine-v424.gif",
+    "hip-thrust-smith-v424.gif", "weighted-hyperextension-v424.gif", "weighted-pushup-v424.gif", "weighted-dip-v424.gif",
   ];
   for (const asset of assets) {
     const info = inspectGif(`assets/exercises/${asset}`);
@@ -66,14 +66,15 @@ test("dumbbell step-up retains its verified animated GIF on the stable catalog I
   assert.match(ui, /\.catalog392-media img\{width:100%;height:100%;object-fit:contain/);
 });
 
-test("recent exercise cards animate their six square local GIFs with visibility-aware loading", () => {
+test("recent exercise cards animate their seven square local GIFs with visibility-aware loading", () => {
   const ui = fs.readFileSync(path.join(root, "exercise-catalog-ui.js"), "utf8");
-  assert.match(ui, /"canon:weighted_hyperextension": "assets\/exercises\/weighted-hyperextension-v396\.gif"/);
-  assert.match(ui, /"canon:box_jump": "assets\/exercises\/box-jump-v396\.gif"/);
-  assert.match(ui, /"canon:weighted_pushup": "assets\/exercises\/weighted-pushup-v396\.gif"/);
-  assert.match(ui, /"unvrsl:hip-thrust-smith": "assets\/exercises\/hip-thrust-smith-v396\.gif"/);
-  assert.match(ui, /"unvrsl:hip-thrust-machine": "assets\/exercises\/hip-thrust-machine-v396\.gif"/);
-  assert.match(ui, /"canon:barbell_hip_thrust": "assets\/exercises\/hip-thrust-barbell-v396\.gif"/);
+  assert.match(ui, /"canon:weighted_hyperextension": "assets\/exercises\/weighted-hyperextension-v424\.gif"/);
+  assert.match(ui, /"canon:box_jump": "assets\/exercises\/box-jump-v424\.gif"/);
+  assert.match(ui, /"canon:weighted_dip": "assets\/exercises\/weighted-dip-v424\.gif"/);
+  assert.match(ui, /"canon:weighted_pushup": "assets\/exercises\/weighted-pushup-v424\.gif"/);
+  assert.match(ui, /"unvrsl:hip-thrust-smith": "assets\/exercises\/hip-thrust-smith-v424\.gif"/);
+  assert.match(ui, /"unvrsl:hip-thrust-machine": "assets\/exercises\/hip-thrust-machine-v424\.gif"/);
+  assert.match(ui, /"canon:barbell_hip_thrust": "assets\/exercises\/hip-thrust-barbell-v424\.gif"/);
   assert.match(ui, /animated \? 'data-animated="1"'/);
   assert.match(ui, /else if \(target\.dataset\.animated === "1"\)[\s\S]*target\.removeAttribute\("src"\)/);
 });
