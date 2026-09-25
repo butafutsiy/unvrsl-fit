@@ -305,6 +305,14 @@ html[data-theme="light"] body .nav button.active{color:var(--green)!important}
 html[data-theme="light"] body .nav .start .ico,
 html[data-theme="light"] body .btn.primary,
 html[data-theme="light"] body .te200-rec-apply{background:var(--green)!important;color:#061108!important}
+
+/* Keep the calendar header and its week controls clear on the light card. */
+html[data-theme="light"] body #home .calendar-card{background:#fff!important}
+html[data-theme="light"] body #home .calendar-head{background:transparent!important;color:var(--text)!important;border:0!important}
+html[data-theme="light"] body #home .calendar-head b{color:#19191d!important}
+html[data-theme="light"] body #home .calendar-head .arrow{color:#30333b!important;background:transparent!important}
+html[data-theme="light"] body #home .calendar-head .arrow:focus-visible{outline:2px solid var(--green);outline-offset:2px;border-radius:8px}
+html[data-theme="light"] body #home .datecell:active{background:#eceef2}
 html[data-theme="light"] body #stats .anatome-seg button.on,
 html[data-theme="light"] body #home .sd2-seg button.on,
 html[data-theme="light"] body #clients .client-tabs button.on{background:var(--green)!important;color:#061108!important}
