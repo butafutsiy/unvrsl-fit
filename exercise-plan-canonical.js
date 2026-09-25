@@ -164,7 +164,10 @@
     if(typeof base!=='function'||base.__canonicalV329)return;
     const wrapped=function(token){
       const id=decodeURIComponent(String(token||''));
-      if(id.startsWith('canon:'))return canonicalRecord(byKey.get(id.slice(6)))||null;
+      if(id.startsWith('canon:')){
+        const pinned=canonicalRecord(byKey.get(id.slice(6)));
+        return pinned||base.apply(this,arguments)||null;
+      }
       if(id.startsWith('og:')){const spec=specs.find(s=>resolve(s)?.id===id.slice(3));if(spec)return canonicalRecord(spec)}
       const ex=base.apply(this,arguments);if(!ex)return ex;
       if(id.startsWith('custom:')){
@@ -257,4 +260,3 @@
   window.addEventListener('unvrsl:cloud-modules-settled',()=>setTimeout(refresh,0),{passive:true});
   // Refresh only on dependency events; no repeated catalog rebuild.
 })();
-
