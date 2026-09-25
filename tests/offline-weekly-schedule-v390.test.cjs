@@ -80,7 +80,7 @@ test('database migration links templates, blocks, facts and idempotent writes',(
 
 test('runtime loads one canonical clients owner before the cloud chain settles',()=>{
   const loader=read('frequent-patch.js'),canonical=read('trainer-clients-canonical.js'),schedule=read('offline-schedule.js');
-  assert.match(loader,/trainer-direct-ui\.js'[\s\S]*offline-progress\.js\?v=422[\s\S]*offline-schedule\.js\?v=422[\s\S]*trainer-clients-canonical\.js\?v=422/);
+  assert.match(loader,/trainer-direct-ui\.js'[\s\S]*offline-progress\.js\?v=424[\s\S]*offline-schedule\.js\?v=424[\s\S]*trainer-clients-canonical\.js\?v=424/);
   for(const legacy of ['offline-clients.js','offline-create-measures.js','trainer-tap-fix.js','clients-action-layout.js'])assert.doesNotMatch(loader,new RegExp(legacy.replace('.', '\\.')));
   assert.match(canonical,/data-clients-owner/);
   assert.match(canonical,/state=\{tab:'online',onlineToken:0,offlineToken:0\}/);
@@ -100,7 +100,7 @@ test('startup keeps the trainer shell hidden until the canonical owner is ready'
   const startup=read('startup-orchestrator.js'),index=read('index.html'),sw=read('sw.js');
   assert.match(startup,/trainer\(\)&&!W\.__unvrslTrainerClientsCanonicalV391/);
   assert.match(startup,/unvrsl:trainer-clients-ready/);
-  assert.match(index,/window\.__unvrslRelease='v422'/);
-  assert.match(index,/frequent-patch\.js\?v=422/);
-  assert.match(sw,/v422/)
+  assert.match(index,/window\.__unvrslRelease='v424'/);
+  assert.match(index,/frequent-patch\.js\?v=424/);
+  assert.match(sw,/v424/)
 });
