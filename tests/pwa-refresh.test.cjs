@@ -21,15 +21,15 @@ test('manifest has a stable GitHub Pages identity and installable PNG icons',()=
 
 test('iOS uses a PNG touch icon and a versioned service worker',()=>{
   const html=read('index.html');
-  assert.match(html,/apple-touch-icon[^>]+apple-touch-icon\.png\?v=422/);
-  assert.match(html,/serviceWorker\.register\('\.\/sw\.js\?v=422'/);
+  assert.match(html,/apple-touch-icon[^>]+apple-touch-icon\.png\?v=424/);
+  assert.match(html,/serviceWorker\.register\('\.\/sw\.js\?v=424'/);
   assert.match(html,/updateViaCache:'none'/);
   assert.doesNotMatch(html,/controllerchange|location\.reload\(\)/);
 });
 
 test('service worker isolates current shell and media from user data',()=>{
  const sw=read('sw.js');
- assert.match(sw,/SW_RELEASE = "v422"/);
+ assert.match(sw,/SW_RELEASE = "v424"/);
  assert.match(sw,/cache\.put/);
  assert.doesNotMatch(sw,/localStorage\.clear|indexedDB\.deleteDatabase/);
 });
@@ -39,5 +39,5 @@ test('every local script and stylesheet linked from the shell exists',()=>{
  const urls=[...html.matchAll(/<(?:script|link)\b[^>]*\b(?:src|href)="([^"]+)"/g)]
   .map(match=>match[1].split('?')[0]).filter(url=>!/^https?:|^data:|^#/.test(url));
  for(const url of urls)assert.ok(fs.existsSync(path.join(root,url)),`Missing shell asset: ${url}`);
- assert.match(html,/equipment-profiles-v405\.js\?v=422/);
+ assert.match(html,/equipment-profiles-v405\.js\?v=424/);
 });
