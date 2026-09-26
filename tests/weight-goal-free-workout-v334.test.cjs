@@ -27,7 +27,8 @@ test('measurement deletion keeps trainer and client ownership boundaries',()=>{
 
 test('online clients can build a free workout from the shared exercise catalog',()=>{
   assert.match(free,/catalogRecords/);
-  assert.match(free,/UNVRSL_EXERCISE_PICKER_V331/);
+  assert.match(free,/cfw-picker-results/);
+  assert.match(free,/selectedExercise/);
   assert.match(free,/Свободная тренировка/);
   assert.match(free,/beginProgramDay/);
   assert.match(free,/ownerUserId:userId\(\)/);
@@ -40,4 +41,3 @@ test('trainer sees and keeps the same free workout card after plan rerenders',()
   assert.match(free,/\.trainer-self-profile-v111/);
   assert.doesNotMatch(free,/!isClient\(\)/);
 });
-

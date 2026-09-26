@@ -352,7 +352,14 @@ if (require.main === module) (async () => {
       .find((e) => e.n === "Подтягивания с дополнительным весом");
     assert.ok(pullup);
     rw.clientFreeWorkoutOpenV334();
-    rw.document.getElementById("cfwExercise").value = pullup.n;
+    const freeSearch = rw.document.getElementById("cfwExercise");
+    freeSearch.value = "подтягивания";
+    freeSearch.dispatchEvent(new rw.Event("input", { bubbles: true }));
+    const freeChoice = [...rw.document.querySelectorAll("[data-cfw-index]")]
+      .find((button) => button.textContent.includes(pullup.n));
+    assert.ok(freeChoice, "canonical exercise appears in the searchable picker");
+    freeChoice.click();
+    assert.equal(rw.document.getElementById("cfwSelectedName").textContent, pullup.n);
     rw.document.getElementById("cfwWeight").value = "0";
     rw.document.getElementById("cfwWeightMode").value = "manual";
     rw.clientFreeWorkoutAddV334();

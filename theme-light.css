@@ -476,3 +476,37 @@ html[data-theme="light"] body .anton-rep-input input,
 html[data-theme="light"] body #start .cardio-compact-row input{background:#fff!important;color:#19191d!important;border-color:#d7d9df!important}
 html[data-theme="light"] body #start .cardio-compact-ex,
 html[data-theme="light"] body #start .cardio-compact-timer{background:#f4f5f8!important;color:#19191d!important;border-color:#dfe1e6!important}
+
+/* Exercise search rows in the offline strength sheet. */
+html[data-theme="light"] body .oss345-option{background:#f4f5f8!important;color:#19191d!important;border-color:#dfe1e6!important}
+html[data-theme="light"] body .oss345-option:active,
+html[data-theme="light"] body .oss345-option:focus-visible{background:#eee2f5!important}
+html[data-theme="light"] body .oss345-option b,
+html[data-theme="light"] body .oss345-selected b{color:#19191d!important}
+html[data-theme="light"] body .oss345-option small,
+html[data-theme="light"] body .oss345-meta,
+html[data-theme="light"] body .oss345-empty{color:#62656d!important}
+html[data-theme="light"] body .oss345-selected{background:#f6eafb!important;border-color:#d5a8ea!important}
+html[data-theme="light"] body .oss345-selected small,
+html[data-theme="light"] body .oss345-change{color:#8431a8!important}
+
+/* The free workout uses the same catalog, with an inline searchable picker. */
+html[data-theme="light"] body .cfw-picker-results,
+html[data-theme="light"] body .cfw-picker-option,
+html[data-theme="light"] body .cfw-row,
+html[data-theme="light"] body .cfw-empty{background:#f4f5f8!important;color:#19191d!important;border-color:#dfe1e6!important}
+html[data-theme="light"] body .cfw-picker-option:active,
+html[data-theme="light"] body .cfw-picker-option:focus-visible{background:#eee2f5!important}
+html[data-theme="light"] body .cfw-picker-option b,
+html[data-theme="light"] body .cfw-row b,
+html[data-theme="light"] body .cfw-selected b{color:#19191d!important}
+html[data-theme="light"] body .cfw-picker-option small,
+html[data-theme="light"] body .cfw-picker-meta,
+html[data-theme="light"] body .cfw-picker-empty,
+html[data-theme="light"] body .cfw-row span,
+html[data-theme="light"] body .cfw-empty{color:#62656d!important}
+html[data-theme="light"] body .cfw-selected{background:#edf7fb!important;border-color:#a7d4e7!important}
+html[data-theme="light"] body .cfw-selected span{color:#62656d!important}
+html[data-theme="light"] body .cfw-selected button,
+html[data-theme="light"] body .cfw-plan-card strong,
+html[data-theme="light"] body .cfw-kicker{color:#15728d!important}
