@@ -12,6 +12,7 @@
       .cj107-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:13px 0}.cj107-metric{background:#1b1b1e;border:1px solid #303034;border-radius:17px;padding:13px;min-width:0}.cj107-metric span{display:block;color:#8e8e93;font-size:12px}.cj107-metric b{display:block;font-size:21px;margin-top:5px}
       .cj107-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}.cj107-profile{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}.cj107-profile>div{background:#19191c;border:1px solid #2d2e33;border-radius:15px;padding:11px}.cj107-profile span{display:block;color:#8e8e93;font-size:10px}.cj107-profile b{display:block;margin-top:4px;font-size:16px}
       .cj107-ex{padding:11px 0;border-bottom:1px solid #303034}.cj107-ex:last-child{border-bottom:0}.cj107-set{color:#a6a6ab;font-size:12px;margin-top:4px}.cj107-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.cj107-fields .field{margin:0}
+      .cj107-edit-ex{padding:14px;margin:10px 0;border:1px solid #303034;border-radius:16px}.cj107-edit-head{display:flex;gap:8px;align-items:center}.cj107-edit-head input{min-width:0;flex:1}.cj107-edit-set{display:grid;grid-template-columns:48px repeat(3,minmax(0,1fr)) 35px;gap:6px;align-items:end;margin-top:9px}.cj107-edit-set input{min-width:0;width:100%}.cj107-edit-set label{font-size:11px;color:#8e8e93}.cj107-edit-set .check{align-self:end}.cj107-edit-set.cardio{grid-template-columns:48px minmax(0,1fr) 35px}.cj107-edit-ex .btn{margin-top:10px}
       @media(max-width:390px){.cj107-actions{grid-template-columns:1fr}}
     `;document.head.appendChild(style)
   }
@@ -73,7 +74,11 @@
         c.client.from('bodyweights').select('measure_date,weight_kg').eq('user_id',u).order('measure_date',{ascending:false}).limit(100),
         c.client.from('profiles').select('id,display_name,height_cm,birth_date,sex,target_weight_kg').eq('id',u).maybeSingle()
       ]);
-      const remote=A(w.data).filter(x=>{const s=x.payload||{},id=String(x.external_id||s.id||'');return s.ended&&done(s)>0&&!d.has(id)});
+      const localById=new Map(A(window.st?.sessions).map(s=>[String(s.id),s]));
+      const remote=A(w.data).filter(x=>{const s=x.payload||{},id=String(x.external_id||s.id||'');return s.ended&&done(s)>0&&!d.has(id)}).map(x=>{
+        const local=localById.get(String(x.external_id||x.payload?.id||''));
+        return local&&Number(local.editedAt||0)>Number(x.payload?.editedAt||0)?{...x,payload:local}:x;
+      });
       const seen=new Set(remote.map(x=>String(x.external_id||x.payload?.id||'')));
       const local=A(window.st?.sessions).filter(s=>s?.ended&&done(s)>0&&!d.has(String(s.id))&&!seen.has(String(s.id))).map(s=>({external_id:String(s.id),workout_date:date(s),payload:s,localOnly:true}));
       C.rows=[...remote,...local].sort((a,b)=>Number(b.payload?.ended||Date.parse(b.workout_date)||0)-Number(a.payload?.ended||Date.parse(a.workout_date)||0));
@@ -131,7 +136,81 @@
 
   window.trainerSelfWorkout110=async token=>{
     await load();const r=find(token);if(!r)return;const s=r.payload||{};
-    modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${E(title(s))}</h2><div class="muted">${E(rd(date(s,r)))}</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="cj107-grid"><div class="cj107-metric"><span>Тоннаж</span><b>${ton(s).toLocaleString('ru-RU')} кг</b></div><div class="cj107-metric"><span>Средний RPE</span><b>${rpe(s)??'—'}</b></div><div class="cj107-metric"><span>Подходов</span><b>${done(s)}</b></div><div class="cj107-metric"><span>Время</span><b>${durationText(s)||'—'}</b></div></div><div class="section">УПРАЖНЕНИЯ</div><div class="card">${A(s.ex).map(e=>{const x=exline(e);return x?`<div class="cj107-ex"><b>${E(typeof displayExerciseName==='function'?displayExerciseName(typeof baseExerciseName==='function'?baseExerciseName(e.n):e.n):e.n)}</b><div class="cj107-set">${E(x)}</div></div>`:''}).join('')}</div><div class="cj107-actions"><button class="btn primary" onclick="trainerSelfShare110('${encodeURIComponent(key(r))}')">Поделиться</button><button class="btn danger" onclick="trainerSelfDelete110('${encodeURIComponent(key(r))}')">Удалить тренировку</button></div>`);
+    modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${E(title(s))}</h2><div class="muted">${E(rd(date(s,r)))}</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="cj107-grid"><div class="cj107-metric"><span>Тоннаж</span><b>${ton(s).toLocaleString('ru-RU')} кг</b></div><div class="cj107-metric"><span>Средний RPE</span><b>${rpe(s)??'—'}</b></div><div class="cj107-metric"><span>Подходов</span><b>${done(s)}</b></div><div class="cj107-metric"><span>Время</span><b>${durationText(s)||'—'}</b></div></div><div class="section">УПРАЖНЕНИЯ</div><div class="card">${A(s.ex).map(e=>{const x=exline(e);return x?`<div class="cj107-ex"><b>${E(typeof displayExerciseName==='function'?displayExerciseName(typeof baseExerciseName==='function'?baseExerciseName(e.n):e.n):e.n)}</b><div class="cj107-set">${E(x)}</div></div>`:''}).join('')}</div><div class="cj107-actions"><button class="btn" onclick="trainerSelfEdit110('${encodeURIComponent(key(r))}')">Редактировать</button><button class="btn primary" onclick="trainerSelfShare110('${encodeURIComponent(key(r))}')">Поделиться</button><button class="btn danger" onclick="trainerSelfDelete110('${encodeURIComponent(key(r))}')">Удалить тренировку</button></div>`);
+  };
+
+  let editDraft=null,editToken='';
+  const editNum=value=>{const raw=String(value??'').trim().replace(',','.');if(!raw)return null;const n=Number(raw);return Number.isFinite(n)?n:null};
+  const editDuration=value=>{const parts=String(value??'').trim().split(':');if(parts.length<2||parts.length>3||parts.some(x=>!/^\d+$/.test(x)))return null;const nums=parts.map(Number);if(nums.slice(1).some(n=>n>59))return null;return (parts.length===3?nums[0]*3600+nums[1]*60+nums[2]:nums[0]*60+nums[1])*1000};
+  function captureEdit(){
+    if(!editDraft)return;
+    const root=document.getElementById('ts110Editor');if(!root)return;
+    editDraft.name=root.querySelector('#ts110Title')?.value.trim()||'';
+    editDraft.date=root.querySelector('#ts110EditDate')?.value||editDraft.date;
+    editDraft.__editDurationText=root.querySelector('#ts110EditDuration')?.value.trim();
+    root.querySelectorAll('[data-edit-ex]').forEach(el=>{
+      const e=editDraft.ex[Number(el.dataset.editEx)];if(!e)return;
+      e.n=el.querySelector('[data-edit-name]')?.value.trim()||e.n;
+      el.querySelectorAll('[data-edit-set]').forEach(row=>{
+        const x=e.set[Number(row.dataset.editSet)];if(!x)return;
+        x.ok=!!row.querySelector('[data-edit-ok]')?.checked;
+        if(cardio(e)){
+          const seconds=editNum(row.querySelector('[data-edit-seconds]')?.value);
+          x.workSeconds=seconds==null?0:seconds;
+        }else{
+          x.w=editNum(row.querySelector('[data-edit-weight]')?.value);
+          x.r=editNum(row.querySelector('[data-edit-reps]')?.value);
+          const effort=editNum(row.querySelector('[data-edit-rpe]')?.value);
+          x.rpe=effort==null?'':effort;
+        }
+      });
+    });
+  }
+  function renderEdit(){
+    const s=editDraft;if(!s)return;
+    modal(`<div id="ts110Editor"><div class="sheet-grabber"></div><div class="row between"><h2>Редактировать тренировку</h2><button class="btn tiny" onclick="trainerSelfWorkout110('${editToken}')">✕</button></div><div class="field"><label>Название</label><input id="ts110Title" value="${E(s.name||'')}" placeholder="Название тренировки"></div><div class="cj107-fields"><div class="field"><label>Дата</label><input id="ts110EditDate" type="date" value="${E(s.date||'')}"></div><div class="field"><label>Время, ч:м:с</label><input id="ts110EditDuration" inputmode="numeric" value="${E(s.__editDurationText??durationText(s))}" placeholder="2:46:25"></div></div><div class="section">УПРАЖНЕНИЯ И ПОДХОДЫ</div>${A(s.ex).map((e,ei)=>`<div class="cj107-edit-ex" data-edit-ex="${ei}"><div class="cj107-edit-head"><input data-edit-name aria-label="Название упражнения" value="${E(e.n)}"><button class="btn tiny danger" onclick="trainerSelfEditRemoveExercise110(${ei})" aria-label="Удалить упражнение">✕</button></div>${A(e.set).map((x,si)=>`<div class="cj107-edit-set ${cardio(e)?'cardio':''}" data-edit-set="${si}"><label><input data-edit-ok type="checkbox" ${x.ok?'checked':''}> Готово</label>${cardio(e)?`<label>Секунды<input data-edit-seconds type="number" min="0" inputmode="numeric" value="${E(x.workSeconds??x.timedSeconds??0)}"></label>`:`<label>Кг<input data-edit-weight type="number" min="0" step="any" inputmode="decimal" value="${E(x.w??'')}"></label><label>Повторы<input data-edit-reps type="number" min="0" step="1" inputmode="numeric" value="${E(x.r??'')}"></label><label>RPE<input data-edit-rpe type="number" min="1" max="10" step="0.5" inputmode="decimal" value="${E(x.rpe??'')}"></label>`}<button class="btn tiny" onclick="trainerSelfEditRemoveSet110(${ei},${si})" aria-label="Удалить подход">✕</button></div>`).join('')}<button class="btn tiny" onclick="trainerSelfEditAddSet110(${ei})">＋ Подход</button></div>`).join('')}<button class="btn full" onclick="trainerSelfEditAddExercise110()">＋ Упражнение</button><div class="cj107-actions"><button class="btn" onclick="trainerSelfWorkout110('${editToken}')">Отмена</button><button class="btn primary" id="ts110SaveEdit" onclick="trainerSelfSaveEdit110()">Сохранить</button></div></div>`);
+  }
+  window.trainerSelfEdit110=async token=>{
+    await load();const r=find(token);if(!r)return;
+    editToken=encodeURIComponent(key(r));editDraft=JSON.parse(JSON.stringify(r.payload||{}));
+    editDraft.date=date(editDraft,r);renderEdit();
+  };
+  window.trainerSelfEditAddSet110=ei=>{captureEdit();const e=editDraft?.ex?.[ei];if(!e)return;const prev=A(e.set).at(-1)||{};e.set=A(e.set);e.set.push({...prev,n:e.set.length+1,ok:false,rpe:''});renderEdit()};
+  window.trainerSelfEditRemoveSet110=(ei,si)=>{captureEdit();const e=editDraft?.ex?.[ei];if(!e)return;e.set.splice(si,1);renderEdit()};
+  window.trainerSelfEditRemoveExercise110=ei=>{captureEdit();editDraft?.ex?.splice(ei,1);renderEdit()};
+  window.trainerSelfEditAddExercise110=()=>{captureEdit();editDraft.ex.push({n:'Новое упражнение',mode:'reps',set:[{n:1,w:null,r:null,rpe:'',ok:false}]});renderEdit()};
+  window.trainerSelfSaveEdit110=async()=>{
+    captureEdit();const s=editDraft,r=find(decodeURIComponent(editToken));if(!s||!r)return;
+    if(!s.name.trim()||!s.date||!A(s.ex).length)return toast('Укажи название, дату и упражнение');
+    const duration=editDuration(s.__editDurationText);
+    if(duration==null||duration>86400000)return toast('Укажи время в формате ч:м:с');
+    for(const e of s.ex){
+      if(!e.n.trim())return toast('Укажи название упражнения');
+      for(const x of A(e.set)){
+        if(!x.ok)continue;
+        if(cardio(e)){if(!Number.isFinite(x.workSeconds)||x.workSeconds<0)return toast('Проверь время подхода');continue}
+        if(x.w==null||x.w<0||!Number.isInteger(x.r)||x.r<=0)return toast('Проверь вес и повторы выполненных подходов');
+        if(x.rpe!==''&&(x.rpe<1||x.rpe>10))return toast('RPE должен быть от 1 до 10');
+      }
+    }
+    if(!done(s))return toast('Оставь хотя бы один выполненный подход');
+    const old=r.payload||{},start=new Date(old.started||Date.now());
+    const [year,month,day]=s.date.split('-').map(Number);start.setFullYear(year,month-1,day);
+    s.started=start.getTime();s.finalDurationMs=duration;s.durationMs=duration;s.ended=s.started+duration;
+    delete s.__editDurationText;s.editedAt=Date.now();s.updatedAt=s.editedAt;
+    const id=String(r.external_id||old.id||s.id||'');s.id=id;
+    const previous=A(window.st.sessions).findIndex(x=>String(x.id)===id);
+    if(previous>=0)window.st.sessions[previous]=s;else window.st.sessions.push(s);
+    if(typeof save==='function')save();
+    const button=document.getElementById('ts110SaveEdit');if(button)button.disabled=true;
+    const synced=await window.cloudSyncSession?.(s);
+    if(synced){C.at=0;await load(true)}else{
+      r.payload=s;C.at=Date.now();
+    }
+    window.dispatchEvent(new CustomEvent('unvrsl:history-updated',{detail:{sessionId:id,edited:true}}));
+    window.statsProgressRefresh?.(true);renderSelf();
+    editDraft=null;await window.trainerSelfWorkout110(editToken);
+    toast(synced?'Тренировка обновлена':'Сохранено на устройстве. Облако обновится при синхронизации');
   };
 
   window.trainerSelfShare110=async token=>{

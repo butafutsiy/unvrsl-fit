@@ -21,7 +21,9 @@
   function arr(x){return Array.isArray(x)?x:[]}
   function doneCount(session){return arr(session?.ex).reduce((sum,e)=>sum+arr(e?.set).filter(x=>x?.ok).length,0)}
   function sessionTime(s){for(const value of [s?.ended,s?.endedAt,s?.started,s?.startedAt,s?.date]){if(typeof value==='number'&&Number.isFinite(value))return value;const num=Number(value);if(Number.isFinite(num)&&num>1e11)return num;const parsed=typeof value==='string'?Date.parse(value):NaN;if(Number.isFinite(parsed))return parsed}return 0}
-  function sessionScore(s){return sessionTime(s)+doneCount(s)*10}
+  // An edited completed workout must win over its older cloud snapshot even
+  // when the edit reduces the number of completed sets or changes the date.
+  function sessionScore(s){return Math.max(sessionTime(s),Number(s?.editedAt||0))+doneCount(s)*10}
   function mergeByKey(first,second,keyFn,scoreFn){
     const map=new Map();
     for(const item of [...arr(first),...arr(second)]){
