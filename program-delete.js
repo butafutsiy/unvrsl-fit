@@ -7,6 +7,23 @@
   const STORE='unvrsl-fit-deleted-programs-v2';
   const BUILTIN_STORE='unvrsl-fit-builtin-hidden-v1';
   const normalizedName=value=>String(value||'').toLowerCase().replace(/[·•]/g,' ').replace(/\s+/g,' ').trim();
+  const numeric=value=>{if(value==null||value==='')return null;const n=Number(String(value).replace(',','.'));return Number.isFinite(n)?n:null};
+  const label=value=>String(Math.round(value*10)/10).replace('.',',');
+  function programLoadGrid(weeks){
+    const entries=(Array.isArray(weeks)?weeks:[]).map((week,index)=>{
+      let lo=numeric(week?.intensityMin??week?.weekIntensityMin??week?.intensity?.min);
+      let hi=numeric(week?.intensityMax??week?.weekIntensityMax??week?.intensity?.max);
+      if(!(lo>0))lo=null;if(!(hi>0))hi=null;
+      if(lo==null&&hi==null)return'';
+      lo=lo??hi;hi=hi??lo;if(lo<=1)lo*=100;if(hi<=1)hi*=100;
+      const rpeLo=numeric(week?.rpeMin??week?.weekRpeMin),rpeHi=numeric(week?.rpeMax??week?.weekRpeMax);
+      const rpe=rpeLo==null&&rpeHi==null?'':`<span>RPE ${label(Math.min(rpeLo??rpeHi,rpeHi??rpeLo))}–${label(Math.max(rpeLo??rpeHi,rpeHi??rpeLo))}</span>`;
+      return `<div class="builtin-load-v296-cell"><b>W${index+1}</b><span class="pct">${label(Math.min(lo,hi))}–${label(Math.max(lo,hi))}%</span>${rpe}</div>`;
+    }).filter(Boolean);
+    const hasRpe=entries.some(entry=>entry.includes('<span>RPE '));
+    return entries.length?`<div class="builtin-load-v296" data-program-load-profile="1"><div class="builtin-load-v296-title">${hasRpe?'Интенсивность и RPE':'Интенсивность'} по неделям</div><div class="builtin-load-v296-grid">${entries.join('')}</div></div>`:'';
+  }
+  window.unvrslProgramLoadGridHtmlV431=programLoadGrid;
 
   function readDeleted(){
     const out=new Set(Array.isArray(st.deletedProgramKeys)?st.deletedProgramKeys:[]);
@@ -99,7 +116,7 @@
 
   function programCard(p){
     const id=String(p.id),primary=String(st.primaryProgramId)===id;
-    return `<div class="card coach-program ${primary?'program-card-primary':''}"><div class="row between"><div class="grow"><div class="title">${esc(p.name||'Программа')}</div><div class="muted small">${p.weeks?.length||0} нед. · ${(p.weeks||[]).reduce((a,w)=>a+(w.days?.length||0),0)} тренировок</div>${primary?'<span class="chip green program-primary-badge">Основная</span>':''}</div><button class="btn tiny primary" onclick="openProgramEditor('${id}')">Открыть</button></div><div class="coach-actions"><button class="btn tiny" onclick="shareProgram('${id}')">Поделиться</button><button class="btn tiny" onclick="saveProgramAsTemplate('${id}')">В шаблоны</button><button class="btn tiny" onclick="renameProgramSheet('${id}')">Переименовать</button><button class="btn tiny ${primary?'primary':''}" ${primary?'disabled':''} onclick="setPrimaryProgram('${id}')">${primary?'Основная':'Сделать основной'}</button><button class="btn tiny danger" onclick="trainerDeleteOwnProgram('${id}')">Удалить</button></div></div>`;
+    return `<div class="card coach-program ${primary?'program-card-primary':''}"><div class="row between"><div class="grow"><div class="title">${esc(p.name||'Программа')}</div><div class="muted small">${p.weeks?.length||0} нед. · ${(p.weeks||[]).reduce((a,w)=>a+(w.days?.length||0),0)} тренировок</div>${primary?'<span class="chip green program-primary-badge">Основная</span>':''}</div><button class="btn tiny primary" onclick="openProgramEditor('${id}')">Открыть</button></div>${programLoadGrid(p.weeks)}<div class="coach-actions"><button class="btn tiny" onclick="shareProgram('${id}')">Поделиться</button><button class="btn tiny" onclick="saveProgramAsTemplate('${id}')">В шаблоны</button><button class="btn tiny" onclick="renameProgramSheet('${id}')">Переименовать</button><button class="btn tiny ${primary?'primary':''}" ${primary?'disabled':''} onclick="setPrimaryProgram('${id}')">${primary?'Основная':'Сделать основной'}</button><button class="btn tiny danger" onclick="trainerDeleteOwnProgram('${id}')">Удалить</button></div></div>`;
   }
   function builtinCard(){
     if(st.builtinProgramHidden)return'';
@@ -158,7 +175,7 @@
       const week=p.p?.weeks?.[w-1],rows=week?.days||[];
       days=rows.map((d,di)=>`<div class="start-picker-day row between"><div class="grow"><b>${esc(d.name||`День ${di+1}`)}</b><div class="muted small">RPE ${d?.ex?.[0]?.rpe??8} · ${d.ex?.length||0} упражнений</div></div><button class="btn tiny primary" onclick="startPickedProgram('${encodeURIComponent(p.id)}',${w-1},${di})">Старт</button></div>`).join('');
     }
-    const html=`<div class="row between"><h2>Выбрать тренировку</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="section" style="margin-top:16px">ПРОГРАММА</div><div class="start-program-strip">${programHtml}</div><div class="start-picker-current">Выбрано: <b style="color:var(--text)">${esc(p.name)}</b></div><div id="startPickerWeeks" class="weekbar">${weeks}</div><div id="startPickerDays">${days||'<div class="card muted">В этой неделе тренировок нет.</div>'}</div>`;
+    const html=`<div class="row between"><h2>Выбрать тренировку</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="section" style="margin-top:16px">ПРОГРАММА</div><div class="start-program-strip">${programHtml}</div><div class="start-picker-current">Выбрано: <b style="color:var(--text)">${esc(p.name)}</b></div>${p.builtin?'':programLoadGrid(p.p?.weeks)}<div id="startPickerWeeks" class="weekbar">${weeks}</div><div id="startPickerDays">${days||'<div class="card muted">В этой неделе тренировок нет.</div>'}</div>`;
     const sh=document.getElementById('sheet');if(document.getElementById('modal')?.classList.contains('show')&&sh)sh.innerHTML=html;else modal(html);
   }
   window.selectStartProgram=function(token){picker.pid=decodeURIComponent(token);picker.week=null;st.startProgramId=picker.pid;st.startProgramWeeks=st.startProgramWeeks&&typeof st.startProgramWeeks==='object'?st.startProgramWeeks:{};save();renderPicker()};
