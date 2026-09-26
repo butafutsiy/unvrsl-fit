@@ -2,9 +2,9 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=path.resolve(__dirname,'..'),read=name=>fs.readFileSync(path.join(root,name),'utf8');
 
-test('W5 Romanian deadlift uses September 21 for its 5–7 recommendation after a wrapped preview',async()=>{
+test('W5 Romanian deadlift uses September 21 for its 4–6 recommendation after a wrapped preview',async()=>{
   let previewHtml='',saves=0;
-  const oldSet={w:135,r:6,ok:false,targetRepMin:4,targetRepMax:6,targetRepLabel:'4–6'};
+  const oldSet={w:135,r:7,ok:false,targetRepMin:5,targetRepMax:7,targetRepLabel:'5–7'};
   const finished={w:135,r:5,ok:true,targetRepMin:5,targetRepMax:7,targetRepLabel:'5–7'};
   const manual={w:135,r:7,actualReps:7,ok:false,manualFields:{r:true},targetRepMin:5,targetRepMax:7};
   const current={w:5,c:'A2',target:8,ex:[{n:'Румынская тяга',set:[oldSet,finished,manual]}]};
@@ -24,25 +24,25 @@ test('W5 Romanian deadlift uses September 21 for its 5–7 recommendation after 
     }:({textContent:'',style:{}})};
   vm.runInNewContext(read('plan-w5.js'),context);
   const routine=context.UNVRSL_ROUTINES.find(r=>r.c==='A2'),source=routine.e.find(e=>e.n==='Румынская тяга');
-  assert.equal(source.r,5);assert.match(source.d,/5–7 повторений/);
+  assert.equal(source.r,6);assert.match(source.d,/4–6 повторений/);
   vm.runInNewContext(read('preview-authority.js'),context);
   vm.runInNewContext(read('preview-mobile-fix.js'),context);
   context.preview(5,'A2');
-  assert.match(previewHtml,/4×5–7 · 135 кг/);
-  assert.doesNotMatch(previewHtml,/4×4–6/);
+  assert.match(previewHtml,/4×4–6 · 135 кг/);
+  assert.doesNotMatch(previewHtml,/4×5–7/);
   vm.runInNewContext(read('active-rep-ranges.js'),context);
-  assert.equal(context.unvrslActiveRepRangeV316(5,source).min,5);
+  assert.equal(context.unvrslActiveRepRangeV316(5,source).min,4);
   const ghostMap=JSON.parse(read('rep-range-ghost.js').match(/const R=(\{.*?\});/)[1]);
-  assert.deepEqual(ghostMap['5']['Румынская тяга'],[5,7]);
+  assert.deepEqual(ghostMap['5']['Румынская тяга'],[4,6]);
   const decoratedPreview=function(w,c){return context.previewBeforeCollapse(w,c)};
   context.previewBeforeCollapse=context.preview;
   decoratedPreview.__methodPreviewCollapseBase=context.preview;
   context.preview=decoratedPreview;
   vm.runInNewContext(read('training-prescription-bridge.js'),context);
   assert.equal(context.unvrslTrainingPrescriptionPrepareV292(current),true);
-  assert.deepEqual([oldSet.targetRepMin,oldSet.targetRepMax,oldSet.targetRepLabel,oldSet.r],[5,7,'5–7','']);
+  assert.deepEqual([oldSet.targetRepMin,oldSet.targetRepMax,oldSet.targetRepLabel,oldSet.r],[4,6,'4–6','']);
   assert.equal(finished.r,5);
-  assert.deepEqual([manual.r,manual.targetRepMin,manual.targetRepMax],[7,5,7]);
+  assert.deepEqual([manual.r,manual.targetRepMin,manual.targetRepMax],[7,4,6]);
   context.WorkoutDomain=require('../workout-domain.js');
   context.workoutRegistry=context.WorkoutDomain.registry([{id:'rdl',n:'Румынская тяга со штангой',aliases:['Румынская тяга']}]);
   current.id='w5-active';
@@ -52,7 +52,7 @@ test('W5 Romanian deadlift uses September 21 for its 5–7 recommendation after 
   ];
   vm.runInNewContext(read('training-load-model.js'),context);
   await Promise.resolve();
-  assert.deepEqual(JSON.parse(JSON.stringify(oldSet.recommendation.repRange)),{lo:5,hi:7});
+  assert.deepEqual(JSON.parse(JSON.stringify(oldSet.recommendation.repRange)),{lo:4,hi:6});
   assert.equal(oldSet.recommendation.basis.date,'2026-09-21');
   assert.equal(oldSet.recommendation.basis.estimatedOneRepMax,182);
   assert.ok(saves>0);

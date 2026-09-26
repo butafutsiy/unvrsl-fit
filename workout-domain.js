@@ -518,7 +518,11 @@
       number(lastSet.set.actualReps??lastSet.set.r)<range.lo||effort(lastSet)>target
     );
     if(fatigueLimited)projected=p.loadType==="bodyweight_assisted"?Math.max(prior+p.step,projected):Math.min(prior-p.step,projected);
-    const band=intensityBand(session),weekMid=band?((band.lo+band.hi)/2):null;
+    // The test percentage belongs to test attempts, not every compound or
+    // accessory performed during week eight.
+    const weekEight=Number(session.w)===8&&!session.programId&&!session.planId&&!session.programName;
+    const testAttempt=weekEight&&compound&&/тест/i.test(String(e.n||""));
+    const band=weekEight&&!testAttempt?null:intensityBand(session),weekMid=band?((band.lo+band.hi)/2):null;
     const weeklyRaw=!bodyLoad&&stableOneRepMax!=null&&weekMid!=null?stableOneRepMax*weekMid:null;
     const weeklyCorridor=!bodyLoad&&stableOneRepMax!=null&&band?{min:stableOneRepMax*band.lo,max:stableOneRepMax*band.hi}:null;
     let weeklyApplied=false;
@@ -529,7 +533,10 @@
     }
     const reference=projected??prior;
     const changedRepBand=Math.abs(oldReps-targetReps)>=2;
-    const anomalous=seed>0&&reference>0&&Math.abs(seed-reference)>Math.max(2*p.step,seed*(projected!=null&&changedRepBand?.25:.1));
+    let anomalous=seed>0&&reference>0&&Math.abs(seed-reference)>Math.max(2*p.step,seed*(projected!=null&&changedRepBand?.25:.1));
+    // Week eight offers an updated weight for every base exercise with
+    // comparable history. A stale prescribed seed is not a reason to hide it.
+    if(weekEight&&compound&&projected!=null&&ids.length)anomalous=false;
     let raw=anomalous?seed:(projected??prior??seed??0),
       reason = "Недостаточно сопоставимой истории: текущий вес сохранён",
       action = projected!=null&&!anomalous&&Math.abs(projected-prior)>=p.step/2?"range_adjust":"hold";
@@ -643,7 +650,46 @@
         nextSetSuggestion={weight:direction?moveWeight(used,direction,p):used,action:hard?"down":confirmedEasy?"up":"hold",reason:hard?"Ниже диапазона или тяжелее целевого RPE":confirmedEasy?"Два подхода подряд легче цели":"Подход в целевом диапазоне"};
       }
     }
-    const weight=ids.length&&!anomalous?roundWeight(raw,p,ids.length===1&&projected==null?"down":undefined):raw,
+    let testWeekSuggestion=false;
+    const backoff=weekEight&&compound&&/back-off/i.test(String(e.n||""));
+    if(backoff){
+      const completedTest=currentRows.filter(x=>/тест/i.test(String(x.exercise.n||"")));
+      const best=completedTest.length?Math.max(...completedTest.map(x=>number(x.set.w)||0)):0;
+      if(best>0&&!bodyLoad){
+        const fraction=/70%/.test(String(e.n||""))?.70:.72;
+        const suggested=roundWeight(best*fraction,p,"down");
+        if(suggested>0){
+          raw=suggested;projected=suggested;anomalous=false;testWeekSuggestion=true;
+          action="backoff";reason=`Back-off W8: ${Math.round(fraction*100)}% от лучшей выполненной тестовой попытки ${best} кг, с учётом шага ${p.step} кг`;
+        }
+      }
+    }
+    if(testAttempt){
+      const previousTest=currentRows.filter(x=>/тест/i.test(String(x.exercise.n||""))).at(-1);
+      const todayReps=number(previousTest?.set?.actualReps??previousTest?.set?.r);
+      const todayWeight=number(previousTest?.set?.w);
+      const todayMax=previousTest?(estimateMaxFromSet(previousTest.set)??(todayWeight>0&&todayReps>=1&&todayReps<=5?todayWeight*(1+todayReps/30):null)):null;
+      const referenceMax=stableOneRepMax??todayMax;
+      if(referenceMax>0&&["external_total","machine_stack","per_dumbbell","per_side"].includes(p.loadType)){
+        const name=String(e.n||"");
+        const attempt=Number(name.match(/попытка\s*(\d+)/i)?.[1]||0);
+        const factor=range.lo>=5?.85:range.lo>=2?.925:attempt===1?.90:attempt===2?.95:attempt>=3?.985:.975;
+        let suggested=roundWeight(referenceMax*factor,p,"down");
+        if(previousTest){
+          const used=number(previousTest.set.w),felt=effortRpe(previousTest.set);
+          if(used>0){
+            if(felt!=null&&felt>=9.5)suggested=Math.min(suggested,used);
+            else suggested=Math.min(suggested,used+2*p.step);
+          }
+        }
+        if(suggested>0){
+          raw=suggested;projected=suggested;anomalous=false;testWeekSuggestion=true;
+          action=previousTest&&effortRpe(previousTest.set)>=9.5?"hold":"test_attempt";
+          reason=`Тест W8: оценка 1ПМ ≈ ${Number(referenceMax.toFixed(1))} кг; ${Math.round(factor*1000)/10}% с округлением по шагу ${p.step} кг${previousTest?". Учтена выполненная попытка":""}. Следующую попытку выполняй только после оценки предыдущей`;
+        }
+      }
+    }
+    const weight=(ids.length||testWeekSuggestion)&&!anomalous?roundWeight(raw,p,ids.length===1&&projected==null?"down":undefined):raw,
       confidence =
         anomalous?"низкая":ids.length >= 3 && effortKnown === recent.length
           ? projected!=null?"средняя":"высокая"
@@ -659,6 +705,7 @@
       step: p.step,
       action,
       planPreserved: anomalous,
+      testWeekSuggestion,
       nextSetSuggestion,
       trend,
       reason,

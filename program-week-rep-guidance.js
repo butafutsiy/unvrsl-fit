@@ -15,9 +15,9 @@
     {lo:80,hi:85,base:[5,7],iso:[8,12]},
     {lo:85,hi:88,base:[4,6],iso:[8,10]},
     {lo:88,hi:90,base:[3,5],iso:[6,10]},
-    {lo:90,hi:95,base:[2,4],iso:[6,8]},
-    {lo:95,hi:100,base:[1,3],iso:[4,6]},
-    {lo:90,hi:100,base:[1,3],iso:[4,6]}
+    {lo:90,hi:95,base:[2,3],iso:[8,12]},
+    {lo:95,hi:100,base:[1,1],iso:[8,12]},
+    {lo:90,hi:100,base:[1,3],iso:[8,12]}
   ]);
 
   const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};

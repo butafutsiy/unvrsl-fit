@@ -45,9 +45,17 @@
     Object.entries(fields).forEach(([k,v])=>{changed=put(cur,k,v)||changed});
     (cur.ex||[]).forEach(ex=>{
       if(ex?.mode==='cardio')return;
+      const name=String(ex.n||'');
+      const isolation=/(разгибан|сгибан|подъ[её]м штанги на бицепс|супинац|молотков|мах|разведен|сведен|бицеп|трицеп|кроссов|икр|дельт|бабоч|канат|французск)/i.test(name);
+      const effort=Number(cur.w)===8?(/тест/i.test(name)?[9,10]:isolation?[6,8]:[7,8]):p.rpe;
       (ex.set||[]).forEach(set=>{
-        changed=put(set,'targetRpeResolved',target)||changed;
-        changed=put(set,'targetRir',targetRir)||changed;
+        const setTarget=mid(effort);
+        changed=put(set,'targetRpeResolved',setTarget)||changed;
+        changed=put(set,'targetRir',Math.max(0,10-setTarget))||changed;
+        if(Number(cur.w)===8){
+          changed=put(set,'targetRpeMin',effort[0])||changed;
+          changed=put(set,'targetRpeMax',effort[1])||changed;
+        }
       });
     });
     if(changed)saveState();
