@@ -21,6 +21,9 @@ test('the built-in program keeps its week profile after every card render',()=>{
   for(const file of ['builtin-cycle-load-profile.js','program-delete.js']){
     vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file});
   }
+  const canonical=context.trainerProgramsPage;
+  vm.runInContext(fs.readFileSync(path.join(root,'trainer-nav-patch.js'),'utf8'),context,{filename:'trainer-nav-patch.js'});
+  assert.equal(context.trainerProgramsPage,canonical,'the late trainer navigation module keeps the canonical program renderer');
   for(let i=0;i<3;i++){
     context.trainerProgramsPage();
     assert.equal((page.innerHTML.match(/data-builtin-load-profile="296"/g)||[]).length,1);
