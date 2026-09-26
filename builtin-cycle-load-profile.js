@@ -103,6 +103,7 @@
     const cells=Object.entries(PROFILE).map(([w,p])=>`<div class="builtin-load-v296-cell"><b>W${w}</b><span class="pct">${range(p.pct)}%</span><span>RPE ${range(p.rpe)}</span></div>`).join('');
     return `<div class="builtin-load-v296" data-builtin-load-profile="296"><div class="builtin-load-v296-title">Интенсивность и RPE по неделям</div><div class="builtin-load-v296-grid">${cells}</div></div>`
   }
+  W.unvrslBuiltinLoadGridHtmlV296=gridHtml;
   function weekHtml(w){
     const p=PROFILE[w];if(!p)return'';
     return `<div class="builtin-week-profile-v296" data-builtin-week-profile="${w}"><b>W${w} · ${range(p.pct)}% · RPE ${range(p.rpe)}</b><span>${p.focus}</span></div>`
