@@ -22,6 +22,8 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
     const test=result.find(x=>x.week===8).sets.find(s=>/тест/i.test(s.name));
     assert.equal(test.range.lo,1);assert.equal(test.range.hi,1);assert.ok(test.weight>=140&&test.weight<=150);assert.equal(test.date,'2026-09-26');
     const back=result.find(x=>x.week===8).sets.filter(s=>/back-off/i.test(s.name));assert.ok(back.every(s=>s.range.lo===5&&s.range.hi===5));
+    assert.equal(back.length,3);
+    const attempts=result.find(x=>x.week===8).sets.filter(s=>/тест/i.test(s.name));assert.equal(attempts.length,3);assert.ok(attempts[0].weight<=attempts[1].weight&&attempts[1].weight<=attempts[2].weight);
     const unvrsl=result.find(x=>x.week===3).sets;assert.equal(unvrsl.length,8);assert.ok(unvrsl[0].weight>unvrsl[1].weight);
     const sldr=result.find(x=>x.week===6).sets;assert.equal(sldr.length,9);assert.equal(new Set(sldr.map(s=>s.weight)).size,1);
     const surface=w.eval(`(()=>{const group=groupIndexedEntries(st.current.ex).find(g=>/Жим (?:штанги )?л[её]жа/i.test(g.base));const html=exerciseGroupCard(st.current,group);return {html,targets:group.entries.flatMap(e=>e.set.map(s=>({role:WorkoutDomain.setRole(e,s),target:effortTargets(st.current,e,s)})))}})()`);
@@ -30,6 +32,17 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
     w.eval(`renderExerciseDetail(workoutRegistry.resolve('Жим лёжа'))`);
     const expected=w.eval(`WorkoutDomain.strengthEstimate(st.current.ex[0],WorkoutDomain.history(st.current.ex[0],st.sessions,workoutRegistry),workoutRegistry).estimate.toFixed(1)`);
     assert.ok(w.document.querySelector('.catalog394-estimate').textContent.includes(expected+' кг'));
+    const controls=await w.eval(`(async()=>{
+      startPage();await trainingEngine200Tick();
+      const card=document.querySelector('#start .te200-rec');
+      const apply=[...card.querySelectorAll('button')].find(b=>b.textContent==='Применить рекомендацию');
+      const cancel=[...card.querySelectorAll('button')].find(b=>b.textContent==='Отменить');
+      const ex=st.current.ex.find(e=>/Жим (?:штанги )?л[её]жа.*тест/i.test(e.n)),set=ex.set[0];
+      const weight=set.w;cancel.click();await trainingLoadModel292.run(true);await trainingEngine200Tick();
+      return {buttons:!!apply&&!!cancel,weightPreserved:weight===set.w,dismissed:set.dismissedRecommendation===set.recommendation.proposalKey,iso:st.current.ex.filter(e=>e.set.some(s=>s.role==='isolation_test')).map(e=>e.set.filter(s=>s.role==='isolation_test').length)};
+    })()`);
+    assert.ok(controls.buttons&&controls.weightPreserved&&controls.dismissed);
+    assert.ok(controls.iso.length>0&&controls.iso.every(n=>n===3));
     assert.ok(!errors.length,errors.join('\n'));
     console.log(JSON.stringify({status:'passed',weeks:result.map(x=>({week:x.week,weights:x.sets.map(s=>s.weight),reps:x.sets.map(s=>s.range)})),errors},null,2));
   } finally {await wait(150);dom.window.close()}

@@ -77,7 +77,12 @@
   function manualData(percent){const v=state.values,r=scoreAndPercent();return{sleep:v.sleep,energy:v.energy,stress:v.stress,soreness:v.recovery==null?null:6-v.recovery,recovery:v.recovery,stressScore:v.stress,score:r.score,percent,factor:1+percent/100,skipped:false,manual:true,autoPercent:r.percent,at:new Date().toISOString()}}
   function applyManualToCurrent(percent,cur){
     if(!cur)return false;const d=manualData(percent);cur.readiness=d;cur.readinessUsed=true;cur.readinessAdjusted=Math.abs(percent)>.001;cur.trainingReadinessDone=true;cur.trainingReadinessPromptShown=true;
-    (cur.ex||[]).forEach(ex=>{const step=stepFor(ex);(ex.set||[]).forEach(s=>{if(s?.ok||s?.manualOverride)return;const base=num(s?.plannedW)||num(s?.baselineW)||num(s?.programW);if(base>0)s.w=roundWeight(base*d.factor,step)})});
+    const domain=W.WorkoutDomain,registry=typeof workoutRegistry!=='undefined'?workoutRegistry:W.workoutRegistry;
+    if(domain&&registry)(cur.ex||[]).forEach(ex=>(ex.set||[]).forEach(s=>{
+      if(s?.ok||s?.skipped||s?.manualOverride||s?.weightSource==='manual')return;
+      const rec=domain.recommend(ex,s,cur,W.trainingLoadModel292?.history?.()||W.st?.sessions||[],registry,W.st?.exerciseWeightProfiles||{});
+      if(!rec.planPreserved)domain.applyAuto(s,{...rec,weight:rec.nextSetSuggestion?.weight??rec.weight});
+    }));
     if(Array.isArray(W.st?.readinessLog)){const i=W.st.readinessLog.map(x=>String(x?.sessionId||'')).lastIndexOf(String(cur.id||'')),row={date:cur.date,sessionId:cur.id,...d};if(i>=0)W.st.readinessLog[i]=row;else W.st.readinessLog.push(row)}
     try{W.save?.();W.startPage?.()}catch(_){ }setTimeout(()=>{try{W.trainingEngine200Tick?.()}catch(_){ }},50);return true
   }

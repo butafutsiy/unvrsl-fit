@@ -32,7 +32,8 @@
     if (!force && cloudHistory.userId === userId && Date.now() - cloudHistory.loadedAt < 60000) return;
     historyRequest = (async () => {
       const rows = [], pageSize = 500;
-      for (let offset = 0; offset < 2500; offset += pageSize) {
+      for (let offset = 0; ; offset += pageSize) {
+        if(W.cloud?.user?.id!==userId)return;
         const response = await client.from('workouts').select('payload,external_id')
           .eq('user_id', userId).order('id', { ascending: false })
           .range(offset, offset + pageSize - 1);
@@ -79,7 +80,7 @@
           ex.implementCount = ex.implementCount || row.implementCount;
         }
         for (const set of ex.set || []) {
-          if (set.ok) continue;
+          if (set.ok || set.skipped) continue;
           const rec = A.recommend(
             ex,
             set,
