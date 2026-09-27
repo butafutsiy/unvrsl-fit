@@ -14,8 +14,8 @@
  const key=e=>e?.sourceId?`id:${e.sourceId}`:`n:${base(e?.n).toLowerCase()}`;
  if(!Array.isArray(W.st?.readinessLog))W.st.readinessLog=[];
  const style=document.createElement('style');style.id='training-engine-v200-style';style.textContent=`
- .te200-rec{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin:9px 0 2px;padding:9px 11px;border-radius:14px;background:#191d1a;border:1px solid rgba(48,209,88,.28)}
- .te200-rec .te200-rec-main{min-width:0;width:100%;flex:0 1 auto}.te200-rec b{display:block;font-size:12px;color:#30d158}.te200-rec span{display:block;font-size:11px;color:#8e8e93;margin-top:2px;white-space:normal}.te200-rec .te200-rec-apply{flex:0 0 auto;min-width:96px;min-height:42px;padding:9px 12px;border-radius:13px;background:#30d158;color:#061108;font-size:12px;font-weight:850}.te200-rec .te200-rec-apply:disabled{background:#313135;color:#85858b;cursor:default}
+ .te200-rec{display:block!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;margin:9px 0 2px;padding:9px 11px;border-radius:14px;background:#191d1a;border:1px solid rgba(48,209,88,.28);overflow:visible!important}
+ .te200-rec .te200-rec-main{display:block!important;min-width:0!important;width:auto!important;max-width:none!important}.te200-rec b{display:block;font-size:12px;color:#30d158}.te200-rec span{display:block;font-size:11px;color:#8e8e93;margin-top:2px;white-space:normal}.te200-rec .te200-rec-actions{display:flex!important;flex-wrap:wrap!important;gap:8px!important;width:100%!important;margin-top:12px!important}.te200-rec .te200-rec-actions>button{flex:1 1 180px;min-width:0;min-height:42px;padding:9px 12px;border-radius:13px;font-size:12px;font-weight:850}.te200-rec .te200-rec-actions>.te200-rec-apply{flex:2 1 240px;background:#30d158;color:#061108}.te200-rec>.te200-rec-apply{display:block!important;width:100%!important;min-width:0;min-height:42px;margin-top:12px;padding:9px 12px;border-radius:13px;background:#30d158;color:#061108;font-size:12px;font-weight:850}.te200-rec>.btn:not(.te200-rec-apply){display:block!important;width:100%!important;min-height:42px;margin-top:8px}.te200-rec .te200-rec-apply:disabled{background:#313135;color:#85858b;cursor:default}
  .te200-auto{margin:9px 0 2px;padding:8px 10px;border-radius:13px;background:rgba(48,209,88,.10);color:#30d158;font-size:11px;font-weight:750}
  .te200-readiness{width:100%;margin:10px 0 4px;padding:11px 13px;border-radius:15px;background:#2a2a2d;border:1px solid #3a3a3e;font-weight:760;text-align:center}
  .te200-readiness.done{color:#30d158;border-color:rgba(48,209,88,.25);background:rgba(48,209,88,.08)}
@@ -57,7 +57,7 @@
  function sourceWeight(src,ex,setIndex,cur){const sets=src?.sets||[];if(!sets.length)return 0;if((ex.set||[]).length>1)return num(sets[setIndex]?.w??sets.at(-1)?.w);const i=occurrenceIndex(ex,cur),m=method(src,ex),count=(cur.ex||[]).filter(x=>same(x,ex.n,ex.sourceId)).length;if(m==='UNVRSL'&&count>sets.length){const map=sets.length>=3?[0,1,0,1,0,1,2,2]:sets.length===2?[0,1,0,1,0,1,1,1]:[0,0,0,0,0,0,0,0];return num(sets[map[i]??map.at(-1)]?.w)}return num(sets[i]?.w??sets.at(-1)?.w)}
  async function ensureLoadModel(){
   if(W.trainingLoadModel292?.run)return true;
-  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=441';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
+  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=442';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
   for(let i=0;i<40;i++){if(W.trainingLoadModel292?.run)return true;await new Promise(r=>setTimeout(r,50))}
   return !!W.trainingLoadModel292?.run
  }
