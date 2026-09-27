@@ -12,10 +12,24 @@
       .cj107-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:13px 0}.cj107-metric{background:#1b1b1e;border:1px solid #303034;border-radius:17px;padding:13px;min-width:0}.cj107-metric span{display:block;color:#8e8e93;font-size:12px}.cj107-metric b{display:block;font-size:21px;margin-top:5px}
       .cj107-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}.cj107-profile{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}.cj107-profile>div{background:#19191c;border:1px solid #2d2e33;border-radius:15px;padding:11px}.cj107-profile span{display:block;color:#8e8e93;font-size:10px}.cj107-profile b{display:block;margin-top:4px;font-size:16px}
       .cj107-ex{padding:11px 0;border-bottom:1px solid #303034}.cj107-ex:last-child{border-bottom:0}.cj107-set{color:#a6a6ab;font-size:12px;margin-top:4px}.cj107-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.cj107-fields .field{margin:0}
-      .cj107-history-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0 16px}.cj107-history-actions .btn,.cj107-share{width:100%;min-width:0}.cj107-share{margin-top:14px}
-      .cj107-edit-ex{padding:14px;margin:12px 0;border:1px solid var(--line,#303034);border-radius:20px;background:var(--panel,#202023);min-width:0}.cj107-edit-head{display:flex;gap:8px;align-items:center}.cj107-edit-head input{min-width:0;flex:1;font-size:17px;font-weight:700}.cj107-edit-head .btn{flex:none;margin:0}.cj107-edit-set{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line,#303034)}.cj107-edit-head+.cj107-edit-set{border-top:0}.cj107-edit-set-fields{display:grid;grid-template-columns:56px repeat(3,minmax(0,1fr)) 38px;gap:7px;align-items:end;min-width:0}.cj107-edit-set.cardio .cj107-edit-set-fields{grid-template-columns:56px minmax(0,1fr) 38px}.cj107-edit-set label{display:block;min-width:0;font-size:12px;color:var(--muted,#8e8e93)}.cj107-edit-set label>input:not([type=checkbox]){display:block;min-width:0;width:100%;height:45px;margin-top:5px;padding:8px 5px;text-align:center;border-radius:12px;font-size:15px;background:var(--bg,#111113);border:1px solid var(--line,#343438);color:var(--text,#fff)}.cj107-edit-set .cj107-done{display:grid;place-items:center;align-self:end;height:45px;cursor:pointer}.cj107-done input{position:absolute;width:1px;height:1px;opacity:0}.cj107-done-mark{display:grid;place-items:center;width:45px;height:45px;border-radius:13px;border:1px solid var(--line,#3a3a3e);background:var(--panel2,#27272a);color:transparent;font-size:29px;font-weight:800;line-height:1}.cj107-done input:checked+.cj107-done-mark{background:var(--green,#0a84ff);border-color:var(--green,#0a84ff);color:#fff}.cj107-done input:focus-visible+.cj107-done-mark{outline:2px solid var(--green,#0a84ff);outline-offset:2px}.cj107-edit-set .cj107-remove-set{height:45px;margin:0;padding:0}.cj107-edit-ex>.btn{margin-top:13px}
+      .cj107-history-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0 9px}.cj107-history-actions .btn,.cj107-share{width:100%;min-width:0}.cj107-share{margin-top:0}
+      #ts110Editor .cj107-edit-ex{padding:14px;margin:12px 0;border:1px solid var(--line,#303034);border-radius:20px;background:var(--panel,#202023);min-width:0}
+      #ts110Editor .cj107-edit-head{display:flex;gap:8px;align-items:center}
+      #ts110Editor .cj107-edit-head input{min-width:0;flex:1;font-size:17px;font-weight:700}
+      #ts110Editor .cj107-edit-head .btn{flex:none;margin:0}
+      #ts110Editor .sethead,#ts110Editor .setrow{display:grid;grid-template-columns:27px minmax(48px,1fr) minmax(46px,.86fr) 54px 46px 34px;column-gap:5px;align-items:center;width:100%;min-width:0}
+      #ts110Editor .sethead.cardio,#ts110Editor .setrow.cardio{grid-template-columns:27px minmax(0,1fr) 34px}
+      #ts110Editor .sethead{margin:14px 0 0;font-size:10px;line-height:1;text-align:center;color:var(--muted,#8e8e93)}
+      #ts110Editor .setrow{margin-top:7px}
+      #ts110Editor .setrow>*{min-width:0}
+      #ts110Editor .setrow input{width:100%;min-width:0;min-height:38px;padding:7px 3px;border-radius:11px;font-size:14px;text-align:center;background:var(--bg,#111113);border:1px solid var(--line,#343438);color:var(--text,#fff)}
+      #ts110Editor .setrow .check{width:34px;height:34px;min-width:34px;border-radius:11px;font-size:15px;justify-self:end}
+      #ts110Editor .setrow .setnum{display:grid;place-items:center;line-height:1}
+      #ts110Editor .cj107-remove-set{display:block;padding:3px 0 0;color:var(--muted,#8e8e93);font-size:12px;line-height:1}
+      #ts110Editor .cj107-edit-ex>.btn{margin-top:13px}
       #ts110Editor .cj107-actions .btn{min-width:0}
-      @media(max-width:390px){.cj107-edit-ex{padding:11px}.cj107-edit-set-fields{grid-template-columns:46px repeat(3,minmax(0,1fr)) 34px;gap:5px}.cj107-edit-set.cardio .cj107-edit-set-fields{grid-template-columns:46px minmax(0,1fr) 34px}.cj107-done-mark{width:42px;height:42px}.cj107-edit-set label>input:not([type=checkbox]),.cj107-edit-set .cj107-remove-set,.cj107-edit-set .cj107-done{height:42px}}
+      @media(max-width:430px){#ts110Editor .sethead,#ts110Editor .setrow{grid-template-columns:25px minmax(45px,1fr) minmax(43px,.82fr) 50px 43px 32px;column-gap:4px}#ts110Editor .sethead.cardio,#ts110Editor .setrow.cardio{grid-template-columns:25px minmax(0,1fr) 32px}#ts110Editor .setrow input{min-height:37px;padding:6px 2px;font-size:13.5px}#ts110Editor .setrow .check{width:32px;height:32px;min-width:32px}}
+      @media(max-width:365px){#ts110Editor .cj107-edit-ex{padding:11px}#ts110Editor .sethead,#ts110Editor .setrow{grid-template-columns:23px minmax(41px,1fr) minmax(40px,.8fr) 46px 40px 30px;column-gap:3px}#ts110Editor .sethead.cardio,#ts110Editor .setrow.cardio{grid-template-columns:23px minmax(0,1fr) 30px}#ts110Editor .setrow input{font-size:12.5px}#ts110Editor .setrow .check{width:30px;height:30px;min-width:30px}}
       @media(max-width:390px){.cj107-actions{grid-template-columns:1fr}}
     `;document.head.appendChild(style)
   }
@@ -139,7 +153,7 @@
 
   window.trainerSelfWorkout110=async token=>{
     await load();const r=find(token);if(!r)return;const s=r.payload||{};
-    modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${E(title(s))}</h2><div class="muted">${E(rd(date(s,r)))}</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="cj107-history-actions"><button class="btn" onclick="trainerSelfEdit110('${encodeURIComponent(key(r))}')">Редактировать</button><button class="btn danger" onclick="trainerSelfDelete110('${encodeURIComponent(key(r))}')">Удалить</button></div><div class="cj107-grid"><div class="cj107-metric"><span>Тоннаж</span><b>${ton(s).toLocaleString('ru-RU')} кг</b></div><div class="cj107-metric"><span>Средний RPE</span><b>${rpe(s)??'—'}</b></div><div class="cj107-metric"><span>Подходов</span><b>${done(s)}</b></div><div class="cj107-metric"><span>Время</span><b>${durationText(s)||'—'}</b></div></div><div class="section">УПРАЖНЕНИЯ</div><div class="card">${A(s.ex).map(e=>{const x=exline(e);return x?`<div class="cj107-ex"><b>${E(typeof displayExerciseName==='function'?displayExerciseName(typeof baseExerciseName==='function'?baseExerciseName(e.n):e.n):e.n)}</b><div class="cj107-set">${E(x)}</div></div>`:''}).join('')}</div><button class="btn primary full cj107-share" onclick="trainerSelfShare110('${encodeURIComponent(key(r))}')">Поделиться</button>`);
+    modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${E(title(s))}</h2><div class="muted">${E(rd(date(s,r)))}</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="cj107-grid"><div class="cj107-metric"><span>Тоннаж</span><b>${ton(s).toLocaleString('ru-RU')} кг</b></div><div class="cj107-metric"><span>Средний RPE</span><b>${rpe(s)??'—'}</b></div><div class="cj107-metric"><span>Подходов</span><b>${done(s)}</b></div><div class="cj107-metric"><span>Время</span><b>${durationText(s)||'—'}</b></div></div><div class="section">УПРАЖНЕНИЯ</div><div class="card">${A(s.ex).map(e=>{const x=exline(e);return x?`<div class="cj107-ex"><b>${E(typeof displayExerciseName==='function'?displayExerciseName(typeof baseExerciseName==='function'?baseExerciseName(e.n):e.n):e.n)}</b><div class="cj107-set">${E(x)}</div></div>`:''}).join('')}</div><div class="cj107-history-actions"><button class="btn" onclick="trainerSelfEdit110('${encodeURIComponent(key(r))}')">Редактировать</button><button class="btn danger" onclick="trainerSelfDelete110('${encodeURIComponent(key(r))}')">Удалить</button></div><button class="btn primary full cj107-share" onclick="trainerSelfShare110('${encodeURIComponent(key(r))}')">Поделиться</button>`);
   };
 
   let editDraft=null,editToken='';
@@ -156,7 +170,7 @@
       e.n=el.querySelector('[data-edit-name]')?.value.trim()||e.n;
       el.querySelectorAll('[data-edit-set]').forEach(row=>{
         const x=e.set[Number(row.dataset.editSet)];if(!x)return;
-        x.ok=!!row.querySelector('[data-edit-ok]')?.checked;
+        x.ok=row.querySelector('[data-edit-ok]')?.getAttribute('aria-pressed')==='true';
         if(cardio(e)){
           const seconds=editNum(row.querySelector('[data-edit-seconds]')?.value);
           x.workSeconds=seconds==null?0:seconds;
@@ -164,24 +178,52 @@
           x.w=editNum(row.querySelector('[data-edit-weight]')?.value);
           x.r=editNum(row.querySelector('[data-edit-reps]')?.value);
           const effort=editNum(row.querySelector('[data-edit-rpe]')?.value);
-          x.rpe=effort==null?'':effort;
+          const reserve=editNum(row.querySelector('[data-edit-rir]')?.value);
+          x.rpe=effort==null?'':effort;x.rir=reserve==null?'':reserve;
+          x.actualRpe=effort;x.actualRir=reserve;x.actualReps=x.r;
         }
       });
     });
   }
   function renderEdit(){
     const s=editDraft;if(!s)return;
-    modal(`<div id="ts110Editor"><div class="sheet-grabber"></div><div class="row between"><h2>Редактировать тренировку</h2><button class="btn tiny" onclick="trainerSelfWorkout110('${editToken}')">✕</button></div><div class="field"><label>Название</label><input id="ts110Title" value="${E(s.name||'')}" placeholder="Название тренировки"></div><div class="cj107-fields"><div class="field"><label>Дата</label><input id="ts110EditDate" type="date" value="${E(s.date||'')}"></div><div class="field"><label>Время, ч:м:с</label><input id="ts110EditDuration" inputmode="numeric" value="${E(s.__editDurationText??durationText(s))}" placeholder="2:46:25"></div></div><div class="section">УПРАЖНЕНИЯ И ПОДХОДЫ</div>${A(s.ex).map((e,ei)=>`<div class="cj107-edit-ex" data-edit-ex="${ei}"><div class="cj107-edit-head"><input data-edit-name aria-label="Название упражнения" value="${E(e.n)}"><button class="btn tiny danger" onclick="trainerSelfEditRemoveExercise110(${ei})" aria-label="Удалить упражнение">✕</button></div>${A(e.set).map((x,si)=>`<div class="cj107-edit-set ${cardio(e)?'cardio':''}" data-edit-set="${si}"><div class="cj107-edit-set-fields"><label class="cj107-done" aria-label="Подход ${si+1} выполнен"><input data-edit-ok type="checkbox" ${x.ok?'checked':''}><span class="cj107-done-mark" aria-hidden="true">✓</span></label>${cardio(e)?`<label>Секунды<input data-edit-seconds type="number" min="0" inputmode="numeric" value="${E(x.workSeconds??x.timedSeconds??0)}"></label>`:`<label>Кг<input data-edit-weight type="number" min="0" step="any" inputmode="decimal" value="${E(x.w??'')}"></label><label>Повторы<input data-edit-reps type="number" min="0" step="1" inputmode="numeric" value="${E(x.r??'')}"></label><label>RPE<input data-edit-rpe type="number" min="1" max="10" step="0.5" inputmode="decimal" value="${E(x.rpe??'')}"></label>`}<button class="btn tiny cj107-remove-set" onclick="trainerSelfEditRemoveSet110(${ei},${si})" aria-label="Удалить подход ${si+1}">✕</button></div></div>`).join('')}<button class="btn tiny" onclick="trainerSelfEditAddSet110(${ei})">＋ Подход</button></div>`).join('')}<button class="btn full" onclick="trainerSelfEditAddExercise110()">＋ Упражнение</button><div class="cj107-actions"><button class="btn" onclick="trainerSelfWorkout110('${editToken}')">Отмена</button><button class="btn primary" id="ts110SaveEdit" onclick="trainerSelfSaveEdit110()">Сохранить</button></div></div>`);
+    const exercises=A(s.ex).map((e,ei)=>{
+      const isCardio=cardio(e);
+      const rows=A(e.set).map((x,si)=>{
+        const number=`<span class="setnum">${si+1}<button type="button" class="cj107-remove-set" onclick="trainerSelfEditRemoveSet110(${ei},${si})" aria-label="Удалить подход ${si+1}">−</button></span>`;
+        const check=`<button type="button" class="check ${x.ok?'done':''}" data-edit-ok aria-pressed="${!!x.ok}" onclick="trainerSelfEditToggleSet110(this)" aria-label="Подход ${si+1}: ${x.ok?'выполнен':'не выполнен'}">${x.ok?'✓':'○'}</button>`;
+        if(isCardio)return `<div class="setrow cardio" data-edit-set="${si}">${number}<input data-edit-seconds inputmode="numeric" value="${E(x.workSeconds??x.timedSeconds??0)}" aria-label="Секунды">${check}</div>`;
+        const rpe=editNum(x.rpe)??(editNum(x.rir)==null?'':Math.round((10-editNum(x.rir))*10)/10);
+        const rir=editNum(x.rir)??(editNum(x.rpe)==null?'':Math.round((10-editNum(x.rpe))*10)/10);
+        return `<div class="setrow" data-edit-set="${si}">${number}<input data-edit-weight inputmode="decimal" value="${E(x.w??'')}" aria-label="Вес, кг"><input data-edit-reps inputmode="numeric" value="${E(x.r??'')}" aria-label="Повторы"><input data-edit-rpe inputmode="decimal" value="${E(rpe)}" aria-label="RPE" oninput="trainerSelfEditEffort110(this,'rpe')"><input data-edit-rir inputmode="decimal" value="${E(rir)}" aria-label="RIR" oninput="trainerSelfEditEffort110(this,'rir')">${check}</div>`;
+      }).join('');
+      return `<div class="exercise cj107-edit-ex" data-edit-ex="${ei}"><div class="cj107-edit-head"><input data-edit-name aria-label="Название упражнения" value="${E(e.n)}"><button class="btn tiny danger" onclick="trainerSelfEditRemoveExercise110(${ei})" aria-label="Удалить упражнение">✕</button></div><div class="sethead ${isCardio?'cardio':''}">${isCardio?'<span>Сет</span><span>сек.</span><span></span>':'<span>Сет</span><span>кг</span><span>повт.</span><span>RPE</span><span>RIR</span><span></span>'}</div>${rows}<button class="btn tiny" onclick="trainerSelfEditAddSet110(${ei})">＋ Подход</button></div>`;
+    }).join('');
+    modal(`<div id="ts110Editor"><div class="sheet-grabber"></div><div class="row between"><h2>Редактировать тренировку</h2><button class="btn tiny" onclick="trainerSelfWorkout110('${editToken}')">✕</button></div><div class="field"><label>Название</label><input id="ts110Title" value="${E(s.name||'')}" placeholder="Название тренировки"></div><div class="cj107-fields"><div class="field"><label>Дата</label><input id="ts110EditDate" type="date" value="${E(s.date||'')}"></div><div class="field"><label>Время, ч:м:с</label><input id="ts110EditDuration" inputmode="numeric" value="${E(s.__editDurationText??durationText(s))}" placeholder="2:46:25"></div></div><div class="section">УПРАЖНЕНИЯ И ПОДХОДЫ</div>${exercises}<button class="btn full" onclick="trainerSelfEditAddExercise110()">＋ Упражнение</button><div class="cj107-actions"><button class="btn" onclick="trainerSelfWorkout110('${editToken}')">Отмена</button><button class="btn primary" id="ts110SaveEdit" onclick="trainerSelfSaveEdit110()">Сохранить</button></div></div>`);
   }
+  window.trainerSelfEditToggleSet110=button=>{
+    const completed=button.getAttribute('aria-pressed')!=='true';
+    button.setAttribute('aria-pressed',String(completed));button.classList.toggle('done',completed);
+    button.textContent=completed?'✓':'○';
+    button.setAttribute('aria-label',button.getAttribute('aria-label').replace(/:.*$/,completed?': выполнен':': не выполнен'));
+  };
+  window.trainerSelfEditEffort110=(input,type)=>{
+    const peer=input.closest('.setrow')?.querySelector(type==='rpe'?'[data-edit-rir]':'[data-edit-rpe]');
+    if(!peer)return;
+    const value=editNum(input.value);
+    if(value==null){peer.value='';return}
+    if(value<0||value>10)return;
+    peer.value=String(Math.round((10-value)*10)/10);
+  };
   window.trainerSelfEdit110=async token=>{
     await load();const r=find(token);if(!r)return;
     editToken=encodeURIComponent(key(r));editDraft=JSON.parse(JSON.stringify(r.payload||{}));
     editDraft.date=date(editDraft,r);renderEdit();
   };
-  window.trainerSelfEditAddSet110=ei=>{captureEdit();const e=editDraft?.ex?.[ei];if(!e)return;const prev=A(e.set).at(-1)||{};e.set=A(e.set);e.set.push({...prev,n:e.set.length+1,ok:false,rpe:''});renderEdit()};
+  window.trainerSelfEditAddSet110=ei=>{captureEdit();const e=editDraft?.ex?.[ei];if(!e)return;const prev=A(e.set).at(-1)||{};e.set=A(e.set);e.set.push({...prev,n:e.set.length+1,ok:false,rpe:'',rir:'',actualRpe:null,actualRir:null});renderEdit()};
   window.trainerSelfEditRemoveSet110=(ei,si)=>{captureEdit();const e=editDraft?.ex?.[ei];if(!e)return;e.set.splice(si,1);renderEdit()};
   window.trainerSelfEditRemoveExercise110=ei=>{captureEdit();editDraft?.ex?.splice(ei,1);renderEdit()};
-  window.trainerSelfEditAddExercise110=()=>{captureEdit();editDraft.ex.push({n:'Новое упражнение',mode:'reps',set:[{n:1,w:null,r:null,rpe:'',ok:false}]});renderEdit()};
+  window.trainerSelfEditAddExercise110=()=>{captureEdit();editDraft.ex.push({n:'Новое упражнение',mode:'reps',set:[{n:1,w:null,r:null,rpe:'',rir:'',ok:false}]});renderEdit()};
   window.trainerSelfSaveEdit110=async()=>{
     captureEdit();const s=editDraft,r=find(decodeURIComponent(editToken));if(!s||!r)return;
     if(!s.name.trim()||!s.date||!A(s.ex).length)return toast('Укажи название, дату и упражнение');
@@ -194,6 +236,7 @@
         if(cardio(e)){if(!Number.isFinite(x.workSeconds)||x.workSeconds<0)return toast('Проверь время подхода');continue}
         if(x.w==null||x.w<0||!Number.isInteger(x.r)||x.r<=0)return toast('Проверь вес и повторы выполненных подходов');
         if(x.rpe!==''&&(x.rpe<1||x.rpe>10))return toast('RPE должен быть от 1 до 10');
+        if(x.rir!==''&&(x.rir<0||x.rir>10))return toast('RIR должен быть от 0 до 10');
       }
     }
     if(!done(s))return toast('Оставь хотя бы один выполненный подход');
