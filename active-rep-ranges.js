@@ -8,7 +8,7 @@
   W.__unvrslActiveRepRangesV282=true;
 
   const SPECIAL=/UNVRSL|SLDR|\bDS\b|FST-7/i;
-  const TESTISH=/\bтест\b|1[–-]3ПМ|3[–-]5ПМ|максимум/i;
+  const TESTISH=/тест|1[–-]3ПМ|3[–-]5ПМ|максимум/i;
   const baseName=n=>String(n||'').split(' — ')[0].trim();
 
   function parsePlanRange(e){

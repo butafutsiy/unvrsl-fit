@@ -143,10 +143,10 @@ test("empty bar weight sets the minimum total load; per-side load includes the i
  const leg=ex(machine,[set(20)]);leg.loadedSides=2;leg.implementWeight=35;
  assert.equal(A.effectiveLoad(leg,leg.set[0],{date:"2026-09-23"},reg),75);
 });
-test("a difficult set suggests one lower step without replacing the exercise recommendation",()=>{
+test("a substantially failed set suggests two lower steps without replacing the exercise recommendation",()=>{
  const bar=p("bar"),past=[old("1",bar,[set(60)]),old("2",bar,[set(60)])],cur=now(bar,[set(60,5,10),set(60,10,"",{ok:false})]);
  const rec=A.recommend(cur.ex[0],cur.ex[0].set[1],cur,past,reg);
- assert.equal(rec.weight,62.5);assert.equal(rec.nextSetSuggestion.weight,57.5);
+ assert.equal(rec.weight,62.5);assert.equal(rec.nextSetSuggestion.weight,55);
 });
 test("back-off sets cannot turn a 70 kg top set into a 45 kg recommendation",()=>{
  const bar=p("leg-curl"),past=[old("1",bar,[set(70,12,10),set(56,10,8),set(45,10,8)])];

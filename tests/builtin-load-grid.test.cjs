@@ -9,7 +9,7 @@ test('the built-in program keeps its week profile after every card render',()=>{
   const root=path.resolve(__dirname,'..');
   const page={innerHTML:'',classList:{contains:()=>true}};
   const context={
-    console,
+    console, WorkoutDomain:require("../workout-domain"),
     st:{programs:[],primaryProgramId:'__builtin_cycle__'},
     document:{readyState:'loading',addEventListener(){},querySelector:selector=>selector==='#programs'?page:null},
     localStorage:{getItem:()=>null,setItem(){}},

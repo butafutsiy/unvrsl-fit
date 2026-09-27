@@ -4,16 +4,7 @@
   if(W.__unvrslBuiltinCycleLoadProfileV296)return;
   W.__unvrslBuiltinCycleLoadProfileV296=true;
 
-  const PROFILE=Object.freeze({
-    1:Object.freeze({pct:[70,75],rpe:[6,8],focus:'Техника, базовый объём'}),
-    2:Object.freeze({pct:[75,80],rpe:[7,8],focus:'Повышение интенсивности'}),
-    3:Object.freeze({pct:[80,85],rpe:[8,9],focus:'Интенсификация'}),
-    4:Object.freeze({pct:[60,65],rpe:[4,6],focus:'Плотность и памп'}),
-    5:Object.freeze({pct:[85,88],rpe:[8,9],focus:'Тяжёлый стимул'}),
-    6:Object.freeze({pct:[60,70],rpe:[4,6],focus:'Разгрузка через методы и контролируемый объём'}),
-    7:Object.freeze({pct:[88,90],rpe:[8.5,9.5],focus:'Сила'}),
-    8:Object.freeze({pct:[90,100],rpe:[9,10],focus:'Контроль результатов',test:true})
-  });
+  const PROFILE=W.WorkoutDomain.weekProfiles;
   W.UNVRSL_BUILTIN_LOAD_PROFILE=PROFILE;
   W.unvrslBuiltinLoadProfileV296=week=>PROFILE[Math.max(1,Math.min(8,Number(week)||1))]||null;
 

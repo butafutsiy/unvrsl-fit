@@ -76,7 +76,7 @@
     else if(g.method==='SLDR')label=`${Math.floor(index/3)+1}.${index%3+1}`;
     return {
       n:index+1,
-      w:row.w||0,r:row.r||0,rpe:'',rir:'',ok:false,
+      w:row.w||0,r:row.r||0,plannedReps:row.r||0,round:g.method==='SLDR'?Math.floor(index/3)+1:index<6?Math.floor(index/2)+1:null,mini:g.method==='SLDR'?index%3+1:null,rpe:'',rir:'',ok:false,
       plannedW:row.w||0,programW:row.w||0,baselineW:row.w||0,
       rest:row.rest||0,methodRest:row.rest||0,
       phaseLabel:label,label,
@@ -94,7 +94,7 @@
       used.add(ai);const a=actual[ai];
       if(!userTouched(a))return p;
       return {...p,...a,n:pi+1,rest:p.rest,methodRest:p.methodRest,phaseLabel:p.phaseLabel,label:p.label,role:p.role,method:p.method,
-        plannedW:p.plannedW,programW:p.programW,baselineW:p.baselineW}
+        plannedW:p.plannedW,programW:p.programW,baselineW:p.baselineW,plannedReps:p.plannedReps,round:p.round,mini:p.mini}
     })
   }
 

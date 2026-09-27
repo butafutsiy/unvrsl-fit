@@ -185,10 +185,10 @@ for (const [num, method] of [
   [29, "SLDR"],
   [30, "FST-7"],
 ])
-  test(`${num}: ${method} does not create a standard-set PR or 1RM`, () => {
+  test(`${num}: ${method} contributes an e1RM without creating a standard-set PR`, () => {
     const e = { ...bar, method, set: [set(100, 10)] },
       s = session([e]);
-    assert.equal(A.e1rm(e, e.set[0], s, reg), null);
+    assert.ok(A.e1rm(e, e.set[0], s, reg)>0);
     assert.equal(A.summary(s, prior(60), reg).records.length, 0);
     assert.equal(A.summary(s, [], reg).setCount, 1);
   });
@@ -275,14 +275,14 @@ test("unknown bodyweight never borrows a future measurement", () =>
     A.effectiveLoad(pull, set(), session(), reg, [{ d: "2026-10-01", w: 90 }]),
     null,
   ));
-test("different methods, machines and load conventions are not mixed", () => {
+test("compatible methods share strength history", () => {
   const h = prior(60).map((s) => ({
     ...s,
     ex: s.ex.map((e) => ({ ...e, method: "DS" })),
   }));
   assert.equal(
     A.recommend(bar, set(60), session(), h, reg).sessionIds.length,
-    0,
+    3,
   );
 });
 test("low confidence without effort data, without blocking completion", () => {
@@ -352,7 +352,7 @@ test("historical PR excludes future sessions", () => {
   ];
   assert.equal(A.summary(current, h, reg).records.length, 1);
 });
-test("strength statistics and summary use the same completed standard work", () => {
+test("strength statistics include completed compatible method work", () => {
   const s = session([
     {
       ...bar,
@@ -365,9 +365,9 @@ test("strength statistics and summary use the same completed standard work", () 
     },
   ]);
   const series = A.strengthSeries([s], reg);
-  assert.equal(series[0].sets, 1);
-  assert.equal(series[0].best, 80);
-  assert.equal(series[0].points[0].volume, 600);
+  assert.equal(series[0].sets, 2);
+  assert.ok(series[0].best>=80&&series[0].best<90);
+  assert.equal(series[0].points[0].volume, 1500);
 });
 test("unknown legacy session IDs do not collapse independent history", () => {
   const h = prior(60).map((s) => ({ ...s, id: undefined }));
@@ -411,7 +411,7 @@ test("next set recommendation uses actual current work and the same individual s
     },
     cur = session([e], { ended: null });
   const r = A.recommend(e, e.set[1], cur, prior(60), reg);
-  assert.equal(r.nextSetSuggestion.weight, 57.5);
+  assert.equal(r.nextSetSuggestion.weight, 55);
   assert.equal(r.nextSetSuggestion.action, 'down');
   assert.ok(r.weight >= 60);
   assert.ok(r.evidence.some((x) => x.startsWith("Сегодня:")));

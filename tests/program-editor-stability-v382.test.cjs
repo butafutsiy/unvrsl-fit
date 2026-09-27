@@ -41,7 +41,7 @@ test('intensity card is inserted only once for the same program week',()=>{
     addEventListener:()=>{},querySelector:()=>null
   };
   const program={id:'p1',weeks:[{n:1,intensityMin:70,intensityMax:75,useIntensity:true,days:[]}]};
-  const context={console,document,CustomEvent:function(name,init){this.type=name;this.detail=init?.detail},programUi:{pid:'p1',week:0},programById:id=>id==='p1'?program:null,st:{programs:[program]},save:()=>{},requestAnimationFrame:fn=>fn(),setTimeout:()=>0};
+  const context={console,document,WorkoutDomain:require("../workout-domain"),CustomEvent:function(name,init){this.type=name;this.detail=init?.detail},programUi:{pid:'p1',week:0},programById:id=>id==='p1'?program:null,st:{programs:[program]},save:()=>{},requestAnimationFrame:fn=>fn(),setTimeout:()=>0};
   context.window=context;context.addEventListener=()=>{};context.dispatchEvent=()=>{};
   vm.runInNewContext(read('program-intensity-autoweight.js'),context);
   assert.equal(insertions,1);

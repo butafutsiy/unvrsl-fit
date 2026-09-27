@@ -5,7 +5,7 @@
   W.__unvrslProgramIntensityAutoWeightV261=true;
   W.__unvrslProgramIntensityUiOnlyV292=true;
 
-  const BUILTIN=Object.freeze({1:[70,75],2:[75,80],3:[80,85],4:[60,70],5:[85,88],6:[60,70],7:[88,90],8:[90,100]});
+  const BUILTIN=Object.freeze(Object.fromEntries(Object.entries(W.WorkoutDomain.weekProfiles).map(([n,p])=>[n,p.pct])));
   const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
   const num=v=>N(v)??0;
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));

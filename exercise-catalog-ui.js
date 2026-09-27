@@ -231,13 +231,13 @@
   };
   const list = (items) =>
     `<ul>${(items || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
-  function maximumCard(e, historyEstimate, profile) {
+  function maximumCard(e, strength, profile) {
     const type = A.loadType(e, workoutRegistry);
     if (e.resultRule?.e1rm === false || ["time", "distance", "repetitions_only", "bodyweight_only"].includes(type))
       return `<section class="catalog394-estimate"><h3>Результаты</h3><p class="muted small">Для этого упражнения 1ПМ не рассчитывается. Лучший результат смотри в истории ниже.</p></section>`;
     const body = type === "bodyweight_added" || type === "bodyweight_assisted";
     const units = type === "per_dumbbell" ? "на одну гантель" : type === "per_side" ? "на одну сторону" : body ? "дополнительный вес" : "рабочий вес";
-    return `<section class="catalog394-estimate"><h3>Разовый максимум</h3><div class="catalog394-max"><span>По истории</span><b>${historyEstimate.length ? `${Math.max(...historyEstimate).toFixed(1)} кг` : "Пока нет данных"}</b></div><p class="muted small">Из завершённых рабочих подходов до 12 повторений. Формула Эпли, оценка не является подтверждённым рекордом.</p><h4>Посчитать вручную</h4><div class="catalog394-fields"><label>Вес, кг <small>${esc(units)}</small><input id="manualMaxWeight" inputmode="decimal" type="text" placeholder="Например, 60" value="${body ? "0" : ""}" oninput="calculateExerciseMaximum('${encodeURIComponent(e.id)}')"></label><label>Повторения <small>1–12</small><input id="manualMaxReps" inputmode="numeric" type="text" placeholder="Например, 8" oninput="calculateExerciseMaximum('${encodeURIComponent(e.id)}')"></label></div>${body ? `<label class="catalog394-body">Масса тела, кг <small>для расчёта эффективной нагрузки</small><input id="manualMaxBody" inputmode="decimal" type="text" placeholder="Укажи фактическую массу" oninput="calculateExerciseMaximum('${encodeURIComponent(e.id)}')"></label>` : ""}<p id="manualMaxResult" class="catalog394-result" aria-live="polite">Введи вес и количество повторений</p><p class="muted small">Шаг оборудования ${esc(profile.step)} кг. Ручной расчёт не меняет историю и автовес.</p></section>`;
+    return `<section class="catalog394-estimate"><h3>Разовый максимум</h3><div class="catalog394-max"><span>По истории</span><b>${strength.estimate!=null ? `${strength.estimate.toFixed(1)} кг` : "Пока нет данных"}</b></div><p class="muted small">Единая оценка по свежим рабочим подходам до 12 повторений с учётом RPE/RIR, метода и роли подхода. Уверенность: ${esc(strength.confidence)}. ${strength.confidenceLow!=null?`Ориентировочный диапазон: ${strength.confidenceLow.toFixed(1)}–${strength.confidenceHigh.toFixed(1)} кг. `:""}Это расчёт, а не подтверждённый рекорд.${strength.confirmed?` Выполненный одиночный подход: ${strength.confirmed.toFixed(1)} кг.`:""}</p><h4>Посчитать вручную</h4><div class="catalog394-fields"><label>Вес, кг <small>${esc(units)}</small><input id="manualMaxWeight" inputmode="decimal" type="text" placeholder="Например, 60" value="${body ? "0" : ""}" oninput="calculateExerciseMaximum('${encodeURIComponent(e.id)}')"></label><label>Повторения <small>1–12</small><input id="manualMaxReps" inputmode="numeric" type="text" placeholder="Например, 8" oninput="calculateExerciseMaximum('${encodeURIComponent(e.id)}')"></label></div>${body ? `<label class="catalog394-body">Масса тела, кг <small>для расчёта эффективной нагрузки</small><input id="manualMaxBody" inputmode="decimal" type="text" placeholder="Укажи фактическую массу" oninput="calculateExerciseMaximum('${encodeURIComponent(e.id)}')"></label>` : ""}<p id="manualMaxResult" class="catalog394-result" aria-live="polite">Введи вес и количество повторений</p><p class="muted small">Шаг оборудования ${esc(profile.step)} кг. Ручной расчёт не меняет историю и автовес.</p></section>`;
   }
   W.calculateExerciseMaximum = (token) => {
     const e = workoutRegistry.resolve(decodeURIComponent(token));
@@ -258,17 +258,15 @@
   W.renderExerciseDetail = renderExerciseDetail = function (input) {
     const e = workoutRegistry.resolve(input) || input,
       c = e.coaching || {},
-      hist = A.history(e, st.sessions, workoutRegistry, {
+      hist = A.history(e, [...(W.trainingLoadModel292?.history?.()||st.sessions).filter(s=>s.id!==st.current?.id),...(st.current?[st.current]:[])], workoutRegistry, {
         userId: W.cloud?.user?.id,
       }),
       p = A.profile(e, workoutRegistry, st.exerciseWeightProfiles || {}),
-      est = hist
-        .map((x) =>
-          A.e1rm(x.exercise, x.set, x.session, workoutRegistry, st.bw),
-        )
-        .filter((x) => x != null),
+      active=(st.current?.ex||[]).find(x=>workoutRegistry.identity(x)===workoutRegistry.identity(e)),
+      estimateExercise=active||hist[0]?.exercise||e,
+      strength=A.strengthEstimate(estimateExercise,hist,workoutRegistry,st.bw||[]),
       gif = url(exerciseGif(e) || e.image),
-      maxCard = maximumCard(e, est, p);
+      maxCard = maximumCard(e, strength, p);
     modal(
       `<div class="row between"><h2>${esc(e.n)}</h2><button class="btn" onclick="closeModal()" aria-label="Закрыть">✕</button></div><div class="exercise-media catalog392-media">${gif ? `<img data-exercise-media data-animated="${/\.gif(?:\?|$)/i.test(gif) ? 1 : 0}" data-src="${esc(gif)}" alt="${esc(e.n)}" width="400" height="400" decoding="async">` : "<span>Для этого упражнения ещё нет проверенного изображения</span>"}</div><p>${esc(ruTarget(e.tg))} · ${esc(EQ_RU[e.eq] || e.eq)}</p><p class="muted small">Дополнительные мышцы: ${esc((e.secondary || []).map(ruTarget).join(", "))}</p><p class="muted small">${e.type === "isolation" ? "Изолирующее" : "Многосуставное"} · ${esc({ external_total: "Общий внешний вес", per_dumbbell: "Вес одной гантели", per_side: "Вес на сторону", bodyweight_only: "Собственный вес", bodyweight_added: "Собственный вес и дополнительное отягощение", bodyweight_assisted: "Величина помощи", machine_stack: "Вес тренажёра", time: "Время", distance: "Дистанция", repetitions_only: "Повторения" }[e.loadType] || e.loadType)}</p>${maxCard}<p>${esc(e.description || "Описание пока не заполнено")}</p>${e.effortGuide ? `<p class="muted small">${esc(e.effortGuide)}</p>` : ""}<h3>Исходное положение</h3><p>${esc(c.start || "Не заполнено")}</p><h3>Движение</h3>${list(c.sequence)}<h3>Дыхание</h3><p>${esc(c.breathing || "Не заполнено")}</p><h3>Технические акценты</h3>${list(c.cues)}<h3>Частые ошибки</h3>${list(c.mistakes)}<h3>Безопасность</h3>${list(c.safety)}${
         hist.length

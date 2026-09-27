@@ -28,6 +28,10 @@ jobs:
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
           UNVRSL_CANVAS="$RUNNER_TEMP/unvrsl-tests/node_modules/@napi-rs/canvas" \
           node tests/runtime-v392.cjs
+      - name: Verify all eight weeks and method recommendations
+        run: |
+          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
+          node tests/runtime-methods-v438.cjs
       - name: Verify iOS quota recovery and navigation
         run: |
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \

@@ -97,8 +97,8 @@
           }
           if (
             ex.programWeightMode === "adaptive" &&
-            rec.sessionIds.length>0 &&
-            !rec.planPreserved &&
+            (rec.sessionIds.length>0 || rec.nextSetSuggestion || rec.testWeekSuggestion) &&
+            !rec.planPreserved && rec.action!=="stop" &&
             !set.manualOverride &&
             set.weightSource !== "manual"
           ) {
@@ -139,7 +139,7 @@
       factor < 1 ? "down" : undefined,
     );
   };
-  const api = { run, readinessWeight, version: 392 };
+  const api = { run, readinessWeight, history: recommendationHistory, version: 438 };
   W.trainingLoadModel292 = api;
   W.trainingLoadModel258 = api;
   W.unvrslTrainingReadinessWeightV292 = readinessWeight;
