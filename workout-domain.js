@@ -466,6 +466,8 @@
 
   function effortTarget(e,s,session) {
     const rirLo=number(s.targetRirMin??e.targetRirMin),rirHi=number(s.targetRirMax??e.targetRirMax);
+    const builtinBackoff=setRole(e,s)==='backoff'&&Number(session.w)===8&&!session.programId&&!session.planId&&!session.programName;
+    if(builtinBackoff)return {lo:7,hi:8};
     const explicit=number(s.targetRpe??e.targetRpe??e.rpeTarget)??(number(s.targetRIR??e.targetRIR)!=null?10-number(s.targetRIR??e.targetRIR):null);
     const lo=number(s.targetRpeMin??e.targetRpeMin)??(rirHi!=null?10-rirHi:null)??explicit??number(session.programWeekRpeMin??session.target)??7;
     const hi=number(s.targetRpeMax??e.targetRpeMax)??(rirLo!=null?10-rirLo:null)??explicit??number(session.programWeekRpeMax??session.target)??8;
@@ -868,16 +870,21 @@
 
     let testWeekSuggestion=false;
     const backoff=compound&&setRole(e,set)==="backoff";
+    let backoffPreview=false;
     if(backoff){
       const completedTest=currentRows.filter(x=>setRole(x.exercise,x.set)==="test_attempt");
-      const best=completedTest.length?Math.max(...completedTest.map(x=>number(x.set.w)||0)):0;
+      let best=completedTest.length?Math.max(...completedTest.map(x=>number(x.set.w)||0)):0;
+      if(!best){
+        const plannedTest=(session.ex||[]).flatMap(ex=>(ex.set||[]).map(s=>({ex,s}))).find(x=>loadComparable(e,x.ex,reg,set,x.s)&&setRole(x.ex,x.s)==='test_attempt');
+        if(plannedTest){const preview=recommend(plannedTest.ex,plannedTest.s,session,sessions,reg,overrides);best=preview.weight;backoffPreview=best>0;}
+      }
       if(best>0&&!bodyLoad){
         const fraction=number(set.backoffPercent)!=null?Math.max(.1,Math.min(1,number(set.backoffPercent)/100)):/70%/.test(String(e.n||""))?.70:.72;
         const repCap=stableOneRepMax>0?fromEstimateLoad(stableOneRepMax/(1+(targetReps+10-(targetMin+target)/2)/30),e,session,reg):null;
         const suggested=roundWeight(Math.min(best*fraction,repCap??Infinity),p,"down");
         if(suggested>0){
           raw=suggested;projected=suggested;anomalous=false;nextSetSuggestion=null;testWeekSuggestion=true;
-          action="backoff";reason=`Back-off: ${Math.round(fraction*100)}% от лучшей выполненной тестовой попытки ${best} кг, с учётом шага ${p.step} кг`;
+          action="backoff";reason=`Back-off: ${Math.round(fraction*100)}% ${backoffPreview?'от предполагаемой тестовой попытки':'от лучшей выполненной тестовой попытки'} ${best} кг, с учётом шага ${p.step} кг`;
         }
       }
     }
@@ -894,7 +901,7 @@
       if(referenceMax>0&&["external_total","machine_stack","per_dumbbell","per_side"].includes(p.loadType)){
         const name=String(e.n||"");
         const attempt=number(set.attempt??set.attemptNumber)??Number(name.match(/попытка\s*(\d+)/i)?.[1]||0);
-        const factor=range.lo>=5?.85:range.lo>=2?.925:attempt===1?.90:attempt===2?.95:attempt>=3?.985:.925;
+        const factor=range.lo>=5?.85:range.lo>=2?.925:attempt===1?.90:attempt===2?.95:attempt>=3?.985:.975;
         let suggested=roundWeight(fromEstimateLoad(referenceMax*factor,e,session,reg),p,"down");
         if(previousTest){
           const used=number(previousTest.set.w),felt=effortRpe(previousTest.set);
@@ -925,7 +932,7 @@
     const wellbeingFactor=session.trainingReadinessDone&&session.readinessAdjusted
       ?Math.min(1,Math.max(.85,number(session.readiness?.factor)??1)):1;
     const hasActual=(session.ex||[]).some(ex=>(ex.set||[]).some(s=>complete(ex,s,reg)&&loadComparable(e,ex,reg,set,s)));
-    const wellbeingApplied=wellbeingFactor<1&&!hasActual&&!anomalous&&raw>0;
+    const wellbeingApplied=wellbeingFactor<1&&!hasActual&&!anomalous&&!backoffPreview&&raw>0;
     if(wellbeingApplied){
       const effective=loadForEstimate(e,{w:raw},session,reg);
       const adjusted=effective!=null?fromEstimateLoad(effective*wellbeingFactor,e,session,reg):null;
@@ -952,6 +959,7 @@
       action,
       planPreserved: anomalous,
       testWeekSuggestion,
+      backoffPreview,
       wellbeingApplied,
       wellbeingResolved:true,
       nextSetSuggestion,

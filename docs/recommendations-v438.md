@@ -28,3 +28,7 @@ The built-in profile and editor defaults share `WorkoutDomain.weekProfiles`. Exp
 ## Verification
 
 `node --test tests/*.test.cjs` includes the new method regression suite. `tests/runtime-methods-v438.cjs` launches all eight built-in weeks through the real application modules, checks grouped methods, test/back-off targets and the shared exercise card. The existing full workout runtime verifies draft recovery, completion, manual values and program launch.
+
+## v439 correction
+
+A single planned 1RM test now uses 97.5% of e1RM, rather than the 92.5% opener fallback. Numbered attempts retain their stage rules. Before the test, back-off is explicitly provisional and derived from the test recommendation; after completion it uses the actual result. Built-in back-off effort is 7–8 RPE, and row placeholders read the same effort resolver as recommendations. Previous-set hints require compatible equipment, method and role. Full strength evidence is collapsed under the explanation.
