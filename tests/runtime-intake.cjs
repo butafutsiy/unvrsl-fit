@@ -27,6 +27,14 @@ const {chromium}=require(process.env.UNVRSL_PLAYWRIGHT||'playwright'),fs=require
   await page.goto(reviewUrl);await page.getByRole('button',{name:'Открыть черновик в редакторе'}).waitFor();await page.getByRole('button',{name:'Открыть черновик в редакторе'}).click();await page.getByRole('button',{name:'Анкета и утверждение'}).waitFor();await page.waitForTimeout(500);
   const info=await page.evaluate(()=>{const p=st.programs.find(p=>p.intakeDraft);window.testIntakeId=p.id;return{count:st.programs.filter(p=>p.intakeDraft).length,rpe:p.weeks.map(w=>w.rpeMin),intensity:p.weeks.map(w=>w.useIntensity),reps:p.weeks[0].days[0].ex[0].reps}});
   assert.equal(info.count,1);assert.deepEqual(info.rpe,[6,7,7,6]);assert.deepEqual(info.intensity,[false,false,false,false]);assert.deepEqual(info.reps,{mode:'manual',min:8,max:12});
+  await page.getByRole('button',{name:'90–100%',exact:true}).click();
+  await page.waitForFunction(()=>document.getElementById('wrg268BaseMin')?.value==='1'&&document.getElementById('wrg268BaseMax')?.value==='3');
+  assert.equal(await page.locator('#wrg268IsoMin').inputValue(),'8');assert.equal(await page.locator('#wrg268IsoMax').inputValue(),'12');
+  assert.equal(await page.locator('#pi261Min').inputValue(),'90');assert.equal(await page.locator('#pi261Max').inputValue(),'100');
+  await page.getByRole('button',{name:'Сохранить профиль недели',exact:true}).click();
+  const selectedWeek=await page.evaluate(()=>{const p=st.programs.find(p=>p.id===window.testIntakeId);return {min:p.weeks[0].intensityMin,max:p.weeks[0].intensityMax,base:[p.weeks[0].baseRepMin,p.weeks[0].baseRepMax],other:p.weeks[1].intensityMin??null}});
+  assert.deepEqual(selectedWeek,{min:90,max:100,base:[1,3],other:null});
+  await page.screenshot({path:'/tmp/v446-intensity.png',fullPage:true});
   await page.evaluate(()=>trainingRequestProgramStartV382(window.testIntakeId,0,0));assert.equal(await page.evaluate(()=>st.current),null);assert.ok((await page.locator('#sheet').innerText()).includes('Черновик · ожидает проверки'));
   if(!await page.evaluate(()=>typeof cloudShareProgram==='function')){await page.addScriptTag({path:path.join(root,'cloud.js')});await page.addScriptTag({path:path.join(root,'cloud-programs.js')})}
   await page.evaluate(()=>cloudShareProgram(window.testIntakeId));assert.ok((await page.locator('#toast').innerText()).includes('утверди'));
