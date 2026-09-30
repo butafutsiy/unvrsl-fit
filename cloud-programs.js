@@ -108,18 +108,26 @@ async function cloudAcceptInviteProgramAware(){
 }
 window.cloudAcceptInvite=cloudAcceptInviteProgramAware;
 
+const cloudProgramUpdatesInFlight=new Set();
+function programActionResult(title,message,id){modal(`<h2>${esc(title)}</h2><p role="status">${esc(message)}</p>${id?`<button class="btn primary full" onclick="openProgramEditor('${esc(id)}')">Вернуться в редактор</button>`:'<button class="btn primary full" onclick="closeModal()">Понятно</button>'}`)}
 async function cloudPushProgramUpdate(id){
   const p=programById(id);
-  if(!p?.cloudPlanId||!cloud.user||!trainerIsTrainer())return;
-  const snapshot=cloudProgramSnapshot(p);
-  const q=await cloud.client.from('plans').select('version').eq('id',p.cloudPlanId).single();
-  if(q.error)return alert(q.error.message);
-  const version=(q.data.version||1)+1;
-  const up=await cloud.client.from('plans').update({title:p.name,version,snapshot,updated_at:new Date().toISOString()}).eq('id',p.cloudPlanId);
-  if(up.error)return alert(up.error.message);
-  await cloud.client.from('plan_versions').insert({plan_id:p.cloudPlanId,trainer_id:cloud.user.id,version,snapshot});
-  await cloud.client.from('plan_assignments').update({version,snapshot,updated_at:new Date().toISOString()}).eq('plan_id',p.cloudPlanId).eq('trainer_id',cloud.user.id);
-  p.cloudVersion=version;save();toast(`Версия ${version} отправлена клиентам`)
+  if(!p?.cloudPlanId||!cloud.user||!trainerIsTrainer())return programActionResult('Обновление не отправлено','Открой аккаунт тренера и проверь облачную программу.',id);
+  if(cloudProgramUpdatesInFlight.has(id))return;
+  cloudProgramUpdatesInFlight.add(id);let published=false,version=null;
+  programActionResult('Обновляю программу','Сохраняю новую версию и обновляю назначения клиентов…');
+  try{
+    const snapshot=cloudProgramSnapshot(p);
+    const q=await cloud.client.from('plans').select('version').eq('id',p.cloudPlanId).single();if(q.error)throw q.error;
+    version=(q.data.version||1)+1;
+    const up=await cloud.client.from('plans').update({title:p.name,version,snapshot,updated_at:new Date().toISOString()}).eq('id',p.cloudPlanId).eq('trainer_id',cloud.user.id).select('id').single();if(up.error)throw up.error;
+    published=true;p.cloudVersion=version;save();
+    const history=await cloud.client.from('plan_versions').insert({plan_id:p.cloudPlanId,trainer_id:cloud.user.id,version,snapshot});if(history.error)throw history.error;
+    const assignments=await cloud.client.from('plan_assignments').update({version,snapshot,updated_at:new Date().toISOString()}).eq('plan_id',p.cloudPlanId).eq('trainer_id',cloud.user.id).eq('status','active').select('client_id');if(assignments.error)throw assignments.error;
+    const count=assignments.data?.length||0;
+    programActionResult('Программа обновлена',`Версия ${version} сохранена в облаке. ${count?`Обновлено назначений: ${count}. Клиенты получат её при синхронизации приложения.`:'Активных назначений нет. Клиентам обновление не отправлялось.'}`,id);
+  }catch(error){programActionResult('Обновление не завершено',(published?`Версия ${version} сохранена в облаке, но обновление назначений не завершено. `:'Новая версия не сохранена в облаке. ')+(error.message||error),id)}
+  finally{cloudProgramUpdatesInFlight.delete(id)}
 }
 const _cloudRenderProgramEditor=window.renderProgramEditor;
 if(typeof _cloudRenderProgramEditor==='function')window.renderProgramEditor=function(){

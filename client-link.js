@@ -96,7 +96,7 @@ async function trainerAssignProgram(clientId,pid){
     const cp=await trainerCloudPlanForProgram(p);
     const r=await cloud.client.from('plan_assignments').upsert({plan_id:cp.planId,trainer_id:cloud.user.id,client_id:clientId,version:cp.version,snapshot:cp.snapshot,status:'active',updated_at:new Date().toISOString()},{onConflict:'plan_id,client_id'}).select().single();
     if(r.error)throw r.error;
-    toast('Программа назначена');await trainerClientDetail(clientId)
+    programActionResult('Программа назначена','Назначение сохранено в облаке. Клиент получит программу при синхронизации приложения.');
   }catch(e){alert('Не удалось назначить программу: '+(e.message||e))}
 }
 

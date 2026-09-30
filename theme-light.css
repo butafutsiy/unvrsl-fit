@@ -563,3 +563,10 @@ html[data-theme="light"] body .builtin-load-v296-cell{background:#f6f0fa!importa
 html[data-theme="light"] body .builtin-load-v296-cell b{color:#19191d!important}
 html[data-theme="light"] body .builtin-load-v296-cell .pct{color:#8230a7!important}
 html[data-theme="light"] body .builtin-load-v296-cell span:not(.pct){color:#62656d!important}
+
+/* Canonical constructor actions, including buttons without .btn. */
+html[data-theme="light"] body #sheet .pbr-add,
+html[data-theme="light"] body #sheet .mini-actions button{background:#eceef3!important;color:#19191d!important;border:1px solid #dfe1e6!important}
+html[data-theme="light"] body #sheet .mini-actions .danger-text{background:#fff0f0!important;color:#b42323!important}
+
+html[data-theme="light"] body #modal{background:rgba(243,244,247,.96)!important}
