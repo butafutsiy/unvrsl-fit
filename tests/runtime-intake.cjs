@@ -28,7 +28,7 @@ const {chromium}=require(process.env.UNVRSL_PLAYWRIGHT||'playwright'),fs=require
   await page.evaluate(()=>{st.theme='light';applyTheme()});
   const close=page.getByRole('button',{name:'Закрыть окно',exact:true});const rect=await close.boundingBox();assert.ok(rect.y>=52&&rect.height>=44);assert.equal(await page.locator('#modal button:visible').evaluateAll(xs=>xs.filter(x=>/^[✕×✖]$/.test(x.textContent.trim())).length),1);await page.locator('#sheet').evaluate(el=>el.scrollTop=el.scrollHeight);assert.ok((await close.boundingBox()).y>=52);
   for(const selector of ['.pbr-add','.mini-actions button'])assert.equal(await page.locator(selector).first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(236, 238, 243)');
-  await page.locator('#sheet').evaluate(el=>el.scrollTop=0);await page.screenshot({path:'/tmp/v449-light.png'});
+  await page.locator('#sheet').evaluate(el=>el.scrollTop=0);await page.screenshot({path:'/tmp/v450-light.png'});
   const info=await page.evaluate(()=>{const p=st.programs.find(p=>p.intakeDraft);window.testIntakeId=p.id;return{count:st.programs.filter(p=>p.intakeDraft).length,rpe:p.weeks.map(w=>w.rpeMin),intensity:p.weeks.map(w=>w.useIntensity),reps:p.weeks[0].days[0].ex[0].reps}});
   assert.equal(info.count,1);assert.deepEqual(info.rpe,[6,7,7,6]);assert.deepEqual(info.intensity,[false,false,false,false]);assert.deepEqual(info.reps,{mode:'manual',min:8,max:12});
   await page.getByRole('button',{name:'90–100%',exact:true}).click();
@@ -38,7 +38,7 @@ const {chromium}=require(process.env.UNVRSL_PLAYWRIGHT||'playwright'),fs=require
   await page.getByRole('button',{name:'Сохранить профиль недели',exact:true}).click();
   const selectedWeek=await page.evaluate(()=>{const p=st.programs.find(p=>p.id===window.testIntakeId);return {min:p.weeks[0].intensityMin,max:p.weeks[0].intensityMax,base:[p.weeks[0].baseRepMin,p.weeks[0].baseRepMax],other:p.weeks[1].intensityMin??null}});
   assert.deepEqual(selectedWeek,{min:90,max:100,base:[1,3],other:null});
-  await page.screenshot({path:'/tmp/v449-intensity.png',fullPage:true});
+  await page.screenshot({path:'/tmp/v450-intensity.png',fullPage:true});
   await page.evaluate(()=>trainingRequestProgramStartV382(window.testIntakeId,0,0));assert.equal(await page.evaluate(()=>st.current),null);assert.ok((await page.locator('#sheet').innerText()).includes('Черновик · ожидает проверки'));
   if(!await page.evaluate(()=>typeof cloudShareProgram==='function')){await page.addScriptTag({path:path.join(root,'cloud.js')});await page.addScriptTag({path:path.join(root,'cloud-programs.js')})}
   await page.evaluate(()=>cloudShareProgram(window.testIntakeId));assert.ok((await page.locator('#toast').innerText()).includes('утверди'));

@@ -43,6 +43,23 @@
     .tcv3-program{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid #303034}.tcv3-program:last-child{border-bottom:0}.tcv3-program .danger{background:#3a1a1a!important;color:#ff6b63!important}.tcv3-program .muted{margin-top:4px}.tcv3-program-actions{display:flex;align-items:center;gap:7px}.tcv3-program-open{background:#2b2c31!important;color:#f5f5f7!important}
     .tcv3-program-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px}.tcv3-program-head .section{margin:0}.tcv3-add{white-space:nowrap}
     .tcv3-plan-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.tcv3-plan-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.tcv3-plan-weeks{display:flex;gap:7px;overflow:auto;padding:3px 1px 8px;scrollbar-width:none}.tcv3-plan-weeks::-webkit-scrollbar{display:none}.tcv3-plan-week{min-width:48px;padding:10px 12px;border-radius:13px;background:#19191c;border:1px solid #303034;color:#9b9ba0;font-weight:750}.tcv3-plan-week.on{background:var(--accent,var(--green,#30d158));color:#07110a;border-color:transparent}.tcv3-plan-day{padding:14px 0;border-bottom:1px solid #303034}.tcv3-plan-day:last-child{border-bottom:0}.tcv3-plan-day-name{font-size:17px;font-weight:800;margin-bottom:8px}.tcv3-plan-ex{padding:9px 0}.tcv3-plan-ex+.tcv3-plan-ex{border-top:1px solid #28282c}.tcv3-plan-ex b{font-size:14px}.tcv3-plan-ex-meta{color:#8e8e93;font-size:12px;line-height:1.45;margin-top:3px}
+    #modal:has(.tcv3-client-header) .modal-close-bar{display:none!important}
+    #modal:has(.tcv3-client-header) .sheet{max-height:100%!important;border-radius:24px 24px 0 0!important}
+    .tcv3-client-header{position:sticky;top:-22px;z-index:3;margin:-22px -18px 14px;padding:14px 18px;background:var(--panel);border-bottom:1px solid var(--line);border-radius:24px 24px 0 0}
+    .tcv3-client-header .sheet-grabber{margin:0 auto 12px!important}
+    #modal .tcv3-head>div{min-width:0;flex:1}
+    #modal .tcv3-name{font-size:22px!important;line-height:1.2!important;font-weight:800;letter-spacing:-.4px}
+    #modal .tcv3-client-header .tcv262-trainer{font-size:12px!important;margin-top:5px!important;font-weight:500!important}
+    #modal .tcv3-close[data-modal-close-source]{display:grid!important;place-items:center;flex:0 0 44px;width:44px;height:44px;padding:0;font-size:20px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:14px}
+    #modal:has(.tcv3-client-header) .metric{padding:13px 14px;border-radius:18px}
+    #modal:has(.tcv3-client-header) .metric span{font-size:12px}
+    #modal:has(.tcv3-client-header) .metric b{font-size:24px;margin-top:4px}
+    #modal .tcv3-workout-top b{font-size:15px!important;line-height:1.35!important}
+    #modal .tcv3-workout-date{font-size:12px!important;margin-top:8px;white-space:normal}
+    .tcv3-workout-program{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4;overflow-wrap:anywhere}
+    #modal .tcv3-meta{font-size:12px!important;margin-top:4px}
+    #modal .tcv3-session-head>div{min-width:0;flex:1}
+    #modal .tcv3-session-head h2{font-size:21px!important;line-height:1.25!important;overflow-wrap:anywhere}
     @media(max-width:390px){.tcv3-name{font-size:26px}.tcv3-measure-grid{grid-template-columns:1fr 1fr}.tcv3-program{grid-template-columns:1fr}.tcv3-program-actions{width:100%}.tcv3-program-actions .btn{flex:1}.tcv3-plan-head{display:block}.tcv3-plan-actions{justify-content:flex-start;margin-top:12px}}
   `;
   document.head.appendChild(css);
@@ -63,7 +80,7 @@
   function workoutTitle(w){const s=w?.payload||{};return [s.c,s.name].filter(Boolean).join(' · ')||s.name||'Тренировка'}
   function workoutsHtml(d){
     if(!d.workouts.length)return '<div class="card muted">Пока нет проведённых тренировок.</div>';
-    return `<div class="card tcv3-list">${d.workouts.slice(0,30).map((w,i)=>`<button type="button" class="tcv3-workout" onclick="trainerClientWorkoutV3(${i})"><div class="tcv3-workout-top"><b>${E(workoutTitle(w))}</b><span class="tcv3-chevron" aria-hidden="true">›</span></div><div class="tcv3-workout-date muted">${E(rd(w.workout_date))}</div><div class="tcv3-meta">${w.avg_rpe!=null?'Средний RPE '+E(w.avg_rpe):'RPE не указан'}${w.completed_sets!=null?' · '+E(w.completed_sets)+' подходов':''}</div></button>`).join('')}</div>`;
+    return `<div class="card tcv3-list">${d.workouts.slice(0,30).map((w,i)=>`<button type="button" class="tcv3-workout" onclick="trainerClientWorkoutV3(${i})"><div class="tcv3-workout-top"><b>${E(w.payload?.c||w.payload?.name||'Тренировка')}</b><span class="tcv3-chevron" aria-hidden="true">›</span></div>${w.payload?.c&&w.payload?.name&&w.payload.c!==w.payload.name?`<div class="tcv3-workout-program">${E(w.payload.name)}</div>`:''}<div class="tcv3-workout-date muted">${E(rd(w.workout_date))}</div><div class="tcv3-meta">${w.avg_rpe!=null?'RPE '+E(F(w.avg_rpe)):'RPE не указан'}${w.completed_sets!=null?' · '+E(w.completed_sets)+' подходов':''}</div></button>`).join('')}</div>`;
   }
 
   function fmtTime(ms){
@@ -129,7 +146,7 @@
   function renderSheet(){
     const d=state.data,id=state.clientId;if(!d||!id)return;
     const avg=avgRpe(d.workouts);
-    modal(`<div class="sheet-grabber"></div><div class="tcv3-head"><div><div class="tcv3-name">${E(d.profile?.display_name||'Клиент')}</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="metrics" style="margin-top:14px"><div class="metric"><span>Тренировок</span><b>${d.workouts.length}</b></div><div class="metric"><span>Средний RPE</span><b>${avg??'–'}</b></div></div><div class="tcv3-tabs"><button class="tcv3-tab ${state.tab==='workouts'?'on':''}" onclick="trainerClientTabV3('workouts')">Тренировки</button><button class="tcv3-tab ${state.tab==='measures'?'on':''}" onclick="trainerClientTabV3('measures')">Замеры</button></div><div id="trainerClientTabBodyV3">${bodyHtml()}</div><div class="tcv3-program-head"><div class="section">ПРОГРАММЫ</div><button class="btn tiny tcv3-add" onclick="trainerAssignProgramSheet('${E(id)}')">＋ Программа</button></div>${programsHtml(d,id)}`);
+    modal(`<div class="tcv3-client-header"><div class="sheet-grabber"></div><div class="tcv3-head"><div><div class="tcv3-name">${E(d.profile?.display_name||'Клиент')}</div></div><button class="btn tiny tcv3-close" aria-label="Закрыть окно" onclick="closeModal()">✕</button></div></div><div class="metrics" style="margin-top:14px"><div class="metric"><span>Тренировок</span><b>${d.workouts.length}</b></div><div class="metric"><span>Средний RPE</span><b>${avg!=null?F(avg):'–'}</b></div></div><div class="tcv3-tabs"><button class="tcv3-tab ${state.tab==='workouts'?'on':''}" onclick="trainerClientTabV3('workouts')">Тренировки</button><button class="tcv3-tab ${state.tab==='measures'?'on':''}" onclick="trainerClientTabV3('measures')">Замеры</button></div><div id="trainerClientTabBodyV3">${bodyHtml()}</div><div class="tcv3-program-head"><div class="section">ПРОГРАММЫ</div><button class="btn tiny tcv3-add" onclick="trainerAssignProgramSheet('${E(id)}')">＋ Программа</button></div>${programsHtml(d,id)}`);
   }
 
   function setSummary(s){
