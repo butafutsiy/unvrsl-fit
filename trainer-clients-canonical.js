@@ -75,8 +75,7 @@
   }
 
   function addClient(){
-    if(state.tab==='offline')return W.offlineNewClientSheet?.();
-    return W.trainerCreateClientInvite?.()
+    return W.intakeClientActions?.()||undefined
   }
 
   const style=D.createElement('style');style.id='trainer-clients-canonical-v391';style.textContent=`

@@ -14,8 +14,10 @@ const {chromium}=require(process.env.UNVRSL_PLAYWRIGHT||'playwright'),fs=require
   const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));await page.route('**/*',route=>route.request().url().startsWith(base)?route.continue():route.abort());
   await page.goto(base+'intake.html');
-  await page.locator('[name=name]').fill('Анна');await page.locator('[name=age]').fill('30');await page.locator('[name=goal]').selectOption('muscle');await page.locator('[name=experience]').selectOption('beginner');await page.locator('[name=limitations]').selectOption('no');
-  for(const x of ['dumbbells','bench','cable','legpress'])await page.locator(`[value=${x}]`).check();
+  for(const [key,value] of Object.entries({firstName:'Анна',lastName:'Иванова',age:'30',height:'165',weight:'60',steps:'7000',currentSessions:'1'}))await page.locator(`[name=${key}]`).fill(value);
+  for(const [key,value] of Object.entries({sex:'female',goal:'muscle',sportExperience:'y2plus',strengthExperience:'none',trainingBreak:'never',pain:'none',medicalRestrictions:'none',nutritionGoal:'maintain',overweight:'no',dailyActivity:'low'}))await page.locator(`[name=${key}]`).selectOption(value);
+  await page.locator('[value=dumbbells]').check();await page.locator('[value=bodyweight]').check();assert.equal(await page.locator('[value=dumbbells]').isChecked(),false);await page.locator('[value=gym]').check();assert.equal(await page.locator('[value=bodyweight]').isChecked(),false);
+  await page.locator('[value=spinal_hernia]').check();assert.equal(await page.locator('#spineDetails').isVisible(),true);await page.locator('#noConditions').check();assert.equal(await page.locator('[value=spinal_hernia]').isChecked(),false);
   await page.screenshot({path:'/tmp/intake-form.png',fullPage:true});await page.locator('[type=submit]').click();await page.locator('#resultView').waitFor({state:'visible'});
   assert.equal(await page.locator('#result details').count(),4);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
@@ -30,12 +32,17 @@ const {chromium}=require(process.env.UNVRSL_PLAYWRIGHT||'playwright'),fs=require
   await page.evaluate(()=>cloudShareProgram(window.testIntakeId));assert.ok((await page.locator('#toast').innerText()).includes('утверди'));
   await page.screenshot({path:'/tmp/intake-editor.png',fullPage:true});
   await page.reload();await page.waitForFunction(()=>window.__unvrslStartupComplete);await page.goto(reviewUrl);await page.getByRole('button',{name:'Открыть черновик в редакторе'}).click();await page.getByRole('button',{name:'Анкета и утверждение'}).waitFor();assert.equal(await page.evaluate(()=>st.programs.filter(p=>p.intakeDraft).length),1);
-  await page.getByRole('button',{name:'Анкета и утверждение'}).click();await page.locator('#intakeApproved').check();await page.getByRole('button',{name:'Утвердить программу',exact:true}).click();
+  await page.getByRole('button',{name:'Анкета и утверждение'}).click();const personalBefore=await page.evaluate(()=>JSON.stringify(st.nutritionPlanner));await page.getByRole('button',{name:'Рассчитать КБЖУ по анкете'}).click();assert.ok((await page.locator('#sheet').innerText()).includes('Белки:'));assert.equal(await page.evaluate(()=>JSON.stringify(st.nutritionPlanner)),personalBefore);await page.getByRole('button',{name:'Вернуться к анкете'}).click();await page.locator('#intakeApproved').check();await page.getByRole('button',{name:'Утвердить программу',exact:true}).click();
   await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>st.programs.find(p=>p.intakeDraft).intakeDraft.status),'approved');
   if(!await page.evaluate(()=>typeof cloudShareProgram==='function')){await page.addScriptTag({path:path.join(root,'cloud.js')});await page.addScriptTag({path:path.join(root,'cloud-programs.js')})}
   const cleaned=await page.evaluate(()=>cloudProgramSnapshot(st.programs.find(p=>p.intakeDraft)).program);assert.equal(cleaned.intakeDraft,undefined);assert.equal(cleaned.intakeSourceKey,undefined);
   await page.evaluate(()=>{window.capturedShare=null;Object.defineProperty(navigator,'share',{configurable:true,value:async x=>{window.capturedShare=x}});return _cloudLocalShareProgram(st.programs.find(p=>p.intakeDraft).id)});
   assert.ok((await page.evaluate(()=>window.capturedShare.url)).includes('#plan='));
+  await page.addScriptTag({path:path.join(root,'trainer-clients-canonical.js')});
+  await page.evaluate(()=>{window.trainerCreateClientInvite=()=>window.menuAction='registration';window.offlineNewClientSheet=()=>window.menuAction='offline';unvrslAddClientV391()});
+  await page.getByRole('button',{name:'Отправить ссылку для регистрации',exact:true}).click();assert.equal(await page.evaluate(()=>window.menuAction),'registration');
+  await page.getByRole('button',{name:'Отправить ссылку для составления программы',exact:true}).click();assert.equal(await page.evaluate(()=>window.capturedShare.url),base+'intake.html');
+  await page.getByRole('button',{name:'Добавить офлайн-клиента вручную',exact:true}).click();assert.equal(await page.evaluate(()=>window.menuAction),'offline');
   assert.deepEqual(errors,[]);console.log('PASS: mobile questionnaire, share link, import, persistence, deduplication, draft launch/share guards, approval, sanitized program sharing.');
  }finally{await browser.close();server.close()}
 })().catch(e=>{console.error(e);process.exit(1)});

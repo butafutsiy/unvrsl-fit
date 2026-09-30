@@ -1,15 +1,15 @@
 'use strict';
-(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.UNVRSLIntake=api})(typeof window!=='undefined'?window:globalThis,()=>{
- const VERSION=1;
- const EQUIPMENT={dumbbells:'Гантели',bench:'Скамья',barbell:'Штанга',rack:'Стойки для приседа',cable:'Верхний и нижний блок',legpress:'Жим ногами',legcurl:'Сгибание ног',chestpress:'Жим от груди в тренажёре'};
- const GOALS={muscle:'Мышечная масса',strength:'Сила',fitness:'Общая физическая форма'};
+(function(root,factory){const api=factory(typeof module==='object'&&module.exports?require('./intake-profile'):root.UNVRSLIntakeProfile);if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.UNVRSLIntake=api})(typeof window!=='undefined'?window:globalThis,(profile)=>{
+ const VERSION=2;
+ const EQUIPMENT={dumbbells:'Гантели',bench:'Скамья',barbell:'Штанга',rack:'Стойки для приседа',cable:'Верхний и нижний блок',legpress:'Жим ногами',legcurl:'Сгибание ног',chestpress:'Жим от груди в тренажёре',kettlebells:'Гири',pullup_dip:'Турник и брусья'};
+ const GOALS={muscle:'Мышечная масса',strength:'Сила',fitness:'Общая физическая форма',fatloss:'Снижение жировой массы'};
  // Curated movement slots. Every candidate points to the canonical catalog.
  const POOL={
-  squat:[['canon:leg_press',['legpress']],['og:1760',['dumbbells']],['canon:high_bar_squat',['barbell','rack'],'regular'],['og:3168',[]]],
+  squat:[['canon:leg_press',['legpress']],['og:1760',['dumbbells']],['og:0534',['kettlebells']],['canon:high_bar_squat',['barbell','rack'],'regular'],['og:3168',[]]],
   hinge:[['og:1459',['dumbbells']],['canon:barbell_rdl',['barbell'],'regular'],['og:3523',['bench']]],
   push:[['canon:machine_chest_press',['chestpress']],['og:0289',['dumbbells','bench']],['og:3211',[],'beginner'],['og:3216',[]]],
-  pull:[['canon:seated_cable_row',['cable']],['og:0293',['dumbbells']]],
-  vertical:[['canon:lat_pulldown',['cable']],['canon:one_arm_db_row',['dumbbells','bench']],['og:0293',['dumbbells']]],
+  pull:[['canon:seated_cable_row',['cable']],['og:0293',['dumbbells']],['canon:barbell_row',['barbell'],'regular'],['og:1429',['pullup_dip'],'regular']],
+  vertical:[['canon:lat_pulldown',['cable']],['canon:one_arm_db_row',['dumbbells','bench']],['og:0293',['dumbbells']],['canon:barbell_row',['barbell'],'regular'],['og:1429',['pullup_dip'],'regular']],
   curlleg:[['canon:lying_leg_curl',['legcurl']],['og:1459',['dumbbells']],['og:3523',['bench']]],
   shoulder:[['canon:lateral_raise',['dumbbells']]],
   arm:[['canon:cable_curl',['cable']],['canon:db_supination_curl',['dumbbells']]],
@@ -18,7 +18,9 @@
  };
  function validate(raw){
   if(!raw||typeof raw!=='object')throw Error('Анкета повреждена');
-  const a={name:String(raw.name||'').trim().slice(0,60),age:Number(raw.age),goal:raw.goal,experience:raw.experience,days:Number(raw.days),minutes:Number(raw.minutes),limitations:raw.limitations,equipment:raw.equipment,excluded:raw.excluded||[]};
+  const extended=raw.schemaVersion===2?profile.normalize(raw):null;
+  if(extended)raw={...raw,...extended};
+  const a={...(extended||{}),name:String(raw.name||'').trim().slice(0,100),age:Number(raw.age),goal:raw.goal,experience:raw.experience,days:Number(raw.days),minutes:Number(raw.minutes),limitations:raw.limitations,equipment:raw.equipment,excluded:raw.excluded||[]};
   if(!a.name||!Number.isInteger(a.age)||a.age<12||a.age>100)throw Error('Укажи имя и возраст от 12 до 100 лет');
   if(typeof a.goal!=='string'||!Object.hasOwn(GOALS,a.goal)||!['beginner','regular'].includes(a.experience)||![2,3,4].includes(a.days)||![30,45,60,75].includes(a.minutes)||typeof a.limitations!=='boolean')throw Error('Проверь обязательные ответы анкеты');
   if(!Array.isArray(a.equipment)||a.equipment.some(x=>!Object.hasOwn(EQUIPMENT,x))||!Array.isArray(a.excluded)||a.excluded.length>30||a.excluded.some(x=>typeof x!=='string'||x.length>80))throw Error('Проверь список оборудования и исключений');
@@ -46,10 +48,10 @@
    if(estimate()>a.minutes)issues.push(`«${d.name}», неделя ${wi+1}: около ${estimate()} мин при лимите ${a.minutes}. Тренеру нужно сократить занятие.`);
    return{id:`intake-day-${wi}-${di}`,name:d.name,estimatedMinutes:estimate(),ex};
   })}));
-  const rationale=[a.days===4?'4 дня: чередование верха и низа тела.':`${a.days} дня: тренировки всего тела.`,a.experience==='beginner'?'Старт с двух рабочих подходов; техника и подбор нагрузки с тренером.':'Умеренный стартовый объём; нагрузку тренер сверяет с твоей историей.',a.goal==='strength'&&a.experience==='regular'?'Основные движения: 5–8 повторений.':'Основные движения: 8–12 повторений.', 'Неделя 4: снижение усилия и объёма. Повышение веса только после достижения верхней границы повторов с целевым усилием; шаг берётся из настроек упражнения.'];
+  const rationale=[...(a.goal==='fatloss'?['Силовые упражнения для сохранения мышц при снижении веса. Питание рассчитывается отдельно после проверки анкеты.']:[]),a.days===4?'4 дня: чередование верха и низа тела.':`${a.days} дня: тренировки всего тела.`,a.experience==='beginner'?'Старт с двух рабочих подходов; техника и подбор нагрузки с тренером.':'Умеренный стартовый объём; нагрузку тренер сверяет с твоей историей.',a.goal==='strength'&&a.experience==='regular'?'Основные движения: 5–8 повторений.':'Основные движения: 8–12 повторений.', 'Неделя 4: снижение усилия и объёма. Повышение веса только после достижения верхней границы повторов с целевым усилием; шаг берётся из настроек упражнения.'];
   return{answers:a,issues:[...new Set(issues)],rationale,program:{name:`${a.name} · ${GOALS[a.goal]} · 4 недели`,weeks,intakeDraft:{version:VERSION,status:'review',answers:a,issues:[...new Set(issues)],rationale},created:Date.now(),updated:Date.now()}};
  }
  function encode(a){const bytes=new TextEncoder().encode(JSON.stringify({v:VERSION,a:validate(a)}));let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
- function decode(token){if(typeof token!=='string'||token.length>10000||!/^[A-Za-z0-9_-]+$/.test(token))throw Error('Неверная ссылка анкеты');const bin=atob(token.replace(/-/g,'+').replace(/_/g,'/'));const p=JSON.parse(new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0))));if(p.v!==VERSION)throw Error('Версия анкеты не поддерживается');return validate(p.a)}
+ function decode(token){if(typeof token!=='string'||token.length>10000||!/^[A-Za-z0-9_-]+$/.test(token))throw Error('Неверная ссылка анкеты');const bin=atob(token.replace(/-/g,'+').replace(/_/g,'/'));const p=JSON.parse(new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0))));if(![1,VERSION].includes(p.v))throw Error('Версия анкеты не поддерживается');return validate(p.a)}
  return{VERSION,EQUIPMENT,GOALS,POOL,validate,generate,encode,decode};
 });
