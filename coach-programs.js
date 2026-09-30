@@ -96,6 +96,7 @@ function programWorkoutRepTarget(b,q,x){
 function beginProgramDay(pid,wi,di){
  if(window.intakeDraftBlocked?.(programById(pid)))return;
  const p=programById(pid),d=p?.weeks?.[wi]?.days?.[di];if(!p||!d)return;if(st.current){toast('У вас есть незавершённая тренировка');nav('start');return;}
+ let conditioning=[];try{conditioning=(d.conditioning||[]).map(x=>window.ConditioningClock.create(x))}catch(e){toast(e.message);return}
  const ex=[],resolved=b=>typeof window.programResolveExerciseParametersV381==='function'?window.programResolveExerciseParametersV381(pid,wi,b):null;
  const effort=(b,q)=>{const min=q?.effort?.rpeMin??b.rpeMin??b.rpe??8,max=q?.effort?.rpeMax??b.rpeMax??b.rpe??8;return{target:Math.round(((min+max)/2)*2)/2,targetRpeMin:min,targetRpeMax:max,targetRirMin:Math.max(0,10-max),targetRirMax:Math.max(0,10-min)}};
  d.ex.forEach(b=>{
@@ -105,7 +106,7 @@ function beginProgramDay(pid,wi,di){
   else (b.sets||[]).forEach((x,i)=>{const suffix=b.method==='DS'?`DS DS${i+1}`:`${b.method} ${i+1}/${b.sets.length}`;ex.push({n:`${b.n} — ${suffix}`,phaseLabel:x.label||`${i+1}/${b.sets.length}`,phaseRole:x.role||null,d:b.note||'',rest:+x.rest||0,fullRest:rest,g:group,sourceId:b.sourceId||null,...equipment,...ef,tempo:x.tempo||tempo,method:b.method,mode:'reps',set:[{n:1,w:+x.w||0,...programWorkoutRepTarget(b,q,x),rpe:'',...ef,ok:false}]})})
  });
  const first=d.ex[0],firstResolved=first?resolved(first):null,firstEffort=first?effort(first,firstResolved):{target:8,targetRpeMin:8,targetRpeMax:8,targetRirMin:2,targetRirMax:2};
- st.current={id:uid('s'),date:iso(),w:wi+1,c:d.name,name:p.name,...firstEffort,tempo:'',started:Date.now(),ended:null,programId:String(p.id),programDayId:String(d.id),programName:p.name,programSchemaVersion:programModel.SCHEMA_VERSION,ex};save();closeModal();nav('start')
+ st.current={id:uid('s'),date:iso(),w:wi+1,c:d.name,name:p.name,...firstEffort,tempo:'',started:Date.now(),ended:null,programId:String(p.id),programDayId:String(d.id),programName:p.name,programSchemaVersion:programModel.SCHEMA_VERSION,ex,conditioning};save();closeModal();nav('start')
 }
 window.programBeginDayCoreV382=beginProgramDay;
 function saveProgramAsTemplate(id){const p=programById(id);if(!p||window.intakeDraftBlocked?.(p))return;const t=clone(p);delete t.intakeDraft;delete t.intakeSourceKey;t.id=uid('tpl');t.sourceProgramId=p.id;t.created=Date.now();st.programTemplates.push(t);save();toast('Шаблон сохранён')}

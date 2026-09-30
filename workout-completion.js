@@ -35,14 +35,15 @@
         .map(([label, v]) => `<div><small>${label}</small><b>${v}</b></div>`)
         .join(
           "",
-        )}</div>${r.unknownVolumeSets ? '<p class="muted small">Объём включает только подходы с известной эффективной нагрузкой.</p>' : ""}${r.comparison ? `<p class="muted small">По сравнению с ${esc(r.comparison.date)}: подходы ${r.comparison.setDelta > 0 ? "+" : ""}${r.comparison.setDelta}${r.comparison.volumeDelta == null ? "" : `, объём ${r.comparison.volumeDelta > 0 ? "+" : ""}${r.comparison.volumeDelta} кг`}</p>` : ""}${r.exercises.map((e) => `<div class="listline"><b>${esc(e.name)}</b>${e.sets.map((x) => `<p class="small">${esc(x.label)}</p>`).join("")}<p class="muted small">Лучший подход: ${esc(e.best.label)}</p>${nextWeight(s,e)?`<p class="small green">${esc(nextWeight(s,e))}</p>`:""}${e.records.length ? '<span class="chip">Новый рекорд</span>' : ""}</div>`).join("")}<button class="btn primary full" onclick="previewWorkoutShare()">Поделиться результатом</button><button class="btn full" onclick="closeModal();nav('stats')">К статистике</button></div>`,
+        )}</div>${r.unknownVolumeSets ? '<p class="muted small">Объём включает только подходы с известной эффективной нагрузкой.</p>' : ""}${r.comparison ? `<p class="muted small">По сравнению с ${esc(r.comparison.date)}: подходы ${r.comparison.setDelta > 0 ? "+" : ""}${r.comparison.setDelta}${r.comparison.volumeDelta == null ? "" : `, объём ${r.comparison.volumeDelta > 0 ? "+" : ""}${r.comparison.volumeDelta} кг`}</p>` : ""}${r.exercises.map((e) => `<div class="listline"><b>${esc(e.name)}</b>${e.sets.map((x) => `<p class="small">${esc(x.label)}</p>`).join("")}<p class="muted small">Лучший подход: ${esc(e.best.label)}</p>${nextWeight(s,e)?`<p class="small green">${esc(nextWeight(s,e))}</p>`:""}${e.records.length ? '<span class="chip">Новый рекорд</span>' : ""}</div>`).join("")}${W.conditioningSummaryHtml?.(s)||''}<button class="btn primary full" onclick="previewWorkoutShare()">Поделиться результатом</button><button class="btn full" onclick="closeModal();nav('stats')">К статистике</button></div>`,
     );
   };
   W.completeWorkout = async function () {
     const s = st.current;
     if (!s || W.__workoutFinishing) return;
+    if(W.conditioningIsBusy?.(s)){toast('Сначала останови блок и сохрани его результат');return}
     if (
-      !(s.ex || []).some((e) =>
+      !W.conditioningHasWork?.(s)&&!(s.ex || []).some((e) =>
         (e.set || []).some((x) => A.complete(e, x, workoutRegistry)),
       )
     ) {

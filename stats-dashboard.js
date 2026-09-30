@@ -63,7 +63,7 @@
     local.forEach(s=>{const k=String(s.id||'');if(!k||!keys.has(k)){out.push(s);if(k)keys.add(k)}});
     const finished=s=>Boolean(s?.ended||s?.completedAt||s?.finishedAt||s?.status==='completed');
     const completedSet=x=>x?.ok===true||x?.completed===true||x?.done===true||x?.isCompleted===true||x?.status==='completed';
-    return out.filter(s=>finished(s)&&(s.ex||s.exercises||[]).some(e=>(e.set||e.sets||[]).some(completedSet)))
+    return out.filter(s=>finished(s)&&((s.ex||s.exercises||[]).some(e=>(e.set||e.sets||[]).some(completedSet))||window.conditioningHasWork?.(s)))
       .sort((a,b)=>Number(a.ended||a.started||0)-Number(b.ended||b.started||0));
   }
   window.unvrslStatsSessions254=workoutSessions;
