@@ -47,7 +47,7 @@
   function weekProfile(p,wi,useDefaults=true){
     const w=p?.weeks?.[Number(wi)];if(!w)return null;
     const d=useDefaults?cycleFor(w,wi):null,wn=Number(w.n)||Number(wi)+1;
-    let [intensityMin,intensityMax]=normalizePair(w.intensityMin??w.weekIntensityMin??w.intensity?.min,w.intensityMax??w.weekIntensityMax??w.intensity?.max,d?.pct);
+    let [intensityMin,intensityMax]=normalizePair(w.intensityMin??w.weekIntensityMin??w.intensity?.min,w.intensityMax??w.weekIntensityMax??w.intensity?.max,w.useIntensity===false?null:d?.pct);
     if(intensityMin!=null&&intensityMin<=1)intensityMin*=100;if(intensityMax!=null&&intensityMax<=1)intensityMax*=100;
     const [rpeMin,rpeMax]=normalizePair(w.rpeMin??w.weekRpeMin,w.rpeMax??w.weekRpeMax,d?.rpe);
     const rirHigh=rpeMin==null?null:Math.max(0,10-rpeMin),rirLow=rpeMax==null?null:Math.max(0,10-rpeMax);
@@ -90,7 +90,7 @@
 
   function populateEditorFromProfile(pr){
     if(!pr)return;setValue('pi261Min',pr.intensityMin);setValue('pi261Max',pr.intensityMax);setValue('wr264RpeMin',pr.rpeMin);setValue('wr264RpeMax',pr.rpeMax);setValue('wr264Tempo',pr.tempo);setValue('wr264BaseRestMin',pr.baseRestMin);setValue('wr264BaseRestMax',pr.baseRestMax);setValue('wr264IsoRestMin',pr.isolationRestMin);setValue('wr264IsoRestMax',pr.isolationRestMax);setValue('wr264Focus',pr.focus);syncRirPreview();
-    const band=D.querySelector('#sheet .pi261-band');if(band&&pr.intensityMin!=null&&pr.intensityMax!=null)band.textContent=`${fmt(pr.intensityMin)}–${fmt(pr.intensityMax)}%`
+    const band=D.querySelector('#sheet .pi261-band');if(band&&pr.useIntensity===false)band.textContent='По усилию';else if(band&&pr.intensityMin!=null&&pr.intensityMax!=null)band.textContent=`${fmt(pr.intensityMin)}–${fmt(pr.intensityMax)}%`
   }
 
   function applyCycleToEditor(weekNo){
@@ -168,7 +168,7 @@
   }
 
   function clientCard(pr){
-    if(!pr)return null;const node=D.createElement('div');node.className='wr264-client';const pct=pr.test?'Тест':`${fmt(pr.intensityMin)}–${fmt(pr.intensityMax)}%`;
+    if(!pr)return null;const node=D.createElement('div');node.className='wr264-client';const pct=pr.useIntensity===false?'По усилию':pr.test?'Тест':`${fmt(pr.intensityMin)}–${fmt(pr.intensityMax)}%`;
     node.innerHTML=`<div class="wr264-client-top"><div class="wr264-client-title">W${pr.week} · нагрузка недели</div><div class="wr264-client-pct">${pct}</div></div><div class="wr264-client-chips"><span class="wr264-client-chip">RPE ${fmt(pr.rpeMin)}–${fmt(pr.rpeMax)}</span><span class="wr264-client-chip">RIR ${fmt(pr.rirHigh)}→${fmt(pr.rirLow)}</span><span class="wr264-client-chip">Темп ${escHtml(pr.tempo)}</span><span class="wr264-client-chip">База ${pr.baseRestMin}–${pr.baseRestMax}с</span><span class="wr264-client-chip">Изоляция ${pr.isolationRestMin}–${pr.isolationRestMax}с</span></div><div class="wr264-focus-text">${escHtml(pr.focus)}</div><div class="wr264-trainer">Тренер ${TRAINER}</div>`;return node
   }
   function selectedClientProgram(){

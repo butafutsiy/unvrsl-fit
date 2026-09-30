@@ -2,6 +2,7 @@
 
 function cloudProgramSnapshot(p){
   const clean=JSON.parse(JSON.stringify(p));
+  delete clean.intakeDraft;delete clean.intakeSourceKey;
   delete clean.id;delete clean.cloudPlanId;delete clean.cloudVersion;delete clean.trainerId;delete clean.pendingCloudUpdate;
   return{kind:'coach-program',schema:1,program:clean}
 }
@@ -42,7 +43,7 @@ window.clientHasActivePlan=clientHasActivePlan;
 
 async function cloudShareProgram(id){
   const p=typeof programById==='function'?programById(id):null;
-  if(!p)return;
+  if(!p||window.intakeDraftBlocked?.(p))return;
   if(!cloudConfigured())return _cloudLocalShareProgram(id);
   if(!cloud.user)return cloudAccountSheet();
   if(!trainerIsTrainer())return alert('Включи роль «Тренер» в аккаунте.');

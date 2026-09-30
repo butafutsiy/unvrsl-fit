@@ -65,6 +65,7 @@ function trainerAssignProgramSheet(clientId){
 }
 
 async function trainerCloudPlanForProgram(p){
+  if(p?.intakeDraft?.status==='review')throw new Error('Сначала проверь и утверди черновик программы');
   const snapshot=cloudProgramSnapshot(p);
   if(!p.cloudPlanId){
     const ins=await cloud.client.from('plans').insert({trainer_id:cloud.user.id,title:p.name,version:1,snapshot}).select().single();

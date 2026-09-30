@@ -122,6 +122,7 @@
  function showReadiness(){const cur=W.st?.current;if(!cur)return;pendingStart=null;cur.trainingReadinessPromptShown=true;try{W.save?.()}catch(_){}W.modal?.(readinessMarkup())}
  function askBeforeStart(fn,args,ctx){pendingStart={fn,args:Array.from(args||[]),ctx,before:W.st?.current||null};W.modal?.(readinessMarkup())}
  function requestProgramStart(pid,wi,di){
+  if(W.intakeDraftBlocked?.(W.programById?.(pid)))return false;
   const fn=typeof W.beginProgramDay==='function'?W.beginProgramDay:W.programBeginDayCoreV382;
   if(typeof fn!=='function'){W.toast?.('Запуск тренировки ещё загружается');return false}
   W.__unvrslPendingProgramStartV382={pid:String(pid),wi:Number(wi)||0,di:Number(di)||0,at:Date.now(),source:'program-editor'};
