@@ -44,7 +44,14 @@
     base.deletedBodyweights=base.deletedBodyweights.filter(x=>{const d=String(x?.d||x||'').slice(0,10),deletedAt=Number(x?.at||x?.t||0);return d&&deletedAt>=Number(weightStamp.get(d)||0)});
     const deletedWeights=new Set(base.deletedBodyweights.map(x=>String(x?.d||x||'').slice(0,10)).filter(Boolean));
     base.bw=base.bw.filter(x=>!deletedWeights.has(String(x.d||'').slice(0,10)));
-    base.programs=mergeByKey(first.programs,second.programs,x=>String(x.id||x.title||x.name||''),x=>Number(x.updatedAt||x.createdAt||0));
+    base.deletedProgramKeys=[...new Set([...arr(local.deletedProgramKeys),...arr(remote.deletedProgramKeys)])];
+    const deletedPrograms=new Set(base.deletedProgramKeys);
+    const programKeys=p=>[p.id&&`id:${p.id}`,p.seedId&&`seed:${p.seedId}`,p.cloudPlanId&&`cloud:${p.cloudPlanId}`,p.templateKey&&`template:${p.templateKey}`,(p.seedId||p.internetTemplate||p.femaleTemplate||p.templateKey)&&p.name&&`name:${String(p.name).toLowerCase().replace(/[·•]/g,' ').replace(/\s+/g,' ').trim()}`].filter(Boolean);
+    base.programs=mergeByKey(first.programs,second.programs,x=>String(x.id||x.title||x.name||''),x=>Math.max(Number(x.updated||0),Number(x.updatedAt||0),Number(x.created||0),Number(x.createdAt||0))).filter(p=>!programKeys(p).some(k=>deletedPrograms.has(k)));
+    base.seededPrograms={...(remote.seededPrograms||{}),...(local.seededPrograms||{})};
+    base.builtinProgramHidden=!!(local.builtinProgramHidden||remote.builtinProgramHidden);
+    const builtinSource=Number(remote.builtinProgramNameUpdatedAt||0)>Number(local.builtinProgramNameUpdatedAt||0)?remote:local;
+    if(builtinSource.builtinProgramName){base.builtinProgramName=builtinSource.builtinProgramName;base.builtinProgramNameUpdatedAt=builtinSource.builtinProgramNameUpdatedAt||0}
     base.remotePlans=mergeByKey(first.remotePlans,second.remotePlans,x=>String(x.id||''),x=>Number(x.version||x.updatedAt||0));
     base.customExercises=mergeByKey(first.customExercises,second.customExercises,x=>String(x.id||x.n||x.name||''),x=>Number(x.updatedAt||x.createdAt||0));
     base.favorites=[...new Set([...arr(remote.favorites),...arr(local.favorites)])];
@@ -121,7 +128,7 @@
         setMeta({lastSyncedAt:Date.now(),lastUserId:user.id});
         if(!quiet)try{toast(remoteExists?'Данные аккаунта синхронизированы':'Облачная копия создана')}catch(e){}
         window.dispatchEvent?.(new CustomEvent('unvrsl:history-updated',{detail:{sessions:arr(st.sessions).length}}));
-        try{render()}catch(e){}
+        try{render();if(document.querySelector('#programs.active'))window.trainerProgramsPage?.()}catch(e){}
         return true;
       }catch(e){console.warn('UNVRSL account sync',e);if(!quiet)try{toast('Не удалось синхронизировать аккаунт')}catch(_){}return false}
       finally{inflight=null}

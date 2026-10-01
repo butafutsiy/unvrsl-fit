@@ -16,7 +16,7 @@
     let changed=false;
     (Array.isArray(st.programs)?st.programs:[]).forEach(p=>{
       if(!p)return;
-      if(p.seedId===SEED||p.id===SEED||p.name===BAD||/Антон\s+Горькуша/i.test(p.name||'')){
+      if(!p.nameEdited&&(p.seedId===SEED||p.id===SEED||p.name===BAD||/Антон\s+Горькуша/i.test(p.name||''))){
         const next=String(p.name||GOOD).replace(/Антон\s+Горькуша/gi,'Антон Гарькуша');
         if(p.name!==next){p.name=next;changed=true}
         if(typeof p.author==='string'&&/Антон\s+Горькуша/i.test(p.author)){
@@ -52,7 +52,7 @@
   window.saveBuiltInProgramName=function(){
     const v=String(document.querySelector('#builtinProgramNameInput')?.value||'').trim();
     if(!v)return typeof toast==='function'?toast('Введи название'):undefined;
-    st.builtinProgramName=v;try{save()}catch(e){};closeModal();
+    st.builtinProgramName=v;st.builtinProgramNameUpdatedAt=Date.now();try{save()}catch(e){};closeModal();
     try{if(typeof trainerProgramsPage==='function')trainerProgramsPage()}catch(e){}
     try{planPage()}catch(e){}
     if(typeof toast==='function')toast('Название изменено');

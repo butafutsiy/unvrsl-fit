@@ -67,7 +67,7 @@ function prescriptionText(e){
  return s.map(x=>`${x.label||''} ${x.w||0}×${x.r||'—'}`.trim()).join(' → ')
 }
 function renameProgramSheet(id){const p=programById(id);if(!p)return;modal(`<div class="sheet-grabber"></div><h2>Название программы</h2><div class="field"><input id="rpName" value="${esc(p.name)}"></div><button class="btn primary full" onclick="renameProgram('${id}')">Сохранить</button>`)}
-function renameProgram(id){const p=programById(id);if(!p)return;p.name=$('#rpName').value.trim()||p.name;p.updated=Date.now();save();openProgramEditor(id,programUi.week)}
+function renameProgram(id){const p=programById(id);if(!p)return;p.name=$('#rpName').value.trim()||p.name;p.nameEdited=true;p.updated=p.updatedAt=Date.now();save();openProgramEditor(id,programUi.week)}
 function renameProgramDaySheet(id,wi,di){const p=programById(id),d=p?.weeks?.[wi]?.days?.[di];if(!d)return;modal(`<div class="sheet-grabber"></div><h2>Название тренировки</h2><div class="field"><input id="rdName" value="${esc(d.name)}"></div><button class="btn primary full" onclick="renameProgramDay('${id}',${wi},${di})">Сохранить</button>`)}
 function renameProgramDay(id,wi,di){const p=programById(id),d=p?.weeks?.[wi]?.days?.[di];if(!d)return;d.name=$('#rdName').value.trim()||d.name;p.updated=Date.now();save();openProgramEditor(id,wi,di)}
 function addProgramWeek(id){const p=programById(id);if(!p)return;const prev=p.weeks.at(-1);const days=(prev?.days||[]).map((d,i)=>({id:uid('day'),name:d.name||`День ${i+1}`,ex:[]}));p.weeks.push({n:p.weeks.length+1,days:days.length?days:[{id:uid('day'),name:'День 1',ex:[]}]});p.updated=Date.now();save();programUi.week=p.weeks.length-1;renderProgramEditor()}
@@ -120,7 +120,36 @@ async function decodeSharedPayload(s){const [kind,data]=s.split('.',2);let bytes
 function bytesToBase64Url(bytes){let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function base64UrlToBytes(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s);return Uint8Array.from(bin,c=>c.charCodeAt(0))}
 async function shareProgram(id){const p=programById(id);if(!p||window.intakeDraftBlocked?.(p))return;const clean=clone(p);delete clean.id;delete clean.intakeDraft;delete clean.intakeSourceKey;const payload=await encodeSharedPayload({type:'unvrsl-program',v:1,program:clean});const url=`${location.origin}${location.pathname}#plan=${payload}`;try{if(navigator.share)await navigator.share({title:`UNVRSL FIT · ${p.name}`,text:`Программа «${p.name}»`,url});else{await navigator.clipboard.writeText(url);toast('Ссылка скопирована')}}catch(e){if(e.name!=='AbortError')prompt('Скопируй ссылку',url)}}
-async function handleSharedProgram(){const hash=location.hash||'';if(!hash.startsWith('#plan='))return;try{const payload=await decodeSharedPayload(hash.slice(6));if(payload?.type!=='unvrsl-program'||!payload.program)return;const p=payload.program;modal(`<div class="sheet-grabber"></div><h2>Вам отправили программу</h2><div class="card"><div class="title">${esc(p.name||'Программа')}</div><div class="muted">${p.weeks?.length||0} нед. · ${(p.weeks||[]).reduce((a,w)=>a+(w.days?.length||0),0)} тренировок</div></div><button class="btn primary full" onclick="importSharedProgram()">Добавить к себе</button><button class="btn full" onclick="dismissSharedProgram()">Не сейчас</button>`);window.__sharedProgram=payload}catch(e){console.error(e);toast('Не удалось открыть программу')}}
-function importSharedProgram(){const payload=window.__sharedProgram;if(!payload?.program)return;const p=clone(payload.program);p.id=uid('prog');p.name=p.name||'Полученная программа';p.created=Date.now();p.updated=Date.now();ensureProgramShape(p);p.weeks.forEach(w=>w.days.forEach(d=>d.id=uid('day')));st.programs.push(p);save();window.__sharedProgram=null;history.replaceState(null,'',location.pathname+location.search);closeModal();nav('plan');toast('Программа добавлена')}
-function dismissSharedProgram(){window.__sharedProgram=null;history.replaceState(null,'',location.pathname+location.search);closeModal()}
-save();setTimeout(()=>{planPage();handleSharedProgram()},0);
+async function handleSharedProgram(){
+ if(!window.__unvrslStartupComplete)return;
+ const hash=location.hash||'',preset=new URLSearchParams(location.search).get('program');
+ if(!hash.startsWith('#plan=')&&preset!=='functional-8')return;
+ try{
+  let payload;
+  if(preset==='functional-8'){const r=await fetch('./programs/functional-8.json');if(!r.ok)throw Error('Не удалось загрузить программу');payload={type:'unvrsl-program',program:await r.json()}}
+  else payload=await decodeSharedPayload(hash.slice(6));
+  if(payload?.type!=='unvrsl-program'||!Array.isArray(payload.program?.weeks)||!payload.program.weeks.length)throw Error('Неверный формат программы');
+  const p=payload.program;window.__sharedProgram=payload;
+  modal(`<h2>Добавить программу</h2><div class="card"><div class="title">${esc(p.name||'Программа')}</div><div class="muted">${p.weeks.length} нед. · ${p.weeks.reduce((a,w)=>a+(w.days?.length||0),0)} тренировок</div></div><button class="btn primary full" onclick="importSharedProgram()">Добавить к себе</button><p id="programImportStatus" role="status"></p><button class="btn full" onclick="dismissSharedProgram()">Не сейчас</button>`)
+ }catch(e){console.error(e);modal('<h2>Не удалось открыть программу</h2><p>Проверь соединение и повтори загрузку.</p><button class="btn primary full" onclick="handleSharedProgram()">Повторить</button>')}
+}
+let programImportBusy=false;
+async function importSharedProgram(){
+ const payload=window.__sharedProgram;if(!payload?.program||programImportBusy)return;
+ programImportBusy=true;
+ try{
+  const incoming=clone(payload.program),rawId=String(incoming.id||''),stableId=/^[a-zA-Z0-9_-]{1,100}$/.test(rawId)?rawId:'';
+  let p=stableId?st.programs.find(x=>String(x.id)===stableId):null;
+  if(!p){p=incoming;p.id=stableId||uid('prog');p.name=p.name||'Полученная программа';p.created=p.updated=p.createdAt=p.updatedAt=Date.now();ensureProgramShape(p);p.weeks.forEach(w=>w.days.forEach(d=>d.id=uid('day')));st.programs.push(p)}
+  st.deletedProgramKeys=(st.deletedProgramKeys||[]).filter(k=>k!==`id:${p.id}`);
+  try{const key='unvrsl-fit-deleted-programs-v2';const keys=JSON.parse(localStorage.getItem(key)||'[]');localStorage.setItem(key,JSON.stringify(keys.filter(k=>k!==`id:${p.id}`)))}catch(_){}
+  const ok=window.persistWorkoutState?await window.persistWorkoutState():save();if(ok===false)throw Error('Не удалось сохранить. Повтори добавление.');
+  clearSharedProgramUrl();window.__sharedProgram=null;closeModal();nav('programs');window.trainerProgramsPage?.();openProgramEditor(p.id,0,0);toast('Программа сохранена')
+ }catch(e){const status=document.getElementById('programImportStatus');if(status)status.textContent=e.message||'Не удалось сохранить программу';else toast('Не удалось сохранить программу')}
+ finally{programImportBusy=false}
+}
+function clearSharedProgramUrl(){const u=new URL(location.href);u.searchParams.delete('program');u.hash='';history.replaceState(null,'',u.pathname+u.search)}
+function dismissSharedProgram(){window.__sharedProgram=null;clearSharedProgramUrl();closeModal()}
+window.addEventListener('unvrsl:app-ready',handleSharedProgram);
+window.addEventListener('hashchange',handleSharedProgram);
+save();setTimeout(()=>{planPage();if(window.__unvrslStartupComplete)handleSharedProgram()},0);
