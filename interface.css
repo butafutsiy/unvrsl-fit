@@ -20,3 +20,7 @@ html body #modal.modal input,html body #modal.modal select,html body #modal.moda
 html body .btn{touch-action:manipulation}
 html[data-theme="light"] body #modal.modal{background:rgba(34,38,46,.3)!important;backdrop-filter:blur(6px)}
 @media(max-width:360px){html body #modal.modal .modal-heading{font-size:20px}html body #modal.modal .modal-close-bar{padding:12px 14px!important}html body #modal.modal .sheet{padding-left:14px!important;padding-right:14px!important}html body #modal.modal .card{padding:13px}}
+
+/* The shared header is the drag target, even when the body is scrolled. */
+html body #modal.modal .modal-close-bar{position:relative;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;padding-top:24px!important}
+html body #modal.modal .modal-close-bar:before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);width:36px;height:4px;border-radius:4px;background:var(--muted);opacity:.5;pointer-events:none}
