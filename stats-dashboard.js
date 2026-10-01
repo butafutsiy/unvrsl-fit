@@ -17,7 +17,7 @@
     #stats .sd2-metric-icon svg{width:28px;height:28px;display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
     #stats .sd2-metric-icon.streak svg{fill:currentColor;stroke:none}
     #stats .sd2-metric-copy{min-width:0}
-    #stats .sd2-metric-label{display:block;color:#9b9ba1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #stats .sd2-metric-label{display:block;color:#9b9ba1;font-size:14px;white-space:normal;line-height:1.25;overflow-wrap:anywhere}
     #stats .sd2-metric b{display:block;font-size:31px;line-height:1;margin-top:8px;font-variant-numeric:tabular-nums;letter-spacing:-1px}
     #stats .sd2-card{background:#1c1c1f;border:1px solid #26272c;border-radius:23px;padding:17px;margin:12px 0;overflow:hidden}
     #stats .sd2-measures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
@@ -69,6 +69,12 @@
   window.unvrslStatsSessions254=workoutSessions;
   window.unvrslStatsHistoryState254=()=>({status:cloudCache.status,loaded:cloudCache.loaded,owner:cloudCache.owner});
 
+  function recentCount(ws,days){
+    const today=new Date();today.setHours(0,0,0,0);
+    const from=new Date(today);from.setDate(from.getDate()-(days-1));
+    const until=new Date(today);until.setDate(until.getDate()+1);
+    return ws.filter(x=>{const d=parseDate(x.date);return d>=from&&d<until}).length;
+  }
   function monthCount(ws){const now=new Date(),ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;return ws.filter(x=>String(x.date).startsWith(ym)).length}
   function weekKey(d){const x=parseDate(d),day=(x.getDay()+6)%7;x.setDate(x.getDate()-day);return isoDate(x)}
   function weekStreak(ws){const set=new Set(ws.map(x=>weekKey(x.date))),now=new Date(),day=(now.getDay()+6)%7;now.setHours(12,0,0,0);now.setDate(now.getDate()-day);let n=0;for(let i=0;i<104;i++){const k=isoDate(now);if(!set.has(k))break;n++;now.setDate(now.getDate()-7)}return n}
@@ -86,10 +92,10 @@
     return `<div class="sd2-section">ЗАМЕРЫ</div><div class="sd2-card">${cards?`<div class="sd2-measures">${cards}</div>`:'<div class="sd2-empty">Замеры появятся после чек-ина.</div>'}</div>`;
   }
   function dashboardHtml(){
-    const ws=dataWorkouts(),rpes=workoutSessions().flatMap(s=>(s.ex||[]).flatMap(e=>(e.set||[]).filter(x=>x?.ok&&num(x.rpe)!=null).map(x=>num(x.rpe)))),avgRpe=rpes.length?fmt(rpes.reduce((a,b)=>a+b,0)/rpes.length):'—';
+    const sessions=workoutSessions(),ws=sessions.map(s=>({date:s.date||isoDate(s.ended||s.completedAt||s.finishedAt||s.started)})).filter(x=>x.date),rpes=sessions.flatMap(s=>(s.ex||[]).flatMap(e=>(e.set||[]).filter(x=>x?.ok&&num(x.rpe)!=null).map(x=>num(x.rpe)))),avgRpe=rpes.length?fmt(rpes.reduce((a,b)=>a+b,0)/rpes.length):'—';
     const anatomy=typeof window.anatomeMuscleCardHtmlV254==='function'?window.anatomeMuscleCardHtmlV254():'';
     const strength=typeof window.profileStrengthOverviewHtml==='function'?window.profileStrengthOverviewHtml():typeof profileStrengthOverviewHtml==='function'?profileStrengthOverviewHtml():'<div class="sd2-card sd2-empty">Силовой прогресс появится после тренировок.</div>';
-    return `<div class="sd2-head"><div><h1>Статистика</h1><div class="sd2-sub">Прогресс тренировок</div></div></div><div class="sd2-grid">${metric('Тренировки',ws.length,'workouts')}${metric('Этот месяц',monthCount(ws),'month')}${metric('Серия недель',weekStreak(ws),'streak')}${metric('Средний RPE',avgRpe,'rpe')}</div>${anatomy}${measuresHtml()}<div class="sd2-section">СИЛОВЫЕ</div><div class="sd2-strength-host">${strength}</div>`;
+    return `<div class="sd2-head"><div><h1>Статистика</h1><div class="sd2-sub">Прогресс тренировок</div></div></div><div class="sd2-grid">${metric('Тренировки',ws.length,'workouts')}${metric('За 7 дней',recentCount(ws,7),'month')}${metric('За 24 дня',recentCount(ws,24),'month')}${metric('Этот месяц',monthCount(ws),'month')}${metric('Серия недель',weekStreak(ws),'streak')}${metric('Средний RPE',avgRpe,'rpe')}</div>${anatomy}${measuresHtml()}<div class="sd2-section">СИЛОВЫЕ</div><div class="sd2-strength-host">${strength}</div>`;
   }
   function renderDashboard(){
     const root=document.getElementById('stats');if(!root)return;
