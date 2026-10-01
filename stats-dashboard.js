@@ -31,6 +31,9 @@
     #stats .sd2-strength-host .card{margin:0}
     #stats .sd2-card button{touch-action:manipulation}
     @media(max-width:390px){#stats .sd2-head h1{font-size:35px}#stats .sd2-card{padding:15px}#stats .sd2-measures{grid-template-columns:repeat(2,minmax(0,1fr))}#stats .sd2-metric{grid-template-columns:44px minmax(0,1fr);gap:9px;padding:12px;min-height:96px}#stats .sd2-metric-icon{width:44px;height:44px;border-radius:14px}#stats .sd2-metric-icon svg{width:24px;height:24px}#stats .sd2-metric-label{font-size:12px}#stats .sd2-metric b{font-size:26px}}
+    #stats .sd2-metric{grid-template-columns:34px minmax(0,1fr);gap:10px;padding:13px;min-height:86px;border-radius:20px}
+    #stats .sd2-metric-icon{width:34px;height:34px;border-radius:11px}#stats .sd2-metric-icon svg{width:21px;height:21px}
+    #stats .sd2-metric-label{font-size:12px;line-height:1.25}#stats .sd2-metric b{font-size:27px;margin-top:5px}
   `;
   document.head.appendChild(css);
 

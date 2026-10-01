@@ -45,7 +45,7 @@
   function open(slug){
     const days=period(),rows=breakdown(slug,days),total=rows.reduce((q,r)=>q+r.sets,0),score=rows.reduce((q,r)=>q+r.score,0);
     const list=rows.length?rows.map((r,i)=>`<div class="anatome-detail-row"><div class="anatome-detail-rank">${i+1}</div><div class="anatome-detail-main"><b>${esc(r.name)}</b><small>${r.sessions.size} трен. · вклад ${r.score.toFixed(1).replace('.0','')}</small></div><strong>${r.sets}<small> подх.</small></strong></div>`).join(''):'<div class="muted" style="padding:16px 0">За этот период подходов на эту мышцу нет.</div>';
-    if(typeof modal==='function')modal(`<div class="sheet-grabber"></div><div class="anatome-detail-head"><div><div class="muted small">НАГРУЗКА · ${days} ДНЕЙ</div><h2>${esc(LABELS[slug]||slug)}</h2></div><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="anatome-detail-summary"><div><span>Подходы</span><b>${total}</b></div><div><span>Индекс нагрузки</span><b>${score.toFixed(1).replace('.0','')}</b></div></div><div class="section" style="margin-left:0">УПРАЖНЕНИЯ</div>${list}`);
+    if(typeof modal==='function')modal(`<div class="stats-detail-header"><div class="sheet-grabber"></div><div class="anatome-detail-head"><div><div class="muted small">НАГРУЗКА · ${days} ДНЕЙ</div><h2>${esc(LABELS[slug]||slug)}</h2></div><button class="btn tiny stats-detail-close" aria-label="Закрыть окно" onclick="closeModal()">✕</button></div></div><div class="anatome-detail-summary"><div><span>Подходы</span><b>${total}</b></div><div><span>Индекс нагрузки</span><b>${score.toFixed(1).replace('.0','')}</b></div></div><div class="section" style="margin-left:0">УПРАЖНЕНИЯ</div>${list}`);
   }
 
   const style=document.createElement('style');style.textContent=`
