@@ -1,0 +1,22 @@
+/* Shared application surfaces and modal chrome. */
+html body .app .card,html body #modal.modal .card{box-shadow:none!important;border-radius:20px!important;border-color:var(--line)!important}
+html body #modal.modal{--modal-safe-top:max(52px,calc(env(safe-area-inset-top) + 12px));padding-top:var(--modal-safe-top)}
+html body #modal.modal .modal-close-bar{display:flex!important;flex:0 0 auto;min-height:64px;width:100%;gap:14px;padding:14px 18px!important;background:var(--panel)!important;background-image:none!important;backdrop-filter:none!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:24px 24px 0 0!important;box-shadow:none!important}
+html body #modal.modal .modal-heading{margin:0;flex:1;min-width:0;font-size:22px;font-weight:780;line-height:1.2;letter-spacing:-.4px;overflow-wrap:anywhere;color:var(--text)}
+html body #modal.modal .modal-close-global{flex:0 0 44px;width:44px;height:44px;font-size:20px;display:grid;place-items:center;box-shadow:none!important;background:var(--panel2)!important;color:var(--text)!important}
+html body #modal.modal .sheet{flex:0 1 auto;min-height:0;max-height:calc(100% - 76px)!important;border-radius:0!important;padding:16px 18px calc(24px + env(safe-area-inset-bottom))!important;background:var(--panel)!important;box-shadow:none!important;overflow-x:hidden;overflow-anchor:none}
+html body #modal.modal.px-program-modal .sheet,html body #modal.modal.px-exercise-modal .sheet{height:auto!important;flex:1 1 auto}
+html body #modal.modal #sheet [data-modal-title-source],html body #modal.modal #sheet [data-modal-close-source],html body #modal.modal #sheet .sheet-grabber{display:none!important}
+html body #modal.modal #sheet .stats-detail-header,html body #modal.modal #sheet .tcv3-client-header{position:static!important;margin:0 0 12px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important}
+html body #modal.modal .row>div,html body #modal.modal .grow{min-width:0}
+html body #modal.modal .card{padding:16px;margin:10px 0}
+html body #modal.modal .card .muted{font-size:13px;line-height:1.45}
+html body #modal.modal .card .grow>b{font-size:17px;line-height:1.3;display:block;overflow-wrap:anywhere}
+html body #modal.modal .chip{font-size:12px;line-height:1.25;flex-shrink:0;padding:7px 10px;box-shadow:none!important}
+html body #modal.modal .weekbtn{min-width:46px;padding:11px 0;border-radius:14px;font-size:15px;box-shadow:none!important}
+html body #modal.modal .weekbar{gap:8px;margin:10px 0 14px}
+html body #modal.modal .field label{line-height:1.35}
+html body #modal.modal input,html body #modal.modal select,html body #modal.modal textarea{max-width:100%;min-width:0}
+html body .btn{touch-action:manipulation}
+html[data-theme="light"] body #modal.modal{background:rgba(34,38,46,.3)!important;backdrop-filter:blur(6px)}
+@media(max-width:360px){html body #modal.modal .modal-heading{font-size:20px}html body #modal.modal .modal-close-bar{padding:12px 14px!important}html body #modal.modal .sheet{padding-left:14px!important;padding-right:14px!important}html body #modal.modal .card{padding:13px}}

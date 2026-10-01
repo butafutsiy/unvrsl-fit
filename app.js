@@ -95,13 +95,24 @@ async function restoreBackup(file){if(!file)return;try{const d=JSON.parse(await 
 async function importOpenGym(file){if(!file)return;try{const d=JSON.parse(await file.text());let imported=0;if(Array.isArray(d.bodyweight)&&d.bodyweight.length){st.bw=d.bodyweight.map(x=>({d:x.d,w:Number(x.w),t:x.t||Date.now()})).filter(x=>x.d&&x.w);imported+=st.bw.length}if(Array.isArray(d.workouts)&&d.workouts.length){const conv=d.workouts.map(convertOpenGymWorkout).filter(Boolean);st.sessions.push(...conv);imported+=conv.length}save();closeModal();render();toast(`Импортировано: ${imported}`)}catch(e){alert('Не удалось прочитать openGym JSON: '+e.message)}}
 function convertOpenGymWorkout(w){try{return {id:'og'+(w.id||Date.now()+Math.random()),date:w.d||w.date||iso(),w:0,c:'OG',name:w.name||w.n||'openGym',target:8,started:w.t||Date.now(),ended:w.t||Date.now(),ex:(w.ex||w.exercises||[]).map(e=>({n:e.n||e.name||e.id||'Упражнение',d:'Импортировано из openGym',rest:90,set:(e.set||e.sets||[]).map((s,i)=>({n:i+1,w:+(s.w??s.weight??0),r:+(s.r??s.reps??0),rpe:s.rpe??'',ok:true}))}))}}catch(e){return null}}
 function resetAll(){if(confirm('Удалить все локальные тренировки, вес и настройки?')){localStorage.removeItem(KEY);localStorage.removeItem(OLDKEY);localStorage.removeItem(APPEARANCE_KEY);location.reload()}}
-function modal(html){
- const sheet=$('#sheet');sheet.innerHTML=html;sheet.scrollTop=0;
- const close=document.querySelector('.modal-close-global');let action='closeModal()';
- sheet.querySelectorAll('button[onclick]').forEach(b=>{const handler=b.getAttribute('onclick')||'';if(/^[✕×✖]$/.test(b.textContent.trim())&&/^(closeModal|programEditorCloseV38[56])\(\)/.test(handler)){action=handler;b.dataset.modalCloseSource='1'}});
+function refreshModalHeader(){
+ const sheet=$('#sheet'),bar=document.querySelector('.modal-close-bar');if(!sheet||!bar)return;
+ const close=bar.querySelector('.modal-close-global');let action='closeModal()';
+ sheet.querySelectorAll('button[onclick]').forEach(b=>{const handler=b.getAttribute('onclick')||'';if(/^[✕×✖]$/.test(b.textContent.trim())&&/^(closeModal|programEditorCloseV38[56]|offlineClientDetail|trainerClientDetail|openProgramEditor)\(/.test(handler)){action=handler;b.dataset.modalCloseSource='1'}});
  if(close)close.setAttribute('onclick',action);
- $('#modal').classList.remove('px-program-modal','px-exercise-modal');$('#modal').classList.add('show')
+ const source=sheet.querySelector('h1,h2,.detail-title,.tcv3-name,.px-editor-title');
+ let title=bar.querySelector('.modal-heading');if(!title){title=document.createElement('h2');title.className='modal-heading';title.id='modalHeading';bar.prepend(title)}
+ const text=source?.textContent?.trim()||'';if(title.textContent!==text)title.textContent=text;
+ sheet.querySelectorAll('[data-modal-title-source]').forEach(el=>{if(el!==source)el.removeAttribute('data-modal-title-source')});
+ if(source)source.dataset.modalTitleSource='1';
+ $('#modal').setAttribute('role','dialog');$('#modal').setAttribute('aria-modal','true');
+ if(text){$('#modal').setAttribute('aria-labelledby','modalHeading');$('#modal').removeAttribute('aria-label')}else{$('#modal').removeAttribute('aria-labelledby');$('#modal').setAttribute('aria-label','Диалог')}
 }
+function modal(html){
+ const sheet=$('#sheet');sheet.innerHTML=html;sheet.scrollTop=0;refreshModalHeader();
+ $('#modal').classList.remove('px-program-modal','px-exercise-modal');$('#modal').classList.add('show');sheet.scrollTop=0
+}
+if(typeof MutationObserver==='function'&&$('#sheet'))new MutationObserver(refreshModalHeader).observe($('#sheet'),{childList:true});
 function closeModal(){$('#modal').classList.remove('show')}
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1800)}
 function timer(sec){if(!sec||sec<=0)return;stopTimer();timerEnd=Date.now()+sec*1000;if(st.current){const snapshot=window.workoutTimerSnapshot?.();if(snapshot&&snapshot.workoutId===String(st.current.id)){st.current.timer=snapshot;st.current.timerEnd=snapshot.end}else if(!st.current.timer)st.current.timerEnd=timerEnd;save()}$('#timer').classList.add('show');tick();timerId=setInterval(tick,250)}
