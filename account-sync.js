@@ -46,7 +46,7 @@
     base.bw=base.bw.filter(x=>!deletedWeights.has(String(x.d||'').slice(0,10)));
     base.deletedProgramKeys=[...new Set([...arr(local.deletedProgramKeys),...arr(remote.deletedProgramKeys)])];
     const deletedPrograms=new Set(base.deletedProgramKeys);
-    const programKeys=p=>[p.id&&`id:${p.id}`,p.seedId&&`seed:${p.seedId}`,p.cloudPlanId&&`cloud:${p.cloudPlanId}`,p.templateKey&&`template:${p.templateKey}`,(p.seedId||p.internetTemplate||p.femaleTemplate||p.templateKey)&&p.name&&`name:${String(p.name).toLowerCase().replace(/[·•]/g,' ').replace(/\s+/g,' ').trim()}`].filter(Boolean);
+    const programKeys=p=>[p.id&&`id:${p.id}`,p.isMasterPlan&&'seed:master-trainer-plan',p.seedId&&`seed:${p.seedId}`,p.cloudPlanId&&`cloud:${p.cloudPlanId}`,p.templateKey&&`template:${p.templateKey}`,(p.seedId||p.internetTemplate||p.femaleTemplate||p.templateKey)&&p.name&&`name:${String(p.name).toLowerCase().replace(/[·•]/g,' ').replace(/\s+/g,' ').trim()}`].filter(Boolean);
     base.programs=mergeByKey(first.programs,second.programs,x=>String(x.id||x.title||x.name||''),x=>Math.max(Number(x.updated||0),Number(x.updatedAt||0),Number(x.created||0),Number(x.createdAt||0))).filter(p=>!programKeys(p).some(k=>deletedPrograms.has(k)));
     base.seededPrograms={...(remote.seededPrograms||{}),...(local.seededPrograms||{})};
     base.builtinProgramHidden=!!(local.builtinProgramHidden||remote.builtinProgramHidden);

@@ -21,3 +21,7 @@ test('seed deletions, hidden built-in and renamed built-in survive stale cloud',
 test('remote added program is retained alongside newer local programs',()=>{
  assert.deepEqual(merge({programs:[{id:'a',updated:500}]},{programs:[{id:'b',updated:400}]}).programs.map(p=>p.id).sort(),['a','b']);
 });
+test('legacy master plan with a new id cannot bypass deletion',()=>{
+ const out=merge({deletedProgramKeys:['seed:master-trainer-plan']},{programs:[{id:'recreated',isMasterPlan:true}]});
+ assert.equal(out.programs.length,0);
+});

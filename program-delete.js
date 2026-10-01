@@ -38,6 +38,7 @@
     if(!p)return[];
     return [
       p.id&&`id:${p.id}`,
+      p.isMasterPlan&&'seed:master-trainer-plan',
       p.seedId&&`seed:${p.seedId}`,
       p.cloudPlanId&&`cloud:${p.cloudPlanId}`,
       p.templateKey&&`template:${p.templateKey}`,
@@ -65,7 +66,7 @@
     try{if(typeof planPage==='function')planPage()}catch(e){}
   }
 
-  window.trainerDeleteOwnProgram=function(id){
+  window.trainerDeleteOwnProgram=async function(id){
     id=String(id);
     if(id===BUILTIN)return window.deleteBuiltinProgram();
     const p=(Array.isArray(st.programs)?st.programs:[]).find(x=>String(x?.id)===id);if(!p)return;
@@ -74,7 +75,8 @@
     const set=readDeleted();keysFor(p).forEach(k=>set.add(k));writeDeleted(set);
     if(p.seedId){st.seededPrograms=st.seededPrograms&&typeof st.seededPrograms==='object'?st.seededPrograms:{};st.seededPrograms[p.seedId]=true}
     st.programs=(st.programs||[]).filter(x=>String(x?.id)!==id);
-    normalizePrimary();try{save()}catch(e){}
+    normalizePrimary();
+    try{if(await window.persistWorkoutState()===false)throw new Error('save failed')}catch(e){toast('Не удалось сохранить удаление. Оставь приложение открытым и повтори попытку');refreshViews();return}
     if(typeof closeModal==='function')try{closeModal()}catch(e){}
     if(typeof toast==='function')toast('Программа удалена');
     refreshViews();

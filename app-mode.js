@@ -25,16 +25,28 @@ if(typeof _modeCloudEnsureProfile==='function')window.cloudEnsureProfile=async f
 };
 
 function ensureMasterTrainerPlan(){
+  // Account/profile callbacks may arrive before IndexedDB recovery finishes.
+  if(!window.__unvrslStartupComplete){
+    if(!window.__masterPlanReadyQueued){window.__masterPlanReadyQueued=true;window.addEventListener('unvrsl:app-ready',()=>{window.__masterPlanReadyQueued=false;ensureMasterTrainerPlan()},{once:true})}
+    return;
+  }
   if(!masterTrainerEmail()||!Array.isArray(st.programs))return;
+  const seed='master-trainer-plan';
+  const deleted=new Set(st.deletedProgramKeys||[]);
+  try{JSON.parse(localStorage.getItem('unvrsl-fit-deleted-programs-v2')||'[]').forEach(k=>deleted.add(k))}catch(_){}
+  if(deleted.has(`seed:${seed}`))return;
   let existing=st.programs.find(p=>p.isMasterPlan||/мой 8-недельный цикл/i.test(p.name||''));
-  if(existing){existing.isMasterPlan=true;existing.ownerEmail=MASTER_TRAINER_EMAIL;save();return}
+  st.seededPrograms=st.seededPrograms||{};
+  if(existing){existing.isMasterPlan=true;existing.seedId=seed;existing.ownerEmail=MASTER_TRAINER_EMAIL;st.seededPrograms[seed]=true;save();return}
+  if(st.seededPrograms[seed])return;
   if(typeof builtInGroupToProgramExercise!=='function'||typeof groupIndexedEntries!=='function')return;
   const weeks=[];
   for(let wi=1;wi<=8;wi++){
     const rs=ROUTINES.filter(r=>r.w===wi);
     weeks.push({n:wi,days:rs.map(r=>({id:uid('day'),name:`${r.c} · ${r.t}`,ex:groupIndexedEntries(routineEntries(r)).map(g=>builtInGroupToProgramExercise(r,g))}))});
   }
-  st.programs.unshift({id:uid('prog'),name:'Мой план · 8 недель',isMasterPlan:true,ownerEmail:MASTER_TRAINER_EMAIL,created:Date.now(),updated:Date.now(),weeks});
+  st.programs.unshift({id:uid('prog'),seedId:seed,name:'Мой план · 8 недель',isMasterPlan:true,ownerEmail:MASTER_TRAINER_EMAIL,created:Date.now(),updated:Date.now(),weeks});
+  st.seededPrograms[seed]=true;
   save();
 }
 

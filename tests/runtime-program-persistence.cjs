@@ -27,6 +27,30 @@ const {chromium}=require(process.env.UNVRSL_PLAYWRIGHT||'playwright'),fs=require
   assert.equal(await page.evaluate(id=>st.programs.filter(p=>p.id===id).length,id),1);
   await page.reload();await page.waitForFunction(()=>window.__unvrslStartupComplete);
   assert.equal(await page.evaluate(id=>st.programs.filter(p=>p.id===id).length,id),1);
-  console.log('PASS: cold-link import, reload, rename, deletion, explicit reimport and no duplicate.');
+  // Reproduce the recording: owner login seeds a master plan, Safari quota
+  // forces IndexedDB persistence, then the entire page is reopened.
+  async function ownerLogin(target){
+   await target.evaluate(()=>{window.cloud={user:{email:'butafutsiy@mail.ru'},profile:{role:'trainer'}}});
+   await target.addScriptTag({url:base+'app-mode.js'});
+   await target.evaluate(()=>ensureMasterTrainerPlan());
+  }
+  await ownerLogin(page);
+  const master=await page.evaluate(()=>st.programs.find(p=>p.isMasterPlan).id);
+  await context.addInitScript(()=>{Storage.prototype.setItem=function(){throw new DOMException('Quota exceeded','QuotaExceededError')}});
+  await page.reload();await page.waitForFunction(()=>window.__unvrslStartupComplete);
+  await ownerLogin(page);
+  await page.evaluate(id=>renameProgramSheet(id),master);await page.locator('#rpName').fill('Сохранённое имя');
+  await page.evaluate(id=>renameProgram(id),master);
+  await page.reload();await page.waitForFunction(()=>window.__unvrslStartupComplete);
+  await ownerLogin(page);
+  assert.equal(await page.evaluate(id=>st.programs.find(p=>p.id===id).name,master),'Сохранённое имя');
+  await page.evaluate(id=>trainerDeleteOwnProgram(id),master);
+  await page.close();const reopened=await context.newPage();
+  await reopened.route('**/*',r=>r.request().url().startsWith(base)?r.continue():r.abort());
+  await reopened.goto(base);await reopened.waitForFunction(()=>window.__unvrslStartupComplete);
+  await ownerLogin(reopened);
+  await reopened.evaluate(()=>ensureMasterTrainerPlan());
+  assert.equal(await reopened.evaluate(()=>st.programs.some(p=>p.isMasterPlan)),false);
+  console.log('PASS: import, rename, deletion, reimport; owner master plan stays deleted after quota fallback and reopening.');
  }finally{await browser.close();server.close()}
 })().catch(e=>{console.error(e);process.exit(1)});
