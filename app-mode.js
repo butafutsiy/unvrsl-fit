@@ -19,6 +19,7 @@ if(typeof _modeCloudEnsureProfile==='function')window.cloudEnsureProfile=async f
   }
   if(masterTrainerEmail()){
     ensureMasterTrainerPlan();
+    ensureFunctionalTrainerPlan();
     if(typeof window.refreshTrainerNav==='function')window.refreshTrainerNav();
   }
   return cloud.profile||p;
@@ -49,6 +50,34 @@ function ensureMasterTrainerPlan(){
   st.seededPrograms[seed]=true;
   save();
 }
+
+// Keep the coach's published functional cycle in his own Programs list, even
+// when this device has no local copy of the account's older cloud snapshot.
+let functionalPlanLoading=false;
+async function ensureFunctionalTrainerPlan(){
+  if(!window.__unvrslStartupComplete||!masterTrainerEmail()||functionalPlanLoading)return;
+  const id='prog-functional-20261001-v1';
+  if((st.programs||[]).some(p=>String(p.id)===id))return;
+  const deleted=new Set(st.deletedProgramKeys||[]);
+  try{JSON.parse(localStorage.getItem('unvrsl-fit-deleted-programs-v2')||'[]').forEach(k=>deleted.add(k))}catch(_){}
+  if(deleted.has(`id:${id}`))return;
+  functionalPlanLoading=true;
+  try{
+    const response=await fetch('./programs/functional-8.json');
+    if(!response.ok)throw new Error('Не удалось загрузить функциональный цикл');
+    const p=await response.json();
+    if(p.id!==id||!Array.isArray(p.weeks)||p.weeks.length!==8)throw new Error('Повреждена программа');
+    if((st.programs||[]).some(x=>String(x.id)===id))return;
+    st.programs=Array.isArray(st.programs)?st.programs:[];
+    st.programs.push(p);
+    const saved=window.persistWorkoutState?await window.persistWorkoutState():save();
+    if(saved===false)throw new Error('Не удалось сохранить функциональный цикл');
+    if(document.querySelector('#programs.active'))window.trainerProgramsPage?.();
+  }catch(error){console.warn('UNVRSL functional program',error)}
+  finally{functionalPlanLoading=false}
+}
+window.addEventListener('unvrsl:app-ready',ensureFunctionalTrainerPlan);
+window.addEventListener('unvrsl:history-updated',ensureFunctionalTrainerPlan);
 
 const _modeHome=window.home;
 window.home=function(){if(unvrslTrainerMode())return _modeHome();return clientCleanHome()};
@@ -160,4 +189,4 @@ window.refreshCatalogUI=function(){_modeRefreshCatalogUI();const c=$('#catalogCo
 const _modeSettingsSheet=window.settingsSheet;
 window.settingsSheet=function(){_modeSettingsSheet();document.querySelectorAll('#sheet .setting').forEach(row=>{const b=row.querySelector('b');if(b?.textContent.trim()==='Русская база упражнений'){const s=row.querySelector('.muted.small');if(s)s.textContent=`${catalogRecords().length||CURATED_RULES.length} отобранных упражнений · правильные русские названия, картинки и анимации`}})};
 
-setTimeout(()=>{if(masterTrainerEmail())ensureMasterTrainerPlan();render();},50);
+setTimeout(()=>{if(masterTrainerEmail()){ensureMasterTrainerPlan();ensureFunctionalTrainerPlan()}render();},50);

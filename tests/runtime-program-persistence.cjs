@@ -51,6 +51,18 @@ const {chromium}=require(process.env.UNVRSL_PLAYWRIGHT||'playwright'),fs=require
   await ownerLogin(reopened);
   await reopened.evaluate(()=>ensureMasterTrainerPlan());
   assert.equal(await reopened.evaluate(()=>st.programs.some(p=>p.isMasterPlan)),false);
-  console.log('PASS: import, rename, deletion, reimport; owner master plan stays deleted after quota fallback and reopening.');
+  const fresh=await browser.newContext({viewport:{width:390,height:844}}),owner=await fresh.newPage();
+  await owner.route('**/*',r=>r.request().url().startsWith(base)?r.continue():r.abort());
+  await owner.goto(base);await owner.waitForFunction(()=>window.__unvrslStartupComplete);
+  await owner.evaluate(()=>{window.cloud={user:{email:'butafutsiy@mail.ru'},profile:{role:'trainer'}}});
+  await owner.addScriptTag({url:base+'app-mode.js'});
+  await owner.evaluate(()=>ensureFunctionalTrainerPlan());
+  assert.equal(await owner.evaluate(id=>st.programs.find(p=>p.id===id).weeks.flatMap(w=>w.days).length,id),24);
+  await owner.evaluate(()=>{nav('programs');trainerProgramsPage()});
+  assert.equal(await owner.getByText('Функциональный цикл · 8 недель',{exact:true}).count(),1);
+  await owner.reload();await owner.waitForFunction(()=>window.__unvrslStartupComplete);
+  assert.equal(await owner.evaluate(id=>st.programs.filter(p=>p.id===id).length,id),1);
+  await fresh.close();
+  console.log('PASS: import, rename, deletion, reimport; owner plan stays deleted and functional cycle appears in a fresh owner profile.');
  }finally{await browser.close();server.close()}
 })().catch(e=>{console.error(e);process.exit(1)});
