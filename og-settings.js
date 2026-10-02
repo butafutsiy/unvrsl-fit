@@ -11,6 +11,9 @@ if(typeof canonicalSettingsSheet==='function'){
     const account=document.createElement('div');account.dataset.cloudSettings='1';
     account.innerHTML=`<div class="section">АККАУНТ И ОБЛАКО</div><div class="settings-card"><div class="setting"><div><b>UNVRSL Cloud</b><div class="muted small">${esc(cloudSettingsLabel())}</div></div><button class="btn tiny" onclick="openCloudAccount()">${window.cloud?.user?'Открыть':'Войти'}</button></div>${window.cloud?.user?`<div class="setting"><div><b>Облачная копия</b><div class="muted small">Тренировки, прогресс, вес, программы и настройки</div></div><button class="btn tiny" onclick="accountSyncNow?.()">Синхр.</button></div>`:''}</div>`;
     const firstSection=sheet.querySelector('.section');if(firstSection)firstSection.before(account);else sheet.append(account);
+    const movement=document.createElement('div');movement.className='settings-card';
+    movement.innerHTML='<div class="setting"><div><b>3D-библиотека движений</b><div class="muted small">Первое упражнение · гантели и подсветка мышц</div></div><a class="btn tiny" href="movement-lab.html">Открыть</a></div>';
+    account.after(movement);
     return result;
   };
   try{settingsSheet=window.settingsSheet}catch(_){}
