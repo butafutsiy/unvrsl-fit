@@ -75,3 +75,11 @@ html body .strength-record{flex:0 0 auto;min-width:130px;border:1px solid var(--
 html body .strength-record[aria-pressed=true]{border-color:var(--green);background:color-mix(in srgb,var(--green) 9%,var(--panel))}.strength-record strong,.strength-record b,.strength-record small{display:block}.strength-record strong{font-size:15px}.strength-record b{font-size:11px;color:var(--green);margin-top:5px}.strength-record small{font-size:10px;color:var(--muted);margin-top:6px}
 html body .strength-history{border-top:1px solid var(--line);margin-top:12px;padding-top:8px}.strength-history>summary{display:flex;align-items:center;justify-content:space-between;min-height:40px;font-size:13px;color:var(--muted);cursor:pointer;list-style:none}.strength-history>summary::-webkit-details-marker{display:none}.strength-history>summary>span{font-size:24px}
 @media(max-width:360px){html body .strength-offline-card{padding:11px}html body .strength-card-head{grid-template-columns:1fr}html body .strength-card-head .strength-delta{display:flex;align-items:center;gap:8px;max-width:none;text-align:left}html body .strength-card-head .strength-delta small{margin:0}html body .strength-focus{padding:10px}html body .strength-focus-side b{font-size:10px}}
+
+/* All-history estimates, each set weighted equally in the mean. */
+html body .strength-average{display:grid;gap:4px;margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:15px;background:var(--panel)}
+html body .strength-average span{font-size:12px;color:var(--muted)}
+html body .strength-average strong{font-size:23px;font-variant-numeric:tabular-nums}
+html body .strength-average small{font-size:11px;color:var(--muted);line-height:1.4}
+html body .strength-set-estimate{display:block;margin-top:4px;font-size:12px;color:var(--green)}
+html body .strength-set-list>div>span{text-align:right;max-width:42%;overflow-wrap:anywhere}
