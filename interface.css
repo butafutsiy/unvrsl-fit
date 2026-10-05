@@ -24,3 +24,29 @@ html[data-theme="light"] body #modal.modal{background:rgba(34,38,46,.3)!importan
 /* The shared header is the drag target, even when the body is scrolled. */
 html body #modal.modal .modal-close-bar{position:relative;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;padding-top:24px!important}
 html body #modal.modal .modal-close-bar:before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);width:36px;height:4px;border-radius:4px;background:var(--muted);opacity:.5;pointer-events:none}
+
+/* Strength analytics: both charts remain visible in the expanded exercise. */
+html body .strength-overview .strength-filters{display:flex;gap:6px;margin-top:14px;overflow-x:auto;padding-bottom:4px}
+html body .strength-filters button{flex:0 0 auto;min-height:42px;padding:8px 12px;border-radius:13px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:inherit;font-size:13px;cursor:pointer}
+html body .strength-filters button[aria-pressed="true"]{background:var(--accent,var(--green));color:#fff;border-color:transparent}
+html body .strength-overview .strength-caption{margin:12px 0;line-height:1.5}
+html body .strength-exercise{min-width:0;border-bottom:1px solid var(--line)}
+html body #stats .strength-exercise>.strength-item{display:grid;grid-template-columns:minmax(0,1fr) auto;margin:8px 0!important;cursor:pointer;list-style:none}
+html body .strength-exercise>summary::-webkit-details-marker{display:none}
+html body #stats .strength-exercise .strength-item-title{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3;font-size:16px;overflow-wrap:anywhere}
+html body .strength-exercise .strength-delta{font-size:13px;text-align:right;max-width:95px}
+html body .strength-delta small{display:block;font-size:10px;font-weight:400;color:var(--muted,#8e8e93);margin-top:4px}
+html body .strength-delta>span{display:block;margin-top:8px}
+html body .strength-exercise[open] .strength-delta>span{transform:rotate(180deg)}
+html body .strength-result{margin-top:8px;font-size:17px;font-weight:750}.strength-result small{font-size:11px;font-weight:400}
+html body .strength-expanded{padding:0 2px 16px}
+html body .strength-plot{padding:13px 10px 4px;margin:10px 0;border:1px solid var(--line);border-radius:16px;min-width:0}
+html body .strength-plot>.row{gap:8px;font-size:14px}.strength-plot .small{margin-top:4px;font-size:11px;line-height:1.4}
+html body .strength-chart{width:100%;height:auto;margin:6px 0 0;overflow:visible}
+html body .strength-chart text{fill:var(--muted,#8e8e93);font:10px system-ui}
+html body .strength-chart [role="button"]{cursor:pointer;outline-offset:3px}
+html body .strength-session{margin-top:14px}.strength-session label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px}
+html body .strength-session select{min-width:0;max-width:65%;padding:9px;border-radius:10px;border:1px solid var(--line);color:var(--text);background:var(--panel2)}
+html body .strength-set-list>div{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+html body .strength-help{margin-top:14px;font-size:12px;color:var(--muted,#8e8e93);line-height:1.5}.strength-help summary{cursor:pointer;min-height:32px}
+html body .strength-exercise .up{color:var(--accent,var(--green))}
