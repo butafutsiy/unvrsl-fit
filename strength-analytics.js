@@ -2,14 +2,26 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.StrengthAnalytics=api})(typeof window==='undefined'?null:window,()=>{
   const groups=[['all','Все'],['legs','Ноги'],['chest','Грудь'],['back','Спина'],['shoulders','Плечи'],['arms','Руки'],['core','Пресс'],['other','Другое']];
   function muscle(e,row={}){
-    const t=[e.bp,row.bp,e.tg,row.tg,e.n,row.n].join(' ').toLowerCase();
-    if(/upper legs|lower legs|quad|hamstring|glute|calf|calves|adductor|abductor|присед|ног|бедр|ягод|икр|румын|выпад/.test(t))return 'legs';
-    if(/chest|pector|груд|жим.*л[её]жа|наклонн|брусь/.test(t))return 'chest';
-    if(/back|lats|спин|подтяг|тяга.*(наклон|блок|гриф)/.test(t))return 'back';
-    if(/shoulder|delt|плеч|дельт|армей/.test(t))return 'shoulders';
-    if(/arms|bicep|tricep|бицеп|трицеп|рук|француз/.test(t))return 'arms';
-    if(/waist|abs|core|пресс|скручив/.test(t))return 'core';return 'other';
+    // Prefer catalog targets over generic words such as “lying” or “incline”.
+    const classify=t=>{
+      if(/quad|hamstring|glute|calf|calves|adductor|abductor|upper legs|lower legs|квадриц|бедр|ягод|икр/.test(t))return 'legs';
+      if(/tricep|bicep|forearm|arms|трицеп|бицеп|предплеч|рук/.test(t))return 'arms';
+      if(/shoulder|delt|плеч|дельт/.test(t))return 'shoulders';
+      if(/chest|pector|груд/.test(t))return 'chest';
+      if(/back|lats|спин|широч/.test(t))return 'back';
+      if(/waist|abs|core|пресс|живот/.test(t))return 'core';return null;
+    };
+    for(const value of [row.tg,row.bp,e.tg,e.bp]){const g=classify(String(value||'').toLowerCase());if(g)return g}
+    const t=String(row.n||e.n||'').toLowerCase();
+    if(/француз|сгибани.*рук|разгибани.*рук|бицеп|трицеп|молотк/.test(t))return 'arms';
+    if(/подъ[её]м ног|скручив|планк|пресс/.test(t))return 'core';
+    if(/присед|ног|бедр|ягод|икр|румын|выпад/.test(t))return 'legs';
+    if(/подтяг|тяга.*(наклон|блок|гриф)/.test(t))return 'back';
+    if(/армей|плеч|дельт|жим.*сидя|махи.*сторон/.test(t))return 'shoulders';
+    if(/груд|жим.*л[её]жа|жим.*наклон|отжим|брусь|бабоч/.test(t))return 'chest';
+    return 'other';
   }
+
   function build(sessions,reg,weights,D,{days=28,group='all',now=new Date(),deleted=[]}={}){
     const end=new Date(now);end.setHours(0,0,0,0);end.setDate(end.getDate()+1);
     const start=new Date(end);start.setDate(start.getDate()-days);

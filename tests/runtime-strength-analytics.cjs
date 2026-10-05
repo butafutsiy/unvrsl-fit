@@ -8,16 +8,23 @@ const {chromium}=require('playwright'),fs=require('node:fs'),path=require('node:
  await page.addInitScript(()=>{const dates=[21,14,7,0].map(offset=>{const d=new Date();d.setDate(d.getDate()-offset);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`});localStorage.setItem('unvrsl-fit-v3',JSON.stringify({theme:'light',accent:'#bf5af2',bw:[],week:1,body:'male',sessions:dates.map((date,i)=>({id:'demo'+i,date,started:Date.parse(date+'T12:00:00'),ended:Date.parse(date+'T13:00:00'),ex:[{n:'Жим лёжа',loadType:'external_total',set:[{w:100+5*i,r:5,actualReps:5,actualRpe:9,rpe:9,ok:true}]}]}))}))});
  await page.goto(base);await page.waitForFunction(()=>window.__unvrslStartupComplete);await page.evaluate(()=>nav('stats'));
  await page.locator('.strength-overview').waitFor();assert.equal(await page.locator('.strength-exercise').count(),1);
- await page.locator('.strength-exercise summary.strength-item').click();assert.equal(await page.locator('.strength-exercise[open] .strength-chart').count(),2);
- await page.locator('.strength-session select').selectOption('0');assert.equal(await page.locator('.strength-session select').inputValue(),'0');
- await page.locator('.strength-chart').nth(1).locator('[role=button]').last().click();assert.equal(await page.locator('.strength-session select').inputValue(),'3');
+ assert.equal(await page.locator('.strength-exercise .strength-chart').count(),1);
+ assert.equal(await page.locator('.strength-line').count(),2);
+ await page.getByRole('button',{name:'Рабочий вес',exact:true}).click();assert.equal(await page.locator('.strength-line.e1').count(),0);
+ await page.getByRole('button',{name:'1ПМ',exact:true}).click();assert.equal(await page.locator('.strength-line.maxWeight').count(),0);
+ await page.getByRole('button',{name:'Оба',exact:true}).click();assert.equal(await page.locator('.strength-line').count(),2);
+ await page.locator('.strength-record').last().click();assert.match(await page.locator('.strength-focus').innerText(),/100 кг/);
+ await page.locator('.strength-chart .strength-marker.maxWeight').last().click();assert.match(await page.locator('.strength-focus').innerText(),/115 кг/);
+ await page.locator('.strength-history>summary').click();await page.locator('.strength-session select').selectOption('0');assert.equal(await page.locator('.strength-session select').inputValue(),'0');
+ await page.locator('.strength-chart .strength-marker.maxWeight').last().focus();await page.keyboard.press('Enter');assert.equal(await page.locator('.strength-session select').inputValue(),'3');
+ await page.locator('.strength-history>summary').click();
  await page.locator('.strength-overview').screenshot({path:'/tmp/strength-light.png'});
  await page.getByRole('button',{name:'Ноги',exact:true}).click();assert.match(await page.locator('.strength-overview').innerText(),/нет выполненных/);
  await page.getByRole('button',{name:'Грудь',exact:true}).click();await page.getByRole('button',{name:'7 дней',exact:true}).click();assert.match(await page.locator('.strength-overview').innerText(),/Мало данных/);
- await page.getByRole('button',{name:'Всё',exact:true}).click();await page.locator('.strength-exercise summary.strength-item').click();
+ await page.getByRole('button',{name:'Всё',exact:true}).click();
  await page.evaluate(()=>{st.theme='dark';st.accent='#ff9500';applyTheme();applyAccent();save()});
  await page.setViewportSize({width:320,height:740});await page.locator('.strength-overview').screenshot({path:'/tmp/strength-dark.png'});
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);
- console.log('PASS: real app, both charts, synchronized click/select, muscle/period filters, light/dark and 320px viewport, no page errors.');
+ console.log('PASS: real app, three chart modes, synchronized marker/chip/select/keyboard, muscle/period filters, light/dark and 320px viewport, no page errors.');
  }finally{await browser.close();server.close()}
 })().catch(e=>{console.error(e);process.exit(1)});
