@@ -50,3 +50,28 @@ html body .strength-session select{min-width:0;max-width:65%;padding:9px;border-
 html body .strength-set-list>div{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
 html body .strength-help{margin-top:14px;font-size:12px;color:var(--muted,#8e8e93);line-height:1.5}.strength-help summary{cursor:pointer;min-height:32px}
 html body .strength-exercise .up{color:var(--accent,var(--green))}
+
+/* Match the offline-client graph layout while following the selected app accent. */
+html body .strength-offline-card{border:1px solid var(--line);border-radius:23px;background:var(--panel2);padding:15px;margin:10px 0;overflow:hidden}
+html body .strength-card-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:10px}
+html body .strength-card-head .strength-result{font-size:13px;font-weight:600;line-height:1.4}
+html body .strength-offline-card .strength-expanded{padding-bottom:0}
+html body .strength-modes{display:grid;grid-template-columns:1.35fr .75fr .7fr;gap:4px;background:color-mix(in srgb,var(--text) 5%,var(--panel2));padding:4px;margin:16px 0 12px;border-radius:15px}
+html body .strength-modes button{min-height:42px;border:1px solid transparent;border-radius:12px;background:transparent;color:var(--muted);font:inherit;font-size:12px;padding:6px;cursor:pointer}
+html body .strength-modes button[aria-pressed=true]{background:var(--panel);border-color:color-mix(in srgb,var(--green) 50%,transparent);color:var(--green)}
+html body .strength-focus{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;border-radius:18px;border:1px solid color-mix(in srgb,var(--green) 45%,transparent);background:color-mix(in srgb,var(--green) 10%,var(--panel));padding:13px}
+html body .strength-focus span{display:block;color:var(--muted);font-size:11px}.strength-focus strong{display:block;font-size:24px;line-height:1.2;margin-top:5px}.strength-focus b{display:block;font-size:14px;margin-top:4px}.strength-focus small{display:block;font-size:11px;line-height:1.4;margin-top:7px;color:var(--muted)}
+html body .strength-focus-side{text-align:right}.strength-focus-side b{font-size:12px;color:var(--green)}.strength-focus-side small{padding:3px 7px;border:1px solid color-mix(in srgb,var(--green) 30%,transparent);border-radius:20px}
+html body .strength-focus p{grid-column:1/-1;font-size:11px;line-height:1.4;color:var(--muted);margin:0}
+html body .strength-legend{display:flex;flex-wrap:wrap;gap:12px;margin:13px 0 6px;font-size:10px;color:var(--muted)}.strength-legend span{display:flex;align-items:center;gap:5px}.strength-legend i{width:17px;border-top:3px solid var(--green)}.strength-legend .estimate{border-top:3px dashed #2585c6}
+html body .strength-unit-note{font-size:10px;line-height:1.4}
+html body .strength-chart-scroll{overflow-x:auto;overscroll-behavior-x:contain;max-width:100%;margin-top:8px;scrollbar-width:thin}
+html body .strength-offline-chart{display:block;max-width:none;height:205px;margin:0;overflow:visible}
+html body .strength-line{fill:none;stroke:var(--green);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.strength-line.e1{stroke:#2585c6;stroke-dasharray:6 5}
+html body .strength-hit{fill:transparent;pointer-events:all}.strength-dot{fill:var(--green);stroke:var(--panel);stroke-width:2}.strength-marker.e1 .strength-dot{fill:#2585c6}.strength-marker.selected .strength-dot{fill:var(--panel);stroke:var(--green);stroke-width:4}.strength-marker.e1.selected .strength-dot{stroke:#2585c6}
+html body .strength-value-pill rect{fill:var(--green)}.strength-marker.e1 .strength-value-pill rect{fill:#2585c6}html body .strength-chart .strength-value-pill text{fill:var(--text);font-weight:800}
+html body .strength-records{display:flex;gap:8px;overflow-x:auto;padding:12px 1px 5px;scroll-snap-type:x proximity;max-width:100%}
+html body .strength-record{flex:0 0 auto;min-width:130px;border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--text);padding:11px;text-align:left;scroll-snap-align:center;cursor:pointer}
+html body .strength-record[aria-pressed=true]{border-color:var(--green);background:color-mix(in srgb,var(--green) 9%,var(--panel))}.strength-record strong,.strength-record b,.strength-record small{display:block}.strength-record strong{font-size:15px}.strength-record b{font-size:11px;color:var(--green);margin-top:5px}.strength-record small{font-size:10px;color:var(--muted);margin-top:6px}
+html body .strength-history{border-top:1px solid var(--line);margin-top:12px;padding-top:8px}.strength-history>summary{display:flex;align-items:center;justify-content:space-between;min-height:40px;font-size:13px;color:var(--muted);cursor:pointer;list-style:none}.strength-history>summary::-webkit-details-marker{display:none}.strength-history>summary>span{font-size:24px}
+@media(max-width:360px){html body .strength-offline-card{padding:11px}html body .strength-card-head{grid-template-columns:1fr}html body .strength-card-head .strength-delta{display:flex;align-items:center;gap:8px;max-width:none;text-align:left}html body .strength-card-head .strength-delta small{margin:0}html body .strength-focus{padding:10px}html body .strength-focus-side b{font-size:10px}}

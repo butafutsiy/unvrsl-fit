@@ -28,3 +28,10 @@ test('deload is visible but excluded from growth; muscle filters and load types 
  assert.equal(A.muscle({n:'Сгибание ног лёжа',tg:'hamstrings'}),'legs');
  assert.equal(build([...s,session('d','2026-10-02',[set(30,8)],{},{loadType:'per_dumbbell'})]).length,2);
 });
+test('muscle group uses canonical target before posture words and ambiguous names',()=>{
+ assert.equal(A.muscle({n:'Французский жим с EZ-штангой лёжа',bp:'chest'},{tg:'triceps',bp:'upper arms'}),'arms');
+ assert.equal(A.muscle({n:'Французский жим лёжа'}),'arms');
+ assert.equal(A.muscle({n:'Тяга штанги в наклоне'}),'back');
+ assert.equal(A.muscle({n:'Жим гантелей на наклонной'}),'chest');
+ assert.equal(A.muscle({n:'Подъём ног в упоре'}),'core');
+});
