@@ -3,6 +3,7 @@
   const W=window,D=document,root=D.getElementById('progressRoot');
   const MEASURES=[['chest','Грудь'],['waist','Талия'],['abdomen','Живот'],['hips','Ягодицы'],['thigh','Бедро'],['arm','Рука'],['calf','Икра']];
   let data=null,measureKey='waist',chartId=0,nutritionGoalKey='maintain',api=null,shareHash='',entryMode='measurement',entryOpen=false,profileOpen=false,actorSource='client',flash='';
+  let nutritionSaving=false,nutritionSaveError='';
   const A=v=>Array.isArray(v)?v:[];
   const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
   const E=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -83,7 +84,7 @@
     const available=NUTRITION_GOALS.filter(([key])=>n.goals?.[key]);if(!available.length)return'';
     if(!available.some(([key])=>key===nutritionGoalKey))nutritionGoalKey=available[0][0];
     const goal=n.goals[nutritionGoalKey],goalTitle=goal.title||available.find(([key])=>key===nutritionGoalKey)?.[1]||'Цель';
-    return `<section id="publicNutritionPanel" class="pp-panel pp-nutrition"><div class="pp-nutrition-head"><div><div class="pp-kicker">ПИТАНИЕ</div><h2>Расчёт КБЖУ</h2><p>Обновлено ${E(day(n.updatedAt||data?.generatedAt))}</p></div><div class="pp-goal-picker"><label for="publicNutritionGoal">Цель</label><div class="pp-goal-picker-control"><select id="publicNutritionGoal" aria-label="Цель питания" onchange="publicProgressNutritionGoalV325(this.value)">${available.map(([key,title])=>`<option value="${key}"${key===nutritionGoalKey?' selected':''}>${E(title)}</option>`).join('')}</select></div><b>${E(range(goal.calories))}</b><small>ккал в день</small></div></div><div class="pp-nutrition-base"><div><span>BMR</span><b>${E(whole(n.bmr))}</b><small>${E(n.formula)}</small></div><div><span>Активность</span><b>× ${E(String(n.activityFactor).replace('.',','))}</b><small>коэффициент</small></div><div><span>TDEE</span><b>${E(whole(n.tdee))}</b><small>поддержание</small></div></div><div class="pp-selected-goal"><div class="pp-selected-label"><b>${E(goalTitle)}</b><span>БЖУ на день</span></div>${nutritionMacros(goal)}</div><p class="pp-nutrition-note">Белки и жиры рассчитаны по весу, углеводы – остатком от калорий. Это стартовый ориентир, который уточняется по динамике.</p></section>`
+    return `<section id="publicNutritionPanel" class="pp-panel pp-nutrition"><div class="pp-nutrition-head"><div><div class="pp-kicker">ПИТАНИЕ</div><h2>Расчёт КБЖУ</h2><p>Обновлено ${E(day(n.updatedAt||data?.generatedAt))}</p></div><div class="pp-goal-picker"><label for="publicNutritionGoal">Цель</label><div class="pp-goal-picker-control"><select id="publicNutritionGoal" aria-label="Цель питания" ${nutritionSaving?'disabled':''} onchange="publicProgressNutritionGoalV325(this.value)">${available.map(([key,title])=>`<option value="${key}"${key===nutritionGoalKey?' selected':''}>${E(title)}</option>`).join('')}</select></div><b>${E(range(goal.calories))}</b><small>ккал в день</small></div></div><div class="pp-nutrition-base"><div><span>BMR</span><b>${E(whole(n.bmr))}</b><small>${E(n.formula)}</small></div><div><span>Активность</span><b>× ${E(String(n.activityFactor).replace('.',','))}</b><small>коэффициент</small></div><div><span>TDEE</span><b>${E(whole(n.tdee))}</b><small>поддержание</small></div></div><div class="pp-selected-goal"><div class="pp-selected-label"><b>${E(goalTitle)}</b><span>БЖУ на день</span></div>${nutritionMacros(goal)}</div>${n.stale?'<p class="pp-nutrition-note" role="status">Вес или данные изменились. Здесь последний сохранённый расчёт – попроси тренера обновить КБЖУ.</p>':''}<button type="button" id="publicNutritionSave" class="pp-primary" onclick="publicProgressSaveNutritionGoalV464()" ${nutritionSaving||data.nutritionGoal===nutritionGoalKey?'disabled':''}>${nutritionSaving?'Сохраняю…':data.nutritionGoal===nutritionGoalKey?'Цель зафиксирована':'Зафиксировать цель'}</button><p class="pp-nutrition-note" role="status">${E(nutritionSaveError|| (data.nutritionGoal===nutritionGoalKey?'Выбранная цель сохранена.':''))}</p><p class="pp-nutrition-note">Белки и жиры рассчитаны по весу, углеводы – остатком от калорий. Это стартовый ориентир, который уточняется по динамике.</p></section>`
   }
 
   function weightPanel(){const points=weightPoints(),last=points[points.length-1],delta=change(points),target=N(data?.client?.targetWeight),gap=last&&target!=null?+(target-last.value).toFixed(1):null;return `<section class="pp-panel"><div class="pp-head"><div><div class="pp-kicker">ВЕС</div><div class="pp-value">${last?`${fmt(last.value)} <small>кг</small>`:'Нет записей'}</div></div><div class="pp-weight-side">${target!=null?`<div class="pp-weight-goal"><span>Цель</span><b>${fmt(target)} кг</b><small>${gap===0?'Достигнута':`${fmt(Math.abs(gap))} кг ${gap>0?'набрать':'снизить'}`}</small></div>`:''}${delta==null?'':`<div class="pp-change">${E(deltaText(delta))}<small>за период</small></div>`}</div></div>${detailedWeightChart(points)}</section>`}
@@ -103,7 +104,31 @@
   function fail(message){root.innerHTML=`<div class="pp-error"><b>Прогресс не найден</b><span>${E(message||'Ссылка неверна, устарела или была обновлена тренером.')}</span></div>`}
   async function hash(token){const bytes=new TextEncoder().encode(token),out=await crypto.subtle.digest('SHA-256',bytes);return[...new Uint8Array(out)].map(x=>x.toString(16).padStart(2,'0')).join('')}
   W.publicProgressMetricV321=function(key){measureKey=String(key||'');const panel=D.getElementById('publicMeasurePanel');if(panel)panel.outerHTML=measurePanel()};
-  W.publicProgressNutritionGoalV325=function(key){if(!NUTRITION_GOALS.some(([value])=>value===key)||!data?.nutrition?.goals?.[key])return;nutritionGoalKey=key;const panel=D.getElementById('publicNutritionPanel');if(panel)panel.outerHTML=nutritionPanel()};
+  W.publicProgressNutritionGoalV325=function(key){if(!NUTRITION_GOALS.some(([value])=>value===key)||!data?.nutrition?.goals?.[key])return;nutritionGoalKey=key;nutritionSaveError='';const panel=D.getElementById('publicNutritionPanel');if(panel)panel.outerHTML=nutritionPanel()};
+  W.publicProgressSaveNutritionGoalV464=async function(){
+    if(nutritionSaving||!api||!shareHash||!data?.nutrition?.goals?.[nutritionGoalKey])return;
+    const goal=nutritionGoalKey;
+    const refresh=()=>{const panel=D.getElementById('publicNutritionPanel');if(panel)panel.outerHTML=nutritionPanel()};
+    nutritionSaving=true;nutritionSaveError='';refresh();
+    try{
+      const result=await api.rpc('set_offline_nutrition_goal_v464',{p_token_hash:shareHash,p_goal:goal});
+      if(result.error)throw result.error;
+      if(result.data?.data?.nutritionGoal!==goal)throw new Error('Не удалось сохранить цель. Попробуй ещё раз.');
+      data.nutritionGoal=goal;
+      if(result.data.data.nutrition)data.nutrition=result.data.data.nutrition;
+    }catch(error){nutritionSaveError=String(error?.message||'Не удалось сохранить цель. Попробуй ещё раз.')}
+    finally{nutritionSaving=false;refresh()}
+  };
+  async function acceptProgress(result){
+    // Entry RPCs can still return the old snapshot without nutrition.
+    const fresh=await api.rpc('get_offline_progress_share_v334',{p_token_hash:shareHash});
+    if(!fresh.error&&fresh.data?.data){data=fresh.data.data}else{
+      const previous=data;data=result.data.data;
+      if(previous?.nutrition)data.nutrition={...previous.nutrition,stale:true};
+      if(previous?.nutritionGoal)data.nutritionGoal=previous.nutritionGoal;
+    }
+    if(NUTRITION_GOALS.some(([key])=>key===data.nutritionGoal))nutritionGoalKey=data.nutritionGoal;
+  }
   W.publicProgressEntryModeV328=function(mode){entryMode=mode==='strength'?'strength':'measurement';flash='';const panel=D.getElementById('publicEntryPanel');if(panel)panel.outerHTML=entryPanel()};
   W.publicProgressOpenEntryV333=function(mode){entryMode=mode==='strength'?'strength':'measurement';entryOpen=true;profileOpen=false;flash='';render();requestAnimationFrame(()=>D.getElementById('publicEntryPanel')?.scrollIntoView?.({block:'start',behavior:'smooth'}))};
   W.publicProgressCloseEntryV333=function(){entryOpen=false;flash='';render()};
@@ -111,13 +136,13 @@
   W.publicProgressSaveProfileV334=async function(){
     const button=D.getElementById('ppProfileSave'),value=id=>String(D.getElementById(id)?.value||'').trim();try{
       if(!api||!shareHash)throw new Error('Сервис записи ещё загружается');const payload={name:value('ppProfileName'),sex:value('ppProfileSex'),height:value('ppProfileHeight'),birthDate:value('ppProfileBirth'),targetWeight:value('ppProfileTargetWeight')};if(!payload.name)throw new Error('Укажи имя');
-      if(button){button.disabled=true;button.textContent='Сохраняю…'}const result=await api.rpc('update_offline_progress_profile_v334',{p_token_hash:shareHash,p_payload:payload});if(result.error)throw result.error;if(!result.data?.data)throw new Error('Не удалось обновить профиль');data=result.data.data;actorSource=sourceKey(result.data.viewer_source);profileOpen=false;render(result.data.updated_at)
+      if(button){button.disabled=true;button.textContent='Сохраняю…'}const result=await api.rpc('update_offline_progress_profile_v334',{p_token_hash:shareHash,p_payload:payload});if(result.error)throw result.error;if(!result.data?.data)throw new Error('Не удалось обновить профиль');await acceptProgress(result);actorSource=sourceKey(result.data.viewer_source);profileOpen=false;render(result.data.updated_at)
     }catch(error){if(button){button.disabled=false;button.textContent='Сохранить данные'}const message=String(error?.message||'Не удалось сохранить данные').replace(/^.*?:\s*/,'');W.alert?W.alert(message):alert(message)}
   };
   W.publicProgressSaveProfileV333=W.publicProgressSaveProfileV334;
   W.publicProgressDeleteMeasurementV334=async function(entryId){
     if(!entryId||!api||!shareHash)return;if(!W.confirm('Удалить запись?\n\nВес, обхваты и заметка этой даты будут удалены.'))return;
-    try{const result=await api.rpc('delete_offline_progress_measurement_v334',{p_token_hash:shareHash,p_entry_id:entryId});if(result.error)throw result.error;if(!result.data?.data)throw new Error('Не удалось удалить запись');data=result.data.data;actorSource=sourceKey(result.data.viewer_source);render(result.data.updated_at)}catch(error){const message=String(error?.message||'Не удалось удалить запись').replace(/^.*?:\s*/,'');W.alert?W.alert(message):alert(message)}
+    try{const result=await api.rpc('delete_offline_progress_measurement_v334',{p_token_hash:shareHash,p_entry_id:entryId});if(result.error)throw result.error;if(!result.data?.data)throw new Error('Не удалось удалить запись');await acceptProgress(result);actorSource=sourceKey(result.data.viewer_source);render(result.data.updated_at)}catch(error){const message=String(error?.message||'Не удалось удалить запись').replace(/^.*?:\s*/,'');W.alert?W.alert(message):alert(message)}
   };
   W.publicProgressE1rmV328=function(){const value=e1rm(D.getElementById('ppEntryWeight')?.value,D.getElementById('ppEntryReps')?.value),out=D.getElementById('ppEntryE1rm');if(out)out.textContent=value==null?'—':`≈ ${fmt(value)} кг`};
   W.publicProgressSubmitV328=async function(kind){
@@ -133,7 +158,7 @@
       }
       if(button){button.disabled=true;button.textContent='Сохраняю…'}
       const result=await api.rpc('submit_offline_progress_entry_v333',{p_token_hash:shareHash,p_kind:kind,p_payload:payload});if(result.error)throw result.error;if(!result.data?.data)throw new Error('Не удалось обновить прогресс');
-      data=result.data.data;actorSource=sourceKey(result.data.viewer_source);entryMode=kind;flash=kind==='measurement'?'Вес и замеры сохранены.':'Силовой показатель и расчётный 1ПМ сохранены.';render(result.data.updated_at);requestAnimationFrame(()=>D.getElementById('publicEntryPanel')?.scrollIntoView?.({block:'start',behavior:'smooth'}))
+      await acceptProgress(result);actorSource=sourceKey(result.data.viewer_source);entryMode=kind;flash=kind==='measurement'?'Вес и замеры сохранены.':'Силовой показатель и расчётный 1ПМ сохранены.';render(result.data.updated_at);requestAnimationFrame(()=>D.getElementById('publicEntryPanel')?.scrollIntoView?.({block:'start',behavior:'smooth'}))
     }catch(error){flash='';if(button){button.disabled=false;button.textContent=kind==='measurement'?'Сохранить вес и замеры':'Сохранить силовой показатель'};const message=String(error?.message||'Не удалось сохранить запись').replace(/^.*?:\s*/,'');W.alert?W.alert(message):alert(message)}
   };
   W.publicProgressWeightPointV327=function(id,index){
@@ -152,7 +177,7 @@
       if(!/^[A-Za-z0-9_-]{40,80}$/.test(token))return fail();
       if(!W.supabase?.createClient||!W.UNVRSL_CLOUD?.url||!W.UNVRSL_CLOUD?.anonKey)throw new Error('Сервис временно недоступен. Попробуй открыть ссылку позже.');
       api=W.supabase.createClient(W.UNVRSL_CLOUD.url,W.UNVRSL_CLOUD.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});await api.auth.getSession();shareHash=await hash(token);const result=await api.rpc('get_offline_progress_share_v334',{p_token_hash:shareHash});
-      if(result.error)throw result.error;if(!result.data?.data)return fail();data=result.data.data;actorSource=sourceKey(result.data.viewer_source);render(result.data.updated_at)
+      if(result.error)throw result.error;if(!result.data?.data)return fail();data=result.data.data;if(NUTRITION_GOALS.some(([key])=>key===data.nutritionGoal))nutritionGoalKey=data.nutritionGoal;actorSource=sourceKey(result.data.viewer_source);render(result.data.updated_at)
     }catch(e){console.warn('UNVRSL public progress',e);fail(e?.message)}
   })();
 })();
