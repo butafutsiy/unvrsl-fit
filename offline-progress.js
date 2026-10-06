@@ -147,11 +147,10 @@
     return calories&&protein&&fat&&carbs?{title,calories,protein,fat,carbs}:null
   }
   function publicNutrition(data){
-    if(nutritionIsStale(data))return null;
     const plan=nutritionPlan(data),result=plan?.result,bmr=N(result?.bmr?.value),factor=N(result?.activity?.factor),tdee=N(result?.tdee),formula=String(result?.bmr?.formula||'').slice(0,80);
     const goals={cut:publicGoal(result,'cut','Сушка'),maintain:publicGoal(result,'maintain','Поддержание'),gain:publicGoal(result,'gain','Набор')};
     if(!(bmr>=500&&bmr<=5000)||![1.2,1.375,1.55,1.725,1.9].includes(factor)||!(tdee>=500&&tdee<=10000)||!formula||Object.values(goals).some(x=>!x))return null;
-    return{updatedAt:String(plan.updatedAt||'').slice(0,32),bmr:Math.round(bmr),formula,activityFactor:factor,tdee:Math.round(tdee),goals}
+    return{stale:nutritionIsStale(data),updatedAt:String(plan.updatedAt||'').slice(0,32),bmr:Math.round(bmr),formula,activityFactor:factor,tdee:Math.round(tdee),goals}
   }
 
   function snapshot(data){
