@@ -1,0 +1,164 @@
+/* Shared visual rules for the coach's offline card and the personal progress page.
+   Scoped selectors leave online clients and workout screens unchanged. */
+html body :is(.ofp-root, .pp-shell) {
+  --client-gap: 12px;
+  --client-muted: #aaaab5;
+  font-variant-numeric: tabular-nums;
+}
+html body :is(.ofp-root, .pp-shell) :is(button, input, select, textarea) {
+  font-family: inherit;
+}
+html body :is(.ofp-root, .pp-shell) :is(button, summary, select) {
+  touch-action: manipulation;
+}
+html body :is(.ofp-root, .pp-shell) :is(button, summary, select, input, textarea):focus-visible {
+  outline: 2px solid #bf5af2;
+  outline-offset: 3px;
+}
+html body :is(.ofp-root, .pp-shell) :is(h1, h2, h3, .grow, .pp-meta, blockquote, .ofp-note p) {
+  overflow-wrap: anywhere;
+}
+html body :is(.ofp-root, .pp-shell) :is(.ofp-panel, .pp-panel, .ofp-strength, .pp-strength) {
+  min-width: 0;
+  padding: 20px;
+  border-radius: 20px;
+  margin: 0 0 var(--client-gap);
+}
+html body :is(.ofp-root, .pp-shell) :is(.ofp-kicker, .pp-kicker) {
+  font-size: 11px;
+  line-height: 1.3;
+  letter-spacing: .1em;
+  color: var(--client-muted);
+}
+html body :is(.ofp-hero, .pp-client-hero) {
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
+  padding: 8px 0 20px;
+}
+html body :is(.ofp-avatar, .pp-avatar) {
+  width: 52px;
+  height: 52px;
+  border-radius: 17px;
+  font-size: 24px;
+  box-shadow: none;
+}
+html body :is(.ofp-hero h2, .pp-client-name h1) {
+  margin: 0 0 6px;
+  font-size: clamp(24px, 6vw, 32px);
+  line-height: 1.15;
+  letter-spacing: -.6px;
+}
+html body .pp-client-name .pp-eyebrow {margin-bottom: 6px; font-size: 10px; line-height: 1.4;}
+html body .ofp-hero-actions {grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;}
+html body .pp-edit {grid-column: 1 / -1; justify-self: start; min-height: 44px; min-width: 112px; font-size: 13px;}
+html body :is(.ofp-facts, .pp-facts) {gap: 8px; margin: 0 0 12px;}
+html body :is(.ofp-facts > div, .pp-fact) {padding: 14px 12px; border-radius: 16px;}
+html body :is(.ofp-facts span, .pp-fact span) {font-size: 11px; color: var(--client-muted);}
+html body :is(.ofp-facts b, .pp-fact b) {font-size: 19px; white-space: nowrap;}
+html body .ofp-sessions {margin: 0 0 12px; padding: 16px; border-radius: 18px;}
+html body .ofp-sessions b {font-size: 15px; line-height: 1.35;}
+html body .ofp-sessions span {font-size: 12px; color: var(--client-muted);}
+html body .ofp-stepper {grid-template-columns: 44px 32px 44px; gap: 3px;}
+html body .ofp-stepper button {height: 44px; color: inherit;}
+html body :is(.ofp-main-actions, .pp-main-actions) {display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 16px;}
+html body :is(.ofp-main-actions .btn, .pp-main-actions button) {min-height: 52px; padding: 12px 8px; font-size: 13px; font-weight: 700; line-height: 1.35; border-radius: 15px;}
+html body .ofp-nutrition {margin: 0 0 16px; padding: 18px; border-radius: 20px;}
+html body .ofp-nutrition-grid {gap: 8px;}
+html body .ofp-nutrition-grid small {font-size: 11px;}
+html body .ofp-nutrition-grid b {font-size: 13px; line-height: 1.4;}
+html body .ofp-nutrition-top strong {font-size: 12px;}
+html body .ofp-nutrition-top small {color: var(--client-muted);}
+html body .ofp-chart-canvas svg {height: 190px;}
+html body :is(.ofp-chart-focus span, .ofp-point-chip small, .ofp-strength-meta, .pp-point-chip small) {color: var(--client-muted); font-size: 11px;}
+html body :is(.ofp-measure-tabs button, .pp-tabs button, .spv335-modes button) {min-height: 44px; font-size: 12px;}
+html body :is(.ofp-root, .pp-shell) .spv335-modes {grid-template-columns: 1.3fr .8fr .7fr;}
+html body :is(.ofp-root, .pp-shell) .spv335-title-row {display: flex; flex-wrap: wrap; gap: 8px;}
+html body :is(.ofp-root, .pp-shell) .spv335-title-row :is(h3, b) {flex: 1 1 180px; font-size: 18px; line-height: 1.35;}
+html body :is(.ofp-root, .pp-shell) .spv335-title-row > .spv335-source {margin: 0; align-self: start;}
+html body :is(.ofp-root, .pp-shell) .spv335-head {flex-wrap: wrap;}
+html body :is(.ofp-root, .pp-shell) .spv335-head > .grow {flex-basis: 180px;}
+html body :is(.ofp-root, .pp-shell) .spv335-head > button {min-height: 44px;}
+html body :is(.ofp-root, .pp-shell) :is(.spv335-focus-label, .spv335-last > span, .spv335-last > small, .spv335-legend) {font-size: 12px; color: var(--client-muted);}
+html body :is(.ofp-root, .pp-shell) :is(.ofp-journal-head, .pp-journal-head, .pp-journal-tools) {flex-wrap: wrap;}
+html body :is(.ofp-root, .pp-shell) :is(.ofp-delete, .pp-delete) {min-width: 44px; min-height: 44px; font-size: 12px;}
+html body .ofp-section-head {align-items: center; flex-wrap: wrap;}
+html body details.ofp-journal > summary {min-height: 44px; cursor: pointer; list-style: none; align-items: center;}
+html body details.ofp-journal > summary::-webkit-details-marker {display: none;}
+html body details.ofp-journal > summary::after {content: '+'; font-size: 22px; color: var(--client-muted);}
+html body details.ofp-journal[open] > summary::after {content: '−';}
+html body details.ofp-journal .ofp-journal-count {margin-left: auto;}
+html body :is(.ofp-root, .pp-shell) :is(.ofp-strength-list, .pp-strength-grid) {gap: 12px;}
+html body .pp-shell {width: min(100%, 1040px); padding: 24px 20px calc(32px + env(safe-area-inset-bottom));}
+html body:has(.pp-shell) {padding-bottom: 0;}
+html body .pp-brand {margin-bottom: 24px;}
+html body .pp-overview {display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start;}
+html body .pp-overview > .pp-panel {margin-bottom: 0;}
+html body .pp-section-head {margin-top: 28px;}
+html body .pp-nutrition {padding: 20px; margin-bottom: 16px;}
+html body .pp-nutrition-head {display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, .8fr); align-items: center; gap: 16px;}
+html body .pp-nutrition-head h2 {font-size: 24px; line-height: 1.2; margin: 5px 0;}
+html body .pp-nutrition-head p {font-size: 12px;}
+html body .pp-goal-picker {min-width: 0; padding: 12px 14px; border-radius: 16px;}
+html body .pp-goal-picker label {font-size: 11px;}
+html body .pp-goal-picker select {min-height: 44px; font-size: 16px; font-weight: 700; line-height: 1.3;}
+html body .pp-goal-picker b {font-size: 23px; margin-top: 0; line-height: 1.3; white-space: normal;}
+html body .pp-goal-picker small {font-size: 12px; margin-top: 3px;}
+html body .pp-selected-goal {padding-top: 16px;}
+html body .pp-selected-label span {font-size: 12px;}
+html body .pp-macros {gap: 8px; margin-top: 10px;}
+html body .pp-macros span {padding: 12px 10px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.025);}
+html body .pp-macros span:last-child {padding: 12px 10px; border-right: 1px solid var(--line);}
+html body .pp-macros small {font-size: 12px; color: var(--client-muted);}
+html body .pp-macros b {font-size: 15px; line-height: 1.4; white-space: normal;}
+html body .pp-nutrition-details {margin-top: 16px; border-top: 1px solid var(--line);}
+html body .pp-nutrition-details summary {display: flex; align-items: center; justify-content: space-between; min-height: 44px; color: var(--client-muted); cursor: pointer; list-style: none; font-size: 12px;}
+html body .pp-nutrition-details summary::-webkit-details-marker {display: none;}
+html body .pp-nutrition-details summary::after {content: '+'; font-size: 20px;}
+html body .pp-nutrition-details[open] summary::after {content: '−';}
+html body .pp-nutrition-base {margin-top: 0; border-top: 0;}
+html body .pp-nutrition-base :is(span, small), html body .pp-nutrition-note {font-size: 12px; line-height: 1.5;}
+html body .pp-nutrition-base small {white-space: normal; overflow: visible;}
+html body .pp-nutrition-note {color: var(--client-muted);}
+html body .pp-form :is(input, select, textarea) {font-size: 16px; line-height: 1.4;}
+html body .pp-form input[type="date"] {appearance: none; -webkit-appearance: none; min-width: 0;}
+html body .pp-form label > span {font-size: 12px;}
+html body .pp-primary {font-size: 15px; font-weight: 750;}
+html body .pp-footer {font-size: 12px; line-height: 1.6; color: #91919b;}
+html[data-theme="light"] body .ofp-root {--client-muted: #62656d;}
+html[data-theme="light"] body .ofp-root :is(.ofp-chart-focus-side strong, .ofp-change) {color: #8432ac !important;}
+html[data-theme="light"] body .ofp-root .ofp-chart-focus .ofp-source.client {color: #14617e !important;}
+html[data-theme="light"] body .ofp-root .ofp-chart-focus .ofp-source.trainer {color: #8432ac !important;}
+@media (min-width: 760px) {
+  html body .pp-client-hero {grid-template-columns: 52px minmax(0, 1fr) auto;}
+  html body .pp-edit {grid-column: auto;}
+  html body .pp-overview, html body .pp-strength-grid {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));}
+}
+@media (max-width: 480px) {
+  html body :is(.ofp-hero h2, .pp-client-name h1) {font-size: 22px; letter-spacing: -.4px;}
+  html body .pp-shell {padding: 20px 16px calc(24px + env(safe-area-inset-bottom));}
+  html body :is(.ofp-root, .pp-shell) :is(.ofp-panel, .pp-panel, .ofp-strength, .pp-strength) {padding: 16px;}
+  html body .pp-nutrition-head {grid-template-columns: minmax(0, 1fr); gap: 12px;}
+  html body .pp-goal-picker {display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 12px; align-items: center;}
+  html body .pp-goal-picker label {grid-column: 1;}
+  html body .pp-goal-picker-control {grid-column: 1; grid-row: 2; margin: 0;}
+  html body .pp-goal-picker b {grid-column: 2; grid-row: 2; font-size: 19px; text-align: right;}
+  html body .pp-goal-picker small {grid-column: 2; grid-row: 1; margin: 0; text-align: right; font-size: 11px;}
+  html body .pp-macros b {font-size: 14px;}
+  html body .ofp-nutrition-grid {grid-template-columns: 1fr;}
+  html body .ofp-nutrition-grid > span {display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 9px 12px;}
+  html body .ofp-nutrition-grid b {margin: 0;}
+}
+@media (max-width: 360px) {
+  html body .pp-shell {padding-inline: 12px;}
+  html body :is(.ofp-main-actions, .pp-main-actions) {grid-template-columns: 1fr;}
+  html body .ofp-sessions {grid-template-columns: 1fr;}
+  html body .ofp-stepper {justify-self: start;}
+  html body :is(.ofp-facts b, .pp-fact b) {font-size: 16px;}
+  html body .pp-goal-picker {display: block;}
+  html body .pp-goal-picker :is(b, small) {text-align: left;}
+  html body .pp-macros {grid-template-columns: 1fr;}
+  html body .pp-macros span {display: flex; align-items: baseline; justify-content: space-between;}
+}
+@media (prefers-reduced-motion: reduce) {
+  html body :is(.ofp-root, .pp-shell) * {scroll-behavior: auto !important; animation: none !important; transition: none !important;}
+}
