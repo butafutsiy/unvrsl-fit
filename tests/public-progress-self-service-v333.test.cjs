@@ -17,8 +17,8 @@ test('shared progress page uses the active session to identify trainer entries',
 });
 
 test('client gets the same quick actions and safe profile editor',()=>{
-  assert.match(publicJs,/＋ Вес и замеры/);
-  assert.match(publicJs,/＋ Силовой показатель/);
+  assert.match(publicJs,/\+ Вес и замеры/);
+  assert.match(publicJs,/\+ Силовой показатель/);
   assert.match(publicJs,/publicProgressProfileV333/);
   assert.match(publicJs,/update_offline_progress_profile_v334/);
   assert.match(migration,/set display_name = v_name,[\s\S]*sex = v_sex,[\s\S]*birth_date = v_birth,[\s\S]*height_cm = v_height/);
