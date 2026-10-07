@@ -99,7 +99,7 @@
           if (
             ex.programWeightMode === "adaptive" &&
             (rec.sessionIds.length>0 || rec.nextSetSuggestion || rec.testWeekSuggestion) &&
-            !rec.planPreserved && rec.action!=="stop" &&
+            !rec.planPreserved && rec.canApply!==false && rec.action!=="stop" &&
             !set.manualOverride &&
             set.weightSource !== "manual"
           ) {

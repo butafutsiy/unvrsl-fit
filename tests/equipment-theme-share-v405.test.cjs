@@ -40,11 +40,11 @@ test("the September 21 workout drives the next week's 5–7 reps despite stale m
  assert.ok(rec.weight>=140&&rec.weight<=145);assert.equal(rec.planPreserved,false);
  assert.equal(rec.weeklyIntensity.applied,false);
 });
-test("four working sets and an under-target final set limit the next load",()=>{
+test("a single late miss holds next-session load instead of declaring lost strength",()=>{
  const bar=p('four-set'),last=old('21',bar,[set(140,8,8),set(140,7,8),set(140,5,9)]);
  const cur=now(bar,[set(140,'','',{ok:false,targetRepMin:6,targetRepMax:8,targetRpeMin:8,targetRpeMax:9})]);
  const rec=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,[last],reg);
- assert.ok(rec.weight<140);assert.equal(rec.basis.weight,140);
+ assert.equal(rec.weight,140);assert.ok(rec.reasonCodes.includes("SERIES_MISS"));assert.equal(rec.basis.weight,140);
 });
 test("body mass is required for effective-load 1RM and assistance has inverse progression",()=>{
  const current=now(p('grav','ASSISTANCE'),[set(25,'','',{ok:false,targetRepMin:6,targetRepMax:8,targetRpeMin:8,targetRpeMax:9})]);
@@ -133,7 +133,8 @@ test("separate Matrix and Foreman machines never transfer recent working weights
 test("per-hand rack loads are recommended as a single dumbbell weight",()=>{
  const d=p("rack-db","PER_HAND"),past=[old("1",d,[set(12)]),old("2",d,[set(12)])],cur=now(d,[set(12,10,7,{ok:false})]);
  assert.equal(A.loadType(cur.ex[0],reg),"per_dumbbell");
- assert.equal(A.recommend(cur.ex[0],cur.ex[0].set[0],cur,past,reg).weight,15);
+ const rec=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,past,reg);
+ assert.equal(rec.weight,12);assert.ok(rec.reasonCodes.includes("STEP_LIMIT"));
 });
 test("empty bar weight sets the minimum total load; per-side load includes the implement",()=>{
  const bar={...p("bar-20"),implementWeight:20},cur=now(bar,[set(0,8,7,{ok:false})]);
@@ -146,7 +147,7 @@ test("empty bar weight sets the minimum total load; per-side load includes the i
 test("a substantially failed set suggests two lower steps without replacing the exercise recommendation",()=>{
  const bar=p("bar"),past=[old("1",bar,[set(60)]),old("2",bar,[set(60)])],cur=now(bar,[set(60,5,10),set(60,10,"",{ok:false})]);
  const rec=A.recommend(cur.ex[0],cur.ex[0].set[1],cur,past,reg);
- assert.equal(rec.weight,62.5);assert.equal(rec.nextSetSuggestion.weight,55);
+ assert.equal(rec.weight,60);assert.ok(rec.reasonCodes.includes("INCOMPLETE_SERIES"));assert.equal(rec.nextSetSuggestion.weight,55);
 });
 test("back-off sets cannot turn a 70 kg top set into a 45 kg recommendation",()=>{
  const bar=p("leg-curl"),past=[old("1",bar,[set(70,12,10),set(56,10,8),set(45,10,8)])];
