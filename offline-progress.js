@@ -49,12 +49,20 @@
     return{mode,label,unit,points}
   }
 
+  async function loadEntries(table,id,dateKey){
+    const c=W.cloud,rows=[];
+    for(let offset=0;;offset+=500){
+      const result=await c.client.from(table).select('*').eq('offline_client_id',id).eq('trainer_id',c.user.id).order(dateKey,{ascending:true}).order('created_at',{ascending:true}).order('id',{ascending:true}).range(offset,offset+499);
+      if(result.error)return result;
+      rows.push(...A(result.data));if(A(result.data).length<500)return {data:rows,error:null};
+    }
+  }
   async function loadDetail(id){
     const c=W.cloud;if(!c?.client||!c?.user)return{error:new Error('Нет подключения к аккаунту тренера')};
     const [client,measurements,strengths]=await Promise.all([
-      c.client.from('offline_clients').select('*').eq('id',id).single(),
-      c.client.from('offline_client_measurements').select('*').eq('offline_client_id',id).order('measure_date',{ascending:true}).order('created_at',{ascending:true}).limit(160),
-      c.client.from('offline_client_strengths').select('*').eq('offline_client_id',id).order('measured_at',{ascending:true}).order('created_at',{ascending:true}).limit(300)
+      c.client.from('offline_clients').select('*').eq('id',id).eq('trainer_id',c.user.id).single(),
+      loadEntries('offline_client_measurements',id,'measure_date'),
+      loadEntries('offline_client_strengths',id,'measured_at')
     ]);
     return{client:client.data,measurements:measurements.data||[],strengths:strengths.data||[],error:client.error||measurements.error||strengths.error}
   }
@@ -165,7 +173,7 @@
 
   function weightCard(data){
     const points=weightPoints(data),last=points[points.length-1],delta=change(points),target=N(data?.client?.target_weight_kg),gap=last&&target!=null?+(target-last.value).toFixed(1):null;
-    return `<section class="ofp-panel"><div class="ofp-panel-head"><div><div class="ofp-kicker">ВЕС</div><div class="ofp-panel-value">${last?`${fmt(last.value)} <small>кг</small>`:'Нет записей'}</div></div><div class="ofp-weight-side">${target!=null?`<div class="ofp-goal">Цель <b>${fmt(target)} кг</b>${gap!=null?`<small>${gap===0?'цель достигнута':`${fmt(Math.abs(gap))} кг ${gap>0?'набрать':'снизить'}`}</small>`:''}</div>`:''}${delta==null?'':`<div class="ofp-change neutral">${E(signed(delta,'кг'))}<small>за период</small></div>`}</div></div>${lineChart(points,{color:'#bf5af2',unit:'кг',label:'Динамика веса'})}${!points.length?'<button class="btn primary full" onclick="offlineMeasurementSheet(offlineProgressCurrentIdV321())">Добавить первый замер</button>':''}</section>`
+    return `<section class="ofp-panel"><div class="ofp-panel-head"><div><div class="ofp-kicker">ВЕС</div><div class="ofp-panel-value">${last?`${fmt(last.value)} <small>кг</small>`:'Нет записей'}</div></div><div class="ofp-weight-side">${target!=null?`<div class="ofp-goal">Цель <b>${fmt(target)} кг</b>${gap!=null?`<small>${gap===0?'цель достигнута':`${fmt(Math.abs(gap))} кг ${gap>0?'набрать':'снизить'}`}</small>`:''}</div>`:''}${delta==null?'':`<div class="ofp-change neutral">${E(signed(delta,'кг'))}<small>за период</small></div>`}</div></div>${lineChart(points,{color:'#bf5af2',unit:'кг',label:'Динамика веса'})}${measurementJournal(data,'weight')}${!points.length?'<button class="btn primary full" onclick="offlineMeasurementSheet(offlineProgressCurrentIdV321())">Добавить первый замер</button>':''}</section>`
   }
 
   function measurePanel(data){
@@ -173,12 +181,12 @@
     if(!available.length)return'<section id="ofpMeasurePanel" class="ofp-panel"><div class="ofp-kicker">ЗАМЕРЫ</div><div class="ofp-empty"><b>Истории замеров пока нет</b><span>Добавь два замера, и здесь появится динамика.</span></div></section>';
     if(!available.some(x=>x.key===state.measureKey))state.measureKey=available[0].key;
     const current=available.find(x=>x.key===state.measureKey)||available[0],last=current.points[current.points.length-1],delta=change(current.points);
-    return `<section id="ofpMeasurePanel" class="ofp-panel"><div class="ofp-panel-head"><div><div class="ofp-kicker">ЗАМЕРЫ</div><div class="ofp-panel-value">${fmt(last?.value)} <small>см</small></div></div>${delta==null?'':`<div class="ofp-change neutral">${E(signed(delta,'см'))}<small>за период</small></div>`}</div><div class="ofp-measure-tabs">${available.map(x=>`<button class="${x.key===current.key?'on':''}" onclick="offlineProgressSelectMetricV321('${E(x.key)}')">${E(x.name)}</button>`).join('')}</div>${lineChart(current.points,{color:'#64d2ff',unit:'см',label:`Динамика: ${current.name}`})}</section>`
+    return `<section id="ofpMeasurePanel" class="ofp-panel"><div class="ofp-panel-head"><div><div class="ofp-kicker">ЗАМЕРЫ</div><div class="ofp-panel-value">${fmt(last?.value)} <small>см</small></div></div>${delta==null?'':`<div class="ofp-change neutral">${E(signed(delta,'см'))}<small>за период</small></div>`}</div><div class="ofp-measure-tabs">${available.map(x=>`<button class="${x.key===current.key?'on':''}" onclick="offlineProgressSelectMetricV321('${E(x.key)}')">${E(x.name)}</button>`).join('')}</div>${lineChart(current.points,{color:'#64d2ff',unit:'см',label:`Динамика: ${current.name}`})}${measurementJournal(data,current.key)}</section>`
   }
 
-  function measurementJournal(data){
-    const rows=chronological(data?.measurements,'measure_date').reverse();if(!rows.length)return'';
-    return `<section class="ofp-panel ofp-journal"><div class="ofp-panel-head"><div><div class="ofp-kicker">ЖУРНАЛ ПРОГРЕССА</div><div class="ofp-journal-title">Вес и обхваты</div></div><span class="ofp-journal-count">${rows.length}</span></div><div class="ofp-journal-list">${rows.map(row=>{const values=[];if(N(row.weight_kg)>0)values.push(`Вес ${fmt(row.weight_kg)} кг`);MEASURES.forEach(([key,name])=>{const value=measure(row,key);if(value!=null)values.push(`${name} ${fmt(value)} см`)});return`<article><div class="ofp-journal-head"><b>${E(day(row.measure_date))}</b><div class="ofp-journal-tools">${sourceBadge(row.entry_source)}<button type="button" class="ofp-delete" onclick="offlineProgressDeleteMeasurementV334('${E(row.id)}')" aria-label="Удалить запись">Удалить</button></div></div><p>${E(values.join(' · '))}</p>${row.notes?`<blockquote>${E(row.notes)}</blockquote>`:''}</article>`}).join('')}</div></section>`
+  function measurementJournal(data,metric){
+    const rows=chronological(data?.measurements,'measure_date').filter(row=>metric==='weight'?N(row.weight_kg)>0:measure(row,metric)!=null).reverse();if(!rows.length)return'';
+    return `<details class="ofp-journal"><summary class="ofp-history-link">Все записи · ${rows.length}<span>⌄</span></summary><div class="ofp-journal-list">${rows.map(row=>{const values=[];if(N(row.weight_kg)>0)values.push(`Вес ${fmt(row.weight_kg)} кг`);MEASURES.forEach(([key,name])=>{const value=measure(row,key);if(value!=null)values.push(`${name} ${fmt(value)} см`)});return`<article><div class="ofp-journal-head"><b>${E(day(row.measure_date))}</b><div class="ofp-journal-tools">${sourceBadge(row.entry_source)}<button type="button" class="btn tiny" onclick="offlineProgressEditEntry('measurement','${E(data.client.id)}','${E(row.id)}')">Изменить</button><button type="button" class="ofp-delete" onclick="offlineProgressDeleteMeasurementV334('${E(row.id)}')" aria-label="Удалить запись">Удалить</button></div></div><p>${E(values.join(' · '))}</p>${row.notes?`<blockquote>${E(row.notes)}</blockquote>`:''}</article>`}).join('')}</div></details>`
   }
 
   function latestStrengthText(row){
@@ -196,7 +204,7 @@
 
   function renderDetail(){
     const data=state.data,c=data?.client;if(!c)return;const a=age(c.birth_date),w=latestWeight(data),initial=String(c.display_name||'К').trim().charAt(0).toUpperCase()||'К';
-    W.modal?.(`<div class="ofp-root"><div class="sheet-grabber"></div><header class="ofp-hero"><div class="ofp-avatar">${E(initial)}</div><div class="grow"><h2>${E(c.display_name)}</h2><span>Офлайн-клиент</span></div><div class="ofp-hero-actions"><button class="btn ofp-share" onclick="offlineProgressShareV321('${E(c.id)}')">Поделиться</button><button class="btn" onclick="offlineEditClientSheet('${E(c.id)}')">Изменить</button></div></header><div class="ofp-facts"><div><span>Рост</span><b>${c.height_cm?`${fmt(c.height_cm)} см`:'—'}</b></div><div><span>Вес</span><b>${w?`${fmt(w)} кг`:'—'}</b></div><div><span>Возраст</span><b>${a==null?'—':`${a} лет`}</b></div></div><section class="ofp-sessions"><div><b>Осталось занятий</b><span>Списывай после очной тренировки</span></div><div class="ofp-stepper"><button onclick="offlineAdjustSessions('${E(c.id)}',-1)" aria-label="Списать занятие">−</button><strong>${Math.max(0,Number(c.sessions_remaining)||0)}</strong><button onclick="offlineAdjustSessions('${E(c.id)}',1)" aria-label="Добавить занятие">＋</button></div></section><div class="ofp-main-actions"><button class="btn primary" onclick="offlineMeasurementSheet('${E(c.id)}')">＋ Вес и замеры</button><button class="btn" onclick="offlineCustomStrengthSheet('${E(c.id)}')">＋ Силовой показатель</button></div>${nutritionCard(data)}${weightCard(data)}${measurePanel(data)}${measurementJournal(data)}${strengthsSection(data)}${c.notes?`<section class="ofp-note"><div class="ofp-kicker">ЗАМЕТКА ТРЕНЕРА</div><p>${E(c.notes)}</p></section>`:''}</div>`)
+    W.modal?.(`<div class="ofp-root"><div class="sheet-grabber"></div><header class="ofp-hero"><div class="ofp-avatar">${E(initial)}</div><div class="grow"><h2>${E(c.display_name)}</h2><span>Офлайн-клиент</span></div><div class="ofp-hero-actions"><button class="btn ofp-share" onclick="offlineProgressShareV321('${E(c.id)}')">Поделиться</button><button class="btn" onclick="offlineEditClientSheet('${E(c.id)}')">Изменить</button></div></header><div class="ofp-facts"><div><span>Рост</span><b>${c.height_cm?`${fmt(c.height_cm)} см`:'—'}</b></div><div><span>Вес</span><b>${w?`${fmt(w)} кг`:'—'}</b></div><div><span>Возраст</span><b>${a==null?'—':`${a} лет`}</b></div></div><section class="ofp-sessions"><div><b>Осталось занятий</b><span>Списывай после очной тренировки</span></div><div class="ofp-stepper"><button onclick="offlineAdjustSessions('${E(c.id)}',-1)" aria-label="Списать занятие">−</button><strong>${Math.max(0,Number(c.sessions_remaining)||0)}</strong><button onclick="offlineAdjustSessions('${E(c.id)}',1)" aria-label="Добавить занятие">＋</button></div></section><div class="ofp-main-actions"><button class="btn primary" onclick="offlineMeasurementSheet('${E(c.id)}')">＋ Вес и замеры</button><button class="btn" onclick="offlineCustomStrengthSheet('${E(c.id)}')">＋ Силовой показатель</button></div>${nutritionCard(data)}${weightCard(data)}${measurePanel(data)}<button class="btn full" onclick="offlineProgressWeeklyLoad('${E(c.id)}')">Нагрузка по неделям</button>${strengthsSection(data)}${c.notes?`<section class="ofp-note"><div class="ofp-kicker">ЗАМЕТКА ТРЕНЕРА</div><p>${E(c.notes)}</p></section>`:''}</div>`)
   }
 
   async function syncExistingShare(data){
@@ -231,7 +239,7 @@
   }
   async function saveMeasurement(id){
     const button=D.getElementById('ofpMeasureSave'),raw=x=>String(D.getElementById(x)?.value||'').trim(),number=x=>N(raw(x)),measurements={};MEASURES.forEach(([key])=>{const v=number(`om${key[0].toUpperCase()+key.slice(1)}`);if(v!=null&&v>0)measurements[key]=v});const weight=number('omWeight');
-    try{if(!(weight>0)&&!Object.keys(measurements).length)throw new Error('Добавь вес или хотя бы один обхват');const c=W.cloud;if(!c?.client||!c?.user)throw new Error('Нет подключения к аккаунту тренера');if(button)button.disabled=true;const result=await c.client.from('offline_client_measurements').insert({offline_client_id:id,trainer_id:c.user.id,measure_date:raw('omDate')||today(),weight_kg:weight,measurements,notes:raw('omNotes')||null,entry_source:'trainer'});if(result.error)throw result.error;await c.client.from('offline_clients').update({updated_at:iso()}).eq('id',id).eq('trainer_id',c.user.id);W.toast?.('Вес и замеры сохранены');await openDetail(id)}catch(error){W.alert?.(error?.message||'Не удалось сохранить замер')}finally{if(button)button.disabled=false}
+    try{if(raw('omWeight')&&(weight==null||weight<20||weight>400))throw new Error('Вес должен быть от 20 до 400 кг');if(MEASURES.some(([key])=>{const value=raw(`om${key[0].toUpperCase()+key.slice(1)}`),v=N(value);return value&&(v==null||v<10||v>400)}))throw new Error('Обхват должен быть от 10 до 400 см');if(!(weight>0)&&!Object.keys(measurements).length)throw new Error('Добавь вес или хотя бы один обхват');const c=W.cloud;if(!c?.client||!c?.user)throw new Error('Нет подключения к аккаунту тренера');if(button)button.disabled=true;const payload={offline_client_id:id,trainer_id:c.user.id,measure_date:raw('omDate')||today(),weight_kg:weight,measurements,notes:raw('omNotes')||null,entry_source:'trainer'};const result=await saveEntry('offline_client_measurements',id,button?.dataset.entryId,payload);if(result.error)throw result.error;await c.client.from('offline_clients').update({updated_at:iso()}).eq('id',id).eq('trainer_id',c.user.id);W.toast?.('Вес и замеры сохранены');await openDetail(id)}catch(error){W.alert?.(error?.message||'Не удалось сохранить замер')}finally{if(button)button.disabled=false}
   }
   function strengthSheet(id,keyToken,nameToken){
     const key=decodeURIComponent(keyToken),name=decodeURIComponent(nameToken);
@@ -239,13 +247,72 @@
   }
   W.offlineProgressE1rmV328=function(){const result=e1rm(D.getElementById('osWeight')?.value,D.getElementById('osReps')?.value),out=D.getElementById('ofpE1rmValue');if(out)out.textContent=result==null?'—':`≈ ${fmt(result)} кг`};
   async function saveStrength(id,keyToken,nameToken){
-    const key=decodeURIComponent(keyToken),name=decodeURIComponent(nameToken),raw=x=>String(D.getElementById(x)?.value||'').trim(),weight=N(raw('osWeight')),reps=parseInt(raw('osReps'),10),one=e1rm(weight,reps),button=D.getElementById('ofpStrengthSave');
-    try{if(one==null)throw new Error('Укажи рабочий вес и от 1 до 30 повторений');const c=W.cloud;if(!c?.client||!c?.user)throw new Error('Нет подключения к аккаунту тренера');if(button)button.disabled=true;const result=await c.client.from('offline_client_strengths').insert({offline_client_id:id,trainer_id:c.user.id,measured_at:raw('osDate')||today(),exercise_key:key,exercise_name:name,weight_kg:weight,reps,e1rm:one,notes:raw('osNotes')||null,entry_source:'trainer'});if(result.error)throw result.error;await c.client.from('offline_clients').update({updated_at:iso()}).eq('id',id).eq('trainer_id',c.user.id);W.toast?.(`Показатель сохранён · 1ПМ ≈ ${fmt(one)} кг`);await openDetail(id)}catch(error){W.alert?.(error?.message||'Не удалось сохранить показатель')}finally{if(button)button.disabled=false}
+    const key=decodeURIComponent(keyToken),name=decodeURIComponent(nameToken),raw=x=>String(D.getElementById(x)?.value||'').trim(),weight=N(raw('osWeight')),reps=N(raw('osReps')),one=e1rm(weight,reps),button=D.getElementById('ofpStrengthSave');
+    try{if(one==null||!Number.isInteger(reps)||weight>999)throw new Error('Укажи рабочий вес и от 1 до 30 повторений');const c=W.cloud;if(!c?.client||!c?.user)throw new Error('Нет подключения к аккаунту тренера');if(button)button.disabled=true;const payload={offline_client_id:id,trainer_id:c.user.id,measured_at:raw('osDate')||today(),exercise_key:key,exercise_name:name,weight_kg:weight,reps,e1rm:one,notes:raw('osNotes')||null,entry_source:'trainer'};const result=await saveEntry('offline_client_strengths',id,button?.dataset.entryId,payload);if(result.error)throw result.error;await c.client.from('offline_clients').update({updated_at:iso()}).eq('id',id).eq('trainer_id',c.user.id);W.toast?.(`Показатель сохранён · 1ПМ ≈ ${fmt(one)} кг`);await openDetail(id)}catch(error){W.alert?.(error?.message||'Не удалось сохранить показатель')}finally{if(button)button.disabled=false}
   }
   async function strengthHistory(id,keyToken,nameToken){
     const key=decodeURIComponent(keyToken),name=decodeURIComponent(nameToken),c=W.cloud;if(!c?.client||!c?.user)return W.toast?.('Нет подключения к аккаунту тренера');const result=await c.client.from('offline_client_strengths').select('*').eq('offline_client_id',id).eq('exercise_key',key).order('measured_at',{ascending:false}).order('created_at',{ascending:false});if(result.error)return W.alert?.(result.error.message);
-    W.modal?.(`<div class="sheet-grabber"></div><div class="ofp-add-head"><div><h2>${E(name)}</h2><div class="muted">Вес, повторения и расчётный 1ПМ</div></div><button class="btn tiny" onclick="offlineClientDetail('${E(id)}')">✕</button></div><div class="ofp-history-list">${A(result.data).map(row=>`<article><div class="ofp-journal-head"><b>${E(day(row.measured_at))}</b>${sourceBadge(row.entry_source)}</div><strong>${E(latestStrengthText(row))}</strong>${row.notes?`<blockquote>${E(row.notes)}</blockquote>`:''}</article>`).join('')||'<div class="ofp-chart-empty">Истории пока нет</div>'}</div><button class="btn primary full" onclick="offlineStrengthSheet('${E(id)}','${T(key)}','${T(name)}')">＋ Новая запись</button>`)
+    W.modal?.(`<div class="sheet-grabber"></div><div class="ofp-add-head"><div><h2>${E(name)}</h2><div class="muted">Вес, повторения и расчётный 1ПМ</div></div><button class="btn tiny" onclick="offlineClientDetail('${E(id)}')">✕</button></div><div class="ofp-history-list">${A(result.data).map(row=>`<article><div class="ofp-journal-head"><b>${E(day(row.measured_at))}</b>${sourceBadge(row.entry_source)}</div><div class="ofp-entry-actions"><button class="btn tiny" onclick="offlineProgressEditEntry('strength','${E(id)}','${E(row.id)}')">Изменить</button><button class="ofp-delete" onclick="offlineProgressDeleteStrength('${E(id)}','${E(row.id)}')">Удалить</button></div><strong>${E(latestStrengthText(row))}</strong>${row.notes?`<blockquote>${E(row.notes)}</blockquote>`:''}</article>`).join('')||'<div class="ofp-chart-empty">Истории пока нет</div>'}</div><button class="btn primary full" onclick="offlineStrengthSheet('${E(id)}','${T(key)}','${T(name)}')">＋ Новая запись</button>`)
   }
+
+  async function saveEntry(table,id,entryId,payload){
+    const c=W.cloud;
+    const date=payload.measure_date||payload.measured_at;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date+'T12:00:00Z'))||new Date(date+'T12:00:00Z').toISOString().slice(0,10)!==date)throw new Error('Проверь дату записи');
+    if(!entryId)return c.client.from(table).insert(payload);
+    const {entry_source,trainer_id,offline_client_id,...changes}=payload;
+    // Preserve original author, creation timestamp and row identity.
+    return c.client.from(table).update(changes).eq('id',entryId).eq('offline_client_id',id).eq('trainer_id',c.user.id).select('id').single();
+  }
+  W.offlineProgressEditEntry=async function(kind,id,entryId){
+    const c=W.cloud;if(!c?.client||!c?.user)return;
+    try{
+      const strength=kind==='strength',table=strength?'offline_client_strengths':'offline_client_measurements';
+      const result=await c.client.from(table).select('*').eq('id',entryId).eq('offline_client_id',id).eq('trainer_id',c.user.id).single();
+      if(result.error||!result.data)throw result.error||new Error('Запись не найдена');
+      const row=result.data;
+      if(strength)strengthSheet(id,T(row.exercise_key),T(row.exercise_name));else measurementSheet(id);
+      const values=strength?{osDate:row.measured_at,osWeight:row.weight_kg,osReps:row.reps,osNotes:row.notes}:{omDate:row.measure_date,omWeight:row.weight_kg,omNotes:row.notes,...Object.fromEntries(MEASURES.map(([key])=>['om'+key[0].toUpperCase()+key.slice(1),row.measurements?.[key]]))};
+      Object.entries(values).forEach(([key,value])=>{const input=D.getElementById(key);if(input)input.value=value??''});
+      const button=D.getElementById(strength?'ofpStrengthSave':'ofpMeasureSave');button.dataset.entryId=entryId;button.textContent='Сохранить изменения';
+      const author=D.querySelector('.ofp-form-author');if(author)author.innerHTML=`Редактирование записи · ${sourceBadge(row.entry_source)}`;
+      if(strength)W.offlineProgressE1rmV328();
+    }catch(error){W.alert?.(error.message||'Не удалось открыть запись')}
+  };
+  W.offlineProgressDeleteStrength=async function(id,entryId){
+    const c=W.cloud;if(!c?.client||!c?.user||!W.confirm('Удалить эту запись упражнения? График и расчёт нагрузки обновятся.'))return;
+    try{
+      const result=await c.client.from('offline_client_strengths').delete().eq('id',entryId).eq('offline_client_id',id).eq('trainer_id',c.user.id).select('id').single();
+      if(result.error)throw result.error;
+      W.toast?.('Запись удалена');await openDetail(id);
+    }catch(error){W.alert?.(error.message||'Не удалось удалить запись')}
+  };
+
+  // Trainer-only projection. Never included in the shared progress snapshot.
+  W.offlineProgressWeeklyLoad=async function(id){
+    if(!W.cloud?.user)return;
+    const data=await loadDetail(id);
+    if(data.error||!data.client)return W.alert?.(data.error?.message||'Клиент не найден');
+    if(!W.WorkoutDomain?.cycleProfiles)return W.toast?.('Расчёт нагрузки ещё загружается');
+    const groups=strengthGroups(data),domain=W.WorkoutDomain;
+    W.modal?.(`<div class="sheet-grabber"></div><div class="ofp-add-head"><div><h2>Нагрузка по неделям</h2><div class="muted">${E(data.client.display_name)} · Только для тренера</div></div><button class="btn tiny" onclick="offlineClientDetail('${E(id)}')">✕</button></div><div class="field"><label for="ofpCycleWeeks">Длительность цикла</label><select id="ofpCycleWeeks">${[3,4,6,8,10,11,12].map(n=>`<option value="${n}"${n===8?' selected':''}>${n} недель</option>`).join('')}</select></div><div class="ofp-tip">1ПМ – среднее расчётных максимумов всех записей каждого упражнения. Рабочий вес – середина недельного диапазона с округлением до выбранного шага. Это ориентир по процентам, без автоматического назначения тренировок.</div><div id="ofpWeeklyExercises"></div>`);
+    const settings=groups.map(g=>({kind:domain.exerciseKind({n:g.name}),step:2.5}));
+    const host=D.getElementById('ofpWeeklyExercises'),select=D.getElementById('ofpCycleWeeks');
+    function render(){
+      const profiles=domain.cycleProfiles(Number(select.value));
+      host.innerHTML=groups.map((g,i)=>{
+        const estimates=g.rows.map(r=>e1rm(r.weight_kg,r.reps)??N(r.e1rm)).filter(x=>x>0),one=estimates.length?estimates.reduce((sum,x)=>sum+x,0)/estimates.length:null,setting=settings[i];
+        return `<section class="ofp-weekly-exercise"><h3>${E(g.name)}</h3><p>Средний 1ПМ: <b>${one?fmt(one)+' кг':'нет данных'}</b> · Записей: ${estimates.length}</p><div class="offline-measure-grid"><div class="field"><label>Тип упражнения</label><select data-weekly-kind="${i}"><option value="base"${setting.kind==='base'?' selected':''}>Базовое</option><option value="isolation"${setting.kind==='isolation'?' selected':''}>Изоляция</option></select></div><div class="field"><label>Шаг веса, кг</label><select data-weekly-step="${i}">${[.5,1,1.25,2,2.5,5,10].map(n=>`<option value="${n}"${n===setting.step?' selected':''}>${fmt(n,2)}</option>`).join('')}</select></div></div>${one?`<div class="ofp-weekly-scroll"><table class="ofp-weekly-table"><thead><tr><th>Неделя</th><th>% 1ПМ</th><th>Диапазон, кг</th><th>Вес, кг</th></tr></thead><tbody>${profiles.map(p=>{
+          const prescription=p[setting.kind],pct=prescription.pct,lo=one*pct[0]/100,hi=one*pct[1]/100;
+          const rounded=domain.roundWeight((lo+hi)/2,{step:setting.step,min:0},'nearest');
+          const weight=rounded;
+          return `<tr><td><b>${p.week}</b><small>${E(p.focus)}</small></td>${!prescription.sets?'<td colspan="3">Без нагрузки</td>':`<td>${pct.join('–')}%</td><td>${fmt(lo)}–${fmt(hi)}</td><td><b>${fmt(weight,2)}</b>${weight<lo-1e-8||weight>hi+1e-8?'<small>Округлено по шагу</small>':''}${p.test?'<small>Тест: ориентир, не обязательный вес</small>':''}</td>`}</tr>`;
+        }).join('')}</tbody></table></div>`:'<p class="muted">Добавь запись с рабочим весом и повторениями.</p>'}</section>`;
+      }).join('')||'<div class="ofp-empty">Сначала добавь упражнения и результаты клиента.</div>';
+    }
+    host.addEventListener('change',event=>{const el=event.target;if(el.dataset.weeklyKind!=null)settings[Number(el.dataset.weeklyKind)].kind=el.value;else if(el.dataset.weeklyStep!=null)settings[Number(el.dataset.weeklyStep)].step=Number(el.value);else return;render()});
+    select.addEventListener('change',render);render();
+  };
 
   function catalogNames(){
     try{
@@ -309,10 +376,10 @@
     }catch(error){W.alert?.(error?.message||'Не удалось сохранить клиента')}
   }
   W.offlineProgressDeleteMeasurementV334=async function(entryId){
-    if(!entryId||!state.id)return;const row=A(state.data?.measurements).find(x=>String(x.id)===String(entryId));
+    if(!entryId||!state.id)return;const clientId=state.id;const row=A(state.data?.measurements).find(x=>String(x.id)===String(entryId));
     const detail=row&&Object.keys(row.measurements||{}).length?'Вес, обхваты и заметка этой даты будут удалены.':'Запись веса этой даты будет удалена.';
     if(!W.confirm(`Удалить запись?\n\n${detail}`))return;
-    try{const c=W.cloud;if(!c?.client||!c?.user)throw new Error('Нет подключения к аккаунту тренера');const result=await c.client.from('offline_client_measurements').delete().eq('id',entryId).eq('offline_client_id',state.id).eq('trainer_id',c.user.id);if(result.error)throw result.error;W.toast?.('Запись удалена');await openDetail(state.id)}catch(error){W.alert?.(error?.message||'Не удалось удалить запись')}
+    try{const c=W.cloud;if(!c?.client||!c?.user)throw new Error('Нет подключения к аккаунту тренера');const result=await c.client.from('offline_client_measurements').delete().eq('id',entryId).eq('offline_client_id',clientId).eq('trainer_id',c.user.id).select('id').single();if(result.error)throw result.error;W.toast?.('Запись удалена');await openDetail(clientId)}catch(error){W.alert?.(error?.message||'Не удалось удалить запись')}
   };
 
   D.getElementById('unvrsl-offline-progress-v322-style')?.remove();
@@ -325,6 +392,16 @@
     @media(max-width:430px){.ofp-hero{grid-template-columns:52px minmax(0,1fr);padding-bottom:13px}.ofp-avatar{width:52px;height:52px;border-radius:17px}.ofp-hero h2{font-size:26px}.ofp-hero-actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.ofp-hero-actions .btn{min-height:44px}.ofp-facts>div{padding:12px 10px}.ofp-facts b{font-size:16px}.ofp-sessions{padding:14px}.ofp-stepper{grid-template-columns:38px 36px 38px}.ofp-stepper button{height:40px}.ofp-main-actions{grid-template-columns:1fr}.ofp-panel{padding:16px}.ofp-chart svg{height:120px}.ofp-strength .ofp-chart svg{height:100px}.ofp-section-head{align-items:center}.ofp-section-head h3{font-size:19px}.ofp-section-head .btn{padding:9px 10px;font-size:12px}.ofp-nutrition{padding:15px}.ofp-nutrition-grid{gap:5px}.ofp-nutrition-grid b{font-size:11px}.ofp-edit-head h2{font-size:24px}.ofp-edit-field{margin:8px 0}.ofn-fields{grid-template-columns:1fr}.ofn-wide{grid-column:auto}.ofn-base b{font-size:14px}.ofn-goal>div:first-child{display:block}.ofn-goal strong{display:block;margin-top:5px}.ofn-macros b{font-size:12px}}
     @media(max-width:350px){.ofp-edit-birth-row{grid-template-columns:1fr}}
   `;style.textContent+=`.ofp-weight-side{display:grid;justify-items:end;gap:8px}.ofp-goal{padding:7px 10px;border-radius:13px;background:rgba(191,90,242,.1);color:#a98eb7;font-size:10px;text-align:right}.ofp-goal b,.ofp-goal small{display:block}.ofp-goal b{margin-top:2px;color:#e4bbfa;font-size:15px}.ofp-goal small{margin-top:2px;color:#82828a}.ofp-journal-tools{display:flex;align-items:center;gap:7px}.ofp-delete{min-height:28px;padding:5px 8px;border:0;border-radius:9px;background:rgba(255,69,58,.09);color:#ff7b73;font-size:10px;font-weight:800}`;D.head.appendChild(style);
+
+  const entryStyle=D.createElement('style');entryStyle.textContent=`
+    .ofp-journal>summary{cursor:pointer;list-style:none;min-height:44px}.ofp-journal>summary::-webkit-details-marker{display:none}
+    .ofp-journal-head,.ofp-journal-tools{flex-wrap:wrap}.ofp-entry-actions{display:flex;gap:8px;margin-top:10px}
+    .ofp-entry-actions button,.ofp-journal-tools button{min-height:40px}.ofp-weekly-exercise{padding:16px 0;border-top:1px solid rgba(128,128,128,.25)}
+    .ofp-weekly-exercise h3{font-size:18px;margin:0 0 8px}.ofp-weekly-exercise p{font-size:13px;line-height:1.5}
+    .ofp-weekly-scroll{overflow-x:auto}.ofp-weekly-table{width:100%;border-collapse:collapse;font-size:13px;text-align:left}
+    .ofp-weekly-table th,.ofp-weekly-table td{padding:12px 8px;border-bottom:1px solid rgba(128,128,128,.2)}
+    .ofp-weekly-table th{font-size:11px;opacity:.65}.ofp-weekly-table small{display:block;min-width:85px;max-width:130px;font-size:10px;line-height:1.4;opacity:.65;margin-top:4px}
+  `;D.head.appendChild(entryStyle);
 
   function install(){
     W.offlineClientDetail=openDetail;W.offlineCustomStrengthSheet=customStrength;W.offlineEditClientSheet=editClient;W.offlineSaveClientEdit=saveClientEditV334;W.offlineMeasurementSheet=measurementSheet;W.offlineSaveMeasurement=saveMeasurement;W.offlineStrengthSheet=strengthSheet;W.offlineSaveStrength=saveStrength;W.offlineStrengthHistory=strengthHistory;
