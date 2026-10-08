@@ -275,13 +275,6 @@
       Number((min + fn((n - min) / step) * step).toFixed(6)),
     );
   }
-  // Round only to loads that can actually be selected inside the existing corridor.
-  function roundWeightInRange(value, p, range) {
-    const lo=Math.min(...range),hi=Math.max(...range),target=Math.max(lo,Math.min(hi,value));
-    const candidates=[roundWeight(target,p,'nearest'),roundWeight(lo,p,'up'),roundWeight(hi,p,'down')]
-      .filter(x=>x!=null&&x>=lo-1e-6&&x<=hi+1e-6);
-    return candidates.length?candidates.reduce((a,b)=>Math.abs(b-target)<Math.abs(a-target)?b:a):null;
-  }
   function recommendationWeight(result) {
     return result.weeklyCalculated ? number(result.calculatedWeight) : number(result.nextSetSuggestion?.weight??result.weight);
   }
@@ -1219,10 +1212,10 @@
       if(calibration.applied)reason+=`; поправка по прошлым прогнозам ${Math.round((calibration.factor-1)*1000)/10}%`;
     }
     // The completed series informs strength, but cannot replace this week's target.
-    const weeklyCalculated=ordinary&&eligible&&weeklyApplied&&projected!=null&&corridor?.every(x=>x!=null);
+    const weeklyCalculated=ordinary&&eligible&&weeklyApplied&&weeklyRaw!=null;
     if(weeklyCalculated){
-      raw=projected;anomalous=false;reasonCodes.length=0;
-      action='range_adjust';reason='Рабочий вес выбран из текущего недельного диапазона';
+      raw=weeklyRaw;anomalous=false;reasonCodes.length=0;
+      action='range_adjust';reason='Среднее недельного диапазона округлено до ближайшего доступного веса';
     }
     const wellbeingFactor=number(session.wellbeing?.factor)!=null?Math.max(.9,Math.min(1,number(session.wellbeing.factor))):session.trainingReadinessDone&&session.readinessAdjusted
       ?Math.min(1,Math.max(.9,number(session.readiness?.factor)??1)):1;
@@ -1251,19 +1244,16 @@
         reason:nextSetSuggestion.reason+'; прибавка ограничена шагом оборудования'};reasonCodes.push('NEXT_SET_STEP_LIMIT');}
     }
     if(weeklyCalculated){
-      weight=roundWeightInRange(nextSetSuggestion?.weight??raw,p,corridor);
+      // Equipment increments may not fit the narrow percentage/effort intersection.
+      // Round the weekly midpoint instead of rejecting a usable adjacent load.
+      weight=roundWeight(nextSetSuggestion?.weight??raw,p,'nearest');
       if(weight!==prior)repetitionGoal=null;
-      if(nextSetSuggestion&&weight!=null)nextSetSuggestion={...nextSetSuggestion,weight};
-      if(weight==null){
-        conflict='В расчётном диапазоне нет доступного веса: проверь шаг оборудования';
-        reason=conflict;
-      }else{
-        conflict=null;
-        reasonCodes.push('WEEKLY_CALCULATED_WEIGHT');
-        if(!nextSetSuggestion)action='range_adjust';
-      }
+      if(nextSetSuggestion)nextSetSuggestion={...nextSetSuggestion,weight};
+      conflict=null;
+      reasonCodes.push('WEEKLY_CALCULATED_WEIGHT');
+      if(!nextSetSuggestion)action='range_adjust';
     }
-    if(ordinary&&corridor&&weight!=null&&(weight<Math.min(...corridor)-p.step/2||weight>Math.max(...corridor)+p.step/2)){conflict='Лимит коррекции или сохранённый рабочий вес выходит за расчётный коридор: проверь цель по повторам и усилию';if(!reason.includes(conflict))reason+='. '+conflict;}
+    if(ordinary&&!weeklyCalculated&&corridor&&weight!=null&&(weight<Math.min(...corridor)-p.step/2||weight>Math.max(...corridor)+p.step/2)){conflict='Лимит коррекции или сохранённый рабочий вес выходит за расчётный коридор: проверь цель по повторам и усилию';if(!reason.includes(conflict))reason+='. '+conflict;}
     const requiresEffort=ordinary&&ids.length>0&&effortKnown===0&&(!lastToday||effortRpe(lastToday.set)==null);
     if(requiresEffort){weight=seed;action='hold';reasonCodes.push('EFFORT_REQUIRED');reason='Укажи RPE или RIR: история сохранена, вес по усилию пока не рассчитывается';}
     if(ordinary&&ids.length>=3&&action==='hold'&&!strong&&!weak&&new Set(ids.slice(0,3).map(id=>JSON.stringify(recent.filter(x=>x.session.id===id).map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)])))).size===1){trend='plateau';reason+='; три сопоставимые тренировки без прироста';}
@@ -1277,14 +1267,14 @@
       weight,
       series,calibration,reasonCodes,repetitionGoal,
       analogousSessionId:analogous?.[0]?.session.id??null,
-      calculationVersion:466,
+      calculationVersion:467,
       canApply:(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
       allowedWeightRange:corridor?{min:Math.min(...corridor),max:Math.max(...corridor)}:null,
       calculatedWeight:weeklyCalculated?weight:projected,
       weeklyCalculated:!!weeklyCalculated,
       profileWarnings:prescription.warnings,
       scope:nextSetSuggestion?'next_set':'next_session',
-      proposalKey:proposalFingerprint([466,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
+      proposalKey:proposalFingerprint([467,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
       raw,
       previous: prior,
       basis:ids.length?{date:sessionDate(latest[0]?.session??strength.source?.session),weight:prior??number(strength.source?.set.w),planned:seed||null,estimatedOneRepMax:latestOneRepMax!=null?Number(latestOneRepMax.toFixed(1)):null,sets:latest.map(x=>({weight:number(x.set.w),reps:number(x.set.actualReps??x.set.r),rpe:effort(x)}))}:null,
@@ -1309,7 +1299,7 @@
           : []),
       ],
       rounding:
-        weeklyCalculated&&weight==null?'В диапазоне нет доступного веса для округления':anomalous?"Плановый вес сохранён без округления: старая нагрузка не соответствует текущему плану":ids.length>0
+        anomalous?"Плановый вес сохранён без округления: старая нагрузка не соответствует текущему плану":ids.length>0
           ? `Расчётное значение: ${Number(raw.toFixed(2))} кг. Рекомендация округлена до ${weight} кг с учётом шага ${p.step} кг`
           : "Исходный вес сохранён без округления: истории пока недостаточно",
       repRange: range,

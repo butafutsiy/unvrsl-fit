@@ -25,7 +25,7 @@ test('Statistics contains progress only and history is owned by Plan',()=>{
 
 test('Statistics authority follows its dashboard in the deferred chain',()=>{
  const loader=read('frequent-patch.js');
- assert.match(loader,/'stats-dashboard\.js\?v=466','stats-authority\.js\?v=466'/);
+ assert.match(loader,/'stats-dashboard\.js\?v=467','stats-authority\.js\?v=467'/);
  assert.match(loader,/Promise\.allSettled\(\[templates,programs,workout,stats\]\)/);
  assert.match(read('stats-authority.js'),/window\.statsPage=canonicalStatsPage/);
 });

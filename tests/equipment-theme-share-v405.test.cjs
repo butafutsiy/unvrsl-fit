@@ -100,7 +100,7 @@ test("restoring a week-five draft recomputes its saved recommendation from Septe
  assert.equal(waiting.recommendation.basis.date,'2026-09-21');
  assert.equal(waiting.recommendation.basis.estimatedOneRepMax,182);
  assert.deepEqual(JSON.parse(JSON.stringify(waiting.recommendation.repRange)),{lo:4,hi:6});
- assert.equal(waiting.recommendedW,null);assert.equal(waiting.recommendation.canApply,false);assert.match(waiting.recommendation.conflict,/нет доступного веса/);assert.equal(waiting.w,135);assert.ok(saves>0);assert.ok(refreshes>0);
+ assert.equal(waiting.recommendedW,150);assert.equal(waiting.recommendation.canApply,true);assert.equal(waiting.recommendation.conflict,null);assert.equal(waiting.w,135);assert.ok(saves>0);assert.ok(refreshes>0);
 });
 test("completed sets in legacy history count even if the old session lacks an ended timestamp",()=>{
  const bar=p('rdl-bar'),earlier=old('12',bar,[set(115,12,8)]),recent=old('21',bar,[set(140,7,8)]);

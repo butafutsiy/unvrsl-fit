@@ -42,9 +42,30 @@ for(const [type,equipment,expected] of [
  const {rec}=fixture(110,equipment,type);assert.equal(rec.calculatedWeight,expected);
  assert.ok(rec.weight>=rec.allowedWeightRange.min&&rec.weight<=rec.allowedWeightRange.max);
 });
-test('no available weight inside corridor blocks applying an impossible recommendation',()=>{
+test('a coarse equipment rack uses the nearest available weight instead of a blank',()=>{
  const {rec,e}=fixture(110,{availableLoads:[100,120]});
- assert.equal(rec.calculatedWeight,null);assert.equal(rec.canApply,false);
- assert.equal(A.acceptRecommendation(e.set[0],rec),false);assert.equal(e.set[0].w,110);
+ assert.equal(rec.calculatedWeight,120);assert.equal(rec.canApply,true);
+ assert.equal(A.acceptRecommendation(e.set[0],rec),true);assert.equal(e.set[0].w,120);
 });
 module.exports={fixture};
+
+test('W7 narrow effort intersection still recommends rounded weekly midpoint 135 kg',()=>{
+ const {e,cur,history,reg}=fixture(135);
+ Object.assign(cur,{w:7,programWeekIntensityMin:88,programWeekIntensityMax:90});
+ e.set.forEach(s=>Object.assign(s,{targetRepMin:3,targetRepMax:5,targetRpeMin:8,targetRpeMax:9}));
+ history[0].ex[0].set.forEach(s=>{s.w=134.3});
+ const rec=A.recommend(e,e.set[0],cur,history,reg);
+ assert.equal(rec.strength.estimate,152.2);
+ assert.equal(rec.weeklyIntensity.estimatedMin,133.9);assert.equal(rec.weeklyIntensity.estimatedMax,137);
+ assert.ok(rec.allowedWeightRange.max<134.4);
+ assert.ok(Math.abs(rec.raw-152.2*.89)<1e-8);
+ assert.equal(rec.calculatedWeight,135);assert.equal(rec.canApply,true);assert.equal(rec.conflict,null);
+ assert.equal(A.acceptRecommendation(e.set[0],rec),true);assert.equal(e.set[0].w,135);
+});
+test('day role cannot bias the requested arithmetic midpoint',()=>{
+ for(const dayRole of ['Heavy','Light','Middle']){
+  const {e,cur,history,reg}=fixture();cur.dayRole=dayRole;
+  const rec=A.recommend(e,e.set[0],cur,history,reg);
+  assert.ok(Math.abs(rec.raw-153*.725)<1e-8);assert.equal(rec.calculatedWeight,110);
+ }
+});
