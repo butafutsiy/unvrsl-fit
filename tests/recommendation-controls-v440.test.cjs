@@ -10,7 +10,7 @@ test('older effort evidence remains usable when latest workout has no RPE',()=>{
  const e=ex([{w:102.5,programW:102.5,r:'',targetRepMin:4,targetRepMax:6}]);
  const s={id:'today',date:'2026-09-27',ex:[e],programWeekIntensityMin:80,programWeekIntensityMax:85,programWeekRpeMin:8,programWeekRpeMax:9};
  const r=A.recommend(e,e.set[0],s,history,reg);
- assert.equal(r.planPreserved,false);assert.ok(r.weight>=82.5*.9&&r.weight<=82.5*1.075);assert.equal(r.strength.setCount,7);
+ assert.equal(r.planPreserved,false);assert.equal(r.weight,r.calculatedWeight);assert.ok(r.weight>=r.allowedWeightRange.min&&r.weight<=r.allowedWeightRange.max);assert.equal(r.strength.setCount,7);
  const buckets=Object.values(r.strength.protocols);const mean=buckets.reduce((n,b)=>n+b.weight*b.estimate,0)/buckets.reduce((n,b)=>n+b.weight,0);
  assert.equal(Number(mean.toFixed(1)),r.strength.estimate);
 });

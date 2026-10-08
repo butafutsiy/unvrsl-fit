@@ -98,7 +98,7 @@
           observations.forEach((x,i)=>{x.previousE1rm=observations[i-1]?.e1rm;});
           rec.fatigue=A.fatigueSignals(observations);
           if(rec.fatigue.suggestDeload)rec.reason+='; несколько признаков усталости: предложена ранняя разгрузка';
-          const suggested=rec.nextSetSuggestion?.weight??rec.weight;
+          const suggested=A.recommendationWeight(rec);
           if (JSON.stringify(set.recommendation) !== JSON.stringify(rec) || set.recommendedW !== suggested) {
             set.recommendation = rec;
             set.recommendedW = suggested;

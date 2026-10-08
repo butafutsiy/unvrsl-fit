@@ -100,7 +100,7 @@ test("restoring a week-five draft recomputes its saved recommendation from Septe
  assert.equal(waiting.recommendation.basis.date,'2026-09-21');
  assert.equal(waiting.recommendation.basis.estimatedOneRepMax,182);
  assert.deepEqual(JSON.parse(JSON.stringify(waiting.recommendation.repRange)),{lo:4,hi:6});
- assert.ok(waiting.recommendedW>135);assert.equal(waiting.w,135);assert.ok(saves>0);assert.ok(refreshes>0);
+ assert.equal(waiting.recommendedW,null);assert.equal(waiting.recommendation.canApply,false);assert.match(waiting.recommendation.conflict,/нет доступного веса/);assert.equal(waiting.w,135);assert.ok(saves>0);assert.ok(refreshes>0);
 });
 test("completed sets in legacy history count even if the old session lacks an ended timestamp",()=>{
  const bar=p('rdl-bar'),earlier=old('12',bar,[set(115,12,8)]),recent=old('21',bar,[set(140,7,8)]);
@@ -200,7 +200,7 @@ test("weekly percentage, rep range and RPE/RIR share one compound calculation",(
  const current=now(bar,[set(0,6,"",{ok:false,targetRepMin:5,targetRepMax:7,targetRpeMin:8,targetRpeMax:9})]);
  current.programWeekUseIntensity=true;current.programWeekIntensityMin=80;current.programWeekIntensityMax=85;
  const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg);
- assert.equal(rec.weight,105);assert.equal(rec.basis.estimatedOneRepMax,140);
+ assert.equal(rec.weight,115);assert.equal(rec.calculatedWeight,115);assert.equal(rec.basis.estimatedOneRepMax,140);
  assert.deepEqual(rec.weeklyIntensity,{min:80,max:85,estimatedMin:112,estimatedMax:119,applied:true});
  assert.equal(rec.exerciseKind,"base");assert.equal(A.effortRpe({rir:2}),8);
 });
