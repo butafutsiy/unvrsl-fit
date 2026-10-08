@@ -9,24 +9,6 @@
   const mid=(a,b)=>Math.round(((Number(a)+Number(b))/2)*2)/2;
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
-  const TABLES=Object.freeze({
-    hypertrophy:Object.freeze({
-      6:[[65,70,6,7],[68,73,7,7.5],[70,75,7.5,8],[72,77,8,8.5],[75,80,8,9],[60,65,6,7]],
-      8:[[65,70,6,7],[68,73,7,7.5],[70,75,7.5,8],[60,65,6,7],[72,77,7.5,8],[75,80,8,8.5],[78,83,8,9],[65,70,6,7]],
-      10:[[65,70,6,7],[68,73,7,7.5],[70,75,7.5,8],[72,77,8,8.5],[60,65,6,7],[72,77,7.5,8],[75,80,8,8.5],[77,82,8,9],[80,85,8.5,9],[65,70,6,7]]
-    }),
-    strength:Object.freeze({
-      6:[[70,75,6,7],[72,77,7,7.5],[75,80,7.5,8],[78,83,8,8.5],[82,87,8,9],[65,70,6,7]],
-      8:[[70,75,6,7],[72,77,7,7.5],[75,80,7.5,8],[65,70,6,7],[80,84,8,8.5],[82,86,8,9],[85,90,8.5,9.5],[70,75,6,7]],
-      10:[[70,75,6,7],[72,77,7,7.5],[75,80,7.5,8],[78,82,8,8.5],[65,70,6,7],[80,84,8,8.5],[82,86,8,9],[85,88,8.5,9],[88,92,9,9.5],[70,75,6,7]]
-    }),
-    beginner:Object.freeze({
-      6:[[55,65,5.5,6.5],[60,67,6,7],[62,70,6.5,7],[65,72,7,7.5],[67,75,7,8],[55,62,5.5,6.5]],
-      8:[[55,65,5.5,6.5],[60,67,6,7],[62,70,6.5,7],[58,65,6,6.5],[65,72,7,7.5],[67,75,7,8],[70,77,7.5,8],[55,62,5.5,6.5]],
-      10:[[55,65,5.5,6.5],[60,67,6,7],[62,70,6.5,7],[65,72,7,7.5],[58,65,6,6.5],[65,72,7,7.5],[67,75,7,8],[70,77,7.5,8],[72,80,8,8.5],[55,62,5.5,6.5]]
-    })
-  });
-
   function isTemplate(p){return !!p&&(p.internetTemplate===true||p.femaleTemplate===true||p.templateKey||p.sourceName||p.templateSource)}
   function kindFor(p){
     const x=`${p?.name||''} ${p?.meta||''} ${p?.sourceName||''}`.toLowerCase();
@@ -34,25 +16,18 @@
     if(/stronglifts|phul|powerbuild|strength|\bсила\b|силов/.test(x))return'strength';
     return'hypertrophy'
   }
-  function nearestTable(kind,total){
-    const pool=TABLES[kind]||TABLES.hypertrophy;
-    if(pool[total])return pool[total];
-    const keys=Object.keys(pool).map(Number).sort((a,b)=>Math.abs(a-total)-Math.abs(b-total));
-    return pool[keys[0]]
-  }
   function profileFor(p,index){
-    const total=Math.max(1,p?.weeks?.length||1),kind=kindFor(p),table=nearestTable(kind,total);
-    if(table.length===total)return{kind,row:table[index]||table.at(-1)};
-    const pos=total<=1?0:index/(total-1),src=Math.round(pos*(table.length-1));
-    return{kind,row:table[src]||table.at(-1)}
+    const kind=kindFor(p);
+    try{const pr=W.WorkoutDomain.cycleProfiles(p.weeks.length,{testWeek:p.cycleOptions?.testWeek===true,priority:kind==='strength'?'strength':'hypertrophy'})[index];return {kind,row:[...pr.pct,...pr.rpe]};}catch(_){return null;}
   }
   function put(o,k,v){if(!o||o[k]===v)return false;o[k]=v;return true}
   function applyProgram(p){
     if(!isTemplate(p)||!Array.isArray(p.weeks)||!p.weeks.length)return false;
+    if(p.cycleOptions)return false;
     let changed=false;
     p.weeks.forEach((w,wi)=>{
       if(!w||w.loadProfileManual===true)return;
-      const {kind,row}=profileFor(p,wi),[imin,imax,rmin,rmax]=row,target=mid(rmin,rmax);
+      const chosen=profileFor(p,wi);if(!chosen)return;const {kind,row}=chosen,[imin,imax,rmin,rmax]=row,target=mid(rmin,rmax);
       const values={
         intensityMin:imin,intensityMax:imax,useIntensity:true,
         rpeMin:rmin,rpeMax:rmax,rirMin:Math.max(0,10-rmax),rirMax:Math.max(0,10-rmin),

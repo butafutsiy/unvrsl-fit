@@ -10,7 +10,7 @@ test('older effort evidence remains usable when latest workout has no RPE',()=>{
  const e=ex([{w:102.5,programW:102.5,r:'',targetRepMin:4,targetRepMax:6}]);
  const s={id:'today',date:'2026-09-27',ex:[e],programWeekIntensityMin:80,programWeekIntensityMax:85,programWeekRpeMin:8,programWeekRpeMax:9};
  const r=A.recommend(e,e.set[0],s,history,reg);
- assert.equal(r.planPreserved,false);assert.ok(r.weight>=100&&r.weight<=107.5);assert.equal(r.strength.setCount,7);
+ assert.equal(r.planPreserved,false);assert.ok(r.weight>=82.5*.9&&r.weight<=82.5*1.075);assert.equal(r.strength.setCount,7);
  const buckets=Object.values(r.strength.protocols);const mean=buckets.reduce((n,b)=>n+b.weight*b.estimate,0)/buckets.reduce((n,b)=>n+b.weight,0);
  assert.equal(Number(mean.toFixed(1)),r.strength.estimate);
 });
@@ -44,11 +44,11 @@ test('dismissal survives serialization and blocks auto until evidence changes; m
  rs.weightSource='manual';assert.equal(A.applyAuto(rs,{weight:200}),false);
 });
 
-test('explicit positive readiness adjusts once; actual performance then takes priority',()=>{
+test('wellbeing never increases load; actual performance takes priority',()=>{
  const e=ex([{w:100,programW:100,r:5,targetRpe:8}]);
  const s={id:'ready',ex:[e],trainingReadinessDone:true,readinessAdjusted:true,readiness:{factor:1.1,manual:true}};
- const r=A.recommend(e,e.set[0],s,[],reg);assert.equal(r.weight,110);A.applyAuto(e.set[0],r);
- assert.equal(A.recommend(e,e.set[0],s,[],reg).weight,110);
+ const r=A.recommend(e,e.set[0],s,[],reg);assert.equal(r.weight,100);A.applyAuto(e.set[0],r);
+ assert.equal(A.recommend(e,e.set[0],s,[],reg).weight,100);
  e.set.unshift(set(100,5,8));const live=A.recommend(e,e.set[1],s,[],reg);
  assert.equal(live.nextSetSuggestion.weight,100);assert.equal(live.wellbeingApplied,false);
 });

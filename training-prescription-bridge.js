@@ -69,7 +69,25 @@
     const ranges=captureBuiltInRanges(cur);if(!ranges)return false;let changed=false;(cur.ex||[]).forEach(ex=>{if(ex?.mode==='cardio'||SPECIAL.test(String(ex?.n||'')))return;const range=ranges.get(String(ex.n||'').trim())||(!/тест|back-off/i.test(ex.n||'')?ranges.get(base(ex.n)):null);if(!range)return;const[lo,hi]=range;(ex.set||[]).forEach(set=>{if(N(set.targetRepMin)!==lo){set.targetRepMin=lo;changed=true}if(N(set.targetRepMax)!==hi){set.targetRepMax=hi;changed=true}const label=lo===hi?String(lo):`${lo}–${hi}`;if(set.targetRepLabel!==label){set.targetRepLabel=label;changed=true}set.repPrescriptionSource='built_in_exact_stage_v439';if(/тест/i.test(ex.n||'')){set.role='test_attempt';set.plannedReps=lo}else if(/back-off/i.test(ex.n||'')){set.role='backoff';if(set.targetRpeMin!==7||set.targetRpeMax!==8)changed=true;set.targetRpeMin=7;set.targetRpeMax=8;}if(!repsAreManual(set)&&set.r!==''){set.r='';changed=true}})});return changed
   }
   function annotateEffort(cur){let changed=false;(cur?.ex||[]).forEach(ex=>{if(ex?.mode==='cardio')return;(ex.set||[]).forEach(set=>{const lo=N(set?.targetRpeMin),hi=N(set?.targetRpeMax),specified=lo!=null&&hi!=null?(lo+hi)/2:null,rpe=clamp(specified??explicitTargetRpe(ex,set,cur),1,10),rir=clamp(10-rpe,0,9);if(N(set.targetRpeResolved)!==rpe){set.targetRpeResolved=rpe;changed=true}if(N(set.targetRir)!==rir){set.targetRir=rir;changed=true}})});return changed}
-  function prepare(cur=state()?.current){if(!cur||cur.ended)return false;let changed=false;if(isProgramWorkout(cur))changed=annotateProgramRanges(cur)||changed;else if(isBuiltIn(cur))changed=annotateBuiltInRanges(cur)||changed;changed=W.WorkoutDomain?.prepareTestBlocks(cur,typeof workoutRegistry!=='undefined'?workoutRegistry:W.workoutRegistry)||changed;changed=annotateEffort(cur)||changed;if(changed){cur.trainingPrescriptionRevision=REV;saveState()}return changed}
+  function annotateCanonical(cur){
+    const ctx=programWeek(cur),pr=ctx?.w?.weeklyLoadProfile||cur.weeklyLoadProfile;if(!pr)return false;
+    cur.weeklyLoadProfile=pr;cur.deload=!!pr.deload;cur.testWeek=!!pr.test;
+    let changed=false;
+    for(const ex of cur.ex||[]){
+      const spec=pr[W.WorkoutDomain.exerciseKind(ex,typeof workoutRegistry==='undefined'?null:workoutRegistry)];
+      if(!spec||!ex.cycleManaged)continue;
+      for(const set of ex.set||[]){if(set.ok)continue;
+        const src=sourceBlock(cur,ex),manualReps=src?.reps?.mode==='manual',manualEffort=src?.parameterOverrides?.effort?.mode==='manual';
+        const test=set.role==='test_attempt',values={targetIntensityMin:test?95:spec.pct[0],targetIntensityMax:test?100:spec.pct[1],targetRepMin:test?1:spec.reps[0],targetRepMax:test?1:spec.reps[1],targetRpeMin:test?9.5:spec.rpe[0],targetRpeMax:test?10:spec.rpe[1]};
+        if(!test&&manualReps){values.targetRepMin=set.targetRepMin;values.targetRepMax=set.targetRepMax;}
+        if(!test&&manualEffort){values.targetRpeMin=set.targetRpeMin;values.targetRpeMax=set.targetRpeMax;}
+        for(const [k,v] of Object.entries(values))if(set[k]!==v){set[k]=v;changed=true;}
+        set.targetRepLabel=values.targetRepMin===values.targetRepMax?String(values.targetRepMin):`${values.targetRepMin}–${values.targetRepMax}`;
+      }
+    }
+    return changed;
+  }
+  function prepare(cur=state()?.current){if(!cur||cur.ended)return false;let changed=false;if(isProgramWorkout(cur))changed=annotateProgramRanges(cur)||changed;else if(isBuiltIn(cur))changed=annotateBuiltInRanges(cur)||changed;changed=annotateCanonical(cur)||changed;changed=W.WorkoutDomain?.prepareTestBlocks(cur,typeof workoutRegistry!=='undefined'?workoutRegistry:W.workoutRegistry)||changed;changed=annotateEffort(cur)||changed;if(changed){cur.trainingPrescriptionRevision=REV;saveState()}return changed}
 
   function wrapLoadModel(){
     const model=W.trainingLoadModel292||W.trainingLoadModel258;if(!model||typeof model.run!=='function'||model.run.__prescriptionBridgeV292)return false;const old=model.run;

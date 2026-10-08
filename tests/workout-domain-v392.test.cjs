@@ -56,8 +56,8 @@ const prior = (weight, reps = 15, rpe = 7, extra = {}) =>
   );
 test("manual maximum uses the same rules as completed sets without writing a record", () => {
   assert.equal(A.manualOneRepMax(bar, 60, 8, reg), 76);
-  assert.equal(A.manualOneRepMax(pull, 0, 8, reg, 90), 114);
-  assert.equal(A.manualOneRepMax(pull, 10, 8, reg, 90), 126.7);
+  assert.equal(A.manualOneRepMax(pull, 0, 8, reg, 90), null);
+  assert.equal(A.manualOneRepMax(pull, 10, 8, reg, 90), 12.7);
   assert.equal(A.manualOneRepMax(assist, 25, 6, reg, 90), null);
   assert.equal(A.manualOneRepMax(pull, 0, 8, reg), null);
   assert.equal(A.manualOneRepMax(bar, 60, 13, reg), null);
@@ -105,7 +105,7 @@ test("4: assistance is subtracted, progress reduces assistance", () => {
       h,
       reg,
     ).weight,
-    22.5,
+    25,
   );
 });
 test("5 + 6: reload / process restart preserves full draft and timer identity", () => {
@@ -227,7 +227,7 @@ test("20: individual equipment increment used for recommendation and buttons", (
     bar,
     set(60, 15, { targetRepMin: 8, targetRepMax: 15 }),
     session(),
-    prior(60),
+    prior(60,15,6),
     reg,
     overrides,
   );
@@ -275,14 +275,14 @@ test("unknown bodyweight never borrows a future measurement", () =>
     A.effectiveLoad(pull, set(), session(), reg, [{ d: "2026-10-01", w: 90 }]),
     null,
   ));
-test("compatible methods share strength history", () => {
+test("different methods do not share strength history", () => {
   const h = prior(60).map((s) => ({
     ...s,
     ex: s.ex.map((e) => ({ ...e, method: "DS" })),
   }));
   assert.equal(
     A.recommend(bar, set(60), session(), h, reg).sessionIds.length,
-    3,
+    0,
   );
 });
 test("low confidence without effort data, without blocking completion", () => {
@@ -428,11 +428,11 @@ test("three comparable stable workouts produce an explicit plateau explanation",
   assert.equal(r.weight, 60);
 });
 
-test("weighted dips record the plate separately and calculate 1RM from actual body mass", () => {
+test("weighted dips record and estimate external load separately", () => {
   const dip = reg.resolve("canon:weighted_dip");
   assert.equal(dip.loadType, "bodyweight_added");
   assert.equal(dip.weightProfile.step, 2.5);
-  assert.equal(A.manualOneRepMax(dip, 20, 6, reg, 80), 120);
+  assert.equal(A.manualOneRepMax(dip, 20, 6, reg, 80), 24);
   assert.equal(A.manualOneRepMax(dip, 0, 6, reg), null);
-  assert.equal(A.manualOneRepMax(dip, 0, 6, reg, 80), 96);
+  assert.equal(A.manualOneRepMax(dip, 0, 6, reg, 80), null);
 });

@@ -1,0 +1,31 @@
+'use strict';
+const assert=require('node:assert/strict');const {make,wait,errors}=require('./runtime-v392.cjs');
+(async()=>{const dom=make();await wait(2200);const w=dom.window;try{
+ const result=await w.eval(`(async()=>{
+  newProgramSheet();document.getElementById('npName').value='Cycle audit';document.getElementById('npWeeks').value='4';document.getElementById('npDays').value='3';document.getElementById('npStart').value='2026-10-07';createProgram();
+  const p=st.programs.find(x=>x.name==='Cycle audit');
+  if(!p)throw new Error('Program creation failed');
+  p.weeks[0].days[0].ex=[{id:'bench-a',exerciseId:'canon:bench_press',n:'Жим лёжа',method:'STANDARD',kind:'compound',weightMode:'manual',sets:[{w:80,r:10}]}];
+  p.weeks[0].days[1].ex=[{id:'bench-b',exerciseId:'canon:bench_press',n:'Жим лёжа',method:'STANDARD',kind:'compound',weightMode:'manual',sets:[{w:80,r:10}]},{id:'curl',n:'Сгибание рук',method:'STANDARD',kind:'isolation',sets:[{w:15,r:12}]}];
+  cycleBuildFromFirstWeek(p.id);
+  const preview=document.getElementById('sheet').textContent;const originalBand=p.weeks[0].weeklyLoadProfile.base.pct;p.weeks[0].weeklyLoadProfile.base.pct=[90,95];renderProgramEditor();const conflictPreview=document.getElementById('sheet').textContent;p.weeks[0].weeklyLoadProfile.base.pct=originalBand;
+  const shape=p.weeks.map(x=>({phase:x.phase,sets:x.days.flatMap(d=>d.ex.filter(e=>e.exerciseId==='canon:bench_press')).reduce((n,e)=>n+e.sets.length,0)}));
+  if(st.current)workoutStore.discard(st);programBeginDayCoreV382(p.id,0,0);await unvrslTrainingPrescriptionSyncV292(true);
+  const first=JSON.parse(JSON.stringify(st.current));
+  if(st.current)workoutStore.discard(st);programBeginDayCoreV382(p.id,2,0);await unvrslTrainingPrescriptionSyncV292(true);
+  const deload=JSON.parse(JSON.stringify(st.current));
+  if(st.current)workoutStore.discard(st);programBeginDayCoreV382(p.id,3,1);await unvrslTrainingPrescriptionSyncV292(true);
+  const test=JSON.parse(JSON.stringify(st.current));
+  if(st.current)workoutStore.discard(st);cycleReplacePhase(p.id,1,'deload');const replacement=JSON.parse(JSON.stringify(p.weeks[1]));
+  const saved=JSON.parse(JSON.stringify(p));
+  return {preview,conflictPreview,shape,first,deload,test,replacement,saved};
+ })()`);
+ assert.deepEqual(Array.from(result.shape,x=>x.phase),['volume','work','deload','test']);
+ assert.deepEqual(Array.from(result.shape,x=>x.sets),[4,4,3,3]);
+ assert.match(result.preview,/Периодизация/);assert.match(result.conflictPreview,/конфликтуют/);
+ assert.equal(result.first.ex[0].set[0].w,80);assert.equal(result.first.ex[0].set[0].targetRepMin,10);
+ assert.equal(result.deload.ex[0].set[0].targetRpeMax,6);assert.equal(result.deload.ex[0].set[0].targetRepMin,12);
+ const attempts=result.test.ex.flatMap(e=>e.set);assert.equal(attempts.length,3);assert.equal(attempts.filter(s=>s.role==='test_attempt').length,1);assert.equal(attempts.at(-1).targetRepMin,1);
+ assert.equal(result.replacement.phase,'deload');assert.equal(result.saved.cycleOptions.weeks,4);
+ assert.deepEqual(errors,[]);console.log('Periodization UI: create, preview, distribute, manual load, deload, test, phase replacement, serialization passed');
+ }finally{dom.window.close()}})().catch(e=>{console.error(e);process.exitCode=1});

@@ -13,7 +13,7 @@
   const ui=()=>{try{return typeof programUi!=='undefined'?programUi:null}catch(_){return null}};
   const program=id=>{const s=state();try{return typeof programById==='function'?programById(id):(s?.programs||[]).find(p=>String(p?.id)===String(id))||null}catch(_){return null}};
   const saveState=()=>{try{if(typeof save==='function')save();else W.save?.()}catch(_){}};
-  const cycleFor=(w,wi)=>CYCLE[Number(w?.n)||Number(wi)+1]||null;
+  const cycleFor=(w,wi,p)=>{if(w?.weeklyLoadProfile)return w.weeklyLoadProfile;if(p?.weeks)try{return W.WorkoutDomain.cycleProfiles(p.weeks.length,{testWeek:p.cycleOptions?.testWeek!==false,priority:p.cycleOptions?.priority||'strength'})[wi]}catch(_){}return CYCLE[Number(w?.n)||Number(wi)+1]||null;};
   const mid=r=>Array.isArray(r)?Math.round(((Number(r[0])+Number(r[1]))/2)*2)/2:null;
   const escHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -25,7 +25,7 @@
   }
 
   function ensureWeekDefaults(p,wi,force=false){
-    const w=p?.weeks?.[Number(wi)],d=cycleFor(w,wi);if(!w||!d)return false;
+    const w=p?.weeks?.[Number(wi)],d=cycleFor(w,wi,p);if(!w||!d)return false;
     if(w.loadProfileManual===true&&!force)return false;
     let changed=false;
     const set=(k,v)=>{if(force||w[k]==null||w[k]===''){if(w[k]!==v){w[k]=v;changed=true}}};
@@ -46,7 +46,7 @@
 
   function weekProfile(p,wi,useDefaults=true){
     const w=p?.weeks?.[Number(wi)];if(!w)return null;
-    const d=useDefaults?cycleFor(w,wi):null,wn=Number(w.n)||Number(wi)+1;
+    const d=useDefaults?cycleFor(w,wi,p):null,wn=Number(w.n)||Number(wi)+1;
     let [intensityMin,intensityMax]=normalizePair(w.intensityMin??w.weekIntensityMin??w.intensity?.min,w.intensityMax??w.weekIntensityMax??w.intensity?.max,w.useIntensity===false?null:d?.pct);
     if(intensityMin!=null&&intensityMin<=1)intensityMin*=100;if(intensityMax!=null&&intensityMax<=1)intensityMax*=100;
     const [rpeMin,rpeMax]=normalizePair(w.rpeMin??w.weekRpeMin,w.rpeMax??w.weekRpeMax,d?.rpe);
@@ -121,7 +121,9 @@
     const br=normalizePair(field('wr264BaseRestMin')?.value,field('wr264BaseRestMax')?.value,cycleFor(w,wi)?.baseRest),ir=normalizePair(field('wr264IsoRestMin')?.value,field('wr264IsoRestMax')?.value,cycleFor(w,wi)?.isoRest);
     w.baseRestMin=Math.max(0,br[0]??0);w.baseRestMax=Math.max(w.baseRestMin,br[1]??w.baseRestMin);w.isolationRestMin=Math.max(0,ir[0]??0);w.isolationRestMax=Math.max(w.isolationRestMin,ir[1]??w.isolationRestMin);
     if(Object.prototype.hasOwnProperty.call(w,'methods'))delete w.methods;
-    w.focus=String(field('wr264Focus')?.value||'').trim();w.testWeek=!!cycleFor(w,wi)?.test;w.loadProfileManual=true;w.loadProfileAuto=false;w.loadProfileRevision=REV;p.updated=Date.now();saveState();
+    w.focus=String(field('wr264Focus')?.value||'').trim();w.testWeek=!!cycleFor(w,wi)?.test;w.loadProfileManual=true;w.loadProfileAuto=false;w.loadProfileRevision=REV;
+    if(w.weeklyLoadProfile){const pr=w.weeklyLoadProfile;pr.pct=[w.intensityMin,w.intensityMax];pr.rpe=[w.rpeMin,w.rpeMax];pr.focus=w.focus;pr.base={...pr.base,pct:pr.pct,rpe:pr.rpe,rir:[10-w.rpeMax,10-w.rpeMin],reps:[w.baseRepMin,w.baseRepMax]};pr.isolation={...pr.isolation,reps:[w.isolationRepMin,w.isolationRepMax]};}
+    p.updated=Date.now();saveState();
     try{W.toast?.('Профиль недели сохранён')}catch(_){ }
     try{typeof renderProgramEditor==='function'&&renderProgramEditor()}catch(_){ }
   }
