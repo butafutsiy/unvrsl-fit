@@ -7,7 +7,7 @@ const set=(w,r=10,rpe=7,more={})=>({w,r,rpe,ok:true,targetRepMin:8,targetRepMax:
 const old=(id,profile,sets)=>({id,started:Number(id)*10,ended:Number(id)*10+1,ex:[ex(profile,sets)]});
 const now=(profile,sets)=>({id:"today",started:100,ended:null,ex:[ex(profile,sets)]});
 test("different physical equipment has separate history and load steps",()=>{
- const a=p("rack-1"),b=p("rack-2"),past=[old("1",a,[set(60)]),old("2",a,[set(60)])];
+ const a=p("rack-1"),b=p("rack-2"),past=[old("1",a,[set(60,10,6)]),old("2",a,[set(60,10,6)])];
  const same=now(a,[set(60,10,7,{ok:false})]),rec=A.recommend(same.ex[0],same.ex[0].set[0],same,past,reg);
  assert.equal(rec.weight,62.5);
  const other=now(b,[set(0,10,"",{ok:false})]);
@@ -56,12 +56,12 @@ test("body mass is required for effective-load 1RM and assistance has inverse pr
  delete past.bodyWeight;
  assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,[past],reg).basis.estimatedOneRepMax,null);
 });
-test("bodyweight plus zero external load uses known body mass without inventing kilograms",()=>{
+test("zero external load has no external e1RM even with known body mass",()=>{
  const e={n:'Подтягивания',loadType:'bodyweight_added',set:[set(0,8,8)]};
  const past={id:'pull-1',started:100,ended:200,bodyWeight:90,ex:[e]};
  const cur={id:'pull-2',started:300,ended:null,bodyWeight:90,ex:[{...e,set:[set(0,'','',{ok:false,targetRepMin:6,targetRepMax:8,targetRpeMin:8,targetRpeMax:9})]}]};
  const rec=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,[past],reg);
- assert.equal(rec.previous,0);assert.equal(rec.basis.estimatedOneRepMax,120);
+ assert.equal(rec.previous,0);assert.equal(rec.basis.estimatedOneRepMax,null);
  assert.ok(rec.weight>=0&&rec.weight<=5);
  delete past.bodyWeight;
  assert.equal(A.recommend(cur.ex[0],cur.ex[0].set[0],cur,[past],reg).basis.estimatedOneRepMax,null);
@@ -73,7 +73,7 @@ test("autoweight uses the completed set for the next set and refreshes after a n
  const listeners={},ctx={WorkoutDomain:A,workoutRegistry:reg,st:{current:cur,sessions:past,exerciseWeightProfiles:{}},save(){},window:{addEventListener:(name,fn)=>{listeners[name]=fn}}};
  vm.runInNewContext(read('training-load-model.js'),ctx);
  ctx.window.trainingLoadModel292.run();
- assert.equal(completed.w,70);assert.equal(pending.w,67.5);
+ assert.equal(completed.w,70);assert.equal(pending.w,70);
  assert.equal(pending.recommendedW,67.5);
  pending.targetRepLabel='6–8';listeners['unvrsl:prescription-updated']();
  assert.deepEqual(JSON.parse(JSON.stringify(pending.recommendation.repRange)),{lo:6,hi:8});
@@ -112,7 +112,7 @@ test("completed sets in legacy history count even if the old session lacks an en
  recent.pendingCompletion=true;
  assert.equal(A.recommend(pending.ex[0],pending.ex[0].set[0],pending,[earlier,recent],reg).basis.date,'2026-09-12');
 });
-test("a saved legacy exercise ID does not hide its known Romanian deadlift alias",()=>{
+test("different explicit exercise IDs require migration before sharing history",()=>{
  const aliases=A.registry([{id:'rdl',n:'Румынская тяга со штангой',aliases:['Румынская тяга']}]);
  const earlier=old('12',p('rdl-bar'),[set(115,12,8)]),latest=old('21',p('rdl-bar'),[set(140,7,8)]);
  earlier.date='2026-09-12';earlier.started=Date.parse('2026-09-12T05:30:00Z');
@@ -120,7 +120,7 @@ test("a saved legacy exercise ID does not hide its known Romanian deadlift alias
  latest.ex[0].n='Румынская тяга со штангой';latest.ex[0].exerciseId='old-import-id';
  const current=now(p('rdl-bar'),[set(135,'','',{ok:false,programW:135,targetRepLabel:'4–6',targetRpeMin:8,targetRpeMax:9})]);
  current.ex[0].n='Румынская тяга';current.ex[0].exerciseId='new-plan-id';
- assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,[earlier,latest],aliases).basis.date,'2026-09-21');
+ assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,[earlier,latest],aliases).basis,null);
 });
 test("separate Matrix and Foreman machines never transfer recent working weights",()=>{
  const matrix=p('matrix-leg'),foreman=p('foreman-leg');
@@ -134,7 +134,7 @@ test("per-hand rack loads are recommended as a single dumbbell weight",()=>{
  const d=p("rack-db","PER_HAND"),past=[old("1",d,[set(12)]),old("2",d,[set(12)])],cur=now(d,[set(12,10,7,{ok:false})]);
  assert.equal(A.loadType(cur.ex[0],reg),"per_dumbbell");
  const rec=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,past,reg);
- assert.equal(rec.weight,12);assert.ok(rec.reasonCodes.includes("STEP_LIMIT"));
+ assert.equal(rec.weight,12);assert.ok(rec.reasonCodes.includes("SERIES_ON_TARGET"));
 });
 test("empty bar weight sets the minimum total load; per-side load includes the implement",()=>{
  const bar={...p("bar-20"),implementWeight:20},cur=now(bar,[set(0,8,7,{ok:false})]);
@@ -177,30 +177,30 @@ test("a planned 135 kg progression is not silently replaced with old 115 kg",()=
  const rec=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,[old("1",bar,[set(115,8,8)])],reg);
  assert.equal(rec.weight,135);assert.equal(rec.planPreserved,true);
 });
-test("the same 115 kg × 12 RPE 8 supports about 135 kg for 5–7 reps",()=>{
+test("a new rep range cannot bypass the maximum progression step",()=>{
  const bar=p("romanian-bar"),past=[old("1",bar,[set(115,12,8)])];
  const current=now(bar,[set(135,6,0,{ok:false,programW:135,targetRepMin:5,targetRepMax:7,targetRpeMin:8,targetRpeMax:9})]);
  const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg);
- assert.equal(rec.weight,135);assert.equal(rec.planPreserved,false);
+ assert.equal(rec.weight,120);assert.equal(rec.planPreserved,false);
  assert.equal(rec.action,"range_adjust");assert.equal(rec.basis.estimatedOneRepMax,168.7);
  assert.match(rec.reason,/115 кг × 12/);
  const pastWithRir=[old("1",bar,[set(115,12,"",{rir:2})])];
- assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,pastWithRir,reg).weight,135);
+ assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,pastWithRir,reg).weight,120);
 });
 test("isolation and effort-free sets do not justify a large weight jump",()=>{
  const bar=p("leg-curl"),past=[old("1",bar,[set(70,12,8)])];
  const current=now(bar,[set(85,6,0,{ok:false,programW:85,targetRepMin:5,targetRepMax:7,targetRpeMin:8,targetRpeMax:9})]);
  current.ex[0].type="isolation";past[0].ex[0].type="isolation";
- assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg).planPreserved,true);
+ assert.ok(A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg).weight<=85);
  delete current.ex[0].type;delete past[0].ex[0].type;past[0].ex[0].set[0].rpe="";
- assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg).planPreserved,true);
+ assert.ok(A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg).weight<=85);
 });
 test("weekly percentage, rep range and RPE/RIR share one compound calculation",()=>{
  const bar=p("matrix-hack"),past=[old("1",bar,[set(100,10,8)]),old("2",bar,[set(100,10,"",{rir:2})])];
  const current=now(bar,[set(0,6,"",{ok:false,targetRepMin:5,targetRepMax:7,targetRpeMin:8,targetRpeMax:9})]);
  current.programWeekUseIntensity=true;current.programWeekIntensityMin=80;current.programWeekIntensityMax=85;
  const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg);
- assert.equal(rec.weight,115);assert.equal(rec.basis.estimatedOneRepMax,140);
+ assert.equal(rec.weight,105);assert.equal(rec.basis.estimatedOneRepMax,140);
  assert.deepEqual(rec.weeklyIntensity,{min:80,max:85,estimatedMin:112,estimatedMax:119,applied:true});
  assert.equal(rec.exerciseKind,"base");assert.equal(A.effortRpe({rir:2}),8);
 });
@@ -211,14 +211,14 @@ test("an explicit repetition range wins when weekly percentage conflicts with it
  const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg);
  assert.equal(rec.weight,100);assert.equal(rec.weeklyIntensity.applied,false);
 });
-test("isolation uses double progression and does not convert the weekly percent into weight",()=>{
+test("isolation uses its own strength estimate and reports a percentage conflict",()=>{
  const machine=p("matrix-leg-extension"),past=[old("1",machine,[set(50,15,8)]),old("2",machine,[set(50,15,8)])];
  const current=now(machine,[set(50,15,"",{ok:false,targetRepMin:12,targetRepMax:15,targetRpeMin:7,targetRpeMax:8})]);
  current.ex[0].type="isolation";past.forEach(x=>x.ex[0].type="isolation");
  current.programWeekUseIntensity=true;current.programWeekIntensityMin=85;current.programWeekIntensityMax=88;
  const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg);
  assert.equal(rec.weight,52.5);assert.equal(rec.action,"up");assert.equal(rec.exerciseKind,"isolation");
- assert.equal(rec.weeklyIntensity.estimatedMin,null);assert.equal(rec.weeklyIntensity.applied,false);
+ assert.ok(rec.weeklyIntensity.estimatedMin>0);assert.equal(rec.weeklyIntensity.applied,false);
 });
 test("default increments depend on load type and exercise class until equipment overrides them",()=>{
  assert.equal(A.profile({n:"Разгибание ног",type:"isolation",eq:"leverage machine",tg:"quadriceps"},reg).step,2.5);

@@ -7,18 +7,7 @@
 
   // Repetition corridors are derived from the week's selected intensity.
   // Week numbers only provide profile presets; they are not a repetition rule.
-  const PRESETS=Object.freeze([
-    {lo:60,hi:65,base:[12,15],iso:[15,20]},
-    {lo:65,hi:70,base:[10,12],iso:[12,15]},
-    {lo:70,hi:75,base:[8,10],iso:[12,15]},
-    {lo:75,hi:80,base:[6,8],iso:[10,12]},
-    {lo:80,hi:85,base:[5,7],iso:[8,12]},
-    {lo:85,hi:88,base:[4,6],iso:[8,10]},
-    {lo:88,hi:90,base:[3,5],iso:[6,10]},
-    {lo:90,hi:95,base:[2,3],iso:[8,12]},
-    {lo:95,hi:100,base:[1,1],iso:[8,12]},
-    {lo:90,hi:100,base:[1,3],iso:[8,12]}
-  ]);
+  const PRESETS=[[60,65],[65,70],[70,75],[75,80],[80,85],[85,88],[88,90],[90,95],[95,100],[100,105]].map(pct=>({lo:pct[0],hi:pct[1],base:W.WorkoutDomain.bandPrescription(pct).reps,iso:W.WorkoutDomain.bandPrescription(pct,true).reps}));
 
   const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -67,7 +56,7 @@
     if(mid<=95)return PRESETS[7];
     return PRESETS[8]
   }
-  function defaultsFor(p,wi,useLive=true){return defaultsForBand(bandFor(p,wi,useLive))}
+  function defaultsFor(p,wi,useLive=true){const w=p?.weeks?.[wi],pr=w?.weeklyLoadProfile;if(pr&&!w.loadProfileManual)return {base:pr.base.reps,iso:pr.isolation.reps};return defaultsForBand(bandFor(p,wi,useLive))}
   function repProfile(p,wi,useLive=true){
     const w=p?.weeks?.[Number(wi)];if(!w)return null;
     const band=bandFor(p,wi,useLive),d=defaultsForBand(band),manual=w.repGuidanceManual===true;

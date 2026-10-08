@@ -7,6 +7,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
     assert.ok(w.__unvrslStartupComplete);
     const result=await w.eval(`(async()=>{
       st.sessions=[{id:'sep',date:'2026-09-26',started:Date.parse('2026-09-26T04:00:00Z'),ended:Date.parse('2026-09-26T05:00:00Z'),ex:[{n:'Жим лёжа',method:'UNVRSL',set:[{w:135,r:3,rpe:8,ok:true,role:'unvrsl-heavy'},{w:100,r:9,rpe:8,ok:true,role:'unvrsl-light'},{w:135,r:3,rpe:9,ok:true,role:'unvrsl-heavy'}]}]}];
+      st.sessions.push({id:'standard',date:'2026-09-25',started:Date.parse('2026-09-25T04:00:00Z'),ended:Date.parse('2026-09-25T05:00:00Z'),ex:[{n:'Жим лёжа',method:'STANDARD',set:[{w:135,r:3,rpe:8,ok:true}]}]});
       const outcomes=[];
       for(const week of [1,2,3,4,5,6,7,8]){
         if(st.current)workoutStore.discard(st);
@@ -20,7 +21,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
     if(process.env.DEBUG_METHODS)console.log(JSON.stringify(result,null,2));
     for(const row of result){assert.ok(row.sets.length,'week '+row.week);assert.ok(row.sets.every(s=>s.weight>=0),'week '+row.week)}
     const test=result.find(x=>x.week===8).sets.find(s=>/тест/i.test(s.name));
-    assert.equal(test.range.lo,1);assert.equal(test.range.hi,1);assert.ok(test.weight>=140&&test.weight<=150);assert.equal(test.date,'2026-09-26');
+    assert.equal(test.range.lo,1);assert.equal(test.range.hi,1);assert.ok(test.weight>=140&&test.weight<=150);assert.equal(test.date,'2026-09-25');
     const back=result.find(x=>x.week===8).sets.filter(s=>/back-off/i.test(s.name));assert.ok(back.every(s=>s.range.lo===5&&s.range.hi===5));
     assert.equal(back.length,3);
     const attempts=result.find(x=>x.week===8).sets.filter(s=>/тест/i.test(s.name));assert.equal(attempts.length,3);assert.ok(attempts[0].weight<=attempts[1].weight&&attempts[1].weight<=attempts[2].weight);

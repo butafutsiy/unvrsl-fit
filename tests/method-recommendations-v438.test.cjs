@@ -16,11 +16,11 @@ const unvrsl=()=>bench([
 ],{method:'UNVRSL'});
 const sldr=()=>bench(Array.from({length:3},(_,i)=>[12,10,8].map((r,j)=>waiting(100,r,{role:'sldr-mini',round:i+1,mini:j+1}))).flat(),{method:'SLDR'});
 
-test('fresh UNVRSL heavy sets inform all ordinary weeks and the shared strength estimate',()=>{
+test('UNVRSL history is isolated from ordinary weeks',()=>{
   for(const [lo,hi,reps] of [[70,75,10],[75,80,7],[80,85,6],[85,88,5],[88,90,3]]){
     const s=now([bench([waiting(0,reps)])],{programWeekIntensityMin:lo,programWeekIntensityMax:hi});
-    const r=rec(s);assert.equal(r.basis.date,'2026-09-26');assert.equal(r.excludedHistory,null);
-    assert.ok(r.sessionIds.includes('sep'));assert.ok(r.weight>0);
+    const r=rec(s);assert.equal(r.basis.date,'2026-08-29');assert.equal(r.excludedHistory,null);
+    assert.ok(!r.sessionIds.includes('sep'));assert.ok(r.weight>0);
     const strength=A.strengthEstimate(s.ex[0],A.history(s.ex[0],[old,fresh],reg),reg);
     assert.equal(r.strength.estimate,Number(strength.estimate.toFixed(1)));
   }
@@ -30,7 +30,7 @@ test('test singleton is never calculated as back-off five and works in custom pl
     const ex=bench([waiting(0,1,{targetRepLabel:'5',targetRepMin:5,targetRepMax:5})],{n:'Жим лёжа — тест 1–3ПМ'});
     const s=now([ex],{w:8,c:'B',...(custom?{programId:'custom'}:{}),programWeekIntensityMin:90,programWeekIntensityMax:100});
     const r=rec(s);assert.deepEqual(r.repRange,{lo:1,hi:1});assert.ok(r.weight>=140&&r.weight<=150);
-    assert.equal(r.testWeekSuggestion,true);assert.equal(r.nextSetSuggestion,null);assert.equal(r.basis.date,'2026-09-26');
+    assert.equal(r.testWeekSuggestion,true);assert.equal(r.nextSetSuggestion,null);assert.equal(r.basis.date,'2026-08-29');
   }
 });
 test('UNVRSL keeps three linked loads and updates the next heavy set after a hard round',()=>{
@@ -49,18 +49,18 @@ test('SLDR keeps one weight within the round and lowers the next round after fai
   Object.assign(s.ex[0].set[1],work(100,8,9));assert.equal(rec(s,0,2).weight,100);
   Object.assign(s.ex[0].set[2],work(100,5,10));assert.equal(rec(s,0,3).weight,97.5);
 });
-test('SLDR uses new week intensity when no method history exists; no multiplication of percentages',()=>{
+test('SLDR without method history preserves its seed instead of importing ordinary e1RM',()=>{
   const a=now([sldr()],{programWeekIntensityMin:60,programWeekIntensityMax:65});
   const b=now([sldr()],{programWeekIntensityMin:70,programWeekIntensityMax:75});
-  assert.ok(rec(a).weight<rec(b).weight);assert.ok(rec(a).weight>=90);
+  assert.equal(rec(a).weight,rec(b).weight);assert.ok(rec(a).weight>0);
 });
 test('test back-off cannot be replaced by the normal next-set suggestion',()=>{
   const s=now([bench([work(150,1,9)],{n:'Жим лёжа — тест 1–3ПМ'}),bench([waiting(0,5)],{n:'Жим лёжа — back-off 70%'})],{w:8,c:'B'});
   const r=rec(s,1);assert.equal(r.weight,105);assert.equal(r.nextSetSuggestion,null);
 });
-test('a completed true single at RPE10 is not inflated by the Epley factor',()=>{
-  const e=bench([work(150,1,10)]);assert.equal(A.e1rm(e,e.set[0],now([e]),reg),150);
-  assert.equal(A.estimateMaxFromSet(e.set[0]),150);
+test('estimated single follows the requested formula; confirmed single is stored separately',()=>{
+  const e=bench([work(150,1,10)]);assert.equal(A.e1rm(e,e.set[0],now([e]),reg),155);
+  assert.ok(Math.abs(A.estimateMaxFromSet(e.set[0])-155)<1e-9);
 });
 test('wrong equipment and a future session never inflate the recommendation',()=>{
   const other=past('other','2026-09-26',[bench([work(200,3,8)],{equipmentProfileId:'other'})]);
@@ -93,7 +93,7 @@ test('prescription bridge keeps exact test and back-off targets after reload',()
 });
 
 test('ordinary TARGET holds manual actual weight, tolerance and one easy set increase',()=>{
-  for(const [felt,expected,state] of [[7.5,125,'TARGET'],[8,125,'TARGET'],[8.5,125,'TARGET'],[6,127.5,'TOO_EASY'],[9,122.5,'TOO_HARD']]){
+  for(const [felt,expected,state] of [[7.5,125,'TARGET'],[8,125,'TARGET'],[8.5,125,'TARGET'],[6,127.5,'TOO_EASY'],[9,125,'TARGET']]){
     const e=bench([work(125,6,felt,{weightSource:'manual'}),waiting(120,6,{targetRpeMin:8,targetRpeMax:8})]);
     const s=now([e],{trainingReadinessDone:true,readinessAdjusted:true,readiness:{factor:.9}});
     const r=rec(s,0,1);assert.equal(r.nextSetSuggestion.weight,expected);assert.equal(r.nextSetSuggestion.state,state);assert.equal(r.wellbeingApplied,false);
@@ -112,14 +112,15 @@ test('SLDR increases only after a complete easy circle',()=>{
   Object.assign(e.set[1],work(100,10,6));assert.equal(rec(s,0,2).weight,100);
   Object.assign(e.set[2],work(100,8,6));assert.equal(rec(s,0,3).weight,102.5);
 });
-test('all roles contribute with confidence, low-confidence blocks cannot overpower heavy work',()=>{
+test('method strength histories remain separate with their own confidence',()=>{
   const heavy=past('heavy','2026-09-20',[bench([work(135,3,8)],{method:'UNVRSL',phaseRole:'heavy'})]);
-  const ds=past('drops','2026-09-21',[bench([work(120,8,8),...Array.from({length:20},()=>work(50,8,10))],{method:'DS'})]);
-  const e=bench([]),r=A.strengthEstimate(e,A.history(e,[heavy,ds],reg),reg);
-  assert.equal(r.points.length,22);assert.ok(r.estimate>145&&r.estimate<160);
-  assert.ok(r.confidenceLow<r.estimate&&r.confidenceHigh>r.estimate);
-  assert.ok(r.points.find(x=>x.set.w===50).confidenceWeight<r.points.find(x=>x.set.w===135).confidenceWeight/20);
+  const ds=past('drops','2026-09-21',[bench([work(120,8,8),work(50,8,10)],{method:'DS'})]);
+  const e=bench([]),rows=A.history(e,[heavy,ds],reg);
+  assert.equal(A.strengthEstimate(e,rows,reg).estimate,null);
+  const own=A.strengthEstimate({...e,method:'UNVRSL'},rows,reg);
+  assert.equal(own.points.length,1);assert.ok(own.estimate>150);
 });
+
 test('outlier, one bad day and deload have bounded influence, repeated gains are learned',()=>{
   const e=bench([]),base=[18,20,22].map(d=>past('b'+d,'2026-09-'+d,[bench([work(135,3,8)])]));
   const estimate=h=>A.strengthEstimate(e,A.history(e,h,reg),reg).estimate;

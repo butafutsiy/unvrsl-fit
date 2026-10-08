@@ -6,15 +6,115 @@
 })(typeof window === "undefined" ? null : window, () => {
   const SCHEMA_VERSION = 4;
   const weekProfiles={
-    1:{pct:[70,75],rpe:[6,8],tempo:'3-1-2',baseRest:[120,180],isoRest:[60,90],focus:'Техника, базовый объём'},
+    1:{pct:[70,75],rpe:[7,8],tempo:'3-1-2',baseRest:[120,180],isoRest:[60,90],focus:'Техника, базовый объём'},
     2:{pct:[75,80],rpe:[7,8],tempo:'3-1-2',baseRest:[120,180],isoRest:[60,90],focus:'Рабочий объём'},
-    3:{pct:[80,85],rpe:[8,9],tempo:'2-0-2',baseRest:[90,150],isoRest:[45,75],focus:'Механика и метаболика'},
-    4:{pct:[60,65],rpe:[4,6],tempo:'2-0-2',baseRest:[60,90],isoRest:[30,60],focus:'Плотность и памп'},
+    3:{pct:[80,85],rpe:[8,9],tempo:'2-0-2',baseRest:[90,150],isoRest:[45,75],focus:'Интенсификация'},
+    4:{pct:[60,65],rpe:[4,6],tempo:'2-0-2',baseRest:[60,90],isoRest:[30,60],focus:'Разгрузка'},
     5:{pct:[85,88],rpe:[8,9],tempo:'2-0-2',baseRest:[120,180],isoRest:[60,90],focus:'Тяжёлый стимул'},
-    6:{pct:[60,70],rpe:[4,6],tempo:'3-1-2',baseRest:[60,90],isoRest:[30,60],focus:'Разгрузка и памп'},
-    7:{pct:[88,90],rpe:[8.5,9.5],tempo:'2-0-1 / 2-0-X',baseRest:[180,240],isoRest:[90,120],focus:'Сила'},
+    6:{pct:[65,70],rpe:[4,6],tempo:'3-1-2',baseRest:[60,90],isoRest:[30,60],focus:'Восстановление'},
+    7:{pct:[88,90],rpe:[8,9],tempo:'2-0-1 / 2-0-X',baseRest:[180,240],isoRest:[90,120],focus:'Сила'},
     8:{pct:[90,100],rpe:[9,10],tempo:'2-0-X',baseRest:[240,360],isoRest:[90,120],focus:'Контроль результатов',test:true}
   };
+  // Weekly prescriptions live here. UI adapters must not maintain their own tables.
+  const loadBands = [
+    [60,65,4,15,20,6,8,80,85,3,6,8,8,9],
+    [65,70,4,12,15,6,8,75,80,3,8,10,8,9],
+    [70,75,4,10,12,7,8,70,75,3,10,12,7,8],
+    [75,80,4,8,10,7,8,65,70,3,12,15,7,8],
+    [80,85,3,6,8,8,9,65,70,4,12,15,7,8],
+    [85,88,3,5,7,8,9,60,65,4,15,20,6,8],
+    [88,90,3,4,6,8,9,60,65,4,12,15,6,8],
+    [90,95,2,2,4,9,9.5,60,65,5,15,20,6,7],
+    [95,100,2,1,2,9.5,10,60,65,5,15,20,5,6],
+    [100,105,1,1,1,10,10,0,0,0,0,0,0,0]
+  ];
+  function bandPrescription(pct, isolation=false) {
+    const midpoint=(pct[0]+pct[1])/2;
+    const row=loadBands.find(x=>midpoint<=(x[0]+x[1])/2)||loadBands.at(-1);
+    const a=isolation?row.slice(7):row.slice(0,7);
+    return {pct:a.slice(0,2),sets:a[2],reps:a.slice(3,5),rpe:a.slice(5,7),rir:[10-a[6],10-a[5]]};
+  }
+  const phaseNames=['volume','work','intensification','deload','heavy','recovery','strength','test'];
+  for(const [i,p] of Object.entries(weekProfiles)) {
+    p.phase=phaseNames[Number(i)-1];p.deload=[4,6].includes(Number(i));
+    p.base=bandPrescription(p.pct);p.isolation=bandPrescription(p.pct,true);
+    if(p.deload){p.base={pct:p.pct,sets:3,reps:[12,15],rpe:[4,6],rir:[4,6]};p.isolation={pct:[60,70],sets:2,reps:[15,20],rpe:[4,6],rir:[4,6]};}
+    if(p.test){p.base={pct:[90,100],sets:3,reps:[2,4],rpe:[9,9.5],rir:[.5,1]};p.isolation={pct:[0,0],sets:0,reps:[0,0],rpe:[0,0],rir:[0,0]};}
+  }
+  const cloneProfile=p=>JSON.parse(JSON.stringify(p));
+  function cycleProfiles(total,{testWeek=true,priority='strength'}={}) {
+    const templates={3:[1,3,8],4:[1,2,4,8],6:[1,2,3,4,7,8],8:[1,2,3,4,5,6,7,8],10:[1,2,3,4,1,2,3,6,7,8],11:[1,2,3,4,1,2,3,5,6,7,8],12:[1,2,3,4,1,2,3,4,5,6,7,8]};
+    if(!templates[total])throw new Error('Поддерживаются циклы на 3, 4, 6, 8, 10, 11 или 12 недель');
+    return templates[total].map((n,i)=>{
+      if(!testWeek&&n===8)n=priority==='hypertrophy'?3:7;
+      const p=cloneProfile(weekProfiles[n]);p.week=i+1;
+      // The canonical eight-week sequence is preserved; priority controls the
+      // position inside each compatible load corridor, never a second engine.
+      p.priority=priority;return p;
+    });
+  }
+  function dayRoles(days) {
+    const roles={1:['Middle'],2:['Heavy','Light'],3:['Heavy','Middle','Light'],4:['Heavy','Middle','Light','Middle'],5:['Heavy','Middle','Light','Middle','Light']};
+    if(!roles[days])throw new Error('Выбери от 1 до 5 тренировочных дней');
+    return roles[days].slice();
+  }
+  function validatePrescription(p) {
+    if(!p||!p.sets)return {valid:true,warnings:[],corridor:null};
+    const warnings=[];
+    if(!p.reps||p.reps[0]<1||p.reps[1]<p.reps[0]||!p.rpe||p.rpe[0]<1||p.rpe[1]>10||p.rpe[1]<p.rpe[0])return {valid:false,warnings:['Некорректные повторы или RPE'],corridor:null};
+    if(p.rir&&(Math.abs(p.rir[0]-(10-p.rpe[1]))>.01||Math.abs(p.rir[1]-(10-p.rpe[0]))>.01))warnings.push('RIR должен равняться 10 − RPE');
+    const effort=[100/(1+(p.reps[1]+10-p.rpe[0])/30),100/(1+(p.reps[0]+10-p.rpe[1])/30)];
+    const intersection=[Math.max(p.pct[0],effort[0]),Math.min(p.pct[1],effort[1])];
+    const conflict=intersection[0]>intersection[1]+.01;
+    if(conflict)warnings.push('Проценты конфликтуют с повторами и RPE: расчёт по повторам и RIR');
+    return {valid:!warnings.length,warnings,corridor:conflict?effort:intersection,effortCorridor:effort};
+  }
+  function exerciseKind(e,reg) {
+    const kind=e.kind||e.type||reg?.resolve(e)?.type;
+    if(kind)return /isol/i.test(kind)?'isolation':'base';
+    return /разгибан|сгибан|разведен|сведен|бицеп|трицеп|кроссов|икр|дельт|мах[и ]/i.test(e.n||'')?'isolation':'base';
+  }
+  function applyWeekProfile(week,p) {
+    Object.assign(week,{weeklyLoadProfile:cloneProfile(p),phase:p.phase,deload:p.deload,testWeek:!!p.test,intensityMin:p.pct[0],intensityMax:p.pct[1],rpeMin:p.rpe[0],rpeMax:p.rpe[1],rirMin:10-p.rpe[1],rirMax:10-p.rpe[0],baseRepMin:p.base.reps[0],baseRepMax:p.base.reps[1],isolationRepMin:p.isolation.reps[0],isolationRepMax:p.isolation.reps[1],focus:p.focus,useIntensity:true,loadProfileRevision:465});
+    return week;
+  }
+  function generateCycle(options) {
+    const {weeks,daysPerWeek=3,startDate,targetDate,testWeek=true,priority='strength',goal='',exercises=[]}=options;
+    const roles=dayRoles(daysPerWeek),profiles=cycleProfiles(weeks,{testWeek,priority});
+    const parse=d=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(d||''))throw new Error('Укажи дату в формате ГГГГ-ММ-ДД');const x=Date.parse(d+'T12:00:00Z');if(!Number.isFinite(x)||new Date(x).toISOString().slice(0,10)!==d)throw new Error('Некорректная дата');return x;};
+    const start=parse(startDate),end=targetDate?parse(targetDate):start+(weeks*7-1)*86400000;
+    if(end<start+((weeks-1)*7+daysPerWeek-1)*86400000||end>start+(weeks*7-1)*86400000)throw new Error('Целевая дата должна попадать в последнюю неделю цикла');
+    const result={cycleSources:cloneProfile(exercises),cycleOptions:{weeks,daysPerWeek,startDate,targetDate:new Date(end).toISOString().slice(0,10),testWeek,priority,goal},weeks:profiles.map((p,i)=>applyWeekProfile({n:i+1,days:roles.map((role,di)=>({id:`cycle-${i}-${di}`,name:`День ${di+1}`,role,date:new Date(start+i*7*86400000+(daysPerWeek===1?(i===weeks-1?(end-start-i*7*86400000)/86400000:0):Math.floor(di*(i===weeks-1?(end-start-i*7*86400000)/86400000:6)/(daysPerWeek-1)))*86400000).toISOString().slice(0,10),ex:[]}))},p))};
+    for(const week of result.weeks)week.days=allocateWeek(week.weeklyLoadProfile,week.days,exercises);
+    return result;
+  }
+  function allocateWeek(p,days,exercises) {
+    const week={days:days.map(d=>({...d,ex:[]}))},daysPerWeek=days.length;
+      exercises.forEach((source,index)=>{
+        const kind=exerciseKind(source),spec=p[kind];if(!spec.sets)return;
+        let selected=(source.dayIndices||[index%daysPerWeek]).filter((x,i,a)=>Number.isInteger(x)&&x>=0&&x<daysPerWeek&&a.indexOf(x)===i);
+        if(!selected.length)selected=[index%daysPerWeek];
+        if(p.test)selected=[selected.at(-1)];
+        else if(!p.deload&&method(source)!=='STANDARD')selected=[selected[0]];
+        const budget=p.test?3:p.deload?spec.sets:Math.max(0,Math.round(number(source.weeklySetsOverride)??spec.sets));
+        selected.forEach((di,j)=>{
+          const count=Math.floor(budget/selected.length)+(j<budget%selected.length?1:0);if(!count)return;
+          const e=cloneProfile(source);e.kind=kind;e.cycleOriginalMethod=source.cycleOriginalMethod||source.method||'STANDARD';e.cycleOriginalSets=cloneProfile(source.cycleOriginalSets||source.sets||[]);e.method=p.deload?'STANDARD':e.cycleOriginalMethod;e.weeklySets=budget;e.cycleManaged=true;
+          e.reps={mode:'auto',min:null,max:null};e.parameterOverrides={...e.parameterOverrides,reps:{mode:'auto'},effort:{mode:'auto'}};
+          e.sets=Array.from({length:count},(_,k)=>({...source.sets?.[k],w:number(source.sets?.[k]?.w??source.sets?.[0]?.w)??0,r:spec.reps[0],targetRepMin:spec.reps[0],targetRepMax:spec.reps[1],targetRpeMin:spec.rpe[0],targetRpeMax:spec.rpe[1],allowFailure:false}));
+          if(!p.deload&&!p.test&&e.method!=='STANDARD'){e.sets=cloneProfile(e.cycleOriginalSets);e.cycleManaged=false;}
+          if(p.test){e.method='STANDARD';e.sets.forEach((s,k)=>Object.assign(s,k===count-1?{role:'test_attempt',targetRepMin:1,targetRepMax:1,r:1,targetRpeMin:9.5,targetRpeMax:10,allowFailure:true}:{role:'test_preparation',targetRepMin:2,targetRepMax:4}));}
+          week.days[di].ex.push(e);
+        });
+      });
+    return week.days;
+  }
+  function fatigueSignals(rows) {
+    const recent=rows.slice(-2),signals=new Set();
+    for(const x of recent){if(x.actualRpe>x.targetRpe+.5)signals.add('effort');if(x.actualReps!=null&&x.actualReps<x.minReps)signals.add('reps');if(x.e1rm>0&&x.previousE1rm>0&&x.e1rm<x.previousE1rm*.95)signals.add('strength');if(x.techniqueFailed)signals.add('technique');if(x.fatigueHigh)signals.add('fatigue');if(x.wellbeing==='poor')signals.add('wellbeing');}
+    if(recent.length===2&&recent.every(x=>x.skippedSets>0))signals.add('skipped');
+    return {suggestDeload:signals.size>=2,signals:[...signals]};
+  }
   Object.values(weekProfiles).forEach(p=>{Object.values(p).filter(Array.isArray).forEach(Object.freeze);Object.freeze(p)});Object.freeze(weekProfiles);
   const types = new Set([
     "external_total",
@@ -195,6 +295,7 @@
     const v = String(
       s.method || e.method || e.trainingEstimate200?.method || e.n || "",
     ).toUpperCase();
+    if (/AMRAP|EMOM|AFAP|HIIT/.test(v)) return v.match(/AMRAP|EMOM|AFAP|HIIT/)[0];
     return /UNVRSL/.test(v)
       ? "UNVRSL"
       : /SLDR/.test(v)
@@ -307,7 +408,7 @@
   function e1rm(e, s, session, reg, weights = []) {
     if (
       !complete(e, s, reg) ||
-      !strengthEligible(e,s) ||
+      !strengthEligible(e,s) || s.partial === true || s.fullROM === false || s.incomplete === true || s.techniqueFailed === true ||
       reg?.resolve(e)?.resultRule?.e1rm === false
     )
       return null;
@@ -317,11 +418,12 @@
     )
       return null;
     const r = number(s.actualReps ?? s.r);
-    if (!(r >= 1 && r <= 12)) return null;
+    if (!(r >= 1 && r <= 20)) return null;
     const w =
-      type === "per_dumbbell"
+      ["per_dumbbell","bodyweight_added"].includes(type)
         ? number(s.w)
         : effectiveLoad(e, s, session, reg, weights);
+    if(s.partial||s.fullROM===false||s.incomplete||s.techniqueFailed)return null;
     const estimated=estimateMaxFromSet({...s,w})??(w>0?w*(r===1?1:1+r/30):null);
     return estimated>0?Math.round(estimated*10)/10:null;
   }
@@ -346,6 +448,7 @@
     );
   }
   function sameExercise(a, b, reg) {
+    if(a?.exerciseId && b?.exerciseId)return String(a.exerciseId)===String(b.exerciseId);
     if (reg.identity(a) === reg.identity(b)) return true;
     const nameA = norm(a?.n || a?.name), nameB = norm(b?.n || b?.name);
     if (nameA && nameA === nameB) return true;
@@ -364,6 +467,7 @@
       matchingExercise &&
       typeA === typeB &&
       equipmentA === equipmentB &&
+      String(sa.techniqueId??a.techniqueId??a.techniqueVariant??"")===String(sb.techniqueId??b.techniqueId??b.techniqueVariant??"") &&
       (typeA!=="per_dumbbell"||String(a.implementCount??reg.resolve(a)?.implementCount??2)===String(b.implementCount??reg.resolve(b)?.implementCount??2)) &&
       (typeA!=="per_side"||(
         String(a.loadedSides??a.equipmentProfile?.loadedSides??2)===String(b.loadedSides??b.equipmentProfile?.loadedSides??2) &&
@@ -392,11 +496,12 @@
   }
   function loadForEstimate(e,s,session,reg,weights=[]) {
     // A dumbbell estimate uses one dumbbell; a plate-loaded implement uses total load.
-    return loadType(e,reg)==='per_dumbbell'?number(s.w):effectiveLoad(e,s,session,reg,weights);
+    return ['per_dumbbell','bodyweight_added'].includes(loadType(e,reg))?number(s.w):effectiveLoad(e,s,session,reg,weights);
   }
   function fromEstimateLoad(value,e,session,reg) {
     const type=loadType(e,reg);
-    if (['bodyweight_added','bodyweight_assisted'].includes(type)) {
+    if(type==='bodyweight_added')return value;
+    if (type==='bodyweight_assisted') {
       const bw=number(session.bodyWeight);if (!(bw>0)) return null;
       return Math.max(0,type==='bodyweight_assisted'?bw-value:value-bw);
     }
@@ -407,7 +512,7 @@
     return value;
   }
   function strengthEstimate(e,rows,reg,weights=[],set={}) {
-    const compatible=rows.filter(x=>loadComparable(e,x.exercise,reg,set,x.set));
+    const compatible=rows.filter(x=>loadComparable(e,x.exercise,reg,set,x.set)&&method(e,set)===method(x.exercise,x.set));
     const points=[];
     const newest=Math.max(0,...compatible.map(x=>sessionTime(x.session)));
     for(const x of compatible) {
@@ -430,7 +535,7 @@
       if(group.length>=3){
         const mid=median(group.map(x=>x.value));
         const spread=Math.max(mid*.06,3*median(group.map(x=>Math.abs(x.value-mid))));
-        for(const x of group)if(Math.abs(x.value-mid)>spread&&x.value>mid)x.confidenceWeight*=.05;
+        for(const x of group)if(Math.abs(x.value-mid)>spread)x.confidenceWeight=0;
       }
       const sum=group.reduce((n,x)=>n+x.confidenceWeight,0);
       return {value:group.reduce((n,x)=>n+x.value*x.confidenceWeight,0)/sum,weight:Math.max(...group.map(x=>x.confidenceWeight)),group};
@@ -440,13 +545,13 @@
     const deviations=sessions.map(x=>({value:Math.abs(x.value-center),weight:x.weight}));
     const tolerance=Math.max((center||0)*.04,3*(weightedMedian(deviations)||0));
     // A lone exceptional session has bounded influence in both directions.
-    const adjusted=sessions.map((x,i)=>({...x,weight:x.weight*(sessions.length>=3&&Math.abs(x.value-center)>tolerance?.1:sessions.length===2&&i===0&&Math.abs(x.value-sessions[1].value)>sessions[1].value*.08?.2:1)}));
+    const adjusted=sessions.map((x,i)=>({...x,weight:x.weight*(sessions.length>=3&&Math.abs(x.value-center)>tolerance?0:sessions.length===2&&i===0&&Math.abs(x.value-sessions[1].value)>sessions[1].value*.08?.2:1)}));
     const sum=adjusted.reduce((n,x)=>n+x.weight,0);
     const estimate=sum?adjusted.reduce((n,x)=>n+x.value*x.weight,0)/sum:null;
     const spread=estimate==null?null:Math.max(estimate*.02,Math.sqrt(adjusted.reduce((n,x)=>n+x.weight*(x.value-estimate)**2,0)/sum));
-    const actualSingles=compatible.filter(x=>complete(x.exercise,x.set,reg)&&number(x.set.actualReps??x.set.r)===1);
+    const actualSingles=points.filter(x=>x.confidenceWeight>0&&number(x.set.actualReps??x.set.r)===1);
     const source=points.find(x=>x.confidenceWeight>=.2)??points[0]??null;
-    const latestGroup=sessions[0]?.group||[];
+    const latestGroup=(sessions[0]?.group||[]).filter(x=>x.confidenceWeight>0);
     // Partition final evidence weights; each set contributes exactly once.
     const protocols={};
     for(const observation of adjusted){
@@ -459,7 +564,7 @@
       }
     }
     for(const bucket of Object.values(protocols)){bucket.estimate=bucket.total/bucket.weight;delete bucket.total;}
-    return {estimate,protocols,sessionCount:sessions.length,setCount:points.length,latest:latestGroup.length?Math.max(...latestGroup.map(x=>x.value)):null,points,source,
+    return {estimate,stableMean:estimate,best:points.length?Math.max(...points.map(x=>x.value)):null,lastPerformed:points[0]?sessionDate(points[0].session):null,lastWorkingSets:latestGroup.map(x=>({weight:number(x.set.w),reps:number(x.set.actualReps??x.set.r),rpe:effortRpe(x.set),rir:effortRpe(x.set)==null?null:10-effortRpe(x.set)})),protocols,sessionCount:sessions.length,setCount:points.length,latest:latestGroup.length?Math.max(...latestGroup.map(x=>x.value)):null,points,source,
       confidenceLow:estimate==null?null:estimate-spread,confidenceHigh:estimate==null?null:estimate+spread,
       confirmed:actualSingles.length?Math.max(...actualSingles.map(x=>loadForEstimate(x.exercise,x.set,x.session,reg,weights)||0)):null,
       confidence:sessions.filter(x=>x.weight>=.4).length>=3?'высокая':sessions.filter(x=>x.weight>=.3).length>=2?'средняя':'низкая'};
@@ -468,14 +573,15 @@
     const range=repRange(e,targetSet),target=effortTarget(e,targetSet,session);
     const reps=number(s.actualReps??s.r),felt=effortRpe(s),used=number(s.w);
     if(felt==null)return {state:'UNKNOWN',weight:used,action:'hold',reason:'Укажи RPE или RIR: без оценки усилия вес сохранён'};
-    const hard=reps<range.lo||(felt!=null&&felt>target.hi+.5);
+    const hard=reps<range.lo||s.techniqueFailed===true||(method(e,targetSet)!=='STANDARD'&&felt>target.hi+.5);
     const easy=!hard&&reps>=range.hi&&felt!=null&&felt<target.lo-.5;
     const state=hard?'TOO_HARD':easy?'TOO_EASY':'TARGET';
     const severity=hard?Math.max((range.lo-reps)/Math.max(1,range.lo),(felt==null?0:felt-target.hi)/4):0;
     const count=hard&&severity>=.4?2:1;
     const direction=(hard?-1:easy?1:0)*(p.loadType==='bodyweight_assisted'?-1:1);
     let weight=used;for(let i=0;i<count&&direction;i++)weight=moveWeight(weight,direction,p);
-    return {state,weight,action:hard?'down':easy?'up':'hold',reason:hard?'Ниже диапазона или тяжелее целевого усилия':easy?'Повторы выполнены с запасом больше цели':'Повторы и усилие в целевом диапазоне'};
+    weight=boundedProgression(weight,used,p).weight;
+    return {state,weight,action:weight===used?'hold':hard?'down':easy?'up':'hold',reason:hard?'Ниже диапазона или тяжелее целевого усилия':easy?'Повторы выполнены с запасом больше цели':'Повторы и усилие в целевом диапазоне'};
   }
 
   function effortTarget(e,s,session) {
@@ -678,13 +784,13 @@
   }
   function estimateMaxFromSet(s) {
     const weight = number(s?.w ?? s?.weight), reps = number(s?.actualReps ?? s?.r), rpe = effortRpe(s);
-    if (!(weight > 0) || !(reps >= 1 && reps <= 12) || !(rpe >= 6 && rpe <= 10)) return null;
-    return weight * (reps===1 && rpe===10 ? 1 : 1 + (reps + 10 - rpe) / 30);
+    if (!(weight > 0) || !(reps >= 1 && reps <= 20) || !(rpe >= 4 && rpe <= 10)) return null;
+    return weight * (1 + (reps + 10 - rpe) / 30);
   }
   function intensityBand(session,e={},s={}) {
     const explicit=number(s.targetPercentage??e.targetPercentage);
     if (session?.programWeekUseIntensity === false && explicit==null) return null;
-    let lo = explicit??number(session?.programWeekIntensityMin), hi = explicit??number(session?.programWeekIntensityMax);
+    let lo = explicit??number(s.targetIntensityMin??e.targetIntensityMin??session?.programWeekIntensityMin), hi = explicit??number(s.targetIntensityMax??e.targetIntensityMax??session?.programWeekIntensityMax);
     if (!(lo > 0) || !(hi > 0)) return null;
     if (lo > 1) lo /= 100;
     if (hi > 1) hi /= 100;
@@ -707,6 +813,7 @@
       .some(v=>v!=null&&String(v).trim()!=='');
   }
   function sameTarget(e,s,old,session) {
+    if(session.dayRole&&old.session?.dayRole&&session.dayRole!==old.session.dayRole)return false;
     const range=repRange(e,s),previous=repRange(old.exercise,old.set);
     const reps=number(old.set.actualReps??old.set.r);
     const sameReps=explicitRepTarget(old.exercise,old.set)
@@ -724,7 +831,7 @@
     const effortKnown=done.every(x=>effortRpe(x.set)!=null);
     const range=repRange(e,s),effort=effortTarget(e,s,current);
     const same=done.length>0&&done.every(x=>sameTarget(e,s,x,current));
-    const bad=done.filter(x=>number(x.set.actualReps??x.set.r)<range.lo||effortRpe(x.set)>effort.hi);
+    const bad=done.filter(x=>number(x.set.actualReps??x.set.r)<range.lo||effortRpe(x.set)>effort.hi||x.set.techniqueFailed||x.set.incomplete||x.set.partial);
     const full=done.length===rows.length&&done.length>=expected;
     const uniform=done.length>0&&done.every(x=>number(x.set.w)===number(done[0].set.w));
     return {sessionId:previous.id,expected,planned:rows.length,completed:done.length,full,effortKnown,sameTarget:same,uniform,
@@ -771,14 +878,14 @@
   function boundedProgression(weight,previous,p,rebase=false) {
     if(previous==null||weight==null)return {weight,limited:false};
     const inverse=p.loadType==='bodyweight_assisted',harder=inverse?weight<previous:weight>previous;
-    if(!harder)return {weight,limited:false};
-    const body=['bodyweight_added','bodyweight_assisted'].includes(p.loadType);
-    const cap=body?(number(p.maxAddedLoadIncrease)??p.step):previous*(number(rebase?p.maxRebaseFraction:p.maxIncreaseFraction)??(rebase?.32:.05));
+    const fraction=harder?Math.min(.075,number(p.maxIncreaseFraction)??.05):.10;
+    const cap=previous*fraction;
     if(Math.abs(weight-previous)<=cap+1e-6)return {weight,limited:false};
-    const limit=previous+(inverse?-cap:cap);
-    const bounded=roundWeight(limit,p,inverse?'up':'down');
-    return {weight:inverse?Math.min(previous,bounded):Math.max(previous,bounded),limited:true};
+    const limit=previous+Math.sign(weight-previous)*cap;
+    const bounded=roundWeight(limit,p,weight>previous?'down':'up');
+    return {weight:weight>previous?Math.max(previous,bounded):Math.min(previous,bounded),limited:true};
   }
+
   function recommend(e, set, session, sessions, reg, overrides = {}) {
     const p = profile(e, reg, overrides),
       range = repRange(e, set),
@@ -791,7 +898,7 @@
         [...allHistory,...(session.ex||[]).flatMap(ex=>(ex.set||[]).filter(s=>complete(ex,s,reg)).map(s=>({exercise:ex,set:s,session})))],
       strength=strengthEstimate(e,strengthRows,reg,[],set),
       rows=allHistory.filter((x) => method(e,set)==='STANDARD'
-        ? loadComparable(e,x.exercise,reg,set,x.set)&&strengthEligible(x.exercise,x.set)
+        ? loadComparable(e,x.exercise,reg,set,x.set)&&method(x.exercise,x.set)==='STANDARD'
         : comparable(e, x.exercise, reg, set, x.set));
     const ids = [...new Set(rows.map((x) => x.session.id))].slice(0, 5),
       recent = rows.filter((x) => ids.includes(x.session.id));
@@ -807,7 +914,7 @@
     // A standard exercise has one top working load. Back-off sets must not
     // pull its next-session recommendation down to their median.
     const prior=latestWeights.length?(method(e,set)==="STANDARD"?Math.max(...latestWeights):median(latestWeights)):null;
-    const seed=[set.programW,set.recommendationOriginalWeight,set.plannedW,set.w].map(number).find(x=>x>0)??0;
+    const seed=[set.programW,set.recommendationOriginalWeight,set.launchW,set.plannedW,set.w].map(number).find(x=>x>0)??0;
     const effortBand=effortTarget(e,set,session),targetMin=effortBand.lo,target=effortBand.hi;
     const groups = ids
       .slice(0, 2)
@@ -821,17 +928,17 @@
     const top=latest.find(x=>number(x.set.w)===prior),oldReps=number(top?.set.actualReps??top?.set.r),oldRpe=top?effort(top):null;
     const targetReps=(range.lo+range.hi)/2,kind=String(e.type||reg?.resolve(e)?.type||"").toLowerCase();
     const explicitRange=[set.targetRepMin,set.targetRepMax,set.rMin,set.rMax,e.repMin,e.repMax,e.reps].some(v=>v!=null&&String(v).trim()!=="");
-    const compound=kind!=="isolation";
-    const bodyLoad=["bodyweight_added","bodyweight_assisted"].includes(p.loadType);
+    const compound=exerciseKind(e,reg)!=="isolation";
+    const bodyLoad=p.loadType==="bodyweight_assisted";
     const currentBodyWeight=number(session.bodyWeight),latestBodyWeight=number(latest[0]?.session.bodyWeight);
-    const eligible=method(e,set)==="STANDARD"&&compound&&
+    const eligible=method(e,set)==="STANDARD"&&
       ["external_total","machine_stack","per_dumbbell","per_side","bodyweight_added","bodyweight_assisted"].includes(p.loadType)&&
       strength.points.some(x=>effortRpe(x.set)>=6&&effortRpe(x.set)<=10)&&
-      targetReps>=1&&targetReps<=12&&targetMin>=6&&target<=10&&targetMin<=target&&
+      targetReps>=1&&targetReps<=20&&targetMin>=4&&target<=10&&targetMin<=target&&
       (bodyLoad?currentBodyWeight>0&&latestBodyWeight>0:prior>0);
     const sessionMaxes=strength.points.map(x=>x.value);
     const latestOneRepMax=strength.latest;
-    const stableOneRepMax=compound?strength.estimate:null;
+    const stableOneRepMax=strength.estimate;
     const estimatedOneRepMax=eligible?stableOneRepMax:null;
     const analogous=eligible?groups.find(g=>{
       const evidence=seriesEvidence(e,set,session,g[0]?.session,reg);
@@ -879,11 +986,19 @@
     }else if(compound&&weeklyRaw!=null&&projected==null&&seed===0&&prior>0&&!explicitRange){
       projected=weeklyRaw;weeklyApplied=true;
     }else if(projected!=null&&weeklyCorridor&&projected>=weeklyCorridor.min-p.step&&projected<=weeklyCorridor.max+p.step){
-      projected=(projected+weeklyRaw)/2;weeklyApplied=true;
+      projected=Math.max(weeklyCorridor.min,Math.min(weeklyCorridor.max,projected));weeklyApplied=true;
+    }
+    const prescription=validatePrescription({sets:1,pct:band?[band.lo*100,band.hi*100]:[0,100],reps:[range.lo,range.hi],rpe:[targetMin,target]});
+    const corridor=stableOneRepMax>0&&prescription.corridor?prescription.corridor.map(x=>fromEstimateLoad(stableOneRepMax*x/100,e,session,reg)):null;
+    if(eligible&&corridor&&corridor.every(x=>x!=null)){
+      const role=session.dayRole||session.role||'Middle',bias=session.weeklyLoadProfile?.priority==='hypertrophy'?-.1:0,position=(role==='Heavy'?.85:role==='Light'?.15:.5)+bias;
+      projected=Math.max(corridor[0],Math.min(corridor[1],(corridor[0]+(corridor[1]-corridor[0])*position)*calibration.factor));
+      weeklyApplied=!!band&&prescription.valid;
     }
     const reference=projected??prior;
     const changedRepBand=top?!sameTarget(e,set,top,session):false;
     let anomalous=seed>0&&reference>0&&Math.abs(seed-reference)>Math.max(2*p.step,seed*(projected!=null&&changedRepBand?.25:.1));
+    if(seed===prior&&series?.full&&series.effortKnown)anomalous=false;
     // Week eight offers an updated weight for every base exercise with
     // comparable history. A stale prescribed seed is not a reason to hide it.
     if(weekEight&&compound&&projected!=null&&ids.length)anomalous=false;
@@ -926,15 +1041,13 @@
         : "Сначала увеличивай повторы в заданном диапазоне";
     }
     const deload =
-      session.deload === true ||
-      (number(session.programWeekIntensityMax) > 0 &&
-        number(session.programWeekIntensityMax) <= 70);
+      session.deload === true || session.isDeload === true;
     if (
       prior != null &&
       deload && !anomalous &&
       !["bodyweight_only", "repetitions_only"].includes(p.loadType)
     ) {
-      raw = weeklyRaw!=null ? weeklyRaw :
+      raw = projected!=null ? projected : weeklyRaw!=null ? weeklyRaw :
         p.loadType === "bodyweight_assisted" ? prior + p.step : (projected??prior) * 0.925;
       if(weeklyRaw!=null)weeklyApplied=true;
       reason = "Разгрузочная неделя";
@@ -1081,17 +1194,22 @@
         action=repeatedFatigue?'down':'hold';reasonCodes.push(repeatedFatigue?'REPEATED_SERIES_MISS':'SERIES_MISS');
         reason=repeatedFatigue?'Две сопоставимые полные серии с недобором: уменьшить стартовый вес на один шаг':
           'Поздние подходы вышли за цель: сохранить стартовый вес; сегодняшняя коррекция рассчитывается отдельно';
-      }else if(series?.sameTarget&&series.uniform&&series.allInRange&&!series.easier&&!strong){
+      }else if(series?.sameTarget&&series.uniform&&series.easier){
+        raw=moveWeight(prior,p.loadType==='bodyweight_assisted'?-1:1,p);action='up';reasonCodes.push('EASY_SERIES');reason='Полная серия выполнена легче цели: увеличить на один доступный шаг';
+      }else if(series?.sameTarget&&series.uniform&&series.allInRange&&!series.easier){
         raw=prior;action='hold';reasonCodes.push('SERIES_ON_TARGET');
         repetitionGoal=series.reps.some(r=>r<range.hi)?series.reps.reduce((n,r)=>n+r,0)+1:null;
         reason=repetitionGoal!=null?'Серия выполнена в целевом усилии: оставить вес, попробовать добавить одно повторение суммарно':
           'Серия соответствует заданию: сохранить вес и целевое усилие';
       }
+      if(oldReps>=range.lo&&oldRpe>target&&!weak){raw=prior;action='hold';reason='Минимум повторений выполнен, но тяжело: сохранить вес';}
+      if(oldRpe==null&&effortKnown>0&&!changedRepBand){raw=prior;action='hold';reason='Последнее усилие не указано: сохранить вес, оценка силы использует прошлую историю';}
+      if(trend==='plateau')reason+='; три сопоставимые тренировки без прироста';
       if(changedRepBand)reasonCodes.push('TARGET_REBASE');
       if(calibration.applied)reason+=`; поправка по прошлым прогнозам ${Math.round((calibration.factor-1)*1000)/10}%`;
     }
-    const wellbeingFactor=session.trainingReadinessDone&&session.readinessAdjusted
-      ?Math.min(session.readiness?.manual?1.1:1,Math.max(.85,number(session.readiness?.factor)??1)):1;
+    const wellbeingFactor=number(session.wellbeing?.factor)!=null?Math.max(.9,Math.min(1,number(session.wellbeing.factor))):session.trainingReadinessDone&&session.readinessAdjusted
+      ?Math.min(1,Math.max(.9,number(session.readiness?.factor)??1)):1;
     const hasActual=(session.ex||[]).some(ex=>(ex.set||[]).some(s=>complete(ex,s,reg)&&loadComparable(e,ex,reg,set,s)));
     const wellbeingApplied=wellbeingFactor!==1&&!hasActual&&!anomalous&&!backoffPreview&&raw>0;
     if(wellbeingApplied){
@@ -1099,7 +1217,7 @@
       const adjusted=effective!=null?fromEstimateLoad(effective*wellbeingFactor,e,session,reg):null;
       if(adjusted!=null){raw=roundWeight(adjusted,p,p.loadType==='bodyweight_assisted'?'up':'down');reason+='; учтено самочувствие перед первым подходом'}
     }
-    const conflict=weeklyCorridor && !weeklyApplied && !testWeekSuggestion && !methodRec &&
+    let conflict=weeklyCorridor && !weeklyApplied && !testWeekSuggestion && !methodRec &&
       (raw<Math.min(weeklyCorridor.min,weeklyCorridor.max)-p.step||raw>Math.max(weeklyCorridor.min,weeklyCorridor.max)+p.step)
       ? 'Процент недели расходится с повторами и целевым усилием; вес подобран по повторам и RPE/RIR' : null;
     if(conflict)reason+=`. ${conflict}`;
@@ -1116,10 +1234,12 @@
       if(bounded.limited){nextSetSuggestion={...nextSetSuggestion,weight:bounded.weight,action:bounded.weight===number(lastToday.set.w)?'hold':nextSetSuggestion.action,
         reason:nextSetSuggestion.reason+'; прибавка ограничена шагом оборудования'};reasonCodes.push('NEXT_SET_STEP_LIMIT');}
     }
+    if(ordinary&&corridor&&weight!=null&&(weight<Math.min(...corridor)-p.step/2||weight>Math.max(...corridor)+p.step/2)){conflict='Лимит коррекции или сохранённый рабочий вес выходит за расчётный коридор: проверь цель по повторам и усилию';if(!reason.includes(conflict))reason+='. '+conflict;}
     const requiresEffort=ordinary&&ids.length>0&&effortKnown===0&&(!lastToday||effortRpe(lastToday.set)==null);
     if(requiresEffort){weight=seed;action='hold';reasonCodes.push('EFFORT_REQUIRED');reason='Укажи RPE или RIR: история сохранена, вес по усилию пока не рассчитывается';}
+    if(ordinary&&ids.length>=3&&action==='hold'&&!strong&&!weak&&new Set(ids.slice(0,3).map(id=>JSON.stringify(recent.filter(x=>x.session.id===id).map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)])))).size===1){trend='plateau';reason+='; три сопоставимые тренировки без прироста';}
     const confidence =
-        anomalous?"низкая":ids.length >= 3 && effortKnown === recent.length
+        anomalous||effortKnown===0?"низкая":ids.length >= 3 && effortKnown === recent.length
           ? projected!=null?"средняя":"высокая"
           : ids.length >= 2 && effortKnown
             ? "средняя"
@@ -1128,10 +1248,13 @@
       weight,
       series,calibration,reasonCodes,repetitionGoal,
       analogousSessionId:analogous?.[0]?.session.id??null,
-      calculationVersion:464,
-      canApply:!requiresEffort,
+      calculationVersion:465,
+      canApply:!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
+      allowedWeightRange:corridor?{min:Math.min(...corridor),max:Math.max(...corridor)}:null,
+      calculatedWeight:projected,
+      profileWarnings:prescription.warnings,
       scope:nextSetSuggestion?'next_set':'next_session',
-      proposalKey:proposalFingerprint([464,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
+      proposalKey:proposalFingerprint([465,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
       raw,
       previous: prior,
       basis:ids.length?{date:sessionDate(latest[0]?.session??strength.source?.session),weight:prior??number(strength.source?.set.w),planned:seed||null,estimatedOneRepMax:latestOneRepMax!=null?Number(latestOneRepMax.toFixed(1)):null,sets:latest.map(x=>({weight:number(x.set.w),reps:number(x.set.actualReps??x.set.r),rpe:effort(x)}))}:null,
@@ -1166,7 +1289,7 @@
         estimatedMax:weeklyCorridor?Number(weeklyCorridor.max.toFixed(1)):null,
         applied:weeklyApplied
       }:null,
-      strength: {protocols:strength.protocols,sessionCount:strength.sessionCount,setCount:strength.setCount,estimate:strength.estimate==null?null:Number(strength.estimate.toFixed(1)),confirmed:strength.confirmed,
+      strength: {stableMean:strength.stableMean,best:strength.best,lastPerformed:strength.lastPerformed,lastWorkingSets:strength.lastWorkingSets,protocols:strength.protocols,sessionCount:strength.sessionCount,setCount:strength.setCount,estimate:strength.estimate==null?null:Number(strength.estimate.toFixed(1)),confirmed:strength.confirmed,
         confidenceLow:strength.confidenceLow,confidenceHigh:strength.confidenceHigh,confidence:strength.confidence,sources:strength.points.slice(0,12).map(x=>({date:sessionDate(x.session),method:method(x.exercise,x.set),role:setRole(x.exercise,x.set),weight:number(x.set.w),reps:number(x.set.actualReps??x.set.r),rpe:effortRpe(x.set)}))},
       methodStage:methodRec?.role??setRole(e,set),
       targetEffort:effortBand,
@@ -1181,6 +1304,20 @@
     for(let i=0;i<text.length;i++){const c=text.charCodeAt(i);a=Math.imul(a^c,16777619);b=Math.imul(b^c,2246822507)}
     return `v440:${(a>>>0).toString(16)}:${(b>>>0).toString(16)}`;
   }
+  function acceptRecommendation(set,result) {
+    if(set.ok||set.skipped||result.canApply===false||result.action==='stop'||number(result.weight)==null)return false;
+    if(!set.recommendationRestore)set.recommendationRestore={w:set.w,plannedW:set.plannedW,weightSource:set.weightSource,manualOverride:set.manualOverride};
+    set.w=result.weight;set.plannedW=result.weight;set.weightSource='recommendation';set.manualOverride=false;
+    set.recommendationDecision={status:'applied',proposalKey:result.proposalKey,weight:result.weight,at:Date.now()};
+    delete set.dismissedRecommendation;return true;
+  }
+  function dismissRecommendation(set,result) {
+    if(set.ok||set.skipped)return false;
+    if(set.recommendationRestore&&set.weightSource==='recommendation'&&set.w===set.recommendationDecision?.weight)Object.assign(set,set.recommendationRestore);
+    delete set.recommendationRestore;
+    set.dismissedRecommendation=result.proposalKey;
+    set.recommendationDecision={status:'dismissed',proposalKey:result.proposalKey,at:Date.now()};return true;
+  }
   function applyAuto(set, result) {
     if (set.ok || set.skipped || set.manualOverride || set.weightSource === "manual" || result.canApply===false || result.planPreserved || result.action === "stop" || (result.proposalKey&&set.dismissedRecommendation===result.proposalKey))
       return false;
@@ -1190,7 +1327,7 @@
     return true;
   }
   function prepareTestBlocks(session,reg) {
-    if(!session||session.ended||!reg)return false;
+    if(!session||session.ended||!reg||session.weeklyLoadProfile?.test)return false;
     let changed=false;
     const groups=[];
     for(const ex of session.ex||[]){
@@ -1551,10 +1688,12 @@
     setRole,
     loadComparable,
     weekProfiles,
+    allocateWeek,bandPrescription,cycleProfiles,dayRoles,validatePrescription,exerciseKind,applyWeekProfile,generateCycle,fatigueSignals,boundedProgression,
     strengthEstimate,
     setDecision,
     effortTarget,
     recommend,
+    acceptRecommendation,dismissRecommendation,
     applyAuto,
     prepareTestBlocks,
     summary,

@@ -87,7 +87,7 @@ test('automatic readiness never raises the program weight at workout start',asyn
   assert.equal(context.st.current.readinessAdjusted,true);
 });
 
-test('recommendation stays manual while autoweight is limited to missing program weight',async()=>{
+test('recommendations remain separate even when program weight is missing',async()=>{
   const program={id:'mine',weeks:[{days:[{name:'B',ex:[
     {n:'Жим лёжа',sourceId:'bench',method:'STANDARD',sets:[{w:110,r:6}]},
     {n:'Тяга блока',sourceId:'row',method:'STANDARD',sets:[{w:0,r:8}]}
@@ -116,10 +116,10 @@ test('recommendation stays manual while autoweight is limited to missing program
   assert.ok(prescribed.set[0].recommendedW>0);
   assert.equal(prescribed.weightDecision,'program');
   assert.equal(adaptive.programWeightMode,'adaptive');
-  assert.equal(adaptive.weightDecision,'adaptive_auto');
-  assert.equal(adaptive.set[0].w,60);
+  assert.equal(adaptive.weightDecision,'recommendation_pending');
+  assert.equal(adaptive.set[0].w,0);
   assert.match(adaptive.set[0].recommendation.reason,/сохранить вес/i);
-  assert.equal(adaptive.set[0].w,adaptive.set[0].plannedW);
+  assert.equal(adaptive.set[0].recommendedW,60);
   context.trainingApplyRecommendation200('id:bench');
   assert.equal(prescribed.set[0].w,prescribed.set[0].recommendedW);
   context.trainingRestoreProgram200('id:bench');

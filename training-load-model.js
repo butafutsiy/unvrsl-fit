@@ -75,7 +75,7 @@
         }
         const row = workoutRegistry.resolve(ex);
         if (row) {
-          ex.exerciseId = row.id;
+          ex.exerciseId = ex.exerciseId || row.id;
           ex.loadType = ex.loadType || row.loadType;
           ex.implementCount = ex.implementCount || row.implementCount;
         }
@@ -89,6 +89,15 @@
             workoutRegistry,
             st.exerciseWeightProfiles || {},
           );
+          const observations=recommendationHistory().filter(x=>x.id!==cur.id&&!x.pendingCompletion&&(!cur.userId||!x.userId||x.userId===cur.userId)&&(!cur.date||!x.date||x.date<=cur.date)).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).flatMap(old=>{
+            const match=(old.ex||[]).find(x=>A.loadComparable(ex,x,workoutRegistry,set,x.set?.[0]||{})&&A.method(ex,set)===A.method(x,x.set?.[0]||{}));if(!match)return [];
+            const done=(match.set||[]).filter(x=>A.complete(match,x,workoutRegistry)),target=A.effortTarget(match,done[0]||{},old),range=A.repRange(match,done[0]||{});
+            const estimate=A.strengthEstimate(ex,A.history(ex,[old],workoutRegistry),workoutRegistry,[],set).estimate;
+            return [{e1rm:estimate,actualRpe:done.length?Math.max(...done.map(x=>A.effortRpe(x)||0)):null,targetRpe:target.hi,actualReps:done.length?Math.min(...done.map(x=>A.number(x.actualReps??x.r)||0)):null,minReps:range.lo,techniqueFailed:(match.set||[]).some(x=>x.techniqueFailed),skippedSets:(match.set||[]).filter(x=>x.skipped).length,wellbeing:old.wellbeing?.status||old.wellbeing,fatigueHigh:old.wellbeing?.fatigueHigh===true}];
+          });
+          observations.forEach((x,i)=>{x.previousE1rm=observations[i-1]?.e1rm;});
+          rec.fatigue=A.fatigueSignals(observations);
+          if(rec.fatigue.suggestDeload)rec.reason+='; несколько признаков усталости: предложена ранняя разгрузка';
           const suggested=rec.nextSetSuggestion?.weight??rec.weight;
           if (JSON.stringify(set.recommendation) !== JSON.stringify(rec) || set.recommendedW !== suggested) {
             set.recommendation = rec;
@@ -96,18 +105,8 @@
             set.trainingIntensity292 = { owner: "workout-domain" };
             changed = true;
           }
-          if (
-            ex.programWeightMode === "adaptive" &&
-            (rec.sessionIds.length>0 || rec.nextSetSuggestion || rec.testWeekSuggestion) &&
-            !rec.planPreserved && rec.canApply!==false && rec.action!=="stop" &&
-            !set.manualOverride &&
-            set.weightSource !== "manual"
-          ) {
-            const before = set.w;
-            A.applyAuto(set, {...rec,weight:suggested});
-            set.plannedW = set.w;
-            changed = changed || before !== set.w;
-          }
+          // Applying a recommendation is an explicit action in training-engine.
+          // Recalculation never overwrites the assigned or manual weight.
           ex.trainingProgression292 = {
             actualEffort: rec.sessionIds.length>0,
             action: rec.action,
@@ -115,7 +114,7 @@
           };
           ex.weightDecision =
             ex.programWeightMode === "adaptive"
-              ? "adaptive_auto"
+              ? "recommendation_pending"
               : ex.weightDecision;
         }
       }

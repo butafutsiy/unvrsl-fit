@@ -76,11 +76,12 @@
   const rangeLabel=(a,b)=>a==null||b==null?'–':Math.abs(Number(a)-Number(b))<.001?fmt(a):`${fmt(a)}–${fmt(b)}`;
   function repDefaultsFromIntensity(w,kind){
     let lo=nullableNumber(w?.intensityMin),hi=nullableNumber(w?.intensityMax);if(lo!=null&&lo<=1)lo*=100;if(hi!=null&&hi<=1)hi*=100;
-    const mid=((lo??70)+(hi??75))/2,table=kind==='isolation'?[[65,15,20],[70,12,15],[75,12,15],[80,10,12],[85,8,12],[88,8,10],[90,6,10],[95,6,8],[101,4,6]]:[[65,12,15],[70,10,12],[75,8,10],[80,6,8],[85,5,7],[88,4,6],[90,3,5],[95,2,4],[101,1,3]];
-    const row=table.find(x=>mid<=x[0])||table.at(-1);return[row[1],row[2]]
+    return window.WorkoutDomain.bandPrescription([lo??70,hi??75],kind==='isolation').reps;
   }
   function weeklyDefaults(pid,wi,kind){
     const p=programById(pid),w=p?.weeks?.[Number(wi)]||{},profile=typeof window.unvrslWeekLoadProfileV263==='function'?window.unvrslWeekLoadProfileV263(p,Number(wi),true):null;
+    const canonical=w.weeklyLoadProfile?.[kind==='isolation'?'isolation':'base'];
+    if(canonical)return {week:Number(w.n)||Number(wi)+1,reps:canonical.reps,rpe:canonical.rpe,rir:canonical.rir,tempo:w.weeklyLoadProfile.tempo||recommendedTempo(kind),rest:kind==='isolation'?w.weeklyLoadProfile.isoRest:w.weeklyLoadProfile.baseRest,intensity:canonical.pct};
     const fallbackReps=repDefaultsFromIntensity(w,kind),reps=orderedPair(kind==='isolation'?(profile?.isolationRepMin??w.isolationRepMin):(profile?.baseRepMin??w.baseRepMin),kind==='isolation'?(profile?.isolationRepMax??w.isolationRepMax):(profile?.baseRepMax??w.baseRepMax),fallbackReps);
     const rpe=orderedPair(profile?.rpeMin??w.rpeMin,profile?.rpeMax??w.rpeMax,[7,8]),rir=[Math.max(0,10-rpe[1]),Math.max(0,10-rpe[0])];
     const rest=orderedPair(kind==='isolation'?(profile?.isolationRestMin??w.isolationRestMin):(profile?.baseRestMin??w.baseRestMin),kind==='isolation'?(profile?.isolationRestMax??w.isolationRestMax):(profile?.baseRestMax??w.baseRestMax),[autoRest(kind,'STANDARD'),autoRest(kind,'STANDARD')]);

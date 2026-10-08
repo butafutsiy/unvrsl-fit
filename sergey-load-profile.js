@@ -26,6 +26,7 @@
 
   function patchProgram(p){
     if(!isSergey(p)||!Array.isArray(p.weeks))return false;
+    if(p.cycleOptions)return false;
     let changed=false;
     p.weeks.forEach((week,index)=>{
       const n=Math.max(1,Math.min(8,Number(week?.n)||index+1)),pr=PROFILE[n];if(!week||!pr)return;
