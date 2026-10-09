@@ -143,30 +143,79 @@
   function accentColor(){const value=String(W.st?.accent||W.getComputedStyle?.(D.documentElement)?.getPropertyValue('--green')||'#0a84ff').trim();return /^#[0-9a-f]{6}$/i.test(value)?value:'#0a84ff'}
   const storyLayouts=[['poster','Постер','Полная сводка тренировки'],['minimal','Минимал','Компактный стикер поверх фото'],['exercises','Упражнения','Список и лучшие подходы'],['record','Рекорд','Один результат крупным планом'],['tonnage','Тоннаж','Объём в наглядном сравнении'],['progress','Динамика','Изменения и итоги занятия']];
   function recordPicker(s){if(layout!=='record')return '';return `<label class="sp471-record-picker">Упражнение <select aria-label="Упражнение для сторис" onchange="shareProgressExerciseV471(this.value)"><option value="">Автоматически · лучший результат</option>${exerciseRows(s).map(row=>`<option value="${esc(row.key)}" ${recordKey===row.key?'selected':''}>${esc(row.name)}</option>`).join('')}</select></label>`}
-  function markup(s,m){return `<div class="sp264" style="--share-accent:${accentColor()}"><div class="sp264-head"><button class="sp264-close" onclick="closeModal()" aria-label="Закрыть">×</button><h2>Universal Fit</h2><span style="width:42px"></span></div><div class="sp471-layouts" aria-label="Вариант сторис">${storyLayouts.map(([id,title])=>`<button type="button" aria-pressed="${layout===id}" onclick="shareProgressLayoutV471('${id}')">${title}</button>`).join('')}</div><div class="sp471-hint">${storyLayouts.find(x=>x[0]===layout)?.[2]||''}</div><div class="sp264-tabs"><button class="${m==='transparent'?'on':''}" onclick="shareProgressModeV264('transparent')">Без фона</button><button class="${m==='background'?'on':''}" onclick="shareProgressModeV264('background')">С фоном</button></div><div class="sp472-design" aria-label="Оформление"><button aria-pressed="${design==='basic'}" onclick="shareProgressDesignV472('basic')">Базовый</button><button aria-pressed="${design==='graphic'}" onclick="shareProgressDesignV472('graphic')">Белая графика</button></div>${recordPicker(s)}<div class="sp264-preview"><span>Готовим изображение…</span><img id="sp264Preview" hidden alt="Предпросмотр PNG Universal Fit"></div><div class="sp264-actions"><button id="sp264Save" class="btn full" onclick="shareProgressSaveV264()">Сохранить PNG</button><button id="sp264Share" class="btn primary full" onclick="shareProgressNativeV264()">Поделиться</button><div id="sp264Status" class="sp264-status"></div></div></div>`}
+  function markup(s,m){return `<div class="sp264" style="--share-accent:${accentColor()}"><div class="sp264-head"><button class="sp264-close" onclick="closeModal()" aria-label="Закрыть">×</button><h2>Universal Fit</h2><span style="width:42px"></span></div><div class="sp473-controls"><div class="sp471-layouts" aria-label="Вариант сторис">${storyLayouts.map(([id,title])=>`<button type="button" aria-pressed="${layout===id}" onclick="shareProgressLayoutV471('${id}')">${title}</button>`).join('')}</div><div class="sp471-hint">${storyLayouts.find(x=>x[0]===layout)?.[2]||''}</div><div class="sp264-tabs"><button class="${m==='transparent'?'on':''}" onclick="shareProgressModeV264('transparent')">Без фона</button><button class="${m==='background'?'on':''}" onclick="shareProgressModeV264('background')">С фоном</button></div><div class="sp472-design" aria-label="Оформление"><button aria-pressed="${design==='basic'}" onclick="shareProgressDesignV472('basic')">Базовый</button><button aria-pressed="${design==='graphic'}" onclick="shareProgressDesignV472('graphic')">Белая графика</button></div>${recordPicker(s)}${comparisonPicker(s)}</div><div class="sp264-preview"><span>Готовим изображение…</span><img id="sp264Preview" hidden alt="Предпросмотр PNG Universal Fit"></div><div class="sp264-actions"><button id="sp264Save" class="btn full" onclick="shareProgressSaveV264()">Сохранить PNG</button><button id="sp264Share" class="btn primary full" onclick="shareProgressNativeV264()">Поделиться</button><div id="sp264Status" class="sp264-status"></div></div></div>`}
 
   function roundRect(ctx,x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke()}}
   function wrapLines(ctx,text,maxWidth){const words=String(text||'').split(/\s+/),lines=[];let line='';for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word}else line=test}if(line)lines.push(line);return lines}
   function drawTextBlock(ctx,text,x,y,maxWidth,lineHeight,maxLines=3){const lines=wrapLines(ctx,text,maxWidth).slice(0,maxLines);lines.forEach((line,i)=>ctx.fillText(line,x,y+i*lineHeight));return y+lines.length*lineHeight}
   function buildStoryCanvas(s,variant){return buildStickerCanvas(s,variant,layout)}
+  // Illustrative reference masses, not measurements of the depicted objects.
+  const storyComparisons=[
+    ['kettlebell','Гиря',24,'gym',0,'гиря','гири','гирь'],
+    ['plates','Пара блинов',40,'gym',1,'пара блинов','пары блинов','пар блинов'],
+    ['barbell','Штанга',100,'gym',2,'штанга','штанги','штанг'],
+    ['bicycle','Велосипед',10,'gym',3,'велосипед','велосипеда','велосипедов'],
+    ['motorcycle','Мотоцикл',200,'gym',4,'мотоцикл','мотоцикла','мотоциклов'],
+    ['piano','Пианино',300,'gym',5,'пианино','пианино','пианино'],
+    ['citycar','Городской автомобиль',1000,'vehicles',0,'городской автомобиль','городских автомобиля','городских автомобилей'],
+    ['sedan','Легковой автомобиль',1500,'vehicles',1,'легковой автомобиль','легковых автомобиля','легковых автомобилей'],
+    ['van','Фургон',2500,'vehicles',2,'фургон','фургона','фургонов'],
+    ['pickup','Пикап',2200,'vehicles',3,'пикап','пикапа','пикапов'],
+    ['truck','Грузовик',10000,'vehicles',4,'грузовик','грузовика','грузовиков'],
+    ['bus','Автобус',13000,'vehicles',5,'автобус','автобуса','автобусов'],
+    ['horse','Лошадь',500,'animals',0,'лошадь','лошади','лошадей'],
+    ['rhino','Носорог',2300,'animals',3,'носорог','носорога','носорогов'],
+    ['hippo','Бегемот',1800,'animals',4,'бегемот','бегемота','бегемотов'],
+    ['elephant','Слон',5000,'animals',5,'слон','слона','слонов'],
+    ['train','Пассажирский вагон',30000,'heavy',2,'пассажирский вагон','пассажирского вагона','пассажирских вагонов'],
+    ['tank','Танк',60000,'heavy',3,'танк','танка','танков'],
+    ['plane','Пассажирский самолёт',80000,'heavy',4,'пассажирский самолёт','пассажирского самолёта','пассажирских самолётов'],
+    ['whale','Синий кит',120000,'heavy',5,'синий кит','синего кита','синих китов']
+  ].map(([kind,label,mass,atlas,cell,one,few,many])=>({kind,label,mass,atlas,cell,one,few,many}));
   function volumeComparison(value){
-    if(value>=16000)return{kind:'train',mass:30000,name:'пассажирского вагона',reference:'Вагон ≈ 30 000 кг'};
-    if(value>=8000)return{kind:'truck',mass:10000,name:'грузовика',reference:'Грузовик ≈ 10 000 кг'};
-    if(value>=1000)return{kind:'car',mass:1500,name:'легкового автомобиля',reference:'Автомобиль ≈ 1 500 кг'};
-    return{kind:'plates',mass:20,name:'блина',reference:'Один блин = 20 кг'};
+    return storyComparisons.find(c=>c.kind===comparisonKey)||storyComparisons.reduce((best,c)=>Math.abs(Math.log(Math.max(value,1)/c.mass))<Math.abs(Math.log(Math.max(value,1)/best.mass))?c:best,storyComparisons[0]);
   }
-  const storyArtwork={},storyArtworkTasks={};
+  function comparisonCaption(value,c){
+    const ratio=value/c.mass,amount=new Intl.NumberFormat('ru-RU',ratio>0&&ratio<1?{maximumSignificantDigits:2}:{maximumFractionDigits:1}).format(ratio);
+    const rounded=Number(amount.replace(/\s/g,'').replace(',','.')),integer=Number.isInteger(rounded),last=rounded%10,lastTwo=rounded%100;
+    const noun=!integer?c.few:last===1&&lastTwo!==11?c.one:last>=2&&last<=4&&(lastTwo<12||lastTwo>14)?c.few:c.many;
+    return `≈ ${amount} ${noun}`;
+  }
+  function comparisonPicker(s){
+    if(layout!=='tonnage')return '';
+    const current=volumeComparison(tonnage(s));
+    return `<div class="sp473-comparison"><label for="sp473Comparison">Сравнить с · 20 иллюстраций</label><div><select id="sp473Comparison" aria-label="Объект для сравнения тоннажа" onchange="shareProgressComparisonV473(this.value)"><option value="" ${!comparisonKey?'selected':''}>Автоматически · ${esc(current.label)}</option>${storyComparisons.map(c=>`<option value="${c.kind}" ${comparisonKey===c.kind?'selected':''}>${esc(c.label)} · ≈ ${plain(c.mass)} кг</option>`).join('')}</select><button type="button" aria-label="Другое изображение" onclick="shareProgressNextComparisonV473()">↻</button></div></div>`;
+  }
+  const storyArtwork={},storyArtworkTasks={},storyArtworkBounds={};
   function loadStoryArtwork(kind){
     if(storyArtwork[kind]||typeof Image==='undefined')return Promise.resolve();
     if(storyArtworkTasks[kind])return storyArtworkTasks[kind];
     storyArtworkTasks[kind]=new Promise(resolve=>{
       const image=new Image();let finished=false;
-      const done=()=>{if(finished)return;finished=true;clearTimeout(timer);if(image.naturalWidth||image.width)storyArtwork[kind]=image;resolve()};
+      const done=()=>{if(finished)return;finished=true;clearTimeout(timer);if(image.naturalWidth||image.width)storyArtwork[kind]=image;else delete storyArtworkTasks[kind];resolve()};
       const timer=setTimeout(done,8000);image.onload=done;image.onerror=done;
-      image.src=`assets/story-${kind}-v472.png`;
+      image.src=['gym','vehicles','animals','heavy'].includes(kind)?`assets/story-atlas-${kind}-v473.png`:`assets/story-${kind}-v472.png`;
     });return storyArtworkTasks[kind];
   }
   // Crisp canvas artwork shares the export alpha; all figures and text remain dynamic.
+  function measureComparisonArtwork(c){
+    if(storyArtworkBounds[c.kind]||!storyArtwork[c.atlas])return;
+    const image=storyArtwork[c.atlas],cw=(image.naturalWidth||image.width)/2,ch=(image.naturalHeight||image.height)/3;
+    const probe=D.createElement('canvas');probe.width=cw;probe.height=ch;const ctx=probe.getContext('2d');
+    ctx.drawImage(image,(c.cell%2)*cw,Math.floor(c.cell/2)*ch,cw,ch,0,0,cw,ch);
+    const pixels=ctx.getImageData(0,0,cw,ch).data;let left=cw,top=ch,right=0,bottom=0;
+    for(let y=0;y<ch;y++)for(let x=0;x<cw;x++)if(pixels[(y*cw+x)*4+3]>16){left=Math.min(left,x);top=Math.min(top,y);right=Math.max(right,x);bottom=Math.max(bottom,y)}
+    if(left>right)return;
+    left=Math.max(0,left-4);top=Math.max(0,top-4);right=Math.min(cw-1,right+4);bottom=Math.min(ch-1,bottom+4);
+    storyArtworkBounds[c.kind]={x:(c.cell%2)*cw+left,y:Math.floor(c.cell/2)*ch+top,w:right-left+1,h:bottom-top+1};
+  }
+  function drawComparisonArtwork(ctx,c,cx,cy,w,h){
+    const image=storyArtwork[c.atlas];if(!image)return;
+    const cw=(image.naturalWidth||image.width)/2,ch=(image.naturalHeight||image.height)/3;
+    const crop=storyArtworkBounds[c.kind]||{x:(c.cell%2)*cw,y:Math.floor(c.cell/2)*ch,w:cw,h:ch};
+    const scale=Math.min(w/crop.w,h/crop.h),dw=crop.w*scale,dh=crop.h*scale;
+    ctx.drawImage(image,crop.x,crop.y,crop.w,crop.h,cx-dw/2,cy-dh/2,dw,dh);
+  }
   function drawStoryArtwork(ctx,kind,cx,cy,scale=1){
     ctx.save();ctx.translate(cx,cy);ctx.scale(scale,scale);ctx.strokeStyle='#f5f5f7';ctx.fillStyle='#f5f5f7';ctx.lineWidth=3;ctx.lineJoin='round';ctx.lineCap='round';
     if(storyArtwork[kind]){const image=storyArtwork[kind],w=kind==='plates'?300:760,h=w*(image.naturalHeight||image.height)/(image.naturalWidth||image.width);ctx.drawImage(image,-w/2,-h/2,w,h);ctx.restore();return}
@@ -253,9 +302,9 @@
       separator(900);text(`${d.time}  ·  ${d.sets} рабочих подходов`,L,958,27,muted,600);
     }else if(style==='tonnage'){
       text('СЕГОДНЯ ПОДНЯТО',L,174,25,muted,700);hero(355,148);
-      const comparison=volumeComparison(d.tonnage);drawStoryArtwork(x,comparison.kind,540,610,1.1);
-      separator(803);text('ПРИМЕРНО СТОЛЬКО ВЕСИТ',L,852,21,muted,600);text(`Масса ${comparison.name} × ${fmt(d.tonnage/comparison.mass)}`,L,914,43,ink,700);
-      text(comparison.reference,L,959,23,muted);text('Тоннаж – сумма нагрузки всех повторений за тренировку.',L,1008,20,muted);
+      const comparison=volumeComparison(d.tonnage);drawComparisonArtwork(x,comparison,540,610,850,340);
+      separator(803);text('ПРИМЕРНО СТОЛЬКО ВЕСИТ',L,852,21,muted,600);text(comparisonCaption(d.tonnage,comparison),L,914,52,ink,700);
+      text(`Масса для сравнения ≈ ${plain(comparison.mass)} кг`,L,959,23,muted);text('Сумма нагрузки всех повторений · массы объектов приблизительные',L,1008,20,muted);
     }else{
       title(d.title);separator(270);text('ДИНАМИКА ТРЕНИРОВКИ',L,326,22,accent,700);
       d.progress.forEach((item,i)=>{const y=424+i*169;text(item.title,L,y,48,accent,800);text(item.sub,L,y+49,26,muted,500);separator(y+92)});
@@ -286,20 +335,35 @@
 html[data-theme="light"] .sp471-layouts button{background:#eceef3;color:#626773;border-color:#d8dbe3}html[data-theme="light"] .sp471-layouts button[aria-pressed=true]{color:var(--share-accent);border-color:var(--share-accent);background:#e6efff}
 html[data-theme="light"] .sp472-design button{color:#626773}html[data-theme="light"] .sp472-design button[aria-pressed=true]{color:var(--share-accent)}
 @media(max-height:700px){.sp264-head{margin-bottom:8px}.sp471-layouts button{padding:7px 4px}.sp264-tabs{margin-top:7px}.sp264-preview{margin:4px 0 6px;padding:8px}.sp264-actions .btn{min-height:42px}}
+
+html body #modal.modal:has(.sp264){height:100dvh!important;box-sizing:border-box;flex-direction:column!important;justify-content:flex-start!important;align-items:center!important}
+html body #modal.modal:has(.sp264) #sheet.sheet{display:flex!important;flex-direction:column!important;flex:1 1 0!important;height:auto!important;max-height:none!important;min-height:0!important;margin:0 auto!important;padding:0!important;overflow:hidden!important}
+html body #modal.modal #sheet .sp264{display:flex;flex-direction:column;flex:1 1 0;min-height:0;height:auto!important;margin:0 auto!important;width:100%;padding:12px 16px 0!important;overflow:hidden}
+html body #modal.modal #sheet .sp264-head{display:none!important}
+.sp473-controls{flex:0 1 auto;min-height:0;max-height:40dvh;overflow:auto;padding:0 0 4px;scrollbar-width:thin}
+html body #modal.modal #sheet .sp264-preview{position:relative;display:block;flex:1 1 0!important;min-height:130px!important;padding:0!important;overflow:hidden;margin:8px 0 10px}
+html body #modal.modal #sheet .sp264-preview img{position:absolute;inset:10px;width:calc(100% - 20px)!important;height:calc(100% - 20px)!important;max-width:none!important;max-height:none!important;object-fit:contain!important;object-position:center;box-shadow:none!important}
+.sp264-preview>span{position:absolute;inset:0;display:grid;place-items:center;font-size:13px;color:#a9aeb9}
+html body #modal.modal #sheet .sp264-actions{flex:0 0 auto;position:static;margin:0 -16px!important;padding:10px 16px calc(12px + env(safe-area-inset-bottom))!important}
+.sp473-comparison{margin-top:5px}.sp473-comparison label{display:block;color:#999ea9;font-size:11px;margin-bottom:5px}.sp473-comparison>div{display:flex;gap:6px}.sp473-comparison select{flex:1;width:0;border:1px solid #393d45;border-radius:10px;padding:9px;color:#eee;background:#22252b;font-size:12px}.sp473-comparison button{flex:0 0 38px;border:1px solid #393d45;border-radius:10px;font-size:24px;line-height:1;background:#22252b;color:var(--share-accent)}
+@media(max-height:500px){html body #modal.modal #sheet .sp264-preview{min-height:64px!important}.sp473-controls{max-height:25dvh}.sp264-actions .btn{min-height:36px}}
+html[data-theme="light"] .sp473-comparison select,html[data-theme="light"] .sp473-comparison button{background:#eceef3;border-color:#d8dbe3;color:#343942}
 `;D.head.appendChild(style)
   }
-  let active=null,mode='transparent',layout='poster',design='basic',recordKey='',prepared=null,prepareToken=0,previewUrl=null;
+  let active=null,mode='transparent',layout='poster',design='basic',recordKey='',comparisonKey='',prepared=null,prepareToken=0,previewUrl=null;
   const status=t=>{const e=D.getElementById('sp264Status');if(e)e.textContent=t||''};
   const busy=v=>{for(const id of ['sp264Save','sp264Share']){const b=D.getElementById(id);if(b)b.disabled=!!v}};
-  async function prepareExport(){if(!active)return null;const token=++prepareToken;prepared=null;busy(true);status('Готовим PNG…');try{if(layout==='tonnage')await loadStoryArtwork('train');if(design==='graphic')await loadStoryArtwork('plates');if(token!==prepareToken)return null;const canvas=buildStoryCanvas(active,mode),blob=await canvasBlob(canvas);if(token!==prepareToken)return null;if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=URL.createObjectURL(blob);const img=D.getElementById('sp264Preview');if(img){img.src=previewUrl;img.hidden=false;img.previousElementSibling?.remove()}prepared={blob,file:new File([blob],`universal-fit-${String(active.date||new Date().toISOString().slice(0,10))}-${layout}-${mode}-${design}.png`,{type:'image/png'}),mode,layout,design,recordKey,id:String(active.id||''),accent:accentColor()};status(`PNG готов · ${canvas.width} × ${canvas.height}`);return prepared}catch(e){console.error('share v264: '+(e?.stack||e));status('Не удалось подготовить изображение');return null}finally{if(token===prepareToken)busy(false)}}
-  const ready=()=>prepared&&prepared.mode===mode&&prepared.layout===layout&&prepared.design===design&&prepared.recordKey===recordKey&&prepared.id===String(active?.id||'')&&prepared.accent===accentColor()?prepared:null;
+  async function prepareExport(){if(!active)return null;const token=++prepareToken;prepared=null;busy(true);status('Готовим PNG…');try{if(layout==='tonnage'){const c=volumeComparison(tonnage(active));await loadStoryArtwork(c.atlas);if(!storyArtwork[c.atlas]&&typeof Image!=='undefined')throw new Error('Иллюстрация не загрузилась');if(token!==prepareToken)return null;measureComparisonArtwork(c)};if(design==='graphic')await loadStoryArtwork('plates');if(token!==prepareToken)return null;const canvas=buildStoryCanvas(active,mode),blob=await canvasBlob(canvas);if(token!==prepareToken)return null;if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=URL.createObjectURL(blob);const img=D.getElementById('sp264Preview');if(img){img.src=previewUrl;img.hidden=false;img.previousElementSibling?.remove()}prepared={blob,file:new File([blob],`universal-fit-${String(active.date||new Date().toISOString().slice(0,10))}-${layout}-${mode}-${design}-${comparisonKey||'auto'}.png`,{type:'image/png'}),mode,layout,design,recordKey,comparisonKey,id:String(active.id||''),accent:accentColor()};status(`PNG готов · ${canvas.width} × ${canvas.height}`);return prepared}catch(e){console.error('share v264: '+(e?.stack||e));status('Не удалось подготовить изображение');return null}finally{if(token===prepareToken)busy(false)}}
+  const ready=()=>prepared&&prepared.mode===mode&&prepared.layout===layout&&prepared.design===design&&prepared.comparisonKey===comparisonKey&&prepared.recordKey===recordKey&&prepared.id===String(active?.id||'')&&prepared.accent===accentColor()?prepared:null;
   function download(blob){const u=URL.createObjectURL(blob),a=D.createElement('a');a.href=u;a.download=`unvrsl-fit-${String(active?.date||new Date().toISOString().slice(0,10))}.png`;a.rel='noopener';D.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
   function nativeShare(file){if(!navigator.share)return null;try{if(navigator.canShare&&!navigator.canShare({files:[file]}))return null;return navigator.share({files:[file]})}catch(_){return null}}
 
-  W.openShareProgressV264=s=>{installCss();installStoryCss();active=s||W.st?.current||null;if(!active)return W.toast?.('Нет данных тренировки');mode='transparent';layout='poster';design='basic';recordKey='';prepared=null;prepareToken++;W.modal?.(markup(active,mode));const sh=D.getElementById('sheet');if(sh)sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
+  W.openShareProgressV264=s=>{installCss();installStoryCss();active=s||W.st?.current||null;if(!active)return W.toast?.('Нет данных тренировки');mode='transparent';layout='poster';design='basic';recordKey='';comparisonKey='';prepared=null;prepareToken++;W.modal?.(markup(active,mode));const sh=D.getElementById('sheet');if(sh)sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
   W.shareProgressModeV264=m=>{if(!['transparent','background'].includes(m)||!active)return;mode=m;prepared=null;prepareToken++;const sh=D.getElementById('sheet');if(!sh)return;sh.innerHTML=markup(active,mode);sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
   W.shareProgressLayoutV471=value=>{if(!storyLayouts.some(x=>x[0]===value)||!active)return;layout=value;prepared=null;prepareToken++;const sh=D.getElementById('sheet');if(!sh)return;sh.innerHTML=markup(active,mode);sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
   W.shareProgressDesignV472=value=>{if(!['basic','graphic'].includes(value)||!active)return;design=value;prepared=null;prepareToken++;const sh=D.getElementById('sheet');if(sh)sh.innerHTML=markup(active,mode);requestAnimationFrame(()=>prepareExport())};
+  W.shareProgressComparisonV473=value=>{if(!active||(value&&!storyComparisons.some(c=>c.kind===value)))return;comparisonKey=value;prepared=null;prepareToken++;const sh=D.getElementById('sheet');if(sh)sh.innerHTML=markup(active,mode);requestAnimationFrame(()=>prepareExport())};
+  W.shareProgressNextComparisonV473=()=>{if(!active)return;const current=volumeComparison(tonnage(active)),i=storyComparisons.indexOf(current);W.shareProgressComparisonV473(storyComparisons[(i+1)%storyComparisons.length].kind)};
   W.shareProgressExerciseV471=key=>{if(!active||(key&&!exerciseRows(active).some(row=>row.key===key)))return;recordKey=key;prepared=null;prepareToken++;const sh=D.getElementById('sheet');if(sh)sh.innerHTML=markup(active,mode);requestAnimationFrame(()=>prepareExport())};
   W.shareProgressSaveV264=()=>{const p=ready();if(!p)return status('Изображение ещё готовится…');if(/iPad|iPhone|iPod/.test(navigator.userAgent)){const r=nativeShare(p.file);if(r){r.catch(e=>{if(e?.name!=='AbortError')download(p.blob)});return}}download(p.blob);W.toast?.('Изображение сохранено')};
   W.shareProgressNativeV264=()=>{const p=ready();if(!p)return status('Изображение ещё готовится…');const r=nativeShare(p.file);if(r){r.catch(e=>{if(e?.name!=='AbortError'){console.warn(e);download(p.blob)}});return}download(p.blob);W.toast?.('Карточка сохранена')};

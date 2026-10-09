@@ -1,5 +1,5 @@
 "use strict";
-const SW_RELEASE = "v472",
+const SW_RELEASE = "v473",
   CACHE_PREFIX = "unvrsl-",
   SHELL = `${CACHE_PREFIX}shell-${SW_RELEASE}`,
   MEDIA = `${CACHE_PREFIX}media-${SW_RELEASE}`;
@@ -15,7 +15,7 @@ self.addEventListener("install", (event) => {
         ...[...html.matchAll(/<script src="([^"]+)"/g)].map((x) => x[1]),
         ...[...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((x) => x[1]),
       ];
-      await cache.addAll([...urls,"assets/story-train-v472.png","assets/story-plates-v472.png","intake.html","intake.css?v=472","intake-page.js?v=472"]);
+      await cache.addAll([...urls,"assets/story-plates-v472.png","assets/story-atlas-gym-v473.png","assets/story-atlas-vehicles-v473.png","assets/story-atlas-animals-v473.png","assets/story-atlas-heavy-v473.png","intake.html","intake.css?v=473","intake-page.js?v=473"]);
       // The boot gate also needs dynamically loaded local owners when offline.
       // Resolve their exact current URLs from the installed loader itself.
       const loader = await cache.match(`frequent-patch.js?v=${SW_RELEASE.slice(1)}`);
