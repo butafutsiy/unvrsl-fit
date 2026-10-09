@@ -29,7 +29,7 @@
     return Number.isFinite(value)?Math.round(value*10)/10:null;
   }
   const average=values=>values.length?values.reduce((sum,v)=>sum+v,0)/values.length:null;
-  function build(sessions,reg,weights,D,{group='all',now=new Date(),deleted=[]}={}){
+  function build(sessions,reg,weights,D,{group='all',now=new Date(),deleted=[],equipmentProfiles={}}={}){
     const end=new Date(now);end.setHours(0,0,0,0);end.setDate(end.getDate()+1);
     const seen=new Set(),removed=new Set(deleted.map(String)),rows=new Map();
     for(const session of [...sessions].sort((a,b)=>String(a.date).localeCompare(String(b.date))||(a.started||0)-(b.started||0))){
@@ -42,9 +42,11 @@
         for(const raw of e.set||[]){
           const s={...raw,w:raw.w??raw.weight,r:raw.actualReps??raw.r??raw.reps,ok:raw.ok??(raw.completed===true||raw.done===true||raw.status==='completed')};
           if(!D.complete(e,s,reg))continue;
-          const equipment=String(s.equipmentProfileId||e.equipmentProfileId||e.equipmentProfile?.id||e.machineId||'');
-          const key=JSON.stringify([reg.identity(e),type,equipment,type==='per_side'?[e.loadedSides??2,e.implementWeight??0]:type==='per_dumbbell'?(e.implementCount??2):'']);
-          const row=rows.get(key)||{key,base:resolved.n||e.n,group:g,type,equipment,equipmentName:s.equipmentSnapshot?.name||e.equipmentProfile?.name||(equipment?'Отдельное оборудование':''),points:[],sets:0};
+          const equipment=String(s.equipmentProfileId||s.equipmentSnapshot?.id||e.equipmentProfileId||e.equipmentProfile?.id||e.machineId||'');
+          const configuration=type==='per_side'?[e.loadedSides??2,e.implementWeight??0]:type==='per_dumbbell'?(e.implementCount??2):'';
+          const familyKey=JSON.stringify([reg.identity(e),type,configuration]);
+          const key=JSON.stringify([reg.identity(e),type,equipment,configuration]);
+          const row=rows.get(key)||{key,familyKey,base:resolved.n||e.n,group:g,type,equipment,equipmentName:s.equipmentSnapshot?.name||(e.equipmentProfile?.id===equipment?e.equipmentProfile.name:'')||equipmentProfiles[equipment]?.name||(equipment?'Оборудование '+equipment:'Оборудование не указано'),points:[],sets:0};
           let p=row.points.find(x=>x.id===sid);if(!p){p={id:sid,date,started:session.started,e1:null,maxWeight:0,maxReps:0,sets:0,entries:[],estimateSet:null,deload:session.deload===true||session.isDeload===true||((!session.programId||session.programId==='__builtin_cycle__')&&['A1','A2','B','C','D'].includes(session.c)&&[4,6].includes(Number(session.w)))};row.points.push(p)}
           const w=D.number(s.w)??0,r=D.number(s.actualReps??s.r),method=D.method(e,s),role=D.setRole(e,s);
           const e1=estimate(w,r,type);
@@ -63,5 +65,23 @@
       return {...row,meanE1:average(values),estimateCount:values.length,first:row.points[0],last:row.points.at(-1),workouts:row.points.length,bestWeight:Math.max(...row.points.map(p=>p.maxWeight)),best:Math.max(0,...row.points.map(p=>p.e1||0)),growth,comparable:estimates.length,estimateDate:last?.date};
     }).sort((a,b)=>b.last.date.localeCompare(a.last.date)||a.base.localeCompare(b.base));
   }
-  return {build,groups,muscle,estimate};
+  // Group the exercise for display only. Prescription history stays equipment-specific.
+  function families(rows){
+    const grouped=new Map();
+    for(const row of rows){
+      const key=row.familyKey||row.key;
+      if(!grouped.has(key))grouped.set(key,[]);
+      grouped.get(key).push(row);
+    }
+    return [...grouped.entries()].map(([key,variants])=>{
+      if(variants.length===1)return variants[0];
+      const points=variants.flatMap(v=>{
+        const baseline=v.points.find(p=>p.e1>0)?.e1;
+        return v.points.map(p=>({...p,equipment:v.equipment,equipmentName:v.equipmentName,variantKey:v.key,indexE1:baseline&&p.e1!=null?100*p.e1/baseline:null}));
+      }).sort((a,b)=>a.date.localeCompare(b.date)||(a.started||0)-(b.started||0)||a.variantKey.localeCompare(b.variantKey));
+      const comparable=variants.filter(v=>v.growth!=null);
+      return {key,base:variants[0].base,type:variants[0].type,group:variants[0].group,variants,points,last:points.at(-1),first:points[0],sets:variants.reduce((sum,v)=>sum+v.sets,0),workouts:new Set(points.map(p=>p.id)).size,growth:average(comparable.map(v=>v.growth)),comparableEquipment:comparable.length};
+    }).sort((a,b)=>b.last.date.localeCompare(a.last.date)||a.base.localeCompare(b.base));
+  }
+  return {build,families,groups,muscle,estimate};
 });

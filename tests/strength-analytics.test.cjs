@@ -56,3 +56,38 @@ test('assistance and bodyweight are not presented as external-load 1RM',()=>{
   assert.equal(x.last.e1,null);assert.equal(x.meanE1,null);assert.equal(x.estimateCount,0);
  }
 });
+
+test('one exercise family preserves equipment loads and normalizes each baseline independently',()=>{
+ const rows=build([
+  session('m1','2026-09-01',[set(100,1)],{},{equipmentProfileId:'matrix',equipmentProfile:{id:'matrix',name:'Matrix'}}),
+  session('f1','2026-09-02',[set(300,1)],{},{equipmentProfileId:'foreman',equipmentProfile:{id:'foreman',name:'Foreman'}}),
+  session('m2','2026-09-03',[set(110,1)],{},{equipmentProfileId:'matrix'}),
+  session('f2','2026-09-04',[set(360,1)],{},{equipmentProfileId:'foreman'})
+ ]);
+ const [family]=A.families(rows);
+ assert.equal(family.variants.length,2);assert.equal(family.workouts,4);assert.equal(family.sets,4);
+ assert.deepEqual(family.points.map(p=>Math.round(p.indexE1)),[100,100,110,120]);
+ assert.ok(Math.abs(family.growth-15)<1e-10);assert.equal(family.comparableEquipment,2);
+ assert.equal(family.meanE1,undefined);assert.equal(family.bestWeight,undefined);
+ assert.deepEqual(family.points.map(p=>p.maxWeight),[100,300,110,360]);
+ assert.equal(rows.find(r=>r.equipment==='matrix').meanE1,105);
+});
+test('new and unknown equipment remain visible without contributing invented growth',()=>{
+ const [family]=A.families(build([
+  session('old','2026-09-01',[set(50,1)]),
+  session('new','2026-09-02',[set(500,1,{equipmentSnapshot:{id:'new',name:'New'}})])
+ ]));
+ assert.equal(family.variants.length,2);assert.equal(family.growth,null);
+ assert.equal(family.points[0].equipmentName,'Оборудование не указано');
+ assert.equal(family.points[1].equipmentName,'New');
+ assert.deepEqual(family.points.map(p=>p.indexE1),[100,100]);
+});
+test('families never merge incompatible load units and count same-session equipment once',()=>{
+ const rows=build([session('mixed','2026-09-01',[set(100,1,{equipmentProfileId:'m'}),set(200,1,{equipmentProfileId:'f'})]),session('db','2026-09-02',[set(20,1)],{},{loadType:'per_dumbbell'})]);
+ const families=A.families(rows);assert.equal(families.length,2);
+ const family=families.find(f=>f.variants);assert.equal(family.workouts,1);assert.equal(family.points.length,2);assert.equal(family.sets,2);
+});
+test('set-level equipment names do not inherit a different exercise-level machine',()=>{
+ const [row]=build([session('a','2026-09-01',[set(100,1,{equipmentProfileId:'matrix'})],{},{equipmentProfileId:'foreman',equipmentProfile:{id:'foreman',name:'Foreman'}})],{equipmentProfiles:{matrix:{name:'Matrix'}}});
+ assert.equal(row.equipment,'matrix');assert.equal(row.equipmentName,'Matrix');
+});
