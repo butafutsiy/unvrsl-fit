@@ -221,9 +221,9 @@ test("isolation uses its own strength estimate and reports a percentage conflict
  assert.ok(rec.weeklyIntensity.estimatedMin>0);assert.equal(rec.weeklyIntensity.applied,false);
 });
 test("default increments depend on load type and exercise class until equipment overrides them",()=>{
- assert.equal(A.profile({n:"Разгибание ног",type:"isolation",eq:"leverage machine",tg:"quadriceps"},reg).step,2.5);
+ assert.equal(A.profile({n:"Разгибание ног",type:"isolation",eq:"leverage machine",tg:"quadriceps"},reg).step,5);
  assert.equal(A.profile({n:"Жим ногами",type:"compound",eq:"sled machine",tg:"quadriceps"},reg).step,5);
- assert.equal(A.profile({n:"Махи в блоке",type:"isolation",eq:"cable",tg:"delts"},reg).step,1);
+ assert.equal(A.profile({n:"Махи в блоке",type:"isolation",eq:"cable",tg:"delts"},reg).step,5);
  assert.equal(A.profile(ex({...p("foreman"),weightStep:7.5},[]),reg).step,7.5);
 });
 test("time-based exercise ignores a stray strength catalog load type",()=>{

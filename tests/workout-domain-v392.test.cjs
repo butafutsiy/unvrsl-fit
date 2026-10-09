@@ -329,7 +329,7 @@ test("all 189 stable catalog IDs are unique and weight profiles are explicit", (
   assert.equal(new Set(catalog.map((x) => x.id)).size, 189);
   for (const e of catalog) {
     assert.ok(e.loadType, e.n);
-    assert.ok(e.weightProfile.step > 0, e.n);
+    assert.ok(["bodyweight_only","time","distance","repetitions_only"].includes(e.loadType)?e.weightProfile.step===0:e.weightProfile.step>0, e.n);
     assert.ok(e.resultRule, e.n);
     assert.ok(e.coaching?.cues?.length >= 3, e.n);
     assert.ok(e.coaching?.mistakes?.length >= 3, e.n);

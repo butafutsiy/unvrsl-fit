@@ -211,20 +211,10 @@
     const row = reg?.resolve(e),
       type = loadType(e, reg),
       eq = e?.eq || row?.eq;
-    const kind = String(e?.type || row?.type || "compound").toLowerCase();
-    const muscle = norm(e?.tg || row?.tg || e?.bp || row?.bp);
-    const inferredStep =
-      type === "per_dumbbell"
-        ? 2
-        : type === "bodyweight_assisted"
-          ? 5
-          : kind === "isolation" && /delt|shoulder|biceps|triceps|предплеч|дельт|плеч|бицеп|трицеп/.test(muscle)
-            ? 1
-            : kind === "isolation"
-              ? 2.5
-              : ["cable", "leverage machine", "sled machine"].includes(eq)
-                ? 5
-                : 2.5;
+    const noWeight=["bodyweight_only","time","distance","repetitions_only"].includes(type);
+    const inferredStep=noWeight?0:type==="per_dumbbell"?2:type==="bodyweight_added"?2.5:
+      type==="bodyweight_assisted"?5:eq==="kettlebell"?4:
+      ["cable","leverage machine","sled machine"].includes(eq)?5:2.5;
     const defaults = {
       step: inferredStep,
       min: 0,
@@ -238,9 +228,10 @@
       ...row?.weightProfile,
       ...e?.weightProfile,
       ...overrides[reg?.identity(e)],
-      ...(number(equipment.weightStep)>0?{step:number(equipment.weightStep)}:{}),
+      ...(number(equipment.weightStep)>0?{step:number(equipment.weightStep),available:[]}:{}),
       ...(available.length?{available}:{}),
       ...(equipment.loadUnit==="TOTAL"&&number(equipment.implementWeight)>0?{min:number(equipment.implementWeight)}:{}),
+      ...(noWeight?{step:0,available:[],min:0}:{}),
       loadType: type,
     };
   }
@@ -1267,14 +1258,14 @@
       weight,
       series,calibration,reasonCodes,repetitionGoal,
       analogousSessionId:analogous?.[0]?.session.id??null,
-      calculationVersion:467,
+      calculationVersion:469,
       canApply:(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
       allowedWeightRange:corridor?{min:Math.min(...corridor),max:Math.max(...corridor)}:null,
       calculatedWeight:weeklyCalculated?weight:projected,
       weeklyCalculated:!!weeklyCalculated,
       profileWarnings:prescription.warnings,
       scope:nextSetSuggestion?'next_set':'next_session',
-      proposalKey:proposalFingerprint([467,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
+      proposalKey:proposalFingerprint([469,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
       raw,
       previous: prior,
       basis:ids.length?{date:sessionDate(latest[0]?.session??strength.source?.session),weight:prior??number(strength.source?.set.w),planned:seed||null,estimatedOneRepMax:latestOneRepMax!=null?Number(latestOneRepMax.toFixed(1)):null,sets:latest.map(x=>({weight:number(x.set.w),reps:number(x.set.actualReps??x.set.r),rpe:effort(x)}))}:null,

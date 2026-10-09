@@ -65,6 +65,7 @@
     running = true;
     let changed = false;
     try {
+      W.equipmentAttachDefaults405?.(cur);
       for (const ex of cur.ex || []) {
         if (["time","distance"].includes(A.loadType(ex,workoutRegistry))) {
           for (const set of ex.set || []) {

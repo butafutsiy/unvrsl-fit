@@ -21,7 +21,7 @@ const fields = {
   loadType: (e) => e.loadType,
   cues: (e) => e.coaching?.cues?.length >= 3,
   mistakes: (e) => e.coaching?.mistakes?.length >= 3,
-  step: (e) => e.weightProfile?.step > 0,
+  step: (e) => ["bodyweight_only","time","distance","repetitions_only"].includes(e.loadType) ? e.weightProfile?.step === 0 : e.weightProfile?.step > 0,
   resultRule: (e) => e.resultRule?.metric,
   start: (e) => e.coaching?.start,
   movement: (e) => e.coaching?.sequence?.length,
@@ -46,7 +46,7 @@ const report = {
     .filter((e) => ![e.gif, e.image].some(hasMedia))
     .map((e) => ({ id: e.id, name: e.n })),
   missingStep: rows
-    .filter((e) => !(e.weightProfile?.step > 0))
+    .filter((e) => !fields.step(e))
     .map((e) => ({ id: e.id, name: e.n })),
   duplicateIds: rows.map((e) => e.id).filter((id, i, a) => a.indexOf(id) !== i),
   note: "Completeness checks fields and local media files, not external URL availability or coaching accuracy. No fallback satisfies a missing field.",

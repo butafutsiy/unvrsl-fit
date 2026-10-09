@@ -1,5 +1,5 @@
 'use strict';
-// Canonical 188 exercise IDs; source metadata: ExerciseDB, media © Gym visual.
+// Canonical exercise IDs; source metadata: ExerciseDB, media © Gym visual.
 window.UNVRSL_EXERCISES=[
   {
     "id": "og:2466",
@@ -30,12 +30,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -228,12 +228,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "time",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "time",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -291,12 +291,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -542,12 +542,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -867,12 +867,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -1002,12 +1002,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -1204,7 +1204,7 @@ window.UNVRSL_EXERCISES=[
     "loadType": "external_total",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 4,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
@@ -3525,12 +3525,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -4506,7 +4506,7 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_added",
     "implementCount": 1,
     "weightProfile": {
-      "step": 5,
+      "step": 2.5,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
@@ -4615,7 +4615,10 @@ window.UNVRSL_EXERCISES=[
     "bp": "chest",
     "tg": "pectorals",
     "eq": "weighted",
-    "secondary": ["triceps", "delts"],
+    "secondary": [
+      "triceps",
+      "delts"
+    ],
     "gif": "assets/exercises/weighted-dip-v424.gif",
     "image": "assets/exercises/weighted-dip-v424.gif",
     "instructions": {
@@ -4625,7 +4628,11 @@ window.UNVRSL_EXERCISES=[
     "custom": false,
     "canonical": true,
     "canonicalKey": "weighted_dip",
-    "aliases": ["Отжимания на брусьях с весом", "Брусья с отягощением", "weighted dip"],
+    "aliases": [
+      "Отжимания на брусьях с весом",
+      "Брусья с отягощением",
+      "weighted dip"
+    ],
     "loadType": "bodyweight_added",
     "implementCount": 1,
     "weightProfile": {
@@ -4636,20 +4643,45 @@ window.UNVRSL_EXERCISES=[
       "units": "bodyweight_added",
       "configurable": true
     },
-    "resultRule": {"e1rm": true, "metric": "load_reps"},
+    "resultRule": {
+      "e1rm": true,
+      "metric": "load_reps"
+    },
     "type": "compound",
     "description": "Записывай только дополнительный вес: 0 кг означает подход без отягощения. Для расчётного 1ПМ нужна фактическая масса тела; RPE и RIR можно указывать по желанию.",
     "effortGuide": "Ориентир для рабочих подходов: RPE 7–8 (RIR 2–3). Подбирай вес по технике и самочувствию.",
     "coaching": {
       "movement": "dip",
       "start": "Проверь крепление пояса и диска. Возьмись за устойчивые параллельные брусья, опусти плечи, слегка наклони корпус и удерживай ноги вместе.",
-      "sequence": ["Сгибай локти, опускаясь до контролируемой глубины без болезненного натяжения плеча.", "Выжми себя вверх, не раскачивая груз и не закидывая ноги."],
+      "sequence": [
+        "Сгибай локти, опускаясь до контролируемой глубины без болезненного натяжения плеча.",
+        "Выжми себя вверх, не раскачивая груз и не закидывая ноги."
+      ],
       "breathing": "Вдох на опускании, выдох на подъёме; не задерживай дыхание надолго.",
-      "cues": ["Держи плечи вдали от ушей", "Сохраняй умеренный наклон корпуса", "Веди предплечья близко к вертикали", "Контролируй диск и одинаковую глубину повторений"],
-      "mistakes": ["Рывки ногами и раскачивание груза", "Провал плеч вперёд и слишком глубокое опускание", "Разведение локтей строго в стороны", "Слишком большой вес в ущерб амплитуде"],
-      "safety": ["Убедись, что брусья устойчивы, а пояс и диск закреплены.", "Уменьши амплитуду или останови подход при боли в передней части плеча.", "Начни с собственного веса и добавляй нагрузку только при устойчивой технике."]
+      "cues": [
+        "Держи плечи вдали от ушей",
+        "Сохраняй умеренный наклон корпуса",
+        "Веди предплечья близко к вертикали",
+        "Контролируй диск и одинаковую глубину повторений"
+      ],
+      "mistakes": [
+        "Рывки ногами и раскачивание груза",
+        "Провал плеч вперёд и слишком глубокое опускание",
+        "Разведение локтей строго в стороны",
+        "Слишком большой вес в ущерб амплитуде"
+      ],
+      "safety": [
+        "Убедись, что брусья устойчивы, а пояс и диск закреплены.",
+        "Уменьши амплитуду или останови подход при боли в передней части плеча.",
+        "Начни с собственного веса и добавляй нагрузку только при устойчивой технике."
+      ]
     },
-    "mediaProvenance": {"kind": "generated_animated_keyframes", "reviewed": "2026-09-25", "referenceStyle": "white anatomical catalog thumbnail", "note": "Two dip poses; barefoot; belt with plate"}
+    "mediaProvenance": {
+      "kind": "generated_animated_keyframes",
+      "reviewed": "2026-09-25",
+      "referenceStyle": "white anatomical catalog thumbnail",
+      "note": "Two dip poses; barefoot; belt with plate"
+    }
   },
   {
     "id": "canon:weighted_pushup",
@@ -5001,12 +5033,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "time",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "time",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -5069,7 +5101,7 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_assisted",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 5,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
@@ -5196,7 +5228,7 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_added",
     "implementCount": 1,
     "weightProfile": {
-      "step": 5,
+      "step": 2.5,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
@@ -5516,12 +5548,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -5896,12 +5928,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -5957,12 +5989,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -6026,12 +6058,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -6090,12 +6122,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -6604,12 +6636,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -6668,12 +6700,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "time",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "time",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -8017,12 +8049,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -8152,7 +8184,7 @@ window.UNVRSL_EXERCISES=[
     "loadType": "external_total",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 4,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
@@ -8772,12 +8804,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -9547,12 +9579,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -9677,12 +9709,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -11445,7 +11477,7 @@ window.UNVRSL_EXERCISES=[
     "loadType": "external_total",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 4,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
@@ -12007,12 +12039,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
@@ -12145,12 +12177,12 @@ window.UNVRSL_EXERCISES=[
     "loadType": "bodyweight_only",
     "implementCount": 1,
     "weightProfile": {
-      "step": 2.5,
+      "step": 0,
       "min": 0,
       "maxChangeSteps": 1,
       "rounding": "nearest",
       "units": "bodyweight_only",
-      "configurable": true
+      "configurable": false
     },
     "resultRule": {
       "e1rm": false,
