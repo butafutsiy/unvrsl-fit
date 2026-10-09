@@ -140,175 +140,166 @@
   function progressBody(d){return `<div class="sp264-section"><div class="sp264-section-title">Прогресс</div><div class="sp264-progress">${d.progress.map(x=>`<div class="sp264-p"><i>${esc(x.icon)}</i><b>${esc(x.title)}</b><small>${esc(x.sub)}</small></div>`).join('')}</div></div>${exercisesHtml(d,5)}`}
   function recordBody(d){const r=d.record;if(!r.hero)return `<div class="sp264-section"><div class="muted small">Нет силовых результатов для карточки.</div></div>`;const items=r.items.filter(x=>!(x.exercise===r.hero.exercise&&x.label===r.hero.label)).slice(0,2);return `<div class="sp264-highlight sp264-record-hero"><small>${r.hasRealPr?'🏆 НОВЫЙ РЕКОРД':'★ ЛУЧШИЙ РЕЗУЛЬТАТ'}</small><b>${esc(r.hero.exercise)} · ${esc(r.hero.value)}</b><div class="sp264-record-note">${esc(r.hero.label)} · 1ПМ ≈ ${fmt(r.hero.e1)} кг</div></div>${items.length?`<div class="sp264-records">${items.map(x=>`<div class="sp264-record"><small>${esc(x.exercise)} · ${esc(x.label)}</small><b>${esc(x.value)}</b></div>`).join('')}</div>`:''}${exercisesHtml(d,3)}`}
   function renderCard(s,m){const d=data(s),body=m==='compact'?compactBody(d):m==='record'?recordBody(d):progressBody(d);return `<div class="sp264-card" data-share-card-v264>${headerHtml(d)}${body}<div class="sp264-foot">Сделано в UNVRSL FIT</div></div>`}
-  function accentColor(){const value=String(W.st?.accent||W.getComputedStyle?.(D.documentElement)?.getPropertyValue('--green')||'#bf5af2').trim();return /^#[0-9a-f]{6}$/i.test(value)?value:'#bf5af2'}
+  function accentColor(){const value=String(W.st?.accent||W.getComputedStyle?.(D.documentElement)?.getPropertyValue('--green')||'#0a84ff').trim();return /^#[0-9a-f]{6}$/i.test(value)?value:'#0a84ff'}
   const storyLayouts=[['poster','Постер','Полная сводка тренировки'],['minimal','Минимал','Компактный стикер поверх фото'],['exercises','Упражнения','Список и лучшие подходы'],['record','Рекорд','Один результат крупным планом'],['tonnage','Тоннаж','Объём в наглядном сравнении'],['progress','Динамика','Изменения и итоги занятия']];
   function recordPicker(s){if(layout!=='record')return '';return `<label class="sp471-record-picker">Упражнение <select aria-label="Упражнение для сторис" onchange="shareProgressExerciseV471(this.value)"><option value="">Автоматически · лучший результат</option>${exerciseRows(s).map(row=>`<option value="${esc(row.key)}" ${recordKey===row.key?'selected':''}>${esc(row.name)}</option>`).join('')}</select></label>`}
-  function markup(s,m){return `<div class="sp264" style="--share-accent:${accentColor()}"><div class="sp264-head"><button class="sp264-close" onclick="closeModal()" aria-label="Закрыть">×</button><h2>Universal Fit</h2><span style="width:42px"></span></div><div class="sp471-layouts" aria-label="Вариант сторис">${storyLayouts.map(([id,title])=>`<button type="button" aria-pressed="${layout===id}" onclick="shareProgressLayoutV471('${id}')">${title}</button>`).join('')}</div><div class="sp471-hint">${storyLayouts.find(x=>x[0]===layout)?.[2]||''}</div><div class="sp264-tabs"><button class="${m==='transparent'?'on':''}" onclick="shareProgressModeV264('transparent')">Без фона</button><button class="${m==='background'?'on':''}" onclick="shareProgressModeV264('background')">С фоном</button></div>${recordPicker(s)}<div class="sp264-preview"><span>Готовим изображение…</span><img id="sp264Preview" hidden alt="Предпросмотр PNG Universal Fit"></div><div class="sp264-actions"><button id="sp264Save" class="btn full" onclick="shareProgressSaveV264()">Сохранить PNG</button><button id="sp264Share" class="btn primary full" onclick="shareProgressNativeV264()">Поделиться</button><div id="sp264Status" class="sp264-status"></div></div></div>`}
+  function markup(s,m){return `<div class="sp264" style="--share-accent:${accentColor()}"><div class="sp264-head"><button class="sp264-close" onclick="closeModal()" aria-label="Закрыть">×</button><h2>Universal Fit</h2><span style="width:42px"></span></div><div class="sp471-layouts" aria-label="Вариант сторис">${storyLayouts.map(([id,title])=>`<button type="button" aria-pressed="${layout===id}" onclick="shareProgressLayoutV471('${id}')">${title}</button>`).join('')}</div><div class="sp471-hint">${storyLayouts.find(x=>x[0]===layout)?.[2]||''}</div><div class="sp264-tabs"><button class="${m==='transparent'?'on':''}" onclick="shareProgressModeV264('transparent')">Без фона</button><button class="${m==='background'?'on':''}" onclick="shareProgressModeV264('background')">С фоном</button></div><div class="sp472-design" aria-label="Оформление"><button aria-pressed="${design==='basic'}" onclick="shareProgressDesignV472('basic')">Базовый</button><button aria-pressed="${design==='graphic'}" onclick="shareProgressDesignV472('graphic')">Белая графика</button></div>${recordPicker(s)}<div class="sp264-preview"><span>Готовим изображение…</span><img id="sp264Preview" hidden alt="Предпросмотр PNG Universal Fit"></div><div class="sp264-actions"><button id="sp264Save" class="btn full" onclick="shareProgressSaveV264()">Сохранить PNG</button><button id="sp264Share" class="btn primary full" onclick="shareProgressNativeV264()">Поделиться</button><div id="sp264Status" class="sp264-status"></div></div></div>`}
 
   function roundRect(ctx,x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke()}}
   function wrapLines(ctx,text,maxWidth){const words=String(text||'').split(/\s+/),lines=[];let line='';for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word}else line=test}if(line)lines.push(line);return lines}
   function drawTextBlock(ctx,text,x,y,maxWidth,lineHeight,maxLines=3){const lines=wrapLines(ctx,text,maxWidth).slice(0,maxLines);lines.forEach((line,i)=>ctx.fillText(line,x,y+i*lineHeight));return y+lines.length*lineHeight}
-  function buildStoryCanvas(s,variant){
-    if(layout!=='poster')return buildStickerCanvas(s,variant,layout);
-    const d=data(s),canvas=D.createElement('canvas'),WID=1080,MAX=1920,accent=accentColor();
-    canvas.width=WID;canvas.height=MAX;
-    const x=canvas.getContext('2d'),rgb=[1,3,5].map(i=>parseInt(accent.slice(i,i+2),16));
-    const rgba=a=>`rgba(${rgb.join(',')},${a})`;
-    if(variant==='background'){
-      x.fillStyle='#101014';x.fillRect(0,0,WID,MAX);
-      const glow=x.createRadialGradient(850,370,10,850,370,1050);
-      glow.addColorStop(0,rgba(.28));glow.addColorStop(1,rgba(0));
-      x.fillStyle=glow;x.fillRect(0,0,WID,MAX);
-      const lower=x.createRadialGradient(160,1600,10,160,1600,680);
-      lower.addColorStop(0,rgba(.12));lower.addColorStop(1,rgba(0));
-      x.fillStyle=lower;x.fillRect(0,1100,WID,820);
-    }
-    const ink='#f8f7fb',muted='#b9b6c1',left=86,right=994;
-    function label(value,px,py,font,color=ink,spacing=0){
-      x.save();x.fillStyle=color;x.font=font;x.shadowColor='rgba(0,0,0,.85)';x.shadowBlur=variant==='transparent'?20:8;
-      x.shadowOffsetY=variant==='transparent'?4:2;
-      if(spacing&&'letterSpacing'in x)x.letterSpacing=spacing+'px';
-      x.fillText(String(value),px,py);x.restore();
-    }
-    function clipped(value,maxWidth){let result=String(value||'');while(result.length>1&&x.measureText(result).width>maxWidth)result=result.slice(0,-2);return result===String(value||'')?result:result.trimEnd()+'…'}
-    const shortDate=String(s?.date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    const date=shortDate?`${shortDate[3]}.${shortDate[2]}.${shortDate[1]}`:d.date;
-    label('UNVRSL FIT',left,188,'700 28px Arial,sans-serif',ink,6);
-    x.save();x.textAlign='right';label(date,right,188,'26px Arial,sans-serif',muted,3);x.restore();
-    const code=String(s?.c||'').trim().slice(0,8),title=code?String(s?.name||'Тренировка'):d.title;
-    if(code){roundRect(x,left,268,112,62,31,rgba(.33),rgba(.65));label(code,left+22,311,'800 37px Arial,sans-serif',accent)}
-    x.font='800 78px Arial,sans-serif';const lines=wrapLines(x,title,900).slice(0,3);
-    lines.forEach((line,i)=>label(line,left,415+i*83,'800 78px Arial,sans-serif',ink));
-    if(d.tonnage>0){
-      const value=plain(d.tonnage),size=value.length>6?140:180;
-      label(value,left,790,`900 ${size}px Arial,sans-serif`,accent);
-      x.font=`900 ${size}px Arial,sans-serif`;const end=Math.min(835,left+x.measureText(value).width+20);
-      label('кг',end,783,'800 78px Arial,sans-serif',accent);
-      label('Т О Н Н А Ж',left,843,'22px Arial,sans-serif',muted);
-    }else{
-      label('ТРЕНИРОВКА',left,755,'800 78px Arial,sans-serif',accent);
-      label('ИТОГ ЗАНЯТИЯ',left,843,'24px Arial,sans-serif',muted);
-    }
-    const cells=[['ПОДХОДОВ',String(d.sets)],['ВРЕМЯ',d.time],['СРЕДНИЙ RPE',d.rpe==null?'–':fmt(d.rpe)]];
-    cells.forEach(([key,value],i)=>{const px=left+i*314;
-      if(i){x.fillStyle='rgba(255,255,255,.2)';x.fillRect(px-20,902,1,92)}
-      label(value,px,955,'800 56px Arial,sans-serif',ink);
-      label(key,px,992,'19px Arial,sans-serif',muted);
-    });
-    const best=d.best;
-    if(best){
-      roundRect(x,left,1070,right-left,158,26,variant==='transparent'?'rgba(24,21,30,.76)':'rgba(255,255,255,.09)',rgba(.65));
-      label('ЛУЧШИЙ ПОДХОД',left+30,1118,'700 20px Arial,sans-serif',accent,2);
-      x.font='700 36px Arial,sans-serif';label(clipped(best.name,465),left+30,1177,'700 36px Arial,sans-serif',ink);
-      x.save();x.textAlign='right';label(`${plain(best.w)} × ${plain(best.reps)}`,right-160,1175,'800 44px Arial,sans-serif',accent);
-      label(`RPE ${best.rpe==null?'–':fmt(best.rpe)}   RIR ${best.rir==null?'–':fmt(best.rir)}`,right-25,1207,'19px Arial,sans-serif',ink);x.restore();
-    }
-    d.exercises.slice(0,4).forEach((row,i)=>{
-      const yy=1338+i*118,effort=row.best;
-      label(String(i+1).padStart(2,'0'),left,yy,'700 28px Arial,sans-serif',accent);
-      x.font='700 35px Arial,sans-serif';label(clipped(row.name,680),left+95,yy,'700 35px Arial,sans-serif',ink);
-      x.font='25px Arial,sans-serif';const sets=row.sets.map(z=>`${plain(z.w)}×${plain(z.reps)}`).join(' · ');
-      label(clipped(sets,710),left+95,yy+39,'25px Arial,sans-serif',muted);
-      x.save();x.textAlign='right';label(`RPE ${effort?.rpe==null?'–':fmt(effort.rpe)}`,right,yy,'21px Arial,sans-serif',ink);
-      label(`RIR ${effort?.rir==null?'–':fmt(effort.rir)}`,right,yy+35,'21px Arial,sans-serif',muted);x.restore();
-    });
-    if(d.exercises.length>4)label(`И ещё ${d.exercises.length-4} упражнений`,left+95,1800,'23px Arial,sans-serif',muted);
-    label('UNVRSL FIT',left,1850,'700 23px Arial,sans-serif',muted,4);
-    return canvas;
-  }
+  function buildStoryCanvas(s,variant){return buildStickerCanvas(s,variant,layout)}
   function volumeComparison(value){
-    if(value>=24000)return{kind:'train',mass:30000,name:'пассажирского вагона',reference:'Вагон ≈ 30 000 кг'};
+    if(value>=16000)return{kind:'train',mass:30000,name:'пассажирского вагона',reference:'Вагон ≈ 30 000 кг'};
     if(value>=8000)return{kind:'truck',mass:10000,name:'грузовика',reference:'Грузовик ≈ 10 000 кг'};
     if(value>=1000)return{kind:'car',mass:1500,name:'легкового автомобиля',reference:'Автомобиль ≈ 1 500 кг'};
     return{kind:'plates',mass:20,name:'блина',reference:'Один блин = 20 кг'};
   }
-  function drawVolumeVehicle(x,kind,accent){
-    x.save();x.translate(170,480);x.strokeStyle='#ffffff';x.lineWidth=8;x.lineJoin='round';
-    const rect=(a,b,w,h,r=12)=>roundRect(x,a,b,w,h,r,null,'#ffffff');
-    const line=(points)=>{x.beginPath();points.forEach(([a,b],i)=>i?x.lineTo(a,b):x.moveTo(a,b));x.stroke()};
-    const wheel=(a,b)=>{x.beginPath();x.arc(a,b,45,0,Math.PI*2);x.fillStyle=accent;x.fill();x.strokeStyle='#ffffff';x.stroke();x.beginPath();x.arc(a,b,16,0,Math.PI*2);x.stroke()};
-    if(kind==='train'){
-      rect(0,0,740,215,24);line([[20,0],[90,-30],[650,-30],[720,0]]);
-      for(let i=0;i<7;i++)rect(38+i*97,35,66,75,8);
-      line([[0,145],[740,145]]);wheel(155,225);wheel(585,225);line([[90,285],[650,285]]);
-    }else if(kind==='truck'){
-      rect(0,0,470,200);rect(485,75,240,125,16);rect(535,100,105,60,8);
-      line([[640,75],[685,30],[725,75]]);wheel(130,225);wheel(390,225);wheel(625,225);
-    }else if(kind==='car'){
-      rect(0,105,740,105,35);line([[110,105],[230,0],[535,0],[655,105]]);
-      line([[260,18],[230,88],[505,88],[520,18]]);wheel(150,220);wheel(590,220);
+  const storyArtwork={},storyArtworkTasks={};
+  function loadStoryArtwork(kind){
+    if(storyArtwork[kind]||typeof Image==='undefined')return Promise.resolve();
+    if(storyArtworkTasks[kind])return storyArtworkTasks[kind];
+    storyArtworkTasks[kind]=new Promise(resolve=>{
+      const image=new Image();let finished=false;
+      const done=()=>{if(finished)return;finished=true;clearTimeout(timer);if(image.naturalWidth||image.width)storyArtwork[kind]=image;resolve()};
+      const timer=setTimeout(done,8000);image.onload=done;image.onerror=done;
+      image.src=`assets/story-${kind}-v472.png`;
+    });return storyArtworkTasks[kind];
+  }
+  // Crisp canvas artwork shares the export alpha; all figures and text remain dynamic.
+  function drawStoryArtwork(ctx,kind,cx,cy,scale=1){
+    ctx.save();ctx.translate(cx,cy);ctx.scale(scale,scale);ctx.strokeStyle='#f5f5f7';ctx.fillStyle='#f5f5f7';ctx.lineWidth=3;ctx.lineJoin='round';ctx.lineCap='round';
+    if(storyArtwork[kind]){const image=storyArtwork[kind],w=kind==='plates'?300:760,h=w*(image.naturalHeight||image.height)/(image.naturalWidth||image.width);ctx.drawImage(image,-w/2,-h/2,w,h);ctx.restore();return}
+    const line=p=>{ctx.beginPath();p.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke()};
+    const rect=(x,y,w,h,r=5)=>roundRect(ctx,x,y,w,h,r,null,'#f5f5f7');
+    const circle=(x,y,r)=>{ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke()};
+    if(kind==='plates'){
+      ctx.save();ctx.scale(.7,1);circle(0,0,145);circle(0,0,123);circle(0,0,34);circle(0,0,19);
+      for(let a=0;a<3;a++){ctx.save();ctx.rotate(a*Math.PI*2/3);rect(-25,-106,50,30,12);ctx.restore()}ctx.restore();
+      line([[75,-115],[100,-100],[116,-62],[122,0],[116,62],[100,100],[75,115]]);
+    }else if(kind==='barbell'){
+      line([[-320,-4],[320,-4]]);line([[-320,4],[320,4]]);
+      for(const sign of [-1,1])for(let i=0;i<3;i++){const a=sign*(210+i*25);rect(a-10,-(92-i*15),20,184-i*30,5)}
+      line([[-195,-125],[-195,125]]);line([[195,-125],[195,125]]);
+    }else if(kind==='trend'){
+      line([[-330,100],[-330,-110]]);line([[-330,100],[330,100]]);
+      line([[-305,72],[-175,32],[-75,47],[55,-23],[150,-12],[295,-95]]);
+      line([[258,-90],[295,-95],[285,-59]]);
+      for(const [a,b] of [[-305,72],[-175,32],[-75,47],[55,-23],[150,-12],[295,-95]])circle(a,b,7);
     }else{
-      line([[20,120],[720,120]]);
-      for(let i=0;i<5;i++)rect(160+i*80,0,55,240,20);
+      const train=kind==='train',car=kind==='car';
+      if(train){
+        rect(-355,-105,710,180,20);line([[-335,-105],[-302,-126],[298,-126],[337,-105]]);
+        for(let i=0;i<9;i++){rect(-317+i*63,-73,43,55,6);line([[-311+i*63,-44],[-280+i*63,-44]])}
+        rect(274,-78,52,140,6);line([[-349,0],[267,0]]);line([[-349,18],[267,18]]);line([[-349,48],[267,48]]);
+        for(const a of [-233,213]){rect(a-62,80,124,25,8);circle(a-36,107,24);circle(a+36,107,24);circle(a-36,107,10);circle(a+36,107,10)}
+        line([[-140,76],[-140,111],[128,111],[128,76]]);
+      }else{
+        rect(-340,car?-12:-115,car?680:435,car?105:210,car?22:7);
+        if(car){line([[-225,-12],[-133,-113],[121,-113],[237,-12]]);line([[-105,-100],[-138,-26],[93,-26],[93,-100]]);line([[115,-100],[115,-26],[212,-26]])}
+        else{line([[95,95],[330,95],[330,-42],[262,-103],[128,-103],[128,95]]);rect(163,-78,80,64,5);line([[-315,-90],[70,-90]]);line([[-315,67],[70,67]])}
+        for(const a of [-225,235]){circle(a,98,47);circle(a,98,22)}
+      }
     }
-    x.restore();
+    ctx.restore();
   }
   function buildStickerCanvas(s,variant,style){
-    const d=data(s),accent=accentColor(),count=Math.min(12,d.exercises.length);
-    const stickerHeight=style==='minimal'?690:style==='exercises'?Math.max(720,430+count*100+(d.exercises.length>12?70:0)):style==='record'?960:style==='tonnage'?1160:1240;
-    const canvas=D.createElement('canvas');canvas.width=1080;canvas.height=variant==='background'?1920:stickerHeight;
-    const x=canvas.getContext('2d'),ink='#fafafa',muted='#c6c6cc',L=80,R=1000;
+    const d=data(s),graphic=design==='graphic',accent=graphic?'#f5f5f7':accentColor(),count=Math.min(12,d.exercises.length);
+    const height=style==='poster'?1560:style==='minimal'?600:style==='exercises'?Math.max(680,450+count*110+(d.exercises.length>12?70:0)):style==='record'?1000:style==='tonnage'?1040:1120;
+    const canvas=D.createElement('canvas');canvas.width=1080;canvas.height=variant==='background'?1920:height;
+    const font=graphic?'Impact,Arial,sans-serif':'Arial,sans-serif';
+    const x=canvas.getContext('2d'),ink='#f5f5f7',muted='#c6c9d0',L=80,R=1000;
     if(variant==='background'){
-      x.fillStyle='#101014';x.fillRect(0,0,1080,1920);
-      const glow=x.createRadialGradient(850,550,10,850,550,1000);glow.addColorStop(0,accent+'45');glow.addColorStop(1,accent+'00');x.fillStyle=glow;x.fillRect(0,0,1080,1920);
-      x.translate(0,(1920-stickerHeight)/2);
+      x.fillStyle='#101114';x.fillRect(0,0,1080,1920);x.translate(0,(1920-height)/2);
+      x.fillStyle=accent;x.fillRect(L,-28,64,6);
     }
     const text=(value,a,b,size=32,color=ink,weight=500,align='left',width=920)=>{
-      x.save();x.fillStyle=color;x.textAlign=align;x.shadowColor='rgba(0,0,0,.8)';x.shadowBlur=variant==='transparent'?12:0;x.shadowOffsetY=variant==='transparent'?3:0;
-      let str=String(value??''),fontSize=size;x.font=`${weight} ${fontSize}px Arial,sans-serif`;
-      while(x.measureText(str).width>width&&fontSize>22){fontSize-=2;x.font=`${weight} ${fontSize}px Arial,sans-serif`}
+      x.save();x.fillStyle=color;x.textAlign=align;
+      let str=String(value??''),fontSize=size;x.font=`${weight} ${fontSize}px ${font}`;
+      while(x.measureText(str).width>width&&fontSize>22){fontSize-=2;x.font=`${weight} ${fontSize}px ${font}`}
       if(x.measureText(str).width>width){while(str.length&&x.measureText(str+'…').width>width)str=str.slice(0,-1);str+='…'}
       x.fillText(str,a,b);x.restore();
     };
-    const separator=y=>{x.fillStyle='#ffffff35';x.fillRect(L,y,R-L,2)};
-    const title=(value,y=165)=>{x.font='800 52px Arial,sans-serif';const lines=wrapLines(x,value,920).slice(0,2);lines.forEach((line,i)=>text(line,L,y+i*58,52,ink,800));return y+lines.length*58};
-    const stats=y=>{const values=[[d.time,'ВРЕМЯ'],[String(d.sets),'ПОДХОДОВ'],[String(d.exercises.length),'УПРАЖНЕНИЙ']];values.forEach(([v,k],i)=>{text(v,L+i*316,y,48,ink,800,'left',280);text(k,L+i*316,y+40,21,muted,600,'left',280)})};
-    text('UNVRSL FIT',L,72,29,ink,800);text(d.date,R,72,23,muted,500,'right',500);
+    const separator=y=>{x.fillStyle='#ffffff60';x.fillRect(L,y,R-L,1)};
+    const title=(value,y=155,size=48,width=920)=>{x.font=`800 ${size}px ${font}`;let all=wrapLines(x,value,width);while(all.length>2&&size>32){size-=2;x.font=`800 ${size}px ${font}`;all=wrapLines(x,value,width)}const lines=all.slice(0,2);lines.forEach((line,i)=>text(line+(i===1&&all.length>2?'…':''),L,y+i*(size+8),size,ink,800,'left',width));return y+lines.length*(size+8)};
+    const stats=y=>{const values=[[d.time,'ВРЕМЯ'],[String(d.sets),'ПОДХОДОВ'],[String(d.exercises.length),'УПРАЖНЕНИЙ']];values.forEach(([v,k],i)=>{const a=L+i*316;if(i){x.fillStyle='#ffffff60';x.fillRect(a-26,y-40,1,82)}text(v,a,y,46,ink,800,'left',265);text(k,a,y+37,19,muted,600,'left',265)})};
+    const hero=(y,size=134)=>{text(plain(d.tonnage),L,y,size,accent,800,'left',750);text('кг',R,y-4,40,accent,700,'right',120);text('ОБЪЁМ ТРЕНИРОВКИ',L,y+43,21,muted,600)};
+    const date=String(s?.date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    text('UNVRSL FIT',L,72,26,ink,800);text(date?`${date[3]}.${date[2]}.${date[1]}`:d.date,R,72,21,muted,500,'right',430);
     if(style==='minimal'){
-      title(d.title);separator(300);text(plain(d.tonnage),L,445,126,accent,900,'left',700);text('кг',R,441,52,accent,800,'right',150);
-      text('ОБЪЁМ ТРЕНИРОВКИ',L,490,24,muted,600);stats(575);
+      title(d.title,155,42);separator(258);hero(402,124);stats(515);
+    }else if(style==='poster'){
+      title(d.title,180,64,graphic?680:920);
+      if(graphic)drawStoryArtwork(x,'plates',898,196,.53);
+      separator(335);hero(505,154);stats(652);separator(730);
+      if(d.best){text('ЛУЧШИЙ ПОДХОД',L,798,20,accent,700);text(d.best.name,L,852,37,ink,700,'left',640);text(`${plain(d.best.w)} × ${plain(d.best.reps)}`,R,852,40,accent,800,'right',245);text(`RPE ${d.best.rpe==null?'–':fmt(d.best.rpe)}  ·  RIR ${d.best.rir==null?'–':fmt(d.best.rir)}`,L,897,22,muted)}
+      text('УПРАЖНЕНИЯ',L,966,20,muted,700);
+      d.exercises.slice(0,4).forEach((row,i)=>{const y=1030+i*100;text(String(i+1).padStart(2,'0'),L,y,24,accent,700,'left',60);text(row.name,L+72,y,31,ink,600,'left',550);text(row.best?`${plain(row.best.w)} × ${plain(row.best.reps)}`:'–',R,y,32,ink,700,'right',250);text(`${row.sets.length} подходов`,L+72,y+33,22,muted,500)});
+      if(d.exercises.length>4)text(`Ещё ${d.exercises.length-4} упражнений в журнале`,L+72,1458,23,muted);
+      text('СДЕЛАНО В UNVRSL FIT',L,1520,18,muted,600);
     }else if(style==='exercises'){
-      title(d.title);text(`${d.time}  ·  ${d.sets} подходов  ·  ${plain(d.tonnage)} кг`,L,305,29,muted,600);separator(345);
-      text('УПРАЖНЕНИЯ',L,395,22,muted,600);text('ЛУЧШИЙ ПОДХОД',R,395,22,muted,600,'right',280);
-      if(!d.exercises.length)text('Нет выполненных силовых подходов',L,510,32,muted);
-      d.exercises.slice(0,12).forEach((row,i)=>{const y=475+i*100; text(`${row.sets.length} ×`,L,y,31,accent,800,'left',85);x.font='600 30px Arial,sans-serif';const lines=wrapLines(x,row.name,530).slice(0,2);lines.forEach((line,j)=>text(line,L+100,y+j*33,30,ink,600,'left',530));text(row.best?`${plain(row.best.w)} × ${plain(row.best.reps)}`:'–',R,y,32,ink,800,'right',245)});
-      if(d.exercises.length>12)text(`Ещё ${d.exercises.length-12} упражнений в журнале`,L,475+count*100,27,muted);
+      title(d.title);text(`${d.time}  ·  ${d.sets} подходов  ·  ${plain(d.tonnage)} кг`,L,295,27,muted,600);separator(330);
+      text('УПРАЖНЕНИЯ',L,380,20,muted,600);text('ЛУЧШИЙ ПОДХОД',R,380,20,muted,600,'right',270);
+      if(!d.exercises.length)text('Нет выполненных силовых подходов',L,505,30,muted);
+      d.exercises.slice(0,12).forEach((row,i)=>{const y=460+i*110;text(`${row.sets.length} ×`,L,y,29,accent,800,'left',85);x.font=`600 30px ${font}`;const all=wrapLines(x,row.name,530);all.slice(0,2).forEach((line,j)=>text(line+(j===1&&all.length>2?'…':''),L+100,y+j*34,30,ink,600,'left',530));text(row.best?`${plain(row.best.w)} × ${plain(row.best.reps)}`:'–',R,y,31,ink,800,'right',245);separator(y+75)});
+      if(d.exercises.length>12)text(`Ещё ${d.exercises.length-12} упражнений в журнале`,L,460+count*110,25,muted);
     }else if(style==='record'){
       const row=d.exercises.find(r=>r.key===recordKey),pr=row&&realRecords(s).find(r=>r.key===row.key);
-      const r=row?.best?{hasRealPr:!!pr,hero:{exercise:row.name,value:`${fmt(row.best.w)} × ${fmt(row.best.reps)}`,e1:e1rm(row.best)}}:d.record,hero=r.hero;
-      text(r.hasRealPr?'НОВЫЙ РЕКОРД':'ЛУЧШИЙ РЕЗУЛЬТАТ',540,180,31,accent,800,'center');
-      if(hero){
-        x.font='800 58px Arial,sans-serif';const lines=wrapLines(x,hero.exercise,900).slice(0,3);lines.forEach((line,i)=>text(line,540,300+i*65,58,ink,800,'center'));
-        text(hero.value,540,610,132,accent,900,'center');text('КГ × ПОВТОРЕНИЯ',540,665,25,muted,600,'center');
-        text(`Расчётный 1ПМ ≈ ${fmt(hero.e1)} кг`,540,745,32,ink,600,'center');
-      }else{text('ТРЕНИРОВКА ЗАВЕРШЕНА',540,430,56,ink,800,'center');text('Нет силовых подходов для оценки',540,520,30,muted,500,'center')}
-      separator(820);text(`${d.time}  ·  ${d.sets} рабочих подходов`,540,895,30,muted,600,'center');
+      const r=row?.best?{hasRealPr:!!pr,hero:{exercise:row.name,value:`${fmt(row.best.w)} × ${fmt(row.best.reps)}`,e1:e1rm(row.best)}}:d.record,h=r.hero;
+      text(r.hasRealPr?'НОВЫЙ РЕКОРД':'ЛУЧШИЙ РЕЗУЛЬТАТ',L,173,25,accent,700);
+      if(h){title(h.exercise,259,54);text(h.value,L,525,144,accent,800);text('КГ × ПОВТОРЕНИЯ',L,572,22,muted,600);text(`Расчётный 1ПМ ≈ ${fmt(h.e1)} кг`,L,652,30,ink,600)}
+      else{text('ТРЕНИРОВКА ЗАВЕРШЕНА',L,380,48,ink,800);text('Нет силовых подходов для оценки',L,465,28,muted)}
+      if(graphic)drawStoryArtwork(x,'plates',815,767,.65);
+      separator(900);text(`${d.time}  ·  ${d.sets} рабочих подходов`,L,958,27,muted,600);
     }else if(style==='tonnage'){
-      text('СЕГОДНЯ ПОДНЯТО',540,173,28,muted,700,'center');text(`${plain(d.tonnage)} кг`,540,325,124,accent,900,'center');
-      const comparison=volumeComparison(d.tonnage);drawVolumeVehicle(x,comparison.kind,accent);
-      text('СРАВНЕНИЕ ПО МАССЕ',540,880,25,muted,600,'center');text(`Масса ${comparison.name} × ${fmt(d.tonnage/comparison.mass)}`,540,948,51,ink,800,'center');
-      text(comparison.reference,540,1010,25,muted,500,'center');text('Тоннаж – сумма нагрузки всех повторений за тренировку.',540,1080,24,muted,500,'center');
+      text('СЕГОДНЯ ПОДНЯТО',L,174,25,muted,700);hero(355,148);
+      const comparison=volumeComparison(d.tonnage);drawStoryArtwork(x,comparison.kind,540,610,1.1);
+      separator(803);text('ПРИМЕРНО СТОЛЬКО ВЕСИТ',L,852,21,muted,600);text(`Масса ${comparison.name} × ${fmt(d.tonnage/comparison.mass)}`,L,914,43,ink,700);
+      text(comparison.reference,L,959,23,muted);text('Тоннаж – сумма нагрузки всех повторений за тренировку.',L,1008,20,muted);
     }else{
-      title(d.title);separator(300);text('ДИНАМИКА ТРЕНИРОВКИ',L,375,25,accent,800);
-      d.progress.forEach((item,i)=>{const y=480+i*190;text(item.title,L,y,51,ink,800);text(item.sub,L,y+55,29,muted,500);separator(y+100)});
-      stats(1095);
+      title(d.title);separator(270);text('ДИНАМИКА ТРЕНИРОВКИ',L,326,22,accent,700);
+      d.progress.forEach((item,i)=>{const y=424+i*169;text(item.title,L,y,48,accent,800);text(item.sub,L,y+49,26,muted,500);separator(y+92)});
+      if(graphic)drawStoryArtwork(x,'trend',540,940,.43);
+      else stats(1000);
     }
     return canvas;
   }
   const canvasBlob=c=>new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('PNG не создан')),'image/png',.95));
 
-  function installStoryCss(){const style=D.getElementById('share-progress-v264-style');if(style)style.textContent+=`.sp264-tabs{grid-template-columns:repeat(2,1fr)}.sp264-tabs button.on,.sp264-actions .primary{background:var(--share-accent)!important;color:#101014!important}.sp264-preview{background:radial-gradient(circle at 50% 40%,#323039,#141318 75%);border-radius:18px}.sp264-preview img{box-shadow:0 12px 42px rgba(0,0,0,.55)}.sp264-preview img[hidden]{display:none}.sp471-layouts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;flex:none}.sp471-layouts button{padding:10px 4px;border:1px solid #39363e;border-radius:12px;font-size:12px;font-weight:750;color:#ccc;background:#211e26}.sp471-layouts button[aria-pressed=true]{border-color:var(--share-accent);color:var(--share-accent);background:#302736}.sp471-hint{flex:none;color:#aaa;font-size:11px;padding:8px 2px 10px}.sp264-preview img{border-radius:0}.sp471-record-picker{flex:none;font-size:11px;color:#aaa;margin:0 0 10px}.sp471-record-picker select{display:block;width:100%;min-width:0;margin-top:5px;border:1px solid #39363e;border-radius:10px;padding:9px;color:#eee;background:#211e26;font-size:12px}`}
-  let active=null,mode='transparent',layout='poster',recordKey='',prepared=null,prepareToken=0,previewUrl=null;
+  function installStoryCss(){
+    if(D.getElementById('share-story-v472-style'))return;
+    const style=D.createElement('style');style.id='share-story-v472-style';style.textContent=`
+#modal:has(.sp264) .sheet{padding:0!important;height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+.sp264{box-sizing:border-box;gap:0;padding:calc(12px + env(safe-area-inset-top)) 16px calc(12px + env(safe-area-inset-bottom));height:100%;min-height:0}
+.sp264-head{margin:0 0 15px}.sp264-head h2{order:-1;flex:1;font-size:24px}.sp264-head>span{display:none}.sp264-close{background:#292b30;border-radius:50%}
+.sp264-tabs{grid-template-columns:repeat(2,1fr);background:#25272d;margin:12px 0 8px}
+.sp264-tabs button.on,.sp264-actions .primary{background:var(--share-accent)!important;color:#fff!important}
+.sp264-preview{background:#16181d;border:1px solid #34373f;border-radius:18px;margin:8px 0 12px;padding:12px;flex:1;min-height:0}
+.sp264-preview img{border-radius:0;box-shadow:none;max-height:100%;max-width:100%}.sp264-preview img[hidden]{display:none}
+.sp471-layouts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;flex:none}
+.sp471-layouts button{padding:10px 4px;border:1px solid #393d45;border-radius:12px;font-size:12px;font-weight:700;color:#c6c9d0;background:#22252b}
+.sp471-layouts button[aria-pressed=true]{border-color:var(--share-accent);color:var(--share-accent);background:#252e3b}
+.sp471-hint{flex:none;color:#999ea9;font-size:11px;padding:7px 2px 0}
+.sp472-design{display:flex;gap:6px;flex:none;margin:0 0 4px}.sp472-design button{border-radius:9px;padding:7px 11px;font-size:11px;color:#a9aeb9;border:1px solid transparent}.sp472-design button[aria-pressed=true]{color:var(--share-accent);border-color:var(--share-accent)}
+.sp471-record-picker{flex:none;font-size:11px;color:#aaa;margin:3px 0 6px}.sp471-record-picker select{display:block;width:100%;min-width:0;margin-top:5px;border:1px solid #393d45;border-radius:10px;padding:9px;color:#eee;background:#22252b;font-size:12px}
+.sp264-actions{background:#101114;gap:8px;padding-top:10px}.sp264-actions .btn{font-size:15px;min-height:48px}.sp264-status{font-size:11px;line-height:1.5}
+html[data-theme="light"] .sp471-layouts button{background:#eceef3;color:#626773;border-color:#d8dbe3}html[data-theme="light"] .sp471-layouts button[aria-pressed=true]{color:var(--share-accent);border-color:var(--share-accent);background:#e6efff}
+html[data-theme="light"] .sp472-design button{color:#626773}html[data-theme="light"] .sp472-design button[aria-pressed=true]{color:var(--share-accent)}
+@media(max-height:700px){.sp264-head{margin-bottom:8px}.sp471-layouts button{padding:7px 4px}.sp264-tabs{margin-top:7px}.sp264-preview{margin:4px 0 6px;padding:8px}.sp264-actions .btn{min-height:42px}}
+`;D.head.appendChild(style)
+  }
+  let active=null,mode='transparent',layout='poster',design='basic',recordKey='',prepared=null,prepareToken=0,previewUrl=null;
   const status=t=>{const e=D.getElementById('sp264Status');if(e)e.textContent=t||''};
   const busy=v=>{for(const id of ['sp264Save','sp264Share']){const b=D.getElementById(id);if(b)b.disabled=!!v}};
-  async function prepareExport(){if(!active)return null;const token=++prepareToken;prepared=null;busy(true);status('Готовим PNG…');try{const canvas=buildStoryCanvas(active,mode),blob=await canvasBlob(canvas);if(token!==prepareToken)return null;if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=URL.createObjectURL(blob);const img=D.getElementById('sp264Preview');if(img){img.src=previewUrl;img.hidden=false;img.previousElementSibling?.remove()}prepared={blob,file:new File([blob],`universal-fit-${String(active.date||new Date().toISOString().slice(0,10))}-${layout}-${mode}.png`,{type:'image/png'}),mode,layout,recordKey,id:String(active.id||''),accent:accentColor()};status(`PNG готов · ${canvas.width} × ${canvas.height}`);return prepared}catch(e){console.error('share v264: '+(e?.stack||e));status('Не удалось подготовить изображение');return null}finally{if(token===prepareToken)busy(false)}}
-  const ready=()=>prepared&&prepared.mode===mode&&prepared.layout===layout&&prepared.recordKey===recordKey&&prepared.id===String(active?.id||'')&&prepared.accent===accentColor()?prepared:null;
+  async function prepareExport(){if(!active)return null;const token=++prepareToken;prepared=null;busy(true);status('Готовим PNG…');try{if(layout==='tonnage')await loadStoryArtwork('train');if(design==='graphic')await loadStoryArtwork('plates');if(token!==prepareToken)return null;const canvas=buildStoryCanvas(active,mode),blob=await canvasBlob(canvas);if(token!==prepareToken)return null;if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=URL.createObjectURL(blob);const img=D.getElementById('sp264Preview');if(img){img.src=previewUrl;img.hidden=false;img.previousElementSibling?.remove()}prepared={blob,file:new File([blob],`universal-fit-${String(active.date||new Date().toISOString().slice(0,10))}-${layout}-${mode}-${design}.png`,{type:'image/png'}),mode,layout,design,recordKey,id:String(active.id||''),accent:accentColor()};status(`PNG готов · ${canvas.width} × ${canvas.height}`);return prepared}catch(e){console.error('share v264: '+(e?.stack||e));status('Не удалось подготовить изображение');return null}finally{if(token===prepareToken)busy(false)}}
+  const ready=()=>prepared&&prepared.mode===mode&&prepared.layout===layout&&prepared.design===design&&prepared.recordKey===recordKey&&prepared.id===String(active?.id||'')&&prepared.accent===accentColor()?prepared:null;
   function download(blob){const u=URL.createObjectURL(blob),a=D.createElement('a');a.href=u;a.download=`unvrsl-fit-${String(active?.date||new Date().toISOString().slice(0,10))}.png`;a.rel='noopener';D.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
   function nativeShare(file){if(!navigator.share)return null;try{if(navigator.canShare&&!navigator.canShare({files:[file]}))return null;return navigator.share({files:[file]})}catch(_){return null}}
 
-  W.openShareProgressV264=s=>{installCss();installStoryCss();active=s||W.st?.current||null;if(!active)return W.toast?.('Нет данных тренировки');mode='transparent';layout='poster';recordKey='';prepared=null;prepareToken++;W.modal?.(markup(active,mode));const sh=D.getElementById('sheet');if(sh)sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
+  W.openShareProgressV264=s=>{installCss();installStoryCss();active=s||W.st?.current||null;if(!active)return W.toast?.('Нет данных тренировки');mode='transparent';layout='poster';design='basic';recordKey='';prepared=null;prepareToken++;W.modal?.(markup(active,mode));const sh=D.getElementById('sheet');if(sh)sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
   W.shareProgressModeV264=m=>{if(!['transparent','background'].includes(m)||!active)return;mode=m;prepared=null;prepareToken++;const sh=D.getElementById('sheet');if(!sh)return;sh.innerHTML=markup(active,mode);sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
   W.shareProgressLayoutV471=value=>{if(!storyLayouts.some(x=>x[0]===value)||!active)return;layout=value;prepared=null;prepareToken++;const sh=D.getElementById('sheet');if(!sh)return;sh.innerHTML=markup(active,mode);sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
+  W.shareProgressDesignV472=value=>{if(!['basic','graphic'].includes(value)||!active)return;design=value;prepared=null;prepareToken++;const sh=D.getElementById('sheet');if(sh)sh.innerHTML=markup(active,mode);requestAnimationFrame(()=>prepareExport())};
   W.shareProgressExerciseV471=key=>{if(!active||(key&&!exerciseRows(active).some(row=>row.key===key)))return;recordKey=key;prepared=null;prepareToken++;const sh=D.getElementById('sheet');if(sh)sh.innerHTML=markup(active,mode);requestAnimationFrame(()=>prepareExport())};
   W.shareProgressSaveV264=()=>{const p=ready();if(!p)return status('Изображение ещё готовится…');if(/iPad|iPhone|iPod/.test(navigator.userAgent)){const r=nativeShare(p.file);if(r){r.catch(e=>{if(e?.name!=='AbortError')download(p.blob)});return}}download(p.blob);W.toast?.('Изображение сохранено')};
   W.shareProgressNativeV264=()=>{const p=ready();if(!p)return status('Изображение ещё готовится…');const r=nativeShare(p.file);if(r){r.catch(e=>{if(e?.name!=='AbortError'){console.warn(e);download(p.blob)}});return}download(p.blob);W.toast?.('Карточка сохранена')};
