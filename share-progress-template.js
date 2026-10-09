@@ -141,12 +141,15 @@
   function recordBody(d){const r=d.record;if(!r.hero)return `<div class="sp264-section"><div class="muted small">Нет силовых результатов для карточки.</div></div>`;const items=r.items.filter(x=>!(x.exercise===r.hero.exercise&&x.label===r.hero.label)).slice(0,2);return `<div class="sp264-highlight sp264-record-hero"><small>${r.hasRealPr?'🏆 НОВЫЙ РЕКОРД':'★ ЛУЧШИЙ РЕЗУЛЬТАТ'}</small><b>${esc(r.hero.exercise)} · ${esc(r.hero.value)}</b><div class="sp264-record-note">${esc(r.hero.label)} · 1ПМ ≈ ${fmt(r.hero.e1)} кг</div></div>${items.length?`<div class="sp264-records">${items.map(x=>`<div class="sp264-record"><small>${esc(x.exercise)} · ${esc(x.label)}</small><b>${esc(x.value)}</b></div>`).join('')}</div>`:''}${exercisesHtml(d,3)}`}
   function renderCard(s,m){const d=data(s),body=m==='compact'?compactBody(d):m==='record'?recordBody(d):progressBody(d);return `<div class="sp264-card" data-share-card-v264>${headerHtml(d)}${body}<div class="sp264-foot">Сделано в UNVRSL FIT</div></div>`}
   function accentColor(){const value=String(W.st?.accent||W.getComputedStyle?.(D.documentElement)?.getPropertyValue('--green')||'#bf5af2').trim();return /^#[0-9a-f]{6}$/i.test(value)?value:'#bf5af2'}
-  function markup(s,m){return `<div class="sp264" style="--share-accent:${accentColor()}"><div class="sp264-head"><button class="sp264-close" onclick="closeModal()" aria-label="Закрыть">×</button><h2>Universal Fit</h2><span style="width:42px"></span></div><div class="sp264-tabs"><button class="${m==='transparent'?'on':''}" onclick="shareProgressModeV264('transparent')">Без фона</button><button class="${m==='background'?'on':''}" onclick="shareProgressModeV264('background')">С фоном</button></div><div class="sp264-preview"><span>Готовим изображение…</span><img id="sp264Preview" hidden alt="Предпросмотр PNG Universal Fit"></div><div class="sp264-actions"><button id="sp264Save" class="btn full" onclick="shareProgressSaveV264()">Сохранить PNG</button><button id="sp264Share" class="btn primary full" onclick="shareProgressNativeV264()">Поделиться</button><div id="sp264Status" class="sp264-status"></div></div></div>`}
+  const storyLayouts=[['poster','Постер','Полная сводка тренировки'],['minimal','Минимал','Компактный стикер поверх фото'],['exercises','Упражнения','Список и лучшие подходы'],['record','Рекорд','Один результат крупным планом'],['tonnage','Тоннаж','Объём в наглядном сравнении'],['progress','Динамика','Изменения и итоги занятия']];
+  function recordPicker(s){if(layout!=='record')return '';return `<label class="sp471-record-picker">Упражнение <select aria-label="Упражнение для сторис" onchange="shareProgressExerciseV471(this.value)"><option value="">Автоматически · лучший результат</option>${exerciseRows(s).map(row=>`<option value="${esc(row.key)}" ${recordKey===row.key?'selected':''}>${esc(row.name)}</option>`).join('')}</select></label>`}
+  function markup(s,m){return `<div class="sp264" style="--share-accent:${accentColor()}"><div class="sp264-head"><button class="sp264-close" onclick="closeModal()" aria-label="Закрыть">×</button><h2>Universal Fit</h2><span style="width:42px"></span></div><div class="sp471-layouts" aria-label="Вариант сторис">${storyLayouts.map(([id,title])=>`<button type="button" aria-pressed="${layout===id}" onclick="shareProgressLayoutV471('${id}')">${title}</button>`).join('')}</div><div class="sp471-hint">${storyLayouts.find(x=>x[0]===layout)?.[2]||''}</div><div class="sp264-tabs"><button class="${m==='transparent'?'on':''}" onclick="shareProgressModeV264('transparent')">Без фона</button><button class="${m==='background'?'on':''}" onclick="shareProgressModeV264('background')">С фоном</button></div>${recordPicker(s)}<div class="sp264-preview"><span>Готовим изображение…</span><img id="sp264Preview" hidden alt="Предпросмотр PNG Universal Fit"></div><div class="sp264-actions"><button id="sp264Save" class="btn full" onclick="shareProgressSaveV264()">Сохранить PNG</button><button id="sp264Share" class="btn primary full" onclick="shareProgressNativeV264()">Поделиться</button><div id="sp264Status" class="sp264-status"></div></div></div>`}
 
   function roundRect(ctx,x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke()}}
   function wrapLines(ctx,text,maxWidth){const words=String(text||'').split(/\s+/),lines=[];let line='';for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word}else line=test}if(line)lines.push(line);return lines}
   function drawTextBlock(ctx,text,x,y,maxWidth,lineHeight,maxLines=3){const lines=wrapLines(ctx,text,maxWidth).slice(0,maxLines);lines.forEach((line,i)=>ctx.fillText(line,x,y+i*lineHeight));return y+lines.length*lineHeight}
   function buildStoryCanvas(s,variant){
+    if(layout!=='poster')return buildStickerCanvas(s,variant,layout);
     const d=data(s),canvas=D.createElement('canvas'),WID=1080,MAX=1920,accent=accentColor();
     canvas.width=WID;canvas.height=MAX;
     const x=canvas.getContext('2d'),rgb=[1,3,5].map(i=>parseInt(accent.slice(i,i+2),16));
@@ -213,19 +216,100 @@
     label('UNVRSL FIT',left,1850,'700 23px Arial,sans-serif',muted,4);
     return canvas;
   }
+  function volumeComparison(value){
+    if(value>=24000)return{kind:'train',mass:30000,name:'пассажирского вагона',reference:'Вагон ≈ 30 000 кг'};
+    if(value>=8000)return{kind:'truck',mass:10000,name:'грузовика',reference:'Грузовик ≈ 10 000 кг'};
+    if(value>=1000)return{kind:'car',mass:1500,name:'легкового автомобиля',reference:'Автомобиль ≈ 1 500 кг'};
+    return{kind:'plates',mass:20,name:'блина',reference:'Один блин = 20 кг'};
+  }
+  function drawVolumeVehicle(x,kind,accent){
+    x.save();x.translate(170,480);x.strokeStyle='#ffffff';x.lineWidth=8;x.lineJoin='round';
+    const rect=(a,b,w,h,r=12)=>roundRect(x,a,b,w,h,r,null,'#ffffff');
+    const line=(points)=>{x.beginPath();points.forEach(([a,b],i)=>i?x.lineTo(a,b):x.moveTo(a,b));x.stroke()};
+    const wheel=(a,b)=>{x.beginPath();x.arc(a,b,45,0,Math.PI*2);x.fillStyle=accent;x.fill();x.strokeStyle='#ffffff';x.stroke();x.beginPath();x.arc(a,b,16,0,Math.PI*2);x.stroke()};
+    if(kind==='train'){
+      rect(0,0,740,215,24);line([[20,0],[90,-30],[650,-30],[720,0]]);
+      for(let i=0;i<7;i++)rect(38+i*97,35,66,75,8);
+      line([[0,145],[740,145]]);wheel(155,225);wheel(585,225);line([[90,285],[650,285]]);
+    }else if(kind==='truck'){
+      rect(0,0,470,200);rect(485,75,240,125,16);rect(535,100,105,60,8);
+      line([[640,75],[685,30],[725,75]]);wheel(130,225);wheel(390,225);wheel(625,225);
+    }else if(kind==='car'){
+      rect(0,105,740,105,35);line([[110,105],[230,0],[535,0],[655,105]]);
+      line([[260,18],[230,88],[505,88],[520,18]]);wheel(150,220);wheel(590,220);
+    }else{
+      line([[20,120],[720,120]]);
+      for(let i=0;i<5;i++)rect(160+i*80,0,55,240,20);
+    }
+    x.restore();
+  }
+  function buildStickerCanvas(s,variant,style){
+    const d=data(s),accent=accentColor(),count=Math.min(12,d.exercises.length);
+    const stickerHeight=style==='minimal'?690:style==='exercises'?Math.max(720,430+count*100+(d.exercises.length>12?70:0)):style==='record'?960:style==='tonnage'?1160:1240;
+    const canvas=D.createElement('canvas');canvas.width=1080;canvas.height=variant==='background'?1920:stickerHeight;
+    const x=canvas.getContext('2d'),ink='#fafafa',muted='#c6c6cc',L=80,R=1000;
+    if(variant==='background'){
+      x.fillStyle='#101014';x.fillRect(0,0,1080,1920);
+      const glow=x.createRadialGradient(850,550,10,850,550,1000);glow.addColorStop(0,accent+'45');glow.addColorStop(1,accent+'00');x.fillStyle=glow;x.fillRect(0,0,1080,1920);
+      x.translate(0,(1920-stickerHeight)/2);
+    }
+    const text=(value,a,b,size=32,color=ink,weight=500,align='left',width=920)=>{
+      x.save();x.fillStyle=color;x.textAlign=align;x.shadowColor='rgba(0,0,0,.8)';x.shadowBlur=variant==='transparent'?12:0;x.shadowOffsetY=variant==='transparent'?3:0;
+      let str=String(value??''),fontSize=size;x.font=`${weight} ${fontSize}px Arial,sans-serif`;
+      while(x.measureText(str).width>width&&fontSize>22){fontSize-=2;x.font=`${weight} ${fontSize}px Arial,sans-serif`}
+      if(x.measureText(str).width>width){while(str.length&&x.measureText(str+'…').width>width)str=str.slice(0,-1);str+='…'}
+      x.fillText(str,a,b);x.restore();
+    };
+    const separator=y=>{x.fillStyle='#ffffff35';x.fillRect(L,y,R-L,2)};
+    const title=(value,y=165)=>{x.font='800 52px Arial,sans-serif';const lines=wrapLines(x,value,920).slice(0,2);lines.forEach((line,i)=>text(line,L,y+i*58,52,ink,800));return y+lines.length*58};
+    const stats=y=>{const values=[[d.time,'ВРЕМЯ'],[String(d.sets),'ПОДХОДОВ'],[String(d.exercises.length),'УПРАЖНЕНИЙ']];values.forEach(([v,k],i)=>{text(v,L+i*316,y,48,ink,800,'left',280);text(k,L+i*316,y+40,21,muted,600,'left',280)})};
+    text('UNVRSL FIT',L,72,29,ink,800);text(d.date,R,72,23,muted,500,'right',500);
+    if(style==='minimal'){
+      title(d.title);separator(300);text(plain(d.tonnage),L,445,126,accent,900,'left',700);text('кг',R,441,52,accent,800,'right',150);
+      text('ОБЪЁМ ТРЕНИРОВКИ',L,490,24,muted,600);stats(575);
+    }else if(style==='exercises'){
+      title(d.title);text(`${d.time}  ·  ${d.sets} подходов  ·  ${plain(d.tonnage)} кг`,L,305,29,muted,600);separator(345);
+      text('УПРАЖНЕНИЯ',L,395,22,muted,600);text('ЛУЧШИЙ ПОДХОД',R,395,22,muted,600,'right',280);
+      if(!d.exercises.length)text('Нет выполненных силовых подходов',L,510,32,muted);
+      d.exercises.slice(0,12).forEach((row,i)=>{const y=475+i*100; text(`${row.sets.length} ×`,L,y,31,accent,800,'left',85);x.font='600 30px Arial,sans-serif';const lines=wrapLines(x,row.name,530).slice(0,2);lines.forEach((line,j)=>text(line,L+100,y+j*33,30,ink,600,'left',530));text(row.best?`${plain(row.best.w)} × ${plain(row.best.reps)}`:'–',R,y,32,ink,800,'right',245)});
+      if(d.exercises.length>12)text(`Ещё ${d.exercises.length-12} упражнений в журнале`,L,475+count*100,27,muted);
+    }else if(style==='record'){
+      const row=d.exercises.find(r=>r.key===recordKey),pr=row&&realRecords(s).find(r=>r.key===row.key);
+      const r=row?.best?{hasRealPr:!!pr,hero:{exercise:row.name,value:`${fmt(row.best.w)} × ${fmt(row.best.reps)}`,e1:e1rm(row.best)}}:d.record,hero=r.hero;
+      text(r.hasRealPr?'НОВЫЙ РЕКОРД':'ЛУЧШИЙ РЕЗУЛЬТАТ',540,180,31,accent,800,'center');
+      if(hero){
+        x.font='800 58px Arial,sans-serif';const lines=wrapLines(x,hero.exercise,900).slice(0,3);lines.forEach((line,i)=>text(line,540,300+i*65,58,ink,800,'center'));
+        text(hero.value,540,610,132,accent,900,'center');text('КГ × ПОВТОРЕНИЯ',540,665,25,muted,600,'center');
+        text(`Расчётный 1ПМ ≈ ${fmt(hero.e1)} кг`,540,745,32,ink,600,'center');
+      }else{text('ТРЕНИРОВКА ЗАВЕРШЕНА',540,430,56,ink,800,'center');text('Нет силовых подходов для оценки',540,520,30,muted,500,'center')}
+      separator(820);text(`${d.time}  ·  ${d.sets} рабочих подходов`,540,895,30,muted,600,'center');
+    }else if(style==='tonnage'){
+      text('СЕГОДНЯ ПОДНЯТО',540,173,28,muted,700,'center');text(`${plain(d.tonnage)} кг`,540,325,124,accent,900,'center');
+      const comparison=volumeComparison(d.tonnage);drawVolumeVehicle(x,comparison.kind,accent);
+      text('СРАВНЕНИЕ ПО МАССЕ',540,880,25,muted,600,'center');text(`Масса ${comparison.name} × ${fmt(d.tonnage/comparison.mass)}`,540,948,51,ink,800,'center');
+      text(comparison.reference,540,1010,25,muted,500,'center');text('Тоннаж – сумма нагрузки всех повторений за тренировку.',540,1080,24,muted,500,'center');
+    }else{
+      title(d.title);separator(300);text('ДИНАМИКА ТРЕНИРОВКИ',L,375,25,accent,800);
+      d.progress.forEach((item,i)=>{const y=480+i*190;text(item.title,L,y,51,ink,800);text(item.sub,L,y+55,29,muted,500);separator(y+100)});
+      stats(1095);
+    }
+    return canvas;
+  }
   const canvasBlob=c=>new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('PNG не создан')),'image/png',.95));
 
-  function installStoryCss(){const style=D.getElementById('share-progress-v264-style');if(style)style.textContent+=`.sp264-tabs{grid-template-columns:repeat(2,1fr)}.sp264-tabs button.on,.sp264-actions .primary{background:var(--share-accent)!important;color:#101014!important}.sp264-preview{background:radial-gradient(circle at 50% 40%,#323039,#141318 75%);border-radius:18px}.sp264-preview img{box-shadow:0 12px 42px rgba(0,0,0,.55)}.sp264-preview img[hidden]{display:none}`}
-  let active=null,mode='transparent',prepared=null,prepareToken=0,previewUrl=null;
+  function installStoryCss(){const style=D.getElementById('share-progress-v264-style');if(style)style.textContent+=`.sp264-tabs{grid-template-columns:repeat(2,1fr)}.sp264-tabs button.on,.sp264-actions .primary{background:var(--share-accent)!important;color:#101014!important}.sp264-preview{background:radial-gradient(circle at 50% 40%,#323039,#141318 75%);border-radius:18px}.sp264-preview img{box-shadow:0 12px 42px rgba(0,0,0,.55)}.sp264-preview img[hidden]{display:none}.sp471-layouts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;flex:none}.sp471-layouts button{padding:10px 4px;border:1px solid #39363e;border-radius:12px;font-size:12px;font-weight:750;color:#ccc;background:#211e26}.sp471-layouts button[aria-pressed=true]{border-color:var(--share-accent);color:var(--share-accent);background:#302736}.sp471-hint{flex:none;color:#aaa;font-size:11px;padding:8px 2px 10px}.sp264-preview img{border-radius:0}.sp471-record-picker{flex:none;font-size:11px;color:#aaa;margin:0 0 10px}.sp471-record-picker select{display:block;width:100%;min-width:0;margin-top:5px;border:1px solid #39363e;border-radius:10px;padding:9px;color:#eee;background:#211e26;font-size:12px}`}
+  let active=null,mode='transparent',layout='poster',recordKey='',prepared=null,prepareToken=0,previewUrl=null;
   const status=t=>{const e=D.getElementById('sp264Status');if(e)e.textContent=t||''};
   const busy=v=>{for(const id of ['sp264Save','sp264Share']){const b=D.getElementById(id);if(b)b.disabled=!!v}};
-  async function prepareExport(){if(!active)return null;const token=++prepareToken;prepared=null;busy(true);status('Готовим PNG…');try{const canvas=buildStoryCanvas(active,mode),blob=await canvasBlob(canvas);if(token!==prepareToken)return null;if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=URL.createObjectURL(blob);const img=D.getElementById('sp264Preview');if(img){img.src=previewUrl;img.hidden=false;img.previousElementSibling?.remove()}prepared={blob,file:new File([blob],`universal-fit-${String(active.date||new Date().toISOString().slice(0,10))}-${mode}.png`,{type:'image/png'}),mode,id:String(active.id||''),accent:accentColor()};status(`PNG готов · ${canvas.width} × ${canvas.height}`);return prepared}catch(e){console.error('share v264: '+(e?.stack||e));status('Не удалось подготовить изображение');return null}finally{if(token===prepareToken)busy(false)}}
-  const ready=()=>prepared&&prepared.mode===mode&&prepared.id===String(active?.id||'')&&prepared.accent===accentColor()?prepared:null;
+  async function prepareExport(){if(!active)return null;const token=++prepareToken;prepared=null;busy(true);status('Готовим PNG…');try{const canvas=buildStoryCanvas(active,mode),blob=await canvasBlob(canvas);if(token!==prepareToken)return null;if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=URL.createObjectURL(blob);const img=D.getElementById('sp264Preview');if(img){img.src=previewUrl;img.hidden=false;img.previousElementSibling?.remove()}prepared={blob,file:new File([blob],`universal-fit-${String(active.date||new Date().toISOString().slice(0,10))}-${layout}-${mode}.png`,{type:'image/png'}),mode,layout,recordKey,id:String(active.id||''),accent:accentColor()};status(`PNG готов · ${canvas.width} × ${canvas.height}`);return prepared}catch(e){console.error('share v264: '+(e?.stack||e));status('Не удалось подготовить изображение');return null}finally{if(token===prepareToken)busy(false)}}
+  const ready=()=>prepared&&prepared.mode===mode&&prepared.layout===layout&&prepared.recordKey===recordKey&&prepared.id===String(active?.id||'')&&prepared.accent===accentColor()?prepared:null;
   function download(blob){const u=URL.createObjectURL(blob),a=D.createElement('a');a.href=u;a.download=`unvrsl-fit-${String(active?.date||new Date().toISOString().slice(0,10))}.png`;a.rel='noopener';D.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
   function nativeShare(file){if(!navigator.share)return null;try{if(navigator.canShare&&!navigator.canShare({files:[file]}))return null;return navigator.share({files:[file]})}catch(_){return null}}
 
-  W.openShareProgressV264=s=>{installCss();installStoryCss();active=s||W.st?.current||null;if(!active)return W.toast?.('Нет данных тренировки');mode='transparent';prepared=null;W.modal?.(markup(active,mode));const sh=D.getElementById('sheet');if(sh)sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
-  W.shareProgressModeV264=m=>{if(!['transparent','background'].includes(m)||!active)return;mode=m;prepared=null;const sh=D.getElementById('sheet');if(!sh)return;sh.innerHTML=markup(active,mode);sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
+  W.openShareProgressV264=s=>{installCss();installStoryCss();active=s||W.st?.current||null;if(!active)return W.toast?.('Нет данных тренировки');mode='transparent';layout='poster';recordKey='';prepared=null;prepareToken++;W.modal?.(markup(active,mode));const sh=D.getElementById('sheet');if(sh)sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
+  W.shareProgressModeV264=m=>{if(!['transparent','background'].includes(m)||!active)return;mode=m;prepared=null;prepareToken++;const sh=D.getElementById('sheet');if(!sh)return;sh.innerHTML=markup(active,mode);sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
+  W.shareProgressLayoutV471=value=>{if(!storyLayouts.some(x=>x[0]===value)||!active)return;layout=value;prepared=null;prepareToken++;const sh=D.getElementById('sheet');if(!sh)return;sh.innerHTML=markup(active,mode);sh.scrollTop=0;requestAnimationFrame(()=>prepareExport())};
+  W.shareProgressExerciseV471=key=>{if(!active||(key&&!exerciseRows(active).some(row=>row.key===key)))return;recordKey=key;prepared=null;prepareToken++;const sh=D.getElementById('sheet');if(sh)sh.innerHTML=markup(active,mode);requestAnimationFrame(()=>prepareExport())};
   W.shareProgressSaveV264=()=>{const p=ready();if(!p)return status('Изображение ещё готовится…');if(/iPad|iPhone|iPod/.test(navigator.userAgent)){const r=nativeShare(p.file);if(r){r.catch(e=>{if(e?.name!=='AbortError')download(p.blob)});return}}download(p.blob);W.toast?.('Изображение сохранено')};
   W.shareProgressNativeV264=()=>{const p=ready();if(!p)return status('Изображение ещё готовится…');const r=nativeShare(p.file);if(r){r.catch(e=>{if(e?.name!=='AbortError'){console.warn(e);download(p.blob)}});return}download(p.blob);W.toast?.('Карточка сохранена')};
   W.openShareProgressV262=W.openShareProgressV264;W.shareProgressModeV262=W.shareProgressModeV264;W.shareProgressSaveV262=W.shareProgressSaveV264;W.shareProgressNativeV262=W.shareProgressNativeV264;
