@@ -4,7 +4,7 @@
  if(!form||!api)return;
  const $=id=>document.getElementById(id), panels=[...form.querySelectorAll('fieldset')];
  const titles=['Личные данные','Опыт и спорт','Твой график','Оборудование','Ограничения','Питание','Акценты'];
- const key='unvrsl-intake-draft-v475';let step=0,body=null,lastResult=null;
+ const key='unvrsl-intake-draft-v476';let step=0,body=null,lastResult=null;
  const focusSlugs={back:['upper-back','trapezius'],chest:['chest'],shoulders:['deltoids'],arms:['biceps','triceps','forearm'],legs:['quadriceps','hamstring','gluteal','adductors','calves','tibialis'],core:['abs','obliques']};
  const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  $('focusChoices').innerHTML=Object.entries(api.FOCUS).map(([k,v])=>`<label><input name="focus" type="checkbox" value="${k}"><span>${v}</span></label>`).join('');

@@ -256,10 +256,10 @@ test("muscle labels are translated and settings retain only backup controls",()=
  assert.doesNotMatch(settings,/Импорт из openGym|Экспорт для ChatGPT|Сбросить всё/);
  assert.match(settings,/Экспорт резервной копии/);assert.match(settings,/Импорт резервной копии/);
 });
-test("light theme covers screenshot surfaces; Universal Fit PNG has one preview/export",()=>{
+test("light theme covers screenshot surfaces; UNVRSL FIT PNG has one preview/export",()=>{
  const css=read("theme-light.css"),share=read("share-progress-template.js");
  for(const cls of ["strength-list","rp281-item","np311-card-grid","catalog394-estimate","rq227-score","te200-rec"])assert.ok(css.includes(cls),cls);
- assert.match(share,/Universal Fit/);assert.doesNotMatch(share,/Universal Feed/);
+ assert.match(share,/UNVRSL FIT/);assert.doesNotMatch(share,/Universal Feed/);
  assert.match(share,/canvas.width=1080/);assert.match(share,/img\.src=previewUrl/);
  assert.match(read("workout-completion.js"),/W\.openShareProgressV264\?\.\(currentSession\)/);
 });

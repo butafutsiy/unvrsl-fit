@@ -62,7 +62,7 @@ const settle=async()=>{await new Promise(r=>setImmediate(r));for(let i=0;i<100&&
   const chrome=fs.readFileSync(path.join(__dirname,'..','interface.css'),'utf8');
   fs.writeFileSync(path.join(output,'ui-preview.png'),canvases.at(-1).toBuffer('image/png'));
   const markup=els.sheet.innerHTML.replace('<span>Готовим изображение…</span>','').replace('id="sp264Preview" hidden','id="sp264Preview" src="ui-preview.png"');
-  fs.writeFileSync(path.join(output,'ui.html'),`<!doctype html><html data-theme="light"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${firstStyle}</style><style>${chrome}</style><style>${styles.join('\n')}</style><body class="unvrsl-shell-ready-v316"><div class="modal show" id="modal"><div class="modal-close-bar"><h2 class="modal-heading">Universal Fit</h2><button class="modal-close-global">×</button></div><div class="sheet" id="sheet">${markup}</div></div></body></html>`);
+  fs.writeFileSync(path.join(output,'ui.html'),`<!doctype html><html data-theme="light"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${firstStyle}</style><style>${chrome}</style><style>${styles.join('\n')}</style><body class="unvrsl-shell-ready-v316"><div class="modal show" id="modal"><div class="modal-close-bar"><h2 class="modal-heading">UNVRSL FIT</h2><button class="modal-close-global">×</button></div><div class="sheet" id="sheet">${markup}</div></div></body></html>`);
  }
  const beforeSedan=drawn.length;win.shareProgressComparisonV473('sedan');await settle();assert.ok(drawn.slice(beforeSedan).includes('≈ 7,1 легковых автомобиля'));
  const beforeNext=drawn.length;win.shareProgressNextComparisonV473();await settle();assert.ok(drawn.slice(beforeNext).includes('Масса для сравнения ≈ 2 500 кг'));
