@@ -26,10 +26,10 @@
  form.addEventListener('submit',event=>{
   event.preventDefault();$('error').textContent='';
   try{
-   const f=new FormData(form);answers=api.validate({...Object.fromEntries(f),schemaVersion:2,homeBench:f.has('homeBench'),homeRack:f.has('homeRack'),noConditions:f.has('noConditions'),conditions:f.getAll('conditions'),spineRegions:f.getAll('spineRegions'),equipmentGroups:f.getAll('equipmentGroups'),excluded:f.getAll('excluded')});
+   const f=new FormData(form);answers=api.validate({...Object.fromEntries(f),schemaVersion:2,homeBench:f.has('homeBench'),homeRack:f.has('homeRack'),noConditions:f.has('noConditions'),conditions:f.getAll('conditions'),spineRegions:f.getAll('spineRegions'),equipmentGroups:f.getAll('equipmentGroups'),excluded:f.getAll('excluded'),focus:f.getAll('focus')});
    const result=api.generate(answers,catalog);$('resultTitle').textContent=result.program?'Черновик готов':'Нужна помощь тренера';
    $('result').innerHTML=`<span class="pill">${esc(answers.name)}</span><span class="pill">${answers.days} дня в неделю</span><span class="pill">${answers.minutes} минут</span><p>После проверки тренер сможет изменить план и отправить готовую программу.</p>${result.issues.length?`<div class="notice">${result.issues.map(esc).join('<br>')}</div>`:''}${result.program?`<div class="result-card"><h2>Почему такой план</h2><ul>${result.rationale.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>${result.program.weeks.map(w=>`<details ${w.n===1?'open':''}><summary>Неделя ${w.n}</summary>${w.days.map(d=>`<div class="result-card"><h2>${esc(d.name)}</h2><p class="hint">Около ${d.estimatedMinutes} мин · разминка включена</p>${d.ex.map(e=>`<div class="exercise-line"><b>${esc(e.n)}</b><small>${e.sets.length} × ${e.reps.min}–${e.reps.max} · RPE ${e.rpe} · отдых ${e.rest} сек</small></div>`).join('')}</div>`).join('')}</details>`).join('')}`:'<p>Отправь ответы тренеру. Готовая программа появится после индивидуального подбора.</p>'}`;
-   $('formView').hidden=true;$('resultView').hidden=false;$('copyWrap').hidden=true;$('shareStatus').textContent='';window.scrollTo(0,0);
+   window.intakeRenderSummary?.(result);window.intakeClearDraft?.();$('formView').hidden=true;$('resultView').hidden=false;$('copyWrap').hidden=true;$('shareStatus').textContent='';window.scrollTo(0,0);
   }catch(e){$('error').textContent=e.message}
  });
  $('edit').onclick=()=>{$('resultView').hidden=true;$('formView').hidden=false;window.scrollTo(0,0)};
