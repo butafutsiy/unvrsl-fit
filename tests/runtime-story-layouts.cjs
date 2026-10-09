@@ -43,7 +43,7 @@ const settle=async()=>{await new Promise(r=>setImmediate(r));for(let i=0;i<100&&
  session.ex.push(...Array.from({length:8},(_,i)=>({n:'Дополнительное упражнение '+i,set:[{w:20,r:10,ok:true}]})));
  win.shareProgressLayoutV471('exercises');await settle();assert.ok(drawn.some(t=>t==='Ещё 5 упражнений в журнале'));
  win.shareProgressLayoutV471('tonnage');await settle();
- const comparisons=[...els.sheet.innerHTML.matchAll(/<option value="([a-z]+)"/g)].map(m=>m[1]);assert.equal(comparisons.length,20);assert.equal(new Set(comparisons).size,20);
+ const comparisons=[...els.sheet.innerHTML.matchAll(/<option value="([a-z0-9]+)"/g)].map(m=>m[1]);assert.equal(comparisons.length,30);assert.equal(new Set(comparisons).size,30);
  session.advancedMetrics={tonnage:10632};win.shareProgressDesignV472('graphic');await settle();
  for(const kind of comparisons){
   win.shareProgressComparisonV473(kind);await settle();
@@ -55,6 +55,7 @@ const settle=async()=>{await new Promise(r=>setImmediate(r));for(let i=0;i<100&&
    if(output)fs.writeFileSync(path.join(output,'comparison-'+kind+'-'+mode+'.png'),c.toBuffer('image/png'));
   }
  }
+ for(const [kind,detail] of [['kettlebell16','Гиря 16 кг'],['plates25','2 диска по 25 кг = 50 кг'],['barbell','Гриф 20 кг + 4 диска по 20 кг = 100 кг'],['emptybar15','Пустой гриф 15 кг · без дисков']]){const before=drawn.length;win.shareProgressComparisonV473(kind);await settle();assert.ok(drawn.slice(before).includes(detail),kind+' exports its exact configuration');}
  const beforeTruck=drawn.length;win.shareProgressComparisonV473('truck');await settle();assert.ok(drawn.slice(beforeTruck).includes('≈ 1,1 грузовика'));
  if(output){
   const firstStyle=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8').match(/<style>([\s\S]*?)<\/style>/)[1];
@@ -68,5 +69,5 @@ const settle=async()=>{await new Promise(r=>setImmediate(r));for(let i=0;i<100&&
  const beforeInvalid=canvases.length;win.shareProgressComparisonV473('invalid');await settle();assert.equal(canvases.length,beforeInvalid);
  for(const tonnage of [0,1,24,200,3000,30000,1000000]){session.advancedMetrics={tonnage};win.shareProgressComparisonV473('');await settle();assert.ok(!els.sp264Status.textContent.includes('Не удалось'));}
  session.advancedMetrics={tonnage:1};const beforeTiny=drawn.length;win.shareProgressComparisonV473('whale');await settle();assert.ok(drawn.slice(beforeTiny).some(t=>t.startsWith('≈ 0,0000083')),'small fractions never turn into zero');
- console.log('PASS: six layouts × two designs × two backgrounds, real PNGs, transparent alpha, 9:16 backgrounds, native share filenames, no invented PR, long exercise list overflow, 20 illustrations × two modes, fractions and comparison switching.');
+ console.log('PASS: six layouts × two designs × two backgrounds, real PNGs, transparent alpha, 9:16 backgrounds, native share filenames, no invented PR, long exercise list overflow, 30 comparison variants × two modes, fractions and comparison switching.');
 })().catch(e=>{console.error(e);process.exitCode=1});

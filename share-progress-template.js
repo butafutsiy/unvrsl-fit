@@ -151,9 +151,9 @@
   function buildStoryCanvas(s,variant){return buildStickerCanvas(s,variant,layout)}
   // Illustrative reference masses, not measurements of the depicted objects.
   const storyComparisons=[
-    ['kettlebell','Гиря',24,'gym',0,'гиря','гири','гирь'],
-    ['plates','Пара блинов',40,'gym',1,'пара блинов','пары блинов','пар блинов'],
-    ['barbell','Штанга',100,'gym',2,'штанга','штанги','штанг'],
+    ['kettlebell','Гиря 24 кг',24,'gym',0,'гиря','гири','гирь'],
+    ['plates','Пара дисков по 20 кг',40,'gym',1,'пара блинов','пары блинов','пар блинов'],
+    ['barbell','Штанга 100 кг (20 + 4 × 20)',100,'gym',2,'штанга','штанги','штанг'],
     ['bicycle','Велосипед',10,'gym',3,'велосипед','велосипеда','велосипедов'],
     ['motorcycle','Мотоцикл',200,'gym',4,'мотоцикл','мотоцикла','мотоциклов'],
     ['piano','Пианино',300,'gym',5,'пианино','пианино','пианино'],
@@ -172,6 +172,13 @@
     ['plane','Пассажирский самолёт',80000,'heavy',4,'пассажирский самолёт','пассажирского самолёта','пассажирских самолётов'],
     ['whale','Синий кит',120000,'heavy',5,'синий кит','синего кита','синих китов']
   ].map(([kind,label,mass,atlas,cell,one,few,many])=>({kind,label,mass,atlas,cell,one,few,many}));
+  // Equipment comparisons use an explicit configuration, never a universal equipment mass.
+  Object.assign(storyComparisons[0],{detail:'Гиря 24 кг',exact:true});
+  Object.assign(storyComparisons[1],{detail:'2 диска по 20 кг = 40 кг',exact:true});
+  Object.assign(storyComparisons[2],{detail:'Гриф 20 кг + 4 диска по 20 кг = 100 кг',exact:true});
+  for(const mass of [16,32,40])storyComparisons.push({...storyComparisons[0],kind:'kettlebell'+mass,label:`Гиря ${mass} кг`,mass,detail:`Гиря ${mass} кг`});
+  for(const weight of [5,10,15,25])storyComparisons.push({...storyComparisons[1],kind:'plates'+weight,label:`Пара дисков по ${weight} кг`,mass:weight*2,detail:`2 диска по ${weight} кг = ${weight*2} кг`});
+  for(const mass of [10,15,20])storyComparisons.push({kind:'emptybar'+mass,label:`Пустой гриф ${mass} кг`,mass,atlas:'gym',cell:2,one:'пустой гриф',few:'пустого грифа',many:'пустых грифов',detail:`Пустой гриф ${mass} кг · без дисков`,exact:true,emptyBar:true});
   function volumeComparison(value){
     return storyComparisons.find(c=>c.kind===comparisonKey)||storyComparisons.reduce((best,c)=>Math.abs(Math.log(Math.max(value,1)/c.mass))<Math.abs(Math.log(Math.max(value,1)/best.mass))?c:best,storyComparisons[0]);
   }
@@ -184,7 +191,7 @@
   function comparisonPicker(s){
     if(layout!=='tonnage')return '';
     const current=volumeComparison(tonnage(s));
-    return `<div class="sp473-comparison"><label for="sp473Comparison">Сравнить с · 20 иллюстраций</label><div><select id="sp473Comparison" aria-label="Объект для сравнения тоннажа" onchange="shareProgressComparisonV473(this.value)"><option value="" ${!comparisonKey?'selected':''}>Автоматически · ${esc(current.label)}</option>${storyComparisons.map(c=>`<option value="${c.kind}" ${comparisonKey===c.kind?'selected':''}>${esc(c.label)} · ≈ ${plain(c.mass)} кг</option>`).join('')}</select><button type="button" aria-label="Другое изображение" onclick="shareProgressNextComparisonV473()">↻</button></div></div>`;
+    return `<div class="sp473-comparison"><label for="sp473Comparison">Сравнить с · ${storyComparisons.length} вариантов</label><div><select id="sp473Comparison" aria-label="Объект для сравнения тоннажа" onchange="shareProgressComparisonV473(this.value)"><option value="" ${!comparisonKey?'selected':''}>Автоматически · ${esc(current.label)}</option>${storyComparisons.map(c=>`<option value="${c.kind}" ${comparisonKey===c.kind?'selected':''}>${esc(c.label)}${c.exact?'':` · ≈ ${plain(c.mass)} кг`}</option>`).join('')}</select><button type="button" aria-label="Другое изображение" onclick="shareProgressNextComparisonV473()">↻</button></div></div>`;
   }
   const storyArtwork={},storyArtworkTasks={},storyArtworkBounds={};
   function loadStoryArtwork(kind){
@@ -210,6 +217,12 @@
     storyArtworkBounds[c.kind]={x:(c.cell%2)*cw+left,y:Math.floor(c.cell/2)*ch+top,w:right-left+1,h:bottom-top+1};
   }
   function drawComparisonArtwork(ctx,c,cx,cy,w,h){
+    if(c.emptyBar){
+      ctx.save();ctx.translate(cx,cy);ctx.strokeStyle='#f5f5f7';ctx.fillStyle='#f5f5f7';ctx.lineWidth=2;
+      roundRect(ctx,-w*.44,-7,w*.88,14,4,'#aeb4be','#f5f5f7');
+      for(const sign of [-1,1]){roundRect(ctx,sign<0?-w*.47:w*.28,-16,w*.19,32,5,'#c7cbd1','#f5f5f7');roundRect(ctx,sign<0?-w*.29:w*.27,-23,w*.02,46,3,'#e4e6e9','#f5f5f7')}
+      ctx.restore();return;
+    }
     const image=storyArtwork[c.atlas];if(!image)return;
     const cw=(image.naturalWidth||image.width)/2,ch=(image.naturalHeight||image.height)/3;
     const crop=storyArtworkBounds[c.kind]||{x:(c.cell%2)*cw,y:Math.floor(c.cell/2)*ch,w:cw,h:ch};
@@ -304,7 +317,7 @@
       text('СЕГОДНЯ ПОДНЯТО',L,174,25,muted,700);hero(355,148);
       const comparison=volumeComparison(d.tonnage);drawComparisonArtwork(x,comparison,540,610,850,340);
       separator(803);text('ПРИМЕРНО СТОЛЬКО ВЕСИТ',L,852,21,muted,600);text(comparisonCaption(d.tonnage,comparison),L,914,52,ink,700);
-      text(`Масса для сравнения ≈ ${plain(comparison.mass)} кг`,L,959,23,muted);text('Сумма нагрузки всех повторений · массы объектов приблизительные',L,1008,20,muted);
+      text(comparison.detail||`Масса для сравнения ≈ ${plain(comparison.mass)} кг`,L,959,23,muted,400,'left',920);text('Сумма нагрузки всех повторений · массы объектов приблизительные',L,1008,20,muted);
     }else{
       title(d.title);separator(270);text('ДИНАМИКА ТРЕНИРОВКИ',L,326,22,accent,700);
       d.progress.forEach((item,i)=>{const y=424+i*169;text(item.title,L,y,48,accent,800);text(item.sub,L,y+49,26,muted,500);separator(y+92)});
