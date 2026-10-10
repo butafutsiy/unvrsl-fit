@@ -30,3 +30,9 @@ barcode lookup, custom recipe editing, or seven-day automatic planning.
 `node --test tests/meal-engine.test.cjs` verifies target fit, bounded portions, exclusions,
 immutable consumed meals, swaps, target import, and input validation.
 `node tests/runtime-meal-planner.cjs` exercises UI persistence, dates, manual records and account changes.
+
+## v478: expanded recipes and compact interface
+
+524 total recipes: 23 original recipes plus 501 adapted UniTools recipes in Russian, licensed CC BY-SA 4.0. See ../data/meal-recipes-source.md. Bundled data works offline through the existing shell cache. The engine adjusts complete imported serving portions from 0.5 to 2.5 servings without changing ingredient ratios. Imported recipes are excluded from allergen-filtered recommendations because source metadata is incomplete.
+
+The catalog supports text/product/cuisine search, meal filters, 24-item paging and selecting an uneaten meal to replace. Selection preserves other meals and consumed snapshots. Daily metrics show consumed totals; menu totals include manual food records. Compact date navigation, progress bars, ingredient steps, and source attribution work in both themes.

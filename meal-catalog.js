@@ -48,7 +48,9 @@
   add('curd-apple','Творог с яблоком',['snack'],5,[['curd',180],['apple',150]],'Подай творог с нарезанным яблоком.');
   add('tofu-sandwich','Тосты с тофу',['snack'],10,[['tofu',150],['bread',60],['vegetables',100]],'Подсуши хлеб, положи тофу и овощи.');
   add('yogurt-oats','Йогурт с хлопьями и ягодами',['snack'],5,[['yogurt',200],['oats',40],['berries',100]],'Замочи хлопья в йогурте до мягкости, добавь ягоды.');
-  const catalog={foods,recipes,version:1};
+  const world=typeof module==='object'&&module.exports?require('./meal-recipes-data.js'):(root.UNVRSLWorldRecipes||[]);
+  recipes.push(...world.map(r=>({...r,ingredients:[{id:r.id,g:100,min:50,max:250,step:5,sourceNutrition:r.portionNutrition}]})));
+  const catalog={foods,recipes,version:2};
   if(typeof module==='object'&&module.exports)module.exports=catalog;
   root.UNVRSLMealCatalog=catalog;
 })(typeof window!=='undefined'?window:globalThis);

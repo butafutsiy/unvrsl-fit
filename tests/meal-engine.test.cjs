@@ -31,3 +31,20 @@ test('existing calorie goals produce coherent macro targets and invalid inputs f
  for(const k of ['k','p','f','c'])assert.throws(()=>E.generate({...t,[k]:NaN},4));
  assert.throws(()=>E.generate(t,2));
 });
+test('world recipe dataset preserves 501 complete recipes and coherent serving scaling',()=>{
+ const world=E.catalog.recipes.filter(r=>r.source);
+ assert.equal(world.length,501);assert.equal(E.catalog.recipes.length,524);
+ assert.equal(new Set(world.map(r=>r.id)).size,501);
+ for(const r of world){
+  assert.ok(r.name&&r.steps&&r.details.length&&r.baseServings>0);
+  assert.ok(r.time>=0&&Object.values(r.portionNutrition).every(v=>Number.isFinite(v)&&v>=0));
+  const m=E.fit(r,r.portionNutrition);assert.deepEqual(m.nutrition,E.round(r.portionNutrition));
+  const doubled=m.ingredients.map(i=>({...i,g:i.g*2}));
+  assert.deepEqual(E.nutrition(doubled),E.round(Object.fromEntries(Object.entries(r.portionNutrition).map(([k,v])=>[k,v*2]))));
+  assert.equal(E.allowed(r,{allergens:['milk']}),false);
+ }
+ const r=world.find(r=>r.name==='Спагетти карбонара');
+ assert.equal(E.allowed(r,{exclude:'гуанчале'}),false);assert.equal(E.allowed(r,{vegetarian:true}),false);
+ const target={k:3611,p:177,f:88,c:528},plan=E.generate(target,4,{maxTime:45});
+ assert.equal(plan.withinTarget,true);assert.ok(Math.abs(plan.delta.c)<20,JSON.stringify(plan.delta));
+});

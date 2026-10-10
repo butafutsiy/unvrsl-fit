@@ -6,7 +6,7 @@
   const sum=list=>list.reduce((a,x)=>{for(const k of keys)a[k]+=x[k]||0;return a},blank());
   const round=x=>Object.fromEntries(keys.map(k=>[k,Math.round(x[k]*10)/10]));
   function nutrition(ingredients){return round(sum(ingredients.map(i=>{
-    const food=catalog.foods[i.id];if(!food||!Number.isFinite(i.g)||i.g<0)throw Error('Проверь ингредиенты');
+    const food=i.sourceNutrition||catalog.foods[i.id];if(!food||!Number.isFinite(i.g)||i.g<0)throw Error('Проверь ингредиенты');
     return Object.fromEntries(keys.map(k=>[k,food[k]*i.g/100]));
   })));}
   function validateTarget(t){
@@ -28,6 +28,12 @@
   }
   function allowed(recipe,prefs={}){
     if(prefs.maxTime&&recipe.time>Number(prefs.maxTime))return false;
+    if(recipe.source){
+      if((prefs.allergens||[]).length)return false;
+      if(prefs.vegetarian&&!recipe.diets.some(d=>d==='vegetarian'||d==='vegan'))return false;
+      const excluded=String(prefs.exclude||'').toLowerCase().split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
+      return !excluded.some(x=>[recipe.name,...recipe.details.map(i=>i.name+' '+i.note)].join(' ').toLowerCase().includes(x));
+    }
     const excluded=String(prefs.exclude||'').toLowerCase().split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
     return recipe.ingredients.every(i=>{
       const f=catalog.foods[i.id];
