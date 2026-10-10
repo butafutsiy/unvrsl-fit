@@ -15,8 +15,8 @@ const {JSDOM}=require(process.env.UNVRSL_JSDOM||'jsdom'),root=path.resolve(__dir
  for(const [k,v] of Object.entries({nutritionGoal:'gain',overweight:'no',dailyActivity:'moderate',steps:9000,currentSessions:3}))set(k,v);next();assert.equal(panel(),6);
  for(const k of ['core','arms']){const e=form.querySelector(`[name="focus"][value="${k}"]`);e.checked=true;change(e)}
  assert.equal(form.querySelector('[name="focus"][value="legs"]').disabled,true);assert.ok($('focusMap').querySelector('path.selected'));
- set('format','varied');assert.ok(w.sessionStorage.getItem('unvrsl-intake-draft-v477'));
- form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));assert.equal($('resultView').hidden,false);assert.equal($('formView').hidden,true);assert.ok($('result').querySelector('.program-overview'));assert.equal($('result').querySelectorAll('details').length,4);assert.ok($('result').querySelectorAll('.volume-row').length===6);assert.equal(w.sessionStorage.getItem('unvrsl-intake-draft-v477'),null);
+ set('format','varied');assert.ok(w.sessionStorage.getItem('unvrsl-intake-draft-v476'));
+ form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));assert.equal($('resultView').hidden,false);assert.equal($('formView').hidden,true);assert.ok($('result').querySelector('.program-overview'));assert.equal($('result').querySelectorAll('details').length,4);assert.ok($('result').querySelectorAll('.volume-row').length===6);assert.equal(w.sessionStorage.getItem('unvrsl-intake-draft-v476'),null);
  $('edit').click();assert.equal($('formView').hidden,false);assert.equal(panel(),6);assert.equal(form.elements.format.value,'varied');$('wizardBack').click();assert.equal(panel(),5);
  // A submit from an intermediate step cannot bypass validation or generate a plan.
  set('steps',-5);form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));assert.equal(panel(),5);assert.equal($('resultView').hidden,true);
