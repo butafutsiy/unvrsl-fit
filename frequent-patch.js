@@ -1,9 +1,9 @@
 'use strict';
 (()=>{
  const sources=[
-  'premium-ui.js?v=479','stable-ui.js?v=479','mockup-ui.js?v=479','density-ui.js?v=479',
-  'mobile-final-fix.js?v=479','home-stats.js?v=479',
-  'client-nav-hotfix.js?v=479','trainer-shell.js?v=479'
+  'premium-ui.js?v=480','stable-ui.js?v=480','mockup-ui.js?v=480','density-ui.js?v=480',
+  'mobile-final-fix.js?v=480','home-stats.js?v=480',
+  'client-nav-hotfix.js?v=480','trainer-shell.js?v=480'
  ];
  const seen=new Set();
  for(const href of sources){
@@ -96,7 +96,7 @@ customCatalog=function(){
 let cloudModulesLoading=false,cloudModulesLoaded=false;
 const startupAssetsSeen=new Set();
 function markStartupAsset(src){const key=String(src||'').replace(/[?#].*$/,'');if(startupAssetsSeen.has(key))return;startupAssetsSeen.add(key);try{(window.unvrslStartupAssetLoadedV320||window.unvrslStartupAssetLoadedV319)?.(key)}catch(_){ }}
-function loadExternalScript(src){if(!/^https?:/.test(src)&&/\.js(?:\?|$)/.test(src)){const u=new URL(src,location.href);u.searchParams.set('v',String(window.__unvrslRelease||'v479').replace(/^v/,''));src=u.pathname+u.search}return new Promise((resolve,reject)=>{const done=value=>{markStartupAsset(src);resolve(value)};const key=String(src).replace(/^\.\//,'');if(document.querySelector(`script[data-unvrsl-src="${src}"],script[data-unvrsl-src="${key}"],script[data-dyn="${src}"],script[data-dyn="./${key}"]`))return done();const s=document.createElement('script');s.src=src;s.async=false;s.dataset.unvrslSrc=key;s.onload=()=>done();s.onerror=()=>{s.remove();reject(new Error(`Failed to load ${src}`))};document.body.appendChild(s)})}
+function loadExternalScript(src){if(!/^https?:/.test(src)&&/\.js(?:\?|$)/.test(src)){const u=new URL(src,location.href);u.searchParams.set('v',String(window.__unvrslRelease||'v480').replace(/^v/,''));src=u.pathname+u.search}return new Promise((resolve,reject)=>{const done=value=>{markStartupAsset(src);resolve(value)};const key=String(src).replace(/^\.\//,'');if(document.querySelector(`script[data-unvrsl-src="${src}"],script[data-unvrsl-src="${key}"],script[data-dyn="${src}"],script[data-dyn="./${key}"]`))return done();const s=document.createElement('script');s.src=src;s.async=false;s.dataset.unvrslSrc=key;s.onload=()=>done();s.onerror=()=>{s.remove();reject(new Error(`Failed to load ${src}`))};document.body.appendChild(s)})}
 window.loadExternalScript=loadExternalScript;
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function loadCriticalScript(src){
@@ -110,7 +110,7 @@ async function loadCloudModules(){
  if(cloudModulesLoaded||cloudModulesLoading)return;cloudModulesLoading=true;
  try{
   if(!window.supabase)await loadExternalScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-  for(const src of ['cloud-config.js','cloud.js?v=479','auth-ux.js','auth-handoff.js','trainer-style.js','trainer.js?v=479','trainer-nav-patch.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js?v=479','client-link.js?v=479','auth-password.js','checkin.js?v=479','checkin-singleton-fix.js','online-progress.js','client-ui-fix.js?v=479','trainer-plan-controls.js','trainer-direct-ui.js','offline-progress.js?v=479','offline-schedule.js?v=479','trainer-clients-canonical.js?v=479'])await loadExternalScript(src);
+  for(const src of ['cloud-config.js','cloud.js?v=480','auth-ux.js','auth-handoff.js','trainer-style.js','trainer.js?v=480','trainer-nav-patch.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js?v=480','client-link.js?v=480','auth-password.js','checkin.js?v=480','checkin-singleton-fix.js','online-progress.js','client-ui-fix.js?v=480','trainer-plan-controls.js','trainer-direct-ui.js','offline-progress.js?v=480','offline-schedule.js?v=480','trainer-clients-canonical.js?v=480'])await loadExternalScript(src);
   cloudModulesLoaded=true;
  }catch(e){console.warn('UNVRSL cloud modules',e)}finally{cloudModulesLoading=false;window.__unvrslCloudModulesSettledV257=true;window.__unvrslCloudModulesSettledV260=true;window.dispatchEvent(new CustomEvent('unvrsl:cloud-modules-settled',{detail:{loaded:cloudModulesLoaded,release:260}}))}
 }
@@ -118,9 +118,9 @@ try{renderBodyFilters();renderExerciseResults()}catch(e){console.warn('UNVRSL in
 const cloudChain=loadCloudModules();window.__unvrslCloudModulesPromiseV316=cloudChain;
 
 const criticalSources=[
- 'premium-ui.js?v=479','stable-ui.js?v=479','mockup-ui.js?v=479','density-ui.js?v=479',
- 'mobile-final-fix.js?v=479','home-stats.js?v=479',
- 'client-nav-hotfix.js?v=479','trainer-shell.js?v=479'
+ 'premium-ui.js?v=480','stable-ui.js?v=480','mockup-ui.js?v=480','density-ui.js?v=480',
+ 'mobile-final-fix.js?v=480','home-stats.js?v=480',
+ 'client-nav-hotfix.js?v=480','trainer-shell.js?v=480'
 ];
 const criticalChain=loadSequence(criticalSources,loadCriticalScript).finally(()=>{
  window.__unvrslCriticalModulesReadyV320=true;
@@ -133,10 +133,10 @@ let deferredStarted=false,deferredPromise=null;
 function startDeferredModules(){
  if(deferredStarted)return deferredPromise;deferredStarted=true;
  const safe=(promise,label)=>promise.catch(e=>{console.warn(label,e);return{failed:true,label}});
- const templates=safe(loadSequence(['popular-programs.js?v=479','female-program-templates.js?v=479']),'program templates');
- const programs=safe(loadSequence(['anton-gorkusha-plan.js?v=479','anton-plan-rules.js?v=479','trainer-self-plan.js?v=479','client-free-workout.js?v=479']),'program modules');
- const workout=safe(loadSequence(['wake-lock.js?v=479','workout-duration.js?v=479','cardio-timer.js?v=479','advanced-training.js?v=479','workout-template-ux.js?v=479','cardio-exercise-library.js?v=479','client-workout-scroll.js?v=479']),'workout modules');
- const stats=safe(loadSequence(['profile-strength-core.js?v=479','sheet-swipe.js?v=479','stats-dashboard.js?v=479','stats-authority.js?v=479']),'stats modules');
+ const templates=safe(loadSequence(['popular-programs.js?v=480','female-program-templates.js?v=480']),'program templates');
+ const programs=safe(loadSequence(['anton-gorkusha-plan.js?v=480','anton-plan-rules.js?v=480','trainer-self-plan.js?v=480','client-free-workout.js?v=480']),'program modules');
+ const workout=safe(loadSequence(['wake-lock.js?v=480','workout-duration.js?v=480','cardio-timer.js?v=480','advanced-training.js?v=480','workout-template-ux.js?v=480','cardio-exercise-library.js?v=480','client-workout-scroll.js?v=480']),'workout modules');
+ const stats=safe(loadSequence(['profile-strength-core.js?v=480','sheet-swipe.js?v=480','stats-dashboard.js?v=480','stats-authority.js?v=480']),'stats modules');
  deferredPromise=Promise.allSettled([templates,programs,workout,stats]).finally(()=>{
   window.__unvrslDeferredModulesReadyV320=true;
   window.dispatchEvent(new CustomEvent('unvrsl:deferred-modules-ready',{detail:{release:321}}))

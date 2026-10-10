@@ -1,0 +1,56 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const {JSDOM}=require(process.env.UNVRSL_JSDOM||'jsdom');
+const E=require('../meal-engine.js'),N=require('../nutrition-planner.js'),root=path.resolve(__dirname,'..');
+const files=['meal-recipes-data.js','meal-catalog.js','meal-engine.js','meal-planner-ui.js'];
+const plain=x=>JSON.parse(JSON.stringify(x));
+const load=(w,file)=>w.eval(fs.readFileSync(path.join(root,file),'utf8'));
+const tick=w=>new Promise(r=>w.setTimeout(r,35));
+const click=(w,action,id)=>w.document.querySelector(`[data-mp="${action}"]${id?`[data-id="${id}"]`:''}`).click();
+const set=(w,id,value)=>{w.document.getElementById(id).value=value};
+const input={sex:'male',age:25,height:183,weight:95,overweight:false,steps:8000,strengthSessions:3,dailyActivity:'moderate',activityFactor:''};
+(async()=>{
+ const dom=new JSDOM('<html><head></head><body><div id="plan"><div id="history">История</div></div><div id="sheet"></div></body></html>',{url:'https://app.test/',runScripts:'dangerously',pretendToBeVisual:true}),w=dom.window;
+ w.st={accountOwnerId:'client-a'};let saved;
+ w.save=()=>{saved=JSON.stringify(w.st);return true};w.modal=html=>w.document.getElementById('sheet').innerHTML=html;w.closeModal=()=>w.document.getElementById('sheet').innerHTML='';w.toast=()=>{};
+ files.forEach(f=>load(w,f));await tick(w);
+ assert.equal(w.document.getElementById('mealPlannerEntry').previousElementSibling.id,'history');
+ load(w,'nutrition-planner.js');await tick(w);
+ assert.equal(w.document.getElementById('mealPlannerEntry').previousElementSibling.id,'np311PlanMount','diary follows late-mounted calculator');
+ w.openNutritionPlannerV311();for(const [id,v] of Object.entries({np311Sex:input.sex,np311Age:25,np311Height:183,np311Weight:95,np311Steps:8000,np311Strength:3,np311Daily:'moderate'}))set(w,id,v);
+ const result=w.calculateNutritionPlannerV311();assert.ok(result?.goals.maintain);
+ w.chooseNutritionProtocolV480('maintain');assert.equal(w.st.mealNutritionV1.protocol,'maintain');
+ await tick(w);assert.match(w.document.querySelector('.np311-plan-card').textContent,/Текущий протокол: Поддержание/);
+ const target=E.fromGoal(plain(result.goals.maintain));assert.deepEqual(plain(w.st.mealNutritionV1.target),target);
+ assert.match(w.document.getElementById('np311Result').textContent,/Текущий протокол: Поддержание/);
+ w.openMealPlanner();assert.equal(w.document.querySelectorAll('.mp-meal').length,4);assert.match(w.document.querySelector('.mp-protocol').textContent,/Поддержание/);
+ const date=w.document.getElementById('mp-date').value;
+ w.st.mealNutritionV1.days['2020-01-01']={plan:null,eaten:{},extra:[],target:{k:1800,p:120,f:60,c:195},protocol:'cut'};
+ const oldDay=plain(w.st.mealNutritionV1.days['2020-01-01']);
+ click(w,'eat','meal-0');const eaten=plain(w.st.mealNutritionV1.days[date].eaten['meal-0']);
+ w.document.querySelector('[data-mp="goal"][data-value="gain"]').click();
+ assert.equal(w.st.mealNutritionV1.protocol,'gain');assert.match(w.document.querySelector('.mp-protocol').textContent,/Набор/);
+ assert.deepEqual(plain(w.st.mealNutritionV1.days[date].eaten['meal-0']),eaten);
+ assert.deepEqual(plain(w.st.mealNutritionV1.days['2020-01-01']),oldDay);
+ assert.deepEqual(plain(w.st.mealNutritionV1.days[date].plan.target),E.fromGoal(plain(result.goals.gain)));
+ const restored=JSON.parse(saved);w.st=restored;w.openMealPlanner();assert.equal(w.st.mealNutritionV1.protocol,'gain');assert.deepEqual(plain(w.st.mealNutritionV1.days[date].eaten['meal-0']),eaten);
+ const previous=plain(w.st.mealNutritionV1);w.save=()=>false;w.document.querySelector('[data-mp="goal"][data-value="cut"]').click();assert.deepEqual(plain(w.st.mealNutritionV1),previous);assert.match(w.document.getElementById('mp-error').textContent,/Не удалось сохранить/);dom.window.close();
+
+ async function publicPage(token,weight,storage={}){
+  const d=new JSDOM('<html><head></head><body><div id="progressRoot"></div></body></html>',{url:'https://app.test/progress.html#t='+token,runScripts:'dangerously',pretendToBeVisual:true}),w=d.window;
+  Object.entries(storage).forEach(([k,v])=>w.localStorage.setItem(k,v));Object.defineProperty(w.crypto,'subtle',{value:crypto.webcrypto.subtle});w.TextEncoder=TextEncoder;
+  const result=N.calculate({...input,weight}),snapshot={client:{name:'Тестовый клиент',height:183,sex:'male',birthDate:'2000-01-01'},nutrition:{updatedAt:'2026-10-10',bmr:result.bmr.value,formula:result.bmr.formula,activityFactor:result.activity.factor,tdee:result.tdee,goals:result.goals},measurements:[],strengths:[]};
+  w.UNVRSL_CLOUD={url:'https://project.test',anonKey:'public'};w.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:null}})},rpc:async()=>({data:{data:snapshot,viewer_source:'client'},error:null})})};
+  files.forEach(f=>load(w,f));load(w,'public-progress.js');await tick(w);await tick(w);return d;
+ }
+ let pd=await publicPage('a'.repeat(44),95),p=pd.window;
+ assert.ok(p.document.querySelector('.pp-meal-entry'));p.publicProgressNutritionGoalV325('gain');assert.match(p.document.querySelector('.pp-meal-entry').textContent,/Набор/);
+ p.publicProgressMealMenuV480();assert.equal(p.document.querySelectorAll('.mp-meal').length,4);assert.match(p.document.querySelector('.mp-protocol').textContent,/Набор/);
+ click(p,'eat','meal-0');const sharedState=plain(p.UNVRSLMealContext.getState().mealNutritionV1),hash=crypto.createHash('sha256').update('a'.repeat(44)).digest('hex'),key='unvrsl-meals-share-v1:'+hash;
+ assert.equal(JSON.parse(p.localStorage.getItem(key)).protocol,'gain');const storage={[key]:p.localStorage.getItem(key)};pd.window.close();
+ pd=await publicPage('a'.repeat(44),95,storage);p=pd.window;assert.match(p.document.querySelector('.pp-meal-entry').textContent,/Набор/);p.publicProgressMealMenuV480();assert.deepEqual(plain(p.UNVRSLMealContext.getState().mealNutritionV1.days),sharedState.days);
+ set(p,'mp-k',p.UNVRSLMealContext.getState().mealNutritionV1.target.k-100);click(p,'save');assert.equal(p.UNVRSLMealContext.getState().mealNutritionV1.protocol,'manual');assert.match(p.document.querySelector('.pp-meal-entry').textContent,/Свои КБЖУ/);const manualTarget=plain(p.UNVRSLMealContext.getState().mealNutritionV1.target);p.closeModal();p.publicProgressMealMenuV480();assert.deepEqual(plain(p.UNVRSLMealContext.getState().mealNutritionV1.target),manualTarget);pd.window.close();
+ pd=await publicPage('b'.repeat(44),65,storage);p=pd.window;assert.equal(p.UNVRSLMealContext.getState().mealNutritionV1,null);p.publicProgressMealMenuV480();assert.equal(p.UNVRSLMealContext.getState().mealNutritionV1.protocol,'maintain');assert.ok(p.UNVRSLMealContext.getState().mealNutritionV1.target.k<sharedState.target.k);assert.equal(Object.keys(Object.values(p.UNVRSLMealContext.getState().mealNutritionV1.days)[0].eaten).length,0);
+ const beforeFailure=plain(p.UNVRSLMealContext.getState().mealNutritionV1);Object.defineProperty(p.Storage.prototype,'setItem',{value:()=>{throw Error('quota')}});p.publicProgressNutritionGoalV325('cut');assert.deepEqual(plain(p.UNVRSLMealContext.getState().mealNutritionV1),beforeFailure);pd.window.close();
+ console.log('Protocols: calculator selection, immediate menus, client mount order, consumed/history preservation, reload, rollback, shared-client UI and private-link isolation passed');
+})().catch(e=>{console.error(e);process.exitCode=1});

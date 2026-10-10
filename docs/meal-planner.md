@@ -36,3 +36,11 @@ immutable consumed meals, swaps, target import, and input validation.
 524 total recipes: 23 original recipes plus 501 adapted UniTools recipes in Russian, licensed CC BY-SA 4.0. See ../data/meal-recipes-source.md. Bundled data works offline through the existing shell cache. The engine adjusts complete imported serving portions from 0.5 to 2.5 servings without changing ingredient ratios. Imported recipes are excluded from allergen-filtered recommendations because source metadata is incomplete.
 
 The catalog supports text/product/cuisine search, meal filters, 24-item paging and selecting an uneaten meal to replace. Selection preserves other meals and consumed snapshots. Daily metrics show consumed totals; menu totals include manual food records. Compact date navigation, progress bars, ingredient steps, and source attribution work in both themes.
+
+## v480: selected protocols and client menus
+
+Calculator goal buttons save the active cut/maintain/gain protocol and exact midpoint targets. The calculator card and diary show the active protocol. Opening the menu builds a day against these targets; changing goals or recalculating refreshes the current day while preserving consumed snapshots and past days. Manual target edits switch to custom macros. The menu entry moves directly after the calculator even when the calculator mounts later.
+
+Replace opens a searchable meal-specific picker, ranked against the day budget after other meals and manual food. Preview portions use the same fitting function as selection. Opening the picker does not change persisted data; choosing a recipe replaces only the selected uneaten slot.
+
+Shared client progress pages load the same catalog, engine and diary UI using a context adapter. They use only the nutrition goals already returned by the existing private-share RPC. Protocol and diary data are stored locally under the share's SHA-256 hash, isolated per private client link. No raw share token is stored. Diary records are not synced to the trainer or across devices. Supabase schema, permissions and RPCs are unchanged.

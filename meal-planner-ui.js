@@ -5,17 +5,32 @@
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt=v=>Number(v||0).toLocaleString('ru-RU',{maximumFractionDigits:1});
   const dateNow=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');};
-  const state=()=>{try{return typeof st!=='undefined'?st:W.st}catch(_){return W.st}};
+  const state=()=>{if(W.UNVRSLMealContext?.getState)return W.UNVRSLMealContext.getState();try{return typeof st!=='undefined'?st:W.st}catch(_){return W.st}};
   const owner=()=>String(state()?.accountOwnerId||W.cloud?.user?.id||'local');
-  let activeDate=dateNow(),openedOwner=null,browseQuery='',browseType='',browseLimit=24;
+  let activeDate=dateNow(),openedOwner=null,browseQuery='',browseType='',browseLimit=24,replacementSlot=null;
   function db(){const s=state();if(!s)throw Error('Данные приложения ещё загружаются');return s.mealNutritionV1||(s.mealNutritionV1={version:1,days:{},preferences:{count:4,maxTime:45,exclude:'',allergens:[],vegetarian:false},target:null});}
   function day(){return db().days[activeDate]||{plan:null,eaten:{},extra:[]};}
   function mutate(fn){
     const s=state(),before=JSON.stringify(s.mealNutritionV1);
     try{
-      fn(db());const ok=typeof save==='function'?save():W.save?.();
+      fn(db());const ok=W.UNVRSLMealContext?.save?W.UNVRSLMealContext.save():typeof save==='function'?save():W.save?.();
       if(ok===false)throw Error('Не удалось сохранить питание. Освободи место и повтори.');
     }catch(e){if(before)s.mealNutritionV1=JSON.parse(before);else delete s.mealNutritionV1;throw e;}
+  }
+  const protocolTitles={cut:'Сушка',maintain:'Поддержание',gain:'Набор',manual:'Свои КБЖУ'};
+  const sameTarget=(a,b)=>a&&b&&['k','p','f','c'].every(k=>Math.abs(a[k]-b[k])<.1);
+  function selectProtocol(key,result=state()?.nutritionPlannerV311?.result){
+    const goal=result?.goals?.[key];if(!goal||!['cut','maintain','gain'].includes(key))throw Error('Сначала рассчитай КБЖУ');
+    const target=E.validateTarget(E.fromGoal(goal)),date=dateNow();
+    mutate(data=>{const d=data.days[date]||{plan:null,eaten:{},extra:[]};
+      const changed=!sameTarget(d.target||d.plan?.target||data.target,target);
+      data.protocol=key;data.target=target;
+      data.days[date]={...d,target:{...target},protocol:key,menuStale:changed||d.menuStale||!d.plan};
+    });
+    W.UNVRSLMealContext?.onProtocolChange?.(key);mount();return target;
+  }
+  function protocolHTML(){const data=db(),d=day(),result=state()?.nutritionPlannerV311?.result,key=d.protocol||data.protocol,target=d.target||d.plan?.target||data.target;
+    return `<section class="mp-protocol"><div class="mp-head"><div><small>Текущий протокол</small><strong>${esc(protocolTitles[key]||(target?'Свои КБЖУ':'Выбери после расчёта'))}</strong></div>${target?`<span class="mp-tag">${fmt(target.k)} ккал</span>`:''}</div>${result?`<div class="mp-protocol-options">${['cut','maintain','gain'].filter(k=>result.goals?.[k]).map(k=>`<button data-mp="goal" data-value="${k}" aria-pressed="${key===k}">${protocolTitles[k]}</button>`).join('')}</div>`:''}</section>`;
   }
   const totals=d=>E.round(E.sum([...Object.values(d.eaten||{}).map(m=>m.nutrition),...(d.extra||[]).map(m=>m.nutrition)]));
   const macros=n=>`${fmt(n.k)} ккал · Б ${fmt(n.p)} · Ж ${fmt(n.f)} · У ${fmt(n.c)} г`;
@@ -30,6 +45,7 @@
   function ingredientsHTML(m){const recipe=recipeOf(m);return `<ul>${ingredientRows(m).map(i=>`<li><span>${esc(i.name)}</span><b>${esc(i.amount)}</b>${i.note?`<small>${esc(i.note)}</small>`:''}</li>`).join('')}</ul>${recipe?.source?`<p class="mp-copy">Количество на ${fmt(m.ingredients[0].g/100)} порц. Шаги описывают исходный рецепт на ${recipe.baseServings} порц. Можно приготовить весь рецепт и отделить свою порцию.</p>`:''}<p class="mp-steps">${esc(m.steps).replace(/\n/g,'<br><br>')}</p>`;}
   function browse(){
     const host=D.getElementById('mp-recipes');if(!host)return;
+    if(replacementSlot)return browseReplacements();
     const prefs={...db().preferences,maxTime:0},q=browseQuery.toLowerCase().trim();
     const list=E.catalog.recipes.filter(r=>(!browseType||r.slots.includes(browseType))&&E.allowed(r,prefs)&&(!q||[r.name,r.country||'',...(r.details||[]).map(i=>i.name),...r.ingredients.map(i=>E.catalog.foods[i.id]?.name||'')].join(' ').toLowerCase().includes(q)));
     host.innerHTML=`<div class="mp-copy">Найдено ${list.length} · с учётом предпочтений</div>${list.slice(0,browseLimit).map(r=>{
@@ -38,20 +54,37 @@
       return `<article class="mp-recipe"><div class="mp-head"><span class="mp-tag">${esc(r.country||'Простой рецепт')}</span><small>${r.time} мин</small></div><h3>${esc(r.name)}</h3><div class="mp-copy">${macros(m.nutrition)}${r.source?' · 1 порц.':''}</div><details><summary>Посмотреть рецепт</summary>${ingredientsHTML(m)}</details>${available.length?`<div class="mp-pick"><select aria-label="Приём пищи для блюда" id="mp-pick-${r.id}">${available.map(x=>`<option value="${x.id}">${esc(x.title)}</option>`).join('')}</select><button class="btn tiny" data-mp="pick" data-id="${r.id}">В меню ＋</button></div>`:''}</article>`;
     }).join('')}${list.length>browseLimit?'<button class="btn full" data-mp="more">Показать ещё 24</button>':''}${!list.length?'<p class="mp-copy">Нет совпадений. Измени поиск или предпочтения.</p>':''}`;
   }
+  function replacementTarget(d,current){const others=E.sum(d.plan.meals.filter(m=>m.id!==current.id).map(m=>m.nutrition)),extras=E.sum(d.extra.map(m=>m.nutrition));return Object.fromEntries(['k','p','f','c'].map(k=>[k,Math.max(k==='k'?100:1,d.plan.target[k]-others[k]-extras[k])]));}
+  function browseReplacements(){
+    const host=D.getElementById('mp-recipes'),d=day(),current=d.plan?.meals.find(m=>m.id===replacementSlot);if(!host||!current)return;
+    const aim=replacementTarget(d,current),prefs={...db().preferences,maxTime:0},q=browseQuery.toLowerCase().trim();
+    const score=n=>['k','p','f','c'].reduce((a,k)=>a+((n[k]-aim[k])/Math.max(aim[k],k==='k'?100:15))**2,0);
+    const list=E.catalog.recipes.filter(r=>r.id!==current.recipeId&&r.slots.includes(current.type)&&E.allowed(r,prefs)&&(!q||[r.name,r.country||'',...(r.details||[]).map(i=>i.name),...r.ingredients.map(i=>E.catalog.foods[i.id]?.name||'')].join(' ').toLowerCase().includes(q))).map(r=>({recipe:r,meal:E.fit(r,aim)})).sort((a,b)=>score(a.meal.nutrition)-score(b.meal.nutrition));
+    host.innerHTML=`<p class="mp-copy">${list.length} вариантов · сначала ближе к твоим КБЖУ. Количество уже подобрано под этот приём.</p>${list.slice(0,browseLimit).map(({recipe:r,meal:m})=>`<article class="mp-recipe"><div class="mp-head"><span class="mp-tag">${esc(r.country||'Простой рецепт')}</span><small>${r.time} мин</small></div><h3>${esc(r.name)}</h3><b class="mp-macro">${macros(m.nutrition)}</b><details><summary>Рецепт и ингредиенты</summary>${ingredientsHTML(m)}</details><button class="btn full" data-mp="replace-choice" data-id="${r.id}">Выбрать это блюдо</button></article>`).join('')}${list.length>browseLimit?'<button class="btn full" data-mp="more">Показать ещё 24</button>':''}${!list.length?'<p class="mp-copy">Нет совпадений. Попробуй другой запрос или измени исключения.</p>':''}`;
+  }
+  function replaceWithRecipe(recipe,slotId){
+    const d=day(),current=d.plan?.meals.find(m=>m.id===slotId);if(!recipe||!current||d.eaten[current.id])return;
+    if(!E.allowed(recipe,{...db().preferences,maxTime:0})||!recipe.slots.includes(current.type))throw Error('Блюдо не подходит текущим предпочтениям');
+    const meal={...E.fit(recipe,replacementTarget(d,current)),id:current.id,type:current.type,title:current.title,share:current.share};
+    const plan={...d.plan,meals:d.plan.meals.map(m=>m.id===slotId?meal:m)};plan.total=E.round(E.sum(plan.meals.map(m=>m.nutrition)));
+    mutate(data=>{data.days[activeDate]={...d,plan};});
+  }
   function render(){
     const host=D.getElementById('mealPlannerRoot');if(!host)return;
     if(openedOwner!==owner()){W.closeModal?.();return;}
-    const data=db(),d=day(),prefs=data.preferences,t=d.plan?.target||data.target,eaten=totals(d);
+    const data=db(),d=day(),prefs=data.preferences,t=d.target||d.plan?.target||data.target,eaten=totals(d);
+    if(replacementSlot){const current=d.plan?.meals.find(m=>m.id===replacementSlot);if(current&&!d.eaten[current.id]){host.innerHTML=`<h2 class="mp-title-source">Заменить блюдо</h2><button class="btn tiny" data-mp="replace-back">‹ Назад к меню</button><div class="mp-replace-head"><small>${esc(current.title)}</small><h3>Выбери блюдо</h3><p class="mp-copy">Сейчас: ${esc(current.name)}</p></div><input id="mp-search" type="search" placeholder="Блюдо, продукт или кухня" aria-label="Поиск замены" value="${esc(browseQuery)}"><div id="mp-recipes"></div><div id="mp-error" class="mp-error" role="alert"></div>`;browseReplacements();W.refreshModalHeader?.();return;}replacementSlot=null;}
     const np=state()?.nutritionPlannerV311?.result;
     const metric=()=>['k','p','f','c'].map((k,i)=>`<div style="--mp-color:${['var(--green)','#6899e8','#e0a34e','#b28ae5'][i]}"><small>${['Ккал','Белки','Жиры','Углеводы'][i]}</small><b>${fmt(eaten[k])}</b><span>${t?'из '+fmt(t[k])+(k==='k'?'':' г'):'Нет цели'}</span><div class="mp-track" role="progressbar" aria-label="${['Калории','Белки','Жиры','Углеводы'][i]}" aria-valuenow="${eaten[k]}" aria-valuemin="0" aria-valuemax="${t?.[k]||1}"><i style="width:${Math.min(100,t?eaten[k]/t[k]*100:0)}%"></i></div></div>`).join('');
     const planned=d.plan?E.round(E.sum([d.plan.total,...d.extra.map(x=>x.nutrition)])):null;
     const within=planned&&t&&['k','p','f','c'].every(k=>Math.abs(planned[k]-t[k])<=Math.max(t[k]*.1,k==='k'?50:5));
     host.innerHTML=`<h2 class="mp-title-source">Питание</h2><div class="mp-head mp-intro"><div><div class="mp-eyebrow">ТВОЙ РАЦИОН</div><strong>Каждый приём под контролем</strong></div><button class="btn tiny" data-mp="calculator">КБЖУ</button></div>
+      ${protocolHTML()}
       <div class="mp-datebar"><button data-mp="date-prev" aria-label="Предыдущий день">‹</button><input aria-label="Дата дневника" id="mp-date" type="date" value="${activeDate}" data-mp-date><button data-mp="date-next" aria-label="Следующий день">›</button></div>
       <div class="mp-metrics">${metric()}</div>
       ${t?`<div class="mp-remaining"><span>Осталось на сегодня</span><b>${fmt(Math.max(0,t.k-eaten.k))} <small>ккал</small></b></div>${['k','p','f','c'].some(k=>eaten[k]>t[k])?'<p class="mp-copy">Часть целей уже превышена.</p>':''}${Math.abs(4*t.p+9*t.f+4*t.c-t.k)>t.k*.1?'<p class="mp-copy">Калории и БЖУ расходятся больше чем на 10%. Проверь цели.</p>':''}`:''}
       <details class="mp-settings"${t?'':' open'}><summary>Цели и предпочтения</summary>
-      ${np?`<div class="mp-actions">${[['cut','Сушка'],['maintain','Поддержание'],['gain','Набор']].map(([key,title])=>`<button class="btn tiny" data-mp="goal" data-value="${key}">${title}</button>`).join('')}</div><p class="mp-copy">Цель из калькулятора можно отредактировать ниже.</p>`:'<p class="mp-copy">Задай цели вручную или рассчитай КБЖУ по своим данным.</p>'}
+      <p class="mp-copy">${np?'Для своих КБЖУ можно изменить выбранную цель вручную.':'Задай свои цели или рассчитай КБЖУ по своим данным.'}</p>
       <div class="mp-fields">${fields(t)}
       <div class="field"><label>Приёмов пищи</label><select id="mp-count">${[3,4,5].map(n=>`<option value="${n}"${prefs.count==n?' selected':''}>${n}</option>`).join('')}</select></div>
       <div class="field"><label>Готовка одного блюда</label><select id="mp-time">${[15,30,45,60].map(n=>`<option value="${n}"${prefs.maxTime==n?' selected':''}>До ${n} минут</option>`).join('')}</select></div></div>
@@ -86,10 +119,15 @@
     const extras=E.sum(d.extra.map(x=>x.nutrition));
     const remaining=Object.fromEntries(['k','p','f','c'].map(k=>[k,Math.max(k==='k'?100:1,target[k]-extras[k])]));
     const plan=E.generate(remaining,prefs.count,prefs,{locked:d.eaten,prior:d.plan?.meals||[],banned});
-    const all=E.round(E.sum([plan.total,extras]));plan.target={...target};plan.delta=E.round(Object.fromEntries(['k','p','f','c'].map(k=>[k,all[k]-target[k]])));
+    const all=E.round(E.sum([plan.total,extras]));plan.target={...target};plan.protocol=db().protocol||'manual';plan.delta=E.round(Object.fromEntries(['k','p','f','c'].map(k=>[k,all[k]-target[k]])));
     plan.withinTarget=['k','p','f','c'].every(k=>Math.abs(plan.delta[k])<=Math.max(target[k]*.1,k==='k'?50:5));return plan;
   }
-  function open(){activeDate=dateNow();browseQuery='';browseType='';browseLimit=24;openedOwner=owner();W.modal('<div id="mealPlannerRoot"></div>');render();}
+  function open(){activeDate=dateNow();browseQuery='';browseType='';browseLimit=24;replacementSlot=null;openedOwner=owner();W.modal('<div id="mealPlannerRoot"></div>');
+    try{const data=db(),d=day(),target=d.target||data.target;
+      if(data.protocol&&data.protocol!=='manual'&&target&&(!d.plan||d.menuStale)){const plan=build(target,data.preferences,d);mutate(data=>{data.days[activeDate]={...d,plan,target:{...target},protocol:data.protocol,menuStale:false};});}
+      render();
+    }catch(error){render();const out=D.getElementById('mp-error');if(out)out.textContent=error.message;}
+  }
   W.openMealPlanner=open;
   D.addEventListener('toggle',e=>{if(e.target.matches?.('.mp-library')&&e.target.open)browse();},true);
   D.addEventListener('input',e=>{if(e.target.id==='mp-search'){browseQuery=e.target.value;browseLimit=24;browse();}});
@@ -104,32 +142,23 @@
       const action=b.dataset.mp,d=day();
       if(action==='date-prev'||action==='date-next'){const date=new Date(activeDate+'T12:00:00');date.setDate(date.getDate()+(action==='date-prev'?-1:1));activeDate=[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');render();return;}
       if(action==='more'){browseLimit+=24;browse();return;}
-      if(action==='pick'){
-        const recipe=E.catalog.recipes.find(r=>r.id===b.dataset.id),slotId=D.getElementById('mp-pick-'+b.dataset.id)?.value;
-        const current=d.plan?.meals.find(m=>m.id===slotId);if(!recipe||!current||d.eaten[current.id])return;
-        if(!E.allowed(recipe,{...db().preferences,maxTime:0})||!recipe.slots.includes(current.type))throw Error('Блюдо не подходит текущим предпочтениям');
-        const others=E.sum(d.plan.meals.filter(m=>m.id!==slotId).map(m=>m.nutrition)),extras=E.sum(d.extra.map(m=>m.nutrition));
-        const aim=Object.fromEntries(['k','p','f','c'].map(k=>[k,Math.max(k==='k'?100:1,d.plan.target[k]-others[k]-extras[k])]));
-        const meal={...E.fit(recipe,aim),id:current.id,type:current.type,title:current.title,share:current.share};
-        const plan={...d.plan,meals:d.plan.meals.map(m=>m.id===slotId?meal:m)};plan.total=E.round(E.sum(plan.meals.map(m=>m.nutrition)));
-        mutate(data=>{data.days[activeDate]={...d,plan};});render();D.querySelector('.mp-meal')?.scrollIntoView?.({block:'nearest'});return;
+      if(action==='replace-back'){replacementSlot=null;browseQuery='';render();return;}
+      if(action==='pick'||action==='replace-choice'){
+        const recipe=E.catalog.recipes.find(r=>r.id===b.dataset.id),slotId=action==='replace-choice'?replacementSlot:D.getElementById('mp-pick-'+b.dataset.id)?.value;
+        replaceWithRecipe(recipe,slotId);replacementSlot=null;browseQuery='';render();D.getElementById('sheet')?.scrollTo?.({top:0});return;
       }
-      if(action==='calculator'){W.openNutritionPlannerV311();return;}
+      if(action==='calculator'){if(W.UNVRSLMealContext?.calculator)W.UNVRSLMealContext.calculator();else W.openNutritionPlannerV311();return;}
       if(action==='goal'){
-        const result=state()?.nutritionPlannerV311?.result,g=result?.goals?.[b.dataset.value];if(!g)throw Error('Сначала рассчитай КБЖУ');
-        const t=E.fromGoal(g);for(const k of ['k','p','f','c'])D.getElementById('mp-'+k).value=t[k];return;
+        selectProtocol(b.dataset.value);open();return;
       }
       if(action==='save'||action==='generate'){
         const {target,preferences}=readSettings();
         const plan=action==='generate'?build(target,preferences,d):d.plan&&d.plan.meals.length===preferences.count?{...d.plan,target}:null;
-        mutate(data=>{data.target=target;data.preferences=preferences;data.days[activeDate]={...d,plan};});
+        mutate(data=>{if(!sameTarget(data.target,target))data.protocol='manual';data.target=target;data.preferences=preferences;data.days[activeDate]={...d,plan,target:{...target},protocol:data.protocol||'manual',menuStale:false};});
       }
       if(action==='swap'){
         const current=d.plan?.meals.find(m=>m.id===b.dataset.id);if(!current||d.eaten[current.id])return;
-        const {target,preferences}=readSettings();
-        const locked=Object.fromEntries(d.plan.meals.filter(m=>m.id!==current.id).map(m=>[m.id,m]));
-        const plan=build(target,preferences,{...d,eaten:locked},{[current.id]:[current.recipeId]});
-        mutate(data=>{data.target=target;data.preferences=preferences;data.days[activeDate]={...d,plan};});
+        replacementSlot=current.id;browseQuery='';browseLimit=24;render();D.getElementById('sheet')?.scrollTo?.({top:0});return;
       }
       if(action==='eat'){
         const meal=d.plan?.meals.find(m=>m.id===b.dataset.id);if(!meal)return;
@@ -159,11 +188,12 @@
     const plan=D.getElementById('plan');if(!plan)return;
     let button=D.getElementById('mealPlannerEntry');
     if(!button){button=D.createElement('button');button.id='mealPlannerEntry';button.type='button';button.className='card mp-entry';button.dataset.mp='open';}
-    const anchor=D.getElementById('np311PlanMount');if(!button.isConnected){if(anchor)anchor.after(button);else plan.append(button);}
-    const html='<div><div class="title">Меню и дневник питания</div><div class="muted">Блюда под КБЖУ · порции · замены</div></div><span aria-hidden="true">›</span>';
-    if(button.innerHTML!==html)button.innerHTML=html;
+    const anchor=D.getElementById('np311PlanMount');if(anchor){if(anchor.nextElementSibling!==button)anchor.after(button);}else if(!button.isConnected)plan.append(button);
+    const data=state()?.mealNutritionV1,key=data?.protocol,target=data?.target;
+    const html=`<div><div class="title">Меню и дневник питания</div><div class="muted">${key?esc(protocolTitles[key]||'Свои КБЖУ')+(target?' · '+fmt(target.k)+' ккал':''):'Выбери протокол после расчёта КБЖУ'}</div></div><span aria-hidden="true">›</span>`;
+    if(button.dataset.mpEntrySignature!==html){button.innerHTML=html;button.dataset.mpEntrySignature=html;}
   }
   function boot(){mount();const plan=D.getElementById('plan');if(plan)new MutationObserver(mount).observe(plan,{childList:true,subtree:true});}
   if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-  W.UNVRSLMealUI={shopping,totals};
+  W.UNVRSLMealUI={shopping,totals,selectProtocol,refresh:mount};
 })(window);

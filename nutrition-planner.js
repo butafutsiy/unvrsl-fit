@@ -146,6 +146,8 @@
 
   function resultHtml(result){
     if(!result)return '<div class="np311-empty">Заполни данные и нажми «Рассчитать».</div>';
+    const selectedProtocol=state()?.mealNutritionV1?.protocol;
+    const protocol=`<section class="np311-protocol"><b>Выбери текущий протокол</b><div class="mp-protocol-options">${Object.entries(result.goals).map(([key,g])=>`<button type="button" aria-pressed="${selectedProtocol===key}" onclick="chooseNutritionProtocolV480('${key}')">${esc(g.title)}</button>`).join('')}</div><p class="muted">${selectedProtocol&&result.goals[selectedProtocol]?'Текущий протокол: '+esc(result.goals[selectedProtocol].title):'Выбранный протокол задаст цели меню и дневника.'}</p><button class="btn full" onclick="openMealPlanner()">Меню и дневник питания</button></section>`;
     const cards=Object.values(result.goals).map(g=>`<div class="np311-goal">
       <div class="np311-goal-title"><b>${g.title}</b><strong>${fmt(g.calories[0])}–${fmt(g.calories[1])} ккал</strong></div>
       <div class="np311-macros"><span><small>Белок</small><b>${g.protein[0]}–${g.protein[1]} г</b></span><span><small>Жиры</small><b>${g.fat[0]}–${g.fat[1]} г</b></span><span><small>Углеводы</small><b>${g.carbs[0]}–${g.carbs[1]} г</b></span></div>
@@ -153,7 +155,7 @@
     </div>`).join('');
     const activityMode=result.activity.automatic?'подобран автоматически':'выбран вручную';
     const female=result.inputs.sex==='female'?'<div class="np311-note">Для девушек не стоит надолго фиксировать жиры на самой нижней границе без отдельной причины.</div>':'';
-    return `<div class="np311-base">
+    return `${protocol}<div class="np311-base">
       <div><span>BMR</span><b>${fmt(result.bmr.value)} ккал</b><small>${esc(result.bmr.formula)}</small></div>
       <div><span>Активность</span><b>× ${String(result.activity.factor).replace('.',',')}</b><small>${activityMode}</small></div>
       <div><span>TDEE</span><b>${fmt(result.tdee)} ккал</b><small>расчётное поддержание</small></div>
@@ -177,7 +179,6 @@
         <div class="field np311-wide"><label>Коэффициент активности</label><select id="np311Factor" onchange="refreshNutritionActivityV312(true)"><option value=""${selected(inputs.activityFactor,'')}>Авто – ${String(auto.factor).replace('.',',')}</option>${[1.2,1.375,1.55,1.725,1.9].map(v=>`<option value="${v}"${selected(inputs.activityFactor,v)}>${String(v).replace('.',',')} – вручную</option>`).join('')}</select><div id="np311FactorHint" class="np311-hint">Авто сейчас: <b>×${String(auto.factor).replace('.',',')}</b>. Учтены шаги, силовые и активность вне тренировок.</div></div>
       </div>
       <button class="btn primary full" onclick="calculateNutritionPlannerV311()">Рассчитать и сохранить</button>
-      <button class="btn full" style="margin-top:10px" onclick="openMealPlanner()">Меню и дневник питания</button>
       <div id="np311Result" data-np311-calculated="${result?'1':'0'}">${resultHtml(result)}</div>`;
   }
 
@@ -191,7 +192,7 @@
   function run(){
     try{
       const inputs=readInputs(),result=calculate(inputs),s=state();
-      if(s){s.nutritionPlannerV311={inputs:result.inputs,result,updatedAt:Date.now()};saveState()}
+      if(s){s.nutritionPlannerV311={inputs:result.inputs,result,updatedAt:Date.now()};saveState();const key=s.mealNutritionV1?.protocol;if(result.goals[key])W.UNVRSLMealUI?.selectProtocol(key,result)}
       const out=D.getElementById('np311Result');if(out){out.innerHTML=resultHtml(result);out.dataset.np311Calculated='1'}
       refreshActivityPreview(false);
       renderCard();W.toast?.('Расчёт КБЖУ сохранён');
@@ -201,7 +202,8 @@
 
   function cardHtml(result){
     if(!result)return `<div class="np311-card-copy"><div class="title">Расчёт КБЖУ</div><div class="muted">Сушка, поддержание и набор по твоим данным</div></div><span class="np311-chevron">›</span>`;
-    const g=result.goals;
+    const g=result.goals,key=state()?.mealNutritionV1?.protocol,target=state()?.mealNutritionV1?.target;
+    if(g[key]&&target)return `<div class="np311-card-copy"><div class="title">Расчёт КБЖУ</div><div class="muted">Текущий протокол: ${esc(g[key].title)}</div><div class="np311-card-grid np311-current-goal">${[['Ккал',target.k],['Белки',target.p],['Жиры',target.f],['Углеводы',target.c]].map(([label,value])=>`<span><small>${label}</small><b>${fmt(value)}</b></span>`).join('')}</div></div><span class="np311-chevron">›</span>`;
     return `<div class="np311-card-copy"><div class="title">Расчёт КБЖУ</div><div class="np311-card-grid"><span><small>Сушка</small><b>${fmt(g.cut.calories[0])}–${fmt(g.cut.calories[1])}</b></span><span><small>Поддержание</small><b>${fmt(g.maintain.calories[0])}–${fmt(g.maintain.calories[1])}</b></span><span><small>Набор</small><b>${fmt(g.gain.calories[0])}–${fmt(g.gain.calories[1])}</b></span></div></div><span class="np311-chevron">›</span>`;
   }
 
@@ -217,7 +219,7 @@
     const anchor=findProgramCard(plan);
     if(!mount.isConnected){if(anchor)anchor.insertAdjacentElement('beforebegin',mount);else plan.appendChild(mount)}
     const btn=mount.querySelector('.np311-plan-card'),result=state()?.nutritionPlannerV311?.result||null,html=cardHtml(result);
-    const signature=JSON.stringify(result?{tdee:result.tdee,goals:Object.values(result.goals||{}).map(g=>g.calories)}:null);
+    const signature=JSON.stringify(result?{tdee:result.tdee,goals:Object.values(result.goals||{}).map(g=>g.calories),protocol:state()?.mealNutritionV1?.protocol,target:state()?.mealNutritionV1?.target}:null);
     if(btn&&btn.dataset.np311Signature!==signature){btn.innerHTML=html;btn.dataset.np311Signature=signature}
   }
 
@@ -240,6 +242,7 @@
 
   function boot(){
     if(!D||W.__unvrslNutritionPlannerV311)return;W.__unvrslNutritionPlannerV311=true;
+    W.chooseNutritionProtocolV480=function(key){try{W.UNVRSLMealUI.selectProtocol(key,state()?.nutritionPlannerV311?.result);const out=D.getElementById('np311Result');if(out)out.innerHTML=resultHtml(state()?.nutritionPlannerV311?.result);W.toast?.('Протокол выбран')}catch(error){W.toast?.(error.message)}};
     W.openNutritionPlannerV311=open;W.calculateNutritionPlannerV311=run;W.refreshNutritionActivityV312=refreshActivityPreview;W.unvrslNutritionPlannerV311={calculate,recommendedActivityFactor,bmrFor,goalResult,refreshActivityPreview,version:VERSION};
     const start=()=>{ensureStyle();renderCard()};
     if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
