@@ -53,3 +53,7 @@ Shared client progress pages load the same catalog, engine and diary UI using a 
 - Added 48 everyday recipes: 71 simple recipes total, including 30 breakfasts, alongside 501 world recipes. New automatic menus use everyday recipes by default; the world-cuisine checkbox enables the broader pool. Catalog search and manual replacements retain the entire catalog and show everyday replacements first.
 - 20 simple recipes link to 11 verified RussianFood and IamCook photo tutorials. Links are related cooking examples, clearly labelled: their ingredients and nutrition may differ from the adjusted in-app meal. No external photos or instructions are copied. All linked steps and photos open on the original website.
 - Diaries remain local to the current device/account or hashed private share. This release does not add coach diary viewing or cloud synchronization.
+
+### v482 – nutrition layout refinement
+
+Energy has a full-width row in the plan calculator card, diary and menu summary; protein, fat and carbs keep three equal columns. Range values retain their original numbers and never use truncation. Diary progress tracks align consistently, the native date field loses its nested border, remaining calories can wrap as a whole line, and meal actions and ingredient quantities use explicit grids. Client purple and each app user's theme/accent stay intact. Existing diary and calculator behavior is unchanged.
