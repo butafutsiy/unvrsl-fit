@@ -1,0 +1,45 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {JSDOM}=require(process.env.UNVRSL_JSDOM||'jsdom');
+const root=path.resolve(__dirname,'..');
+let persisted=null;
+function make(seed){
+ const dom=new JSDOM('<!doctype html><html><head></head><body><div id="plan"><div id="np311PlanMount"></div></div><div id="sheet"></div></body></html>',{runScripts:'dangerously',url:'https://app.test/',pretendToBeVisual:true});
+ const w=dom.window;w.st=seed||{accountOwnerId:'alice'};
+ w.modal=html=>{w.document.getElementById('sheet').innerHTML=html};
+ w.closeModal=()=>{w.document.getElementById('sheet').innerHTML=''};
+ w.save=()=>{persisted=JSON.stringify(w.st);return true};
+ w.openNutritionPlannerV311=()=>{};
+ for(const file of ['meal-catalog.js','meal-engine.js','meal-planner-ui.js'])w.eval(fs.readFileSync(path.join(root,file),'utf8'));
+ return dom;
+}
+const click=(w,action,id)=>w.document.querySelector(`[data-mp="${action}"]${id?`[data-id="${id}"]`:''}`).click();
+const set=(w,id,value)=>{w.document.getElementById(id).value=value};
+const plain=x=>JSON.parse(JSON.stringify(x));
+(async()=>{
+ let dom=make(),w=dom.window;await new Promise(r=>w.setTimeout(r,20));
+ assert.equal(w.document.querySelectorAll('#mealPlannerEntry').length,1);
+ click(w,'open');for(const [k,v] of Object.entries({k:2400,p:160,f:80,c:260}))set(w,'mp-'+k,v);
+ click(w,'generate');assert.equal(w.document.querySelectorAll('.mp-meal').length,4);
+ const date=w.document.getElementById('mp-date').value,first=w.st.mealNutritionV1.days[date];
+ set(w,'mp-portion-meal-0',.5);click(w,'eat','meal-0');
+ assert.equal(w.st.mealNutritionV1.days[date].eaten['meal-0'].ingredients[0].g,Math.round(first.plan.meals[0].ingredients[0].g*.5*10)/10);
+ const eaten=plain(w.st.mealNutritionV1.days[date].eaten['meal-0']);
+ click(w,'generate');assert.deepEqual(plain(w.st.mealNutritionV1.days[date].eaten['meal-0']),eaten);
+ const before=plain(w.st.mealNutritionV1.days[date].plan.meals),old=before[1].recipeId;click(w,'swap','meal-1');
+ const after=plain(w.st.mealNutritionV1.days[date].plan.meals);assert.notEqual(after[1].recipeId,old);
+ for(const i of [0,2,3])assert.deepEqual(after[i].ingredients,before[i].ingredients);
+ for(const [id,value] of Object.entries({'mp-food-name':'Йогурт <script>','mp-food-grams':200,'mp-food-k':70,'mp-food-p':8,'mp-food-f':2,'mp-food-c':5}))set(w,id,value);
+ click(w,'extra');assert.equal(w.st.mealNutritionV1.days[date].extra[0].nutrition.k,140);
+ assert.equal(w.document.querySelector('#mealPlannerRoot script'),null);
+ const total=w.UNVRSLMealUI.totals(w.st.mealNutritionV1.days[date]);assert.equal(total.k,Math.round((eaten.nutrition.k+140)*10)/10);
+ click(w,'generate');assert.equal(w.st.mealNutritionV1.days[date].extra.length,1);
+ set(w,'mp-date','2020-01-01');w.document.getElementById('mp-date').dispatchEvent(new w.Event('change',{bubbles:true}));
+ assert.equal(w.document.querySelectorAll('.mp-meal').length,0);assert.equal(w.st.mealNutritionV1.days[date].extra.length,1);
+ dom.window.close();dom=make(JSON.parse(persisted));w=dom.window;w.openMealPlanner();
+ assert.equal(w.document.querySelectorAll('.mp-meal').length,4);assert.equal(w.st.mealNutritionV1.days[date].extra.length,1);
+ const previous=plain(w.st.mealNutritionV1);w.save=()=>false;click(w,'remove',w.st.mealNutritionV1.days[date].extra[0].id);
+ assert.deepEqual(plain(w.st.mealNutritionV1),previous);assert.match(w.document.getElementById('mp-error').textContent,/Не удалось сохранить/);
+ w.st={accountOwnerId:'bob'};click(w,'generate');assert.equal(w.document.getElementById('mealPlannerRoot'),null);assert.equal(w.st.mealNutritionV1,undefined);
+ dom.window.close();console.log('Meal UI: generation, portions, swaps, manual diary, date isolation, reload, storage rollback and account guard passed');
+})().catch(e=>{console.error(e);process.exitCode=1});

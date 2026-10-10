@@ -177,6 +177,7 @@
         <div class="field np311-wide"><label>Коэффициент активности</label><select id="np311Factor" onchange="refreshNutritionActivityV312(true)"><option value=""${selected(inputs.activityFactor,'')}>Авто – ${String(auto.factor).replace('.',',')}</option>${[1.2,1.375,1.55,1.725,1.9].map(v=>`<option value="${v}"${selected(inputs.activityFactor,v)}>${String(v).replace('.',',')} – вручную</option>`).join('')}</select><div id="np311FactorHint" class="np311-hint">Авто сейчас: <b>×${String(auto.factor).replace('.',',')}</b>. Учтены шаги, силовые и активность вне тренировок.</div></div>
       </div>
       <button class="btn primary full" onclick="calculateNutritionPlannerV311()">Рассчитать и сохранить</button>
+      <button class="btn full" style="margin-top:10px" onclick="openMealPlanner()">Меню и дневник питания</button>
       <div id="np311Result" data-np311-calculated="${result?'1':'0'}">${resultHtml(result)}</div>`;
   }
 

@@ -1,0 +1,11 @@
+.mp-entry{display:flex;width:100%;text-align:left;align-items:center;justify-content:space-between;gap:12px;color:var(--text)}
+.mp-entry .muted{font-size:13px;margin-top:6px}.mp-entry>span{font-size:30px;color:var(--muted)}
+#mealPlannerRoot{color:var(--text);overflow-wrap:anywhere}#mealPlannerRoot h2{margin:0}#mealPlannerRoot h3{font-size:19px;margin:12px 0 8px}
+.mp-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.mp-head>div{min-width:0}.mp-head .btn{flex-shrink:0}
+.mp-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:14px 0}.mp-metrics>div{background:var(--panel2);padding:12px 8px;border-radius:16px;min-width:0}.mp-metrics small,.mp-metrics span{display:block;font-size:11px;color:var(--muted)}.mp-metrics b{display:block;font-size:20px;margin:5px 0;font-variant-numeric:tabular-nums}
+.mp-copy{font-size:12px;line-height:1.5;color:var(--muted);margin:10px 0}.mp-settings,.mp-meal,.mp-summary{padding:15px;border:1px solid var(--line);border-radius:20px;background:var(--panel);margin:12px 0}
+#mealPlannerRoot summary{cursor:pointer;font-weight:650;padding:8px 0;min-height:36px}#mealPlannerRoot ul{padding-left:20px;font-size:13px;line-height:1.65}#mealPlannerRoot details p:not(.mp-copy){font-size:13px;line-height:1.6}
+.mp-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 10px}.mp-fields .field{min-width:0}.mp-actions{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}.mp-check{display:flex;align-items:center;gap:7px;font-size:13px;min-height:36px}.mp-check input{accent-color:var(--green);width:18px;height:18px}
+.mp-macro{display:block;font-size:13px;color:var(--green);line-height:1.6}.mp-portion{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}.mp-portion input{width:70px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--text)}
+.mp-extra{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:12px;border-bottom:1px solid var(--line);font-size:13px}.mp-error{color:var(--red);font-size:13px;line-height:1.5;padding:8px 0}
+@media(max-width:360px){.mp-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.mp-head{flex-wrap:wrap}.mp-actions>.btn{flex:1}.mp-fields{gap:0 6px}}

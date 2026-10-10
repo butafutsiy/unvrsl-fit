@@ -23,6 +23,10 @@ jobs:
         run: node --test tests/*.test.cjs
       - name: Install isolated DOM test dependencies
         run: npm install --prefix "$RUNNER_TEMP/unvrsl-tests" --no-audit --no-fund jsdom@26.1.0 @napi-rs/canvas@0.1.80
+      - name: Verify meal recommendations and nutrition diary
+        run: |
+          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
+          node tests/runtime-meal-planner.cjs
       - name: Verify six story layouts and native PNG sharing
         run: |
           UNVRSL_CANVAS="$RUNNER_TEMP/unvrsl-tests/node_modules/@napi-rs/canvas" \
