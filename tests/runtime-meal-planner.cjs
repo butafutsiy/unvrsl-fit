@@ -37,6 +37,7 @@ const plain=x=>JSON.parse(JSON.stringify(x));
  const library=w.document.querySelector('.mp-library');library.open=true;library.dispatchEvent(new w.Event('toggle'));
  assert.equal(w.document.querySelectorAll('.mp-recipe').length,24);
  click(w,'more');assert.equal(w.document.querySelectorAll('.mp-recipe').length,48);
+ set(w,'mp-search','борщ');w.document.getElementById('mp-search').dispatchEvent(new w.Event('input',{bubbles:true}));assert.ok(w.document.querySelectorAll('.mp-recipe').length>0,'catalog includes recipes slower than automatic menu preference');
  set(w,'mp-search','Карбонара');w.document.getElementById('mp-search').dispatchEvent(new w.Event('input',{bubbles:true}));
  assert.equal(w.document.querySelectorAll('.mp-recipe').length,1);
  assert.match(w.document.getElementById('mp-recipes').textContent,/Гуанчале/);

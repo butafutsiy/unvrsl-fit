@@ -30,7 +30,7 @@
   function ingredientsHTML(m){const recipe=recipeOf(m);return `<ul>${ingredientRows(m).map(i=>`<li><span>${esc(i.name)}</span><b>${esc(i.amount)}</b>${i.note?`<small>${esc(i.note)}</small>`:''}</li>`).join('')}</ul>${recipe?.source?`<p class="mp-copy">Количество на ${fmt(m.ingredients[0].g/100)} порц. Шаги описывают исходный рецепт на ${recipe.baseServings} порц. Можно приготовить весь рецепт и отделить свою порцию.</p>`:''}<p class="mp-steps">${esc(m.steps).replace(/\n/g,'<br><br>')}</p>`;}
   function browse(){
     const host=D.getElementById('mp-recipes');if(!host)return;
-    const prefs=db().preferences,q=browseQuery.toLowerCase().trim();
+    const prefs={...db().preferences,maxTime:0},q=browseQuery.toLowerCase().trim();
     const list=E.catalog.recipes.filter(r=>(!browseType||r.slots.includes(browseType))&&E.allowed(r,prefs)&&(!q||[r.name,r.country||'',...(r.details||[]).map(i=>i.name),...r.ingredients.map(i=>E.catalog.foods[i.id]?.name||'')].join(' ').toLowerCase().includes(q)));
     host.innerHTML=`<div class="mp-copy">Найдено ${list.length} · с учётом предпочтений</div>${list.slice(0,browseLimit).map(r=>{
       const m=E.fit(r,r.portionNutrition||E.nutrition(r.ingredients));
@@ -107,7 +107,7 @@
       if(action==='pick'){
         const recipe=E.catalog.recipes.find(r=>r.id===b.dataset.id),slotId=D.getElementById('mp-pick-'+b.dataset.id)?.value;
         const current=d.plan?.meals.find(m=>m.id===slotId);if(!recipe||!current||d.eaten[current.id])return;
-        if(!E.allowed(recipe,db().preferences)||!recipe.slots.includes(current.type))throw Error('Блюдо не подходит текущим предпочтениям');
+        if(!E.allowed(recipe,{...db().preferences,maxTime:0})||!recipe.slots.includes(current.type))throw Error('Блюдо не подходит текущим предпочтениям');
         const others=E.sum(d.plan.meals.filter(m=>m.id!==slotId).map(m=>m.nutrition)),extras=E.sum(d.extra.map(m=>m.nutrition));
         const aim=Object.fromEntries(['k','p','f','c'].map(k=>[k,Math.max(k==='k'?100:1,d.plan.target[k]-others[k]-extras[k])]));
         const meal={...E.fit(recipe,aim),id:current.id,type:current.type,title:current.title,share:current.share};
