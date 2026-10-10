@@ -44,3 +44,12 @@ Calculator goal buttons save the active cut/maintain/gain protocol and exact mid
 Replace opens a searchable meal-specific picker, ranked against the day budget after other meals and manual food. Preview portions use the same fitting function as selection. Opening the picker does not change persisted data; choosing a recipe replaces only the selected uneaten slot.
 
 Shared client progress pages load the same catalog, engine and diary UI using a context adapter. They use only the nutrition goals already returned by the existing private-share RPC. Protocol and diary data are stored locally under the share's SHA-256 hash, isolated per private client link. No raw share token is stored. Diary records are not synced to the trainer or across devices. Supabase schema, permissions and RPCs are unchanged.
+
+### v481 – everyday meals, ranges and client accent
+
+- Client nutrition controls and the shared diary modal use the existing purple client accent. Protocol labels keep normal word wrapping on narrow screens.
+- Calculator goals carry all four original ranges into the diary, daily status, remaining calories and substitutions. Generation minimizes distance outside each interval; an in-range value has zero penalty. Only menus actually inside all four intervals say «В диапазоне». Manual numeric goals retain the existing tolerance.
+- Preference changes preserve calculator ranges. Editing numeric goals switches to manual targets. Saved v480 current protocols upgrade on open without modifying past-day goals or consumed snapshots.
+- Added 48 everyday recipes: 71 simple recipes total, including 30 breakfasts, alongside 501 world recipes. New automatic menus use everyday recipes by default; the world-cuisine checkbox enables the broader pool. Catalog search and manual replacements retain the entire catalog and show everyday replacements first.
+- 20 simple recipes link to 11 verified RussianFood and IamCook photo tutorials. Links are related cooking examples, clearly labelled: their ingredients and nutrition may differ from the adjusted in-app meal. No external photos or instructions are copied. All linked steps and photos open on the original website.
+- Diaries remain local to the current device/account or hashed private share. This release does not add coach diary viewing or cloud synchronization.

@@ -203,7 +203,7 @@
   function cardHtml(result){
     if(!result)return `<div class="np311-card-copy"><div class="title">Расчёт КБЖУ</div><div class="muted">Сушка, поддержание и набор по твоим данным</div></div><span class="np311-chevron">›</span>`;
     const g=result.goals,key=state()?.mealNutritionV1?.protocol,target=state()?.mealNutritionV1?.target;
-    if(g[key]&&target)return `<div class="np311-card-copy"><div class="title">Расчёт КБЖУ</div><div class="muted">Текущий протокол: ${esc(g[key].title)}</div><div class="np311-card-grid np311-current-goal">${[['Ккал',target.k],['Белки',target.p],['Жиры',target.f],['Углеводы',target.c]].map(([label,value])=>`<span><small>${label}</small><b>${fmt(value)}</b></span>`).join('')}</div></div><span class="np311-chevron">›</span>`;
+    if(g[key]&&target)return `<div class="np311-card-copy"><div class="title">Расчёт КБЖУ</div><div class="muted">Текущий протокол: ${esc(g[key].title)}</div><div class="np311-card-grid np311-current-goal">${[['Ккал','k'],['Белки','p'],['Жиры','f'],['Углеводы','c']].map(([label,metric])=>`<span><small>${label}</small><b>${target.ranges?target.ranges[metric].map(fmt).join('–'):fmt(target[metric])}</b></span>`).join('')}</div></div><span class="np311-chevron">›</span>`;
     return `<div class="np311-card-copy"><div class="title">Расчёт КБЖУ</div><div class="np311-card-grid"><span><small>Сушка</small><b>${fmt(g.cut.calories[0])}–${fmt(g.cut.calories[1])}</b></span><span><small>Поддержание</small><b>${fmt(g.maintain.calories[0])}–${fmt(g.maintain.calories[1])}</b></span><span><small>Набор</small><b>${fmt(g.gain.calories[0])}–${fmt(g.gain.calories[1])}</b></span></div></div><span class="np311-chevron">›</span>`;
   }
 

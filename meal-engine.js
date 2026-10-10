@@ -12,12 +12,15 @@
   function validateTarget(t){
     if(!t||keys.some(k=>!Number.isFinite(t[k])||t[k]<=0))throw Error('Укажи положительные калории и БЖУ');
     if(t.k>10000||t.p>600||t.f>400||t.c>1800)throw Error('Проверь дневные цели');
+    if(t.ranges&&keys.some(k=>!Array.isArray(t.ranges[k])||t.ranges[k].length!==2||t.ranges[k].some(v=>!Number.isFinite(v)||v<0)||t.ranges[k][0]>t.ranges[k][1]||t[k]<t.ranges[k][0]||t[k]>t.ranges[k][1]))throw Error('Проверь диапазоны КБЖУ');
     return t;
   }
   function fromGoal(g){
     const mid=a=>(a[0]+a[1])/2;
     const k=Math.round(mid(g.calories)),p=Math.round(mid(g.protein)),f=Math.round(mid(g.fat));
-    return {k,p,f,c:Math.max(1,Math.round((k-4*p-9*f)/4))};
+    const c=Math.max(1,Math.round((k-4*p-9*f)/4));
+    const ranges={k:[...g.calories],p:[...g.protein],f:[...g.fat],c:g.carbs?[...g.carbs]:[Math.max(0,Math.floor((g.calories[0]-4*g.protein[1]-9*g.fat[1])/4)),Math.ceil((g.calories[1]-4*g.protein[0]-9*g.fat[0])/4)]};
+    return {k,p,f,c,ranges};
   }
   function slots(count){
     if(![3,4,5].includes(Number(count)))throw Error('Выбери 3, 4 или 5 приёмов');
@@ -27,6 +30,7 @@
     return names.map((type,i)=>({id:'meal-'+i,type,title:titles[type],share:shares[i]}));
   }
   function allowed(recipe,prefs={}){
+    if(prefs.simpleOnly&&recipe.source)return false;
     if(prefs.maxTime&&recipe.time>Number(prefs.maxTime))return false;
     if(recipe.source){
       if((prefs.allergens||[]).length)return false;
@@ -40,8 +44,12 @@
       return (!prefs.vegetarian||f.vegetarian)&&!(prefs.allergens||[]).some(a=>f.allergens.includes(a))&&!excluded.some(x=>f.name.toLowerCase().includes(x));
     })&&!excluded.some(x=>recipe.name.toLowerCase().includes(x));
   }
-  const loss=(n,t)=>keys.reduce((score,k)=>score+(k==='k'?2:1)*((n[k]-t[k])/Math.max(t[k],k==='k'?100:15))**2,0);
-  const scaledTarget=(t,s)=>Object.fromEntries(keys.map(k=>[k,t[k]*s]));
+  const bounds=(t,k)=>t.ranges?.[k]||[t[k],t[k]];
+  const deviation=(n,t,k)=>{const [lo,hi]=bounds(t,k);return n[k]<lo?n[k]-lo:n[k]>hi?n[k]-hi:0};
+  const within=(n,t)=>keys.every(k=>t.ranges?deviation(n,t,k)===0:Math.abs(n[k]-t[k])<=Math.max(t[k]*.1,k==='k'?50:5));
+  const loss=(n,t)=>keys.reduce((score,k)=>score+(k==='k'?2:1)*(deviation(n,t,k)/Math.max(t[k],k==='k'?100:15))**2,0);
+  const scaledTarget=(t,s)=>({...Object.fromEntries(keys.map(k=>[k,t[k]*s])),...(t.ranges?{ranges:Object.fromEntries(keys.map(k=>[k,t.ranges[k].map(v=>v*s)]))}:{})});
+  function subtractTarget(t,n){return {...Object.fromEntries(keys.map(k=>[k,Math.max(k==='k'?100:1,t[k]-(n[k]||0))])),...(t.ranges?{ranges:Object.fromEntries(keys.map(k=>[k,t.ranges[k].map(v=>Math.max(k==='k'?100:1,v-(n[k]||0)))]))}:{})};}
   function grams(i,v){return Math.max(i.min,Math.min(i.max,Math.round(v/i.step)*i.step));}
   function fit(recipe,target){
     const base=nutrition(recipe.ingredients),factor=target.k/base.k;
@@ -89,9 +97,9 @@
       }
     }
     const total=round(sum(chosen.map(m=>m.nutrition))),delta=round(Object.fromEntries(keys.map(k=>[k,total[k]-target[k]])));
-    return {version:1,target:{...target},meals:chosen,total,delta,withinTarget:keys.every(k=>Math.abs(delta[k])<=Math.max(target[k]*.1,k==='k'?50:5))};
+    return {version:1,target:{...target},meals:chosen,total,delta,withinTarget:within(total,target)};
   }
-  const api={nutrition,sum,round,validateTarget,fromGoal,slots,allowed,fit,generate,catalog};
+  const api={nutrition,sum,round,validateTarget,fromGoal,bounds,deviation,within,loss,subtractTarget,slots,allowed,fit,generate,catalog};
   if(typeof module==='object'&&module.exports)module.exports=api;
   root.UNVRSLMealEngine=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -27,13 +27,13 @@ test('consumed snapshots survive generation and recipe swaps',()=>{
 });
 test('existing calorie goals produce coherent macro targets and invalid inputs fail',()=>{
  const t=E.fromGoal({calories:[2300,2500],protein:[150,170],fat:[70,90]});
- assert.deepEqual(t,{k:2400,p:160,f:80,c:260});
+ assert.deepEqual(t,{k:2400,p:160,f:80,c:260,ranges:{k:[2300,2500],p:[150,170],f:[70,90],c:[202,318]}});
  for(const k of ['k','p','f','c'])assert.throws(()=>E.generate({...t,[k]:NaN},4));
  assert.throws(()=>E.generate(t,2));
 });
 test('world recipe dataset preserves 501 complete recipes and coherent serving scaling',()=>{
  const world=E.catalog.recipes.filter(r=>r.source);
- assert.equal(world.length,501);assert.equal(E.catalog.recipes.length,524);
+ assert.equal(world.length,501);assert.equal(E.catalog.recipes.length,572);
  assert.equal(new Set(world.map(r=>r.id)).size,501);
  for(const r of world){
   assert.ok(r.name&&r.steps&&r.details.length&&r.baseServings>0);
@@ -47,4 +47,23 @@ test('world recipe dataset preserves 501 complete recipes and coherent serving s
  assert.equal(E.allowed(r,{exclude:'гуанчале'}),false);assert.equal(E.allowed(r,{vegetarian:true}),false);
  const target={k:3611,p:177,f:88,c:528},plan=E.generate(target,4,{maxTime:45});
  assert.equal(plan.withinTarget,true);assert.ok(Math.abs(plan.delta.c)<20,JSON.stringify(plan.delta));
+});
+test('range targets accept the full interval and reject values just outside it',()=>{
+ const t=E.fromGoal({calories:[2300,2500],protein:[150,170],fat:[70,90],carbs:[200,320]});
+ assert.ok(E.within({k:2300,p:170,f:70,c:320},t));
+ assert.ok(E.within({k:2500,p:150,f:90,c:200},t));
+ assert.equal(E.within({...t,k:2501},t),false);
+ assert.equal(E.within({...t,p:149.9},t),false);
+ assert.equal(E.loss({k:2300,p:170,f:70,c:320},t),0);
+ assert.deepEqual(E.subtractTarget(t,{k:500,p:20,f:10,c:50}).ranges,{k:[1800,2000],p:[130,150],f:[60,80],c:[150,270]});
+ assert.throws(()=>E.validateTarget({...t,ranges:{...t.ranges,k:[2500,2300]}}),/диапазоны/);
+ const plan=E.generate(t,4,{simpleOnly:true,maxTime:45});assert.equal(plan.withinTarget,true,JSON.stringify(plan.total));
+ assert.ok(plan.meals.every(m=>!E.catalog.recipes.find(r=>r.id===m.recipeId).source));
+});
+test('everyday catalog offers thirty breakfasts and keeps ingredient allergens and nutrition',()=>{
+ const simple=E.catalog.recipes.filter(r=>!r.source);
+ assert.equal(simple.length,71);assert.equal(simple.filter(r=>r.slots.includes('breakfast')).length,30);
+ for(const r of simple){assert.ok(E.nutrition(r.ingredients).k>0);assert.ok(r.steps);assert.ok(r.ingredients.every(i=>E.catalog.foods[i.id]));}
+ const cheese=E.catalog.recipes.find(r=>r.id==='omelet-cheese');assert.equal(E.allowed(cheese,{allergens:['milk']}),false);
+ assert.ok(simple.filter(r=>r.guideUrl).every(r=>/^https:\/\/(www\.iamcook\.ru|www\.russianfood\.com)\//.test(r.guideUrl)));
 });

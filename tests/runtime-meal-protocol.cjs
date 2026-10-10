@@ -25,6 +25,12 @@ const input={sex:'male',age:25,height:183,weight:95,overweight:false,steps:8000,
  assert.match(w.document.getElementById('np311Result').textContent,/Текущий протокол: Поддержание/);
  w.openMealPlanner();assert.equal(w.document.querySelectorAll('.mp-meal').length,4);assert.match(w.document.querySelector('.mp-protocol').textContent,/Поддержание/);
  const date=w.document.getElementById('mp-date').value;
+ assert.ok(w.document.querySelector('.mp-protocol .mp-tag').textContent.includes('–'));
+ assert.ok([...w.document.querySelectorAll('.mp-metrics span')].every(el=>el.textContent.includes('–')));
+ assert.ok(w.st.mealNutritionV1.days[date].plan.meals.every(m=>!E.catalog.recipes.find(r=>r.id===m.recipeId).source));
+ click(w,'save');assert.deepEqual(plain(w.st.mealNutritionV1.target.ranges),target.ranges,'preference save keeps calculator ranges');
+ click(w,'generate');assert.deepEqual(plain(w.st.mealNutritionV1.days[date].plan.target.ranges),target.ranges,'regeneration keeps ranges');
+ assert.equal(w.st.mealNutritionV1.protocol,'maintain');
  w.st.mealNutritionV1.days['2020-01-01']={plan:null,eaten:{},extra:[],target:{k:1800,p:120,f:60,c:195},protocol:'cut'};
  const oldDay=plain(w.st.mealNutritionV1.days['2020-01-01']);
  click(w,'eat','meal-0');const eaten=plain(w.st.mealNutritionV1.days[date].eaten['meal-0']);
@@ -34,6 +40,9 @@ const input={sex:'male',age:25,height:183,weight:95,overweight:false,steps:8000,
  assert.deepEqual(plain(w.st.mealNutritionV1.days['2020-01-01']),oldDay);
  assert.deepEqual(plain(w.st.mealNutritionV1.days[date].plan.target),E.fromGoal(plain(result.goals.gain)));
  const restored=JSON.parse(saved);w.st=restored;w.openMealPlanner();assert.equal(w.st.mealNutritionV1.protocol,'gain');assert.deepEqual(plain(w.st.mealNutritionV1.days[date].eaten['meal-0']),eaten);
+ delete w.st.mealNutritionV1.target.ranges;delete w.st.mealNutritionV1.days[date].target.ranges;delete w.st.mealNutritionV1.days[date].plan.target.ranges;
+ w.openMealPlanner();assert.deepEqual(plain(w.st.mealNutritionV1.target.ranges),plain(result.goals.gain)&&E.fromGoal(plain(result.goals.gain)).ranges,'legacy protocol upgrades to ranges');
+ assert.deepEqual(plain(w.st.mealNutritionV1.days[date].eaten['meal-0']),eaten,'upgrade preserves consumed snapshot');
  const previous=plain(w.st.mealNutritionV1);w.save=()=>false;w.document.querySelector('[data-mp="goal"][data-value="cut"]').click();assert.deepEqual(plain(w.st.mealNutritionV1),previous);assert.match(w.document.getElementById('mp-error').textContent,/Не удалось сохранить/);dom.window.close();
 
  async function publicPage(token,weight,storage={}){
