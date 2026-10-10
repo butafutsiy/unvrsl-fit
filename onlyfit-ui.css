@@ -1,0 +1,141 @@
+/* Screenshot-inspired shell. Specificity keeps deferred legacy styles from
+   changing the theme after startup; no render hooks or polling are needed. */
+html:root {
+  --bg:#101820; --panel:#2d3945; --panel2:#3c4b59; --line:#485866;
+  --text:#f5f5f3; --muted:#b6c0c9;
+  --ui-bg:var(--bg); --ui-card:var(--panel); --ui-card2:var(--panel2);
+  --ui-text:var(--text); --ui-sub:var(--muted); --ui-line:var(--line);
+  --of-selected:#8d9eae; --of-selected-text:#101820;
+}
+html[data-theme="light"]:root {
+  --bg:#f2f4f6; --panel:#fff; --panel2:#e9eef2; --line:#d4dde4;
+  --text:#17212b; --muted:#596977;
+  --of-selected:#d2dee8; --of-selected-text:#17212b;
+}
+html:root body, html:root body .app {
+  background:var(--bg)!important; background-image:none!important;
+  color:var(--text)!important;
+}
+html:root body {padding-bottom:calc(108px + env(safe-area-inset-bottom))!important}
+html:root body .app .topbar {
+  background:var(--bg)!important; align-items:center!important;
+  padding:calc(env(safe-area-inset-top) + 18px) 18px 18px!important;
+}
+html:root body .app .brand {
+  color:var(--text)!important; font-size:30px!important;
+  font-weight:850!important; letter-spacing:-1.2px!important; line-height:1.05!important;
+}
+html:root body .app .date {color:var(--muted)!important;font-size:14px!important;margin-top:7px!important}
+html:root body .app .gear {
+  width:48px!important;height:48px!important;border-radius:50%!important;
+  background:var(--panel)!important;color:var(--text)!important;
+  border:1px solid var(--line)!important;box-shadow:none!important;
+}
+html:root body .app .page {padding:0 16px 24px!important;max-width:680px}
+html:root body .app :is(#home,#plan,#start,#stats,#exercises,#programs,#clients).page .card,
+html:root body .app :is(#home,#plan,#start,#stats,#exercises,#programs,#clients).page .sd2-card,
+html:root body .app :is(#home,#plan,#start,#stats,#exercises,#programs,#clients).page .exercise,
+html:root body .app :is(#home,#plan,#start,#stats,#exercises,#programs,#clients).page .metric {
+  background:var(--panel)!important;background-image:none!important;
+  border:1px solid transparent!important;box-shadow:none!important;
+  border-radius:28px!important;
+}
+html:root body .app .page .card {padding:20px!important;margin:14px 0!important}
+html:root body .app .page .title {font-size:24px!important;line-height:1.2!important;font-weight:800!important;letter-spacing:-.6px!important}
+html:root body .app .page .section {font-size:19px!important;letter-spacing:-.3px!important;color:var(--muted)!important;margin:26px 8px 10px!important}
+html:root body .app .page .muted {color:var(--muted)!important}
+html:root body .app .page .btn,
+html:root body #modal.modal .btn {
+  background:var(--panel2)!important;color:var(--text)!important;
+  border:1px solid transparent!important;border-radius:999px!important;
+  background-image:none!important;box-shadow:none!important;
+}
+html:root body .app .page .btn.primary,
+html:root body #modal.modal .btn.primary {
+  background:var(--green)!important;color:#fff!important;border-color:transparent!important;
+}
+html:root body .app .page .btn.danger,
+html:root body #modal.modal .btn.danger {background:transparent!important;color:#fa8e88!important;border-color:currentColor!important}
+html[data-theme="light"] body .app .page .btn.danger,
+html[data-theme="light"] body #modal.modal .btn.danger {color:#b42318!important}
+html:root body .app .page .chip {background:var(--panel2)!important;color:var(--text)!important;border-color:var(--line)!important;box-shadow:none!important}
+html:root body .app .page .chip.green {color:var(--green)!important}
+
+/* A consistent floating capsule, with no raised centre button. Keep all seven
+   trainer tabs legible by letting their labels wrap in their existing grid. */
+html:root body > .nav {
+  left:12px!important;right:12px!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;
+  min-height:76px!important;padding:6px!important;gap:2px!important;
+  border-radius:36px!important;border:1px solid var(--line)!important;
+  background:var(--panel)!important;box-shadow:none!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  align-items:stretch!important;
+}
+html:root body > .nav button {
+  display:flex!important;flex-direction:column;align-items:center;justify-content:center;
+  padding:8px 2px!important;gap:4px!important;border-radius:28px!important;
+  color:var(--muted)!important;font-size:0!important;white-space:normal!important;
+  background:transparent!important;transform:none!important;
+}
+html:root body > .nav button::after {
+  content:attr(aria-label)!important;font-size:9px!important;line-height:1.2!important;
+  height:auto!important;margin:0!important;letter-spacing:-.2px!important;
+  font-weight:650!important;overflow-wrap:anywhere;
+}
+html:root body > .nav button.active {background:var(--of-selected)!important;color:var(--of-selected-text)!important}
+html:root body > .nav button .ico,
+html:root body > .nav button.start .ico {
+  display:grid!important;place-items:center!important;width:26px!important;height:26px!important;
+  margin:0!important;border:0!important;background:transparent!important;
+  color:inherit!important;box-shadow:none!important;border-radius:0!important;
+}
+html:root body > .nav button .ico svg {width:23px!important;height:23px!important}
+
+html:root body .app #home .calendar-card {padding:16px!important}
+html:root body .app #home .calendar-head {padding-bottom:10px!important}
+html:root body .app #home .calendar-head .arrow {width:44px!important;height:44px!important}
+html:root body .app #home .datecell .num {border-radius:50%!important}
+html:root body .app #home .today-card {
+  background:var(--bg)!important;border:0!important;border-radius:24px!important;
+  padding:16px!important;margin-top:14px!important;gap:12px!important;flex-wrap:wrap;
+}
+html:root body .app #home .today-icon {background:var(--panel)!important;color:var(--text)!important;border-radius:50%!important}
+html:root body .app #home .today-main {min-width:0;flex:1 1 140px}
+html:root body .app #home .today-main b {font-size:20px!important;line-height:1.25!important;overflow-wrap:anywhere}
+html:root body .app #home .today-main small {color:var(--muted)!important;font-size:12px!important}
+html:root body .app #home .today-card .today-action {
+  width:100%!important;height:auto!important;min-height:46px!important;
+  padding:12px 18px!important;border-radius:999px!important;font-family:inherit;
+  font-size:15px!important;line-height:1.2!important;font-weight:750!important;
+  background:var(--of-selected)!important;color:var(--of-selected-text)!important;
+}
+html:root body .app #home .sd2-card {padding:20px!important}
+html:root body .app #home .sd2-card-title,
+html:root body .app #home .sd2-weight-label {color:var(--muted)!important;font-size:16px!important}
+html:root body .app #home .sd2-seg {background:var(--bg)!important;padding:4px!important;border-radius:999px!important}
+html:root body .app #home .sd2-seg button {border-radius:999px!important;min-height:38px;color:var(--muted)!important}
+html:root body .app #home .sd2-seg button.on {background:var(--of-selected)!important;color:var(--of-selected-text)!important}
+html:root body .app #home .sd2-current {font-variant-numeric:tabular-nums;color:var(--text)!important}
+
+/* Keep the dense set grid and inputs intact; soften its surrounding surface. */
+html:root body .app #start .exercise {border-radius:24px!important;padding:16px 14px!important;margin:12px 0!important}
+html:root body .app #start .setrow input {background:var(--bg)!important;color:var(--text)!important;border-color:var(--line)!important}
+html:root body .app #start .check {background:var(--panel2)!important;color:var(--text)!important;border-color:var(--line)!important}
+html:root body .app #start .check.done {background:var(--green)!important;color:#fff!important;border-color:var(--green)!important}
+html:root body #timer.timer {background:var(--panel)!important;color:var(--text)!important;border-color:var(--line)!important;box-shadow:none!important;bottom:calc(100px + env(safe-area-inset-bottom))!important;border-radius:26px!important}
+html:root body .app button:focus-visible,
+html:root body > .nav button:focus-visible {outline:2px solid var(--green);outline-offset:3px}
+
+@media(max-width:360px) {
+  html:root body .app .page {padding-left:12px!important;padding-right:12px!important}
+  html:root body .app .brand {font-size:27px!important}
+  html:root body .app .page .card {padding:16px!important}
+  html:root body > .nav {left:6px!important;right:6px!important;gap:0!important}
+  html:root body > .nav button::after {font-size:8px!important}
+}
+@media(min-width:760px) {
+  html:root body > .nav {left:50%!important;right:auto!important;width:min(660px,calc(100% - 32px));transform:translateX(-50%);max-width:660px!important}
+}
+@media(prefers-reduced-motion:reduce) {
+  html:root body .app .btn,html:root body > .nav button {transition:none!important;transform:none!important}
+}
