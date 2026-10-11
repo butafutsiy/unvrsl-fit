@@ -67,3 +67,8 @@ Energy has a full-width row in the plan calculator card, diary and menu summary;
 - Add own product/dish with per-100-g macros, grams and meal name. Save up to 100 reusable foods per account; duplicate names update the saved food, existing diary entries remain snapshots. Deleting a reusable food does not delete history.
 - Ten user-supplied product reference sheets are optional lazy-loaded local images. Their incomplete/brand-specific values are not imported into the macro engine.
 - Optional locally hosted photos show example plating, not exact recipe composition. Commons attribution and license links are visible under each photo; see `data/meal-photos-source.md`.
+
+
+## v486 – compact recipe cards
+
+Removed illustrative photos from the diary, recipe catalog and replacements at the user’s request. Cooked weights, recipe instructions and the user-supplied product reference sheets remain available.
