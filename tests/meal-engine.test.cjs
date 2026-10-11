@@ -112,3 +112,15 @@ test('random menus retain high-calorie protocol ranges after repeated refreshes'
   prior=plan.meals;
  }
 });
+
+test('catalog filters derive diets and nutrition from the original portion without overlapping calorie buckets',()=>{
+ const fish=E.catalog.recipes.find(r=>r.id==='fish-rice')||E.catalog.recipes.find(r=>!r.source&&r.ingredients.some(i=>i.id==='fish'));
+ assert.equal(E.recipeInfo(fish).pescatarian,true);assert.equal(E.recipeInfo(fish).vegetarian,false);
+ const meat=E.catalog.recipes.find(r=>r.id==='chicken-rice');assert.equal(E.matchesCatalog(meat,{diet:'pescatarian'}),false);
+ for(const r of E.catalog.recipes){
+  const buckets=[0,100,200,300,400,500,600,700].filter(calories=>E.matchesCatalog(r,{calories:String(calories)}));assert.equal(buckets.length,1,r.name);
+ }
+ const breakfast=E.catalog.recipes.filter(r=>E.matchesCatalog(r,{collection:'breakfast'}));assert.equal(breakfast.length,54);assert.ok(breakfast.every(r=>!r.source&&r.slots.includes('breakfast')));
+ assert.equal(E.matchesCatalog(meat,{favorite:true},[]),false);assert.equal(E.matchesCatalog(meat,{favorite:true},[meat.id]),true);
+ for(const collection of ['quick','protein','portable','egg','buckwheat'])assert.ok(E.catalog.recipes.some(r=>E.matchesCatalog(r,{collection})));
+});

@@ -7,7 +7,8 @@
   const dateNow=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');};
   const state=()=>{if(W.UNVRSLMealContext?.getState)return W.UNVRSLMealContext.getState();try{return typeof st!=='undefined'?st:W.st}catch(_){return W.st}};
   const owner=()=>String(state()?.accountOwnerId||W.cloud?.user?.id||'local');
-  let activeDate=dateNow(),openedOwner=null,browseQuery='',browseType='',browseLimit=24,replacementSlot=null;
+  let activeDate=dateNow(),openedOwner=null,browseQuery='',browseType='',browseLimit=24,replacementSlot=null,catalogOpen=false,catalogView=false;
+  let catalogFilters={diet:'',collection:'',calories:'',country:'',favorite:false};
   function db(){const s=state();if(!s)throw Error('Данные приложения ещё загружаются');return s.mealNutritionV1||(s.mealNutritionV1={version:1,days:{},preferences:{count:4,maxTime:45,exclude:'',allergens:[],vegetarian:false,simpleOnly:true},target:null});}
   function day(){return db().days[activeDate]||{plan:null,eaten:{},extra:[]};}
   function mutate(fn){
@@ -50,15 +51,32 @@
   function ownFoodHTML(){return `<details class="mp-settings mp-own" id="mp-own"><summary>＋ Добавить своё</summary><p class="mp-copy">Продукт или готовое блюдо: КБЖУ на 100 г с упаковки или из своей карточки рецепта.</p><div class="field"><label for="mp-food-name">Название</label><input id="mp-food-name" maxlength="120" placeholder="Например: домашний борщ"></div><div class="mp-fields"><div class="field"><label for="mp-food-grams">Съедено, г</label><input id="mp-food-grams" type="number" min="1" max="3000" inputmode="decimal"></div>${['k','p','f','c'].map((k,i)=>`<div class="field"><label for="mp-food-${k}">${['Ккал','Белки','Жиры','Углеводы'][i]} на 100 г</label><input id="mp-food-${k}" type="number" min="0" inputmode="decimal" step="0.1"></div>`).join('')}<div class="field"><label for="mp-food-slot">Приём пищи</label><select id="mp-food-slot">${['Завтрак','Обед','Ужин','Перекус'].map(x=>`<option>${x}</option>`).join('')}</select></div></div><label class="mp-check"><input id="mp-food-keep" type="checkbox" checked>Сохранить в «Мои продукты и блюда»</label><button class="btn primary full" data-mp="extra">Записать в дневник</button>${(db().savedFoods||[]).length?`<div class="mp-saved"><h3>Мои продукты и блюда</h3>${db().savedFoods.map(x=>`<div class="mp-saved-row"><button class="btn" data-mp="saved-food" data-id="${esc(x.id)}"><b>${esc(x.name)}</b><small>${macros(x.raw)} на 100 г</small></button><button class="btn tiny" data-mp="saved-delete" data-id="${esc(x.id)}" aria-label="Удалить сохранённое блюдо ${esc(x.name)}">✕</button></div>`).join('')}</div>`:''}</details>`;}
   function referencesHTML(){const labels=['Белки · Лента','Белки · Пятёрочка','Жиры · Лента','Жиры · Пятёрочка','Углеводы · Лента','Углеводы · Пятёрочка','Клетчатка · Лента','Клетчатка · Пятёрочка','Сладости · Лента','Сладости · Пятёрочка'];return `<details class="mp-settings"><summary>Что купить · продукты и КБЖУ</summary><p class="mp-copy">Твои подборки продуктов. Для записи проверяй актуальную упаковку: на карточках часть БЖУ не указана, а значения могут отличаться у разных марок.</p><div class="mp-reference-grid">${labels.map((x,i)=>`<a href="assets/nutrition/products-${i}.jpg" target="_blank" rel="noopener noreferrer"><img src="assets/nutrition/products-${i}.jpg" alt="${x}" loading="lazy" decoding="async" width="240" height="320"><span>${x} ↗</span></a>`).join('')}</div></details>`;}
   function ingredientsHTML(m){const recipe=recipeOf(m);return `<ul>${ingredientRows(m).map(i=>`<li><span>${esc(i.name)}</span><b>${esc(i.amount)}</b>${i.note?`<small>${esc(i.note)}</small>`:''}</li>`).join('')}</ul>${recipe?.source?`<p class="mp-copy">Количество на ${fmt(m.ingredients[0].g/100)} порц. Шаги описывают исходный рецепт на ${recipe.baseServings} порц. Можно приготовить весь рецепт и отделить свою порцию.</p>`:''}<p class="mp-steps">${esc(m.steps).replace(/\n/g,'<br><br>')}</p>${recipe?.guideUrl?`<a class="mp-guide" href="${esc(recipe.guideUrl)}" target="_blank" rel="noopener noreferrer">Фото и пошаговый рецепт · ${esc(recipe.guideSite)} ↗</a><p class="mp-copy">Пример приготовления. Для дневника используй состав и граммовки выше: рецепт на сайте может отличаться.</p>`:''}`;}
+  const collections=[['breakfast','🍳','Простые завтраки'],['quick','⏱','Ужин до 20 минут'],['protein','💪','Белковые блюда'],['portable','🥪','Взять с собой'],['egg','🥚','Блюда из яиц'],['buckwheat','🌾','С гречкой']];
+  const mealCategories=[['breakfast','🍳','Завтрак'],['lunch','🍲','Обед'],['dinner','🍽','Ужин'],['snack','🍎','Перекус']];
+  function catalogFiltersHTML(){
+    const tile=(key,value,icon,label,selected,extra='')=>`<button type="button" class="mp-catalog-tile ${extra}" data-mp="catalog-filter" data-key="${key}" data-value="${esc(value)}" aria-pressed="${selected}">${icon?`<span aria-hidden="true">${icon}</span>`:''}<b>${esc(label)}</b></button>`;
+    const favoriteCount=(db().favorites||[]).length;
+    return `<div class="mp-catalog-heading"><div><div class="mp-eyebrow">НАЙДИ СВОЁ БЛЮДО</div><h3>Что приготовим?</h3></div><button class="btn mp-favorites-toggle" data-mp="catalog-filter" data-key="favorite" aria-pressed="${catalogFilters.favorite}" aria-label="Показать избранные рецепты">${catalogFilters.favorite?'♥':'♡'} ${favoriteCount}</button></div>
+      <h4>Тип питания</h4><div class="mp-catalog-row">${[['','🍽','Все'],['vegetarian','🥦','Вегетарианское'],['pescatarian','🐟','Без мяса, с рыбой']].map(([v,i,n])=>tile('diet',v,i,n,catalogFilters.diet===v)).join('')}</div>
+      <h4>Приёмы пищи</h4><div class="mp-catalog-meals">${mealCategories.map(([v,i,n])=>tile('type',v,i,n,browseType===v)).join('')}</div>
+      <h4>Подборки</h4><div class="mp-catalog-collections">${collections.map(([v,i,n])=>tile('collection',v,i,n,catalogFilters.collection===v,'mp-collection-tile')).join('')}</div>
+      <h4>Калорийность порции</h4><div class="mp-catalog-calories">${[0,100,200,300,400,500,600,700].map(v=>tile('calories',String(v),'',v===0?'До 100':v===700?'700+':v+'–'+(v+100),catalogFilters.calories===String(v)) .replace('</b></button>','</b><small>ккал</small></button>')).join('')}</div>
+      <p class="mp-copy">Калории указаны для исходной порции. В меню количество подбирается под твои КБЖУ.</p>
+      <div class="mp-catalog-reset"><span>${catalogFilters.favorite?'Избранное':catalogFilters.collection?collections.find(x=>x[0]===catalogFilters.collection)?.[2]:'Все рецепты'}</span><button class="btn tiny" data-mp="catalog-reset">Сбросить фильтры</button></div>`;
+  }
+  function catalogHTML(){return `<details class="mp-library"${catalogOpen?' open':''}><summary><span>Рецепты и подборки</span><span class="mp-tag">${E.catalog.recipes.length} рецептов</span></summary><div id="mp-catalog-filters">${catalogFiltersHTML()}</div><div class="mp-browse-controls"><input id="mp-search" type="search" placeholder="Что приготовим?" aria-label="Поиск рецептов" value="${esc(browseQuery)}"><div class="mp-catalog-selects"><select id="mp-filter" aria-label="Фильтр приёма пищи">${[['','Все приёмы'],['breakfast','Завтраки'],['lunch','Обеды'],['dinner','Ужины'],['snack','Перекусы']].map(([v,n])=>`<option value="${v}"${v===browseType?' selected':''}>${n}</option>`).join('')}</select><select id="mp-country" aria-label="Кухня">${['', 'Повседневная кухня',...Array.from(new Set(E.catalog.recipes.map(r=>r.country).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'ru'))].map(v=>`<option value="${esc(v)}"${v===catalogFilters.country?' selected':''}>${esc(v||'Все кухни')}</option>`).join('')}</select></div></div><div id="mp-recipes"></div></details>`;}
   function browse(){
     const host=D.getElementById('mp-recipes');if(!host)return;
     if(replacementSlot)return browseReplacements();
     const prefs={...db().preferences,maxTime:0,simpleOnly:false},q=browseQuery.toLowerCase().trim();
-    const list=E.catalog.recipes.filter(r=>(!browseType||r.slots.includes(browseType))&&E.allowed(r,prefs)&&(!q||[r.name,r.country||'',...(r.details||[]).map(i=>i.name),...r.ingredients.map(i=>E.catalog.foods[i.id]?.name||'')].join(' ').toLowerCase().includes(q)));
-    host.innerHTML=`<div class="mp-copy">Найдено ${list.length} · с учётом предпочтений</div>${list.slice(0,browseLimit).map(r=>{
+    const list=E.catalog.recipes.filter(r=>E.matchesCatalog(r,{...catalogFilters,type:browseType},db().favorites||[])&&E.allowed(r,prefs)&&(!q||[r.name,r.country||'',...(r.details||[]).map(i=>i.name),...r.ingredients.map(i=>E.catalog.foods[i.id]?.name||'')].join(' ').toLowerCase().includes(q)));
+    const filtersHost=D.getElementById('mp-catalog-filters');if(filtersHost)filtersHost.innerHTML=catalogFiltersHTML();
+    if(D.getElementById('mp-filter'))D.getElementById('mp-filter').value=browseType;
+    if(D.getElementById('mp-country'))D.getElementById('mp-country').value=catalogFilters.country;
+    host.innerHTML=`<div class="mp-copy" aria-live="polite">Найдено ${list.length} · с учётом предпочтений</div>${list.slice(0,browseLimit).map(r=>{
       const m=E.fit(r,r.portionNutrition||E.nutrition(r.ingredients));
       const available=(day().plan?.meals||[]).filter(x=>!day().eaten[x.id]&&r.slots.includes(x.type));
-      return `<article class="mp-recipe"><div class="mp-head"><span class="mp-tag">${esc(r.country||'Простой рецепт')}</span><small>${r.time} мин</small></div><h3>${esc(r.name)}</h3>${weightHTML(m)}<div class="mp-copy">${macros(m.nutrition)}${r.source?' · 1 порц.':''}</div><details><summary>Посмотреть рецепт</summary>${ingredientsHTML(m)}</details>${available.length?`<div class="mp-pick"><select aria-label="Приём пищи для блюда" id="mp-pick-${r.id}">${available.map(x=>`<option value="${x.id}">${esc(x.title)}</option>`).join('')}</select><button class="btn tiny" data-mp="pick" data-id="${r.id}">В меню ＋</button></div>`:''}</article>`;
+      return `<article class="mp-recipe"><div class="mp-head"><span class="mp-tag">${esc(r.country||'Простой рецепт')}</span><div class="mp-recipe-tools"><small>${r.time} мин</small><button class="btn tiny mp-favorite" data-mp="favorite" data-id="${r.id}" aria-pressed="${(db().favorites||[]).includes(r.id)}" aria-label="${(db().favorites||[]).includes(r.id)?'Убрать из избранного':'В избранное'}: ${esc(r.name)}">${(db().favorites||[]).includes(r.id)?'♥':'♡'}</button></div></div><h3>${esc(r.name)}</h3>${weightHTML(m)}<div class="mp-copy">${macros(m.nutrition)}${r.source?' · 1 порц.':''}</div><details><summary>Посмотреть рецепт</summary>${ingredientsHTML(m)}</details>${available.length?`<div class="mp-pick"><select aria-label="Приём пищи для блюда" id="mp-pick-${r.id}">${available.map(x=>`<option value="${x.id}">${esc(x.title)}</option>`).join('')}</select><button class="btn tiny" data-mp="pick" data-id="${r.id}">В меню ＋</button></div>`:''}<div class="mp-catalog-record"><label>Порций<input id="mp-catalog-portion-${r.id}" type="number" value="1" min="0.05" max="5" step="0.25" inputmode="decimal"></label><select id="mp-catalog-slot-${r.id}" aria-label="Записать в приём пищи">${mealCategories.filter(([v])=>r.slots.includes(v)).map(([v,i,n])=>`<option>${n}</option>`).join('')}</select><button class="btn primary" data-mp="catalog-record" data-id="${r.id}">Записать порцию</button></div></article>`;
     }).join('')}${list.length>browseLimit?'<button class="btn full" data-mp="more">Показать ещё 24</button>':''}${!list.length?'<p class="mp-copy">Нет совпадений. Измени поиск или предпочтения.</p>':''}`;
   }
   function replacementTarget(d,current){const others=E.sum(d.plan.meals.filter(m=>m.id!==current.id).map(m=>m.nutrition)),extras=E.sum(d.extra.map(m=>m.nutrition));return E.subtractTarget(d.target||d.plan.target,E.sum([others,extras]));}
@@ -67,7 +85,7 @@
     const aim=replacementTarget(d,current),prefs={...db().preferences,maxTime:0,simpleOnly:false},q=browseQuery.toLowerCase().trim();
     const score=n=>E.loss(n,aim);
     const list=E.catalog.recipes.filter(r=>r.id!==current.recipeId&&r.slots.includes(current.type)&&E.allowed(r,prefs)&&(!q||[r.name,r.country||'',...(r.details||[]).map(i=>i.name),...r.ingredients.map(i=>E.catalog.foods[i.id]?.name||'')].join(' ').toLowerCase().includes(q))).map(r=>({recipe:r,meal:E.fit(r,aim)})).sort((a,b)=>Number(!!a.recipe.source)-Number(!!b.recipe.source)||score(a.meal.nutrition)-score(b.meal.nutrition));
-    host.innerHTML=`<p class="mp-copy">${list.length} вариантов · сначала простые блюда, затем мировая кухня. Количество уже подобрано под этот приём.</p>${list.slice(0,browseLimit).map(({recipe:r,meal:m})=>`<article class="mp-recipe"><div class="mp-head"><span class="mp-tag">${esc(r.country||'Простой рецепт')}</span><small>${r.time} мин</small></div><h3>${esc(r.name)}</h3>${weightHTML(m)}<b class="mp-macro">${macros(m.nutrition)}</b><details><summary>Рецепт и ингредиенты</summary>${ingredientsHTML(m)}</details><button class="btn full" data-mp="replace-choice" data-id="${r.id}">Выбрать это блюдо</button></article>`).join('')}${list.length>browseLimit?'<button class="btn full" data-mp="more">Показать ещё 24</button>':''}${!list.length?'<p class="mp-copy">Нет совпадений. Попробуй другой запрос или измени исключения.</p>':''}`;
+    host.innerHTML=`<p class="mp-copy">${list.length} вариантов · сначала простые блюда, затем мировая кухня. Количество уже подобрано под этот приём.</p>${list.slice(0,browseLimit).map(({recipe:r,meal:m})=>`<article class="mp-recipe"><div class="mp-head"><span class="mp-tag">${esc(r.country||'Простой рецепт')}</span><div class="mp-recipe-tools"><small>${r.time} мин</small><button class="btn tiny mp-favorite" data-mp="favorite" data-id="${r.id}" aria-pressed="${(db().favorites||[]).includes(r.id)}" aria-label="${(db().favorites||[]).includes(r.id)?'Убрать из избранного':'В избранное'}: ${esc(r.name)}">${(db().favorites||[]).includes(r.id)?'♥':'♡'}</button></div></div><h3>${esc(r.name)}</h3>${weightHTML(m)}<b class="mp-macro">${macros(m.nutrition)}</b><details><summary>Рецепт и ингредиенты</summary>${ingredientsHTML(m)}</details><button class="btn full" data-mp="replace-choice" data-id="${r.id}">Выбрать это блюдо</button></article>`).join('')}${list.length>browseLimit?'<button class="btn full" data-mp="more">Показать ещё 24</button>':''}${!list.length?'<p class="mp-copy">Нет совпадений. Попробуй другой запрос или измени исключения.</p>':''}`;
   }
   function replaceWithRecipe(recipe,slotId){
     const d=day(),current=d.plan?.meals.find(m=>m.id===slotId);if(!recipe||!current||d.eaten[current.id])return;
@@ -76,16 +94,18 @@
     const plan={...d.plan,meals:d.plan.meals.map(m=>m.id===slotId?meal:m)};plan.total=E.round(E.sum(plan.meals.map(m=>m.nutrition)));
     mutate(data=>{data.days[activeDate]={...d,plan};});
   }
+  const navigationHTML=()=>`<nav class="mp-view-tabs" aria-label="Раздел питания"><button data-mp="nutrition-view" data-value="diary" aria-pressed="${!catalogView}">Дневник</button><button data-mp="nutrition-view" data-value="recipes" aria-pressed="${catalogView}">Рецепты</button></nav>`;
   function render(){
     const host=D.getElementById('mealPlannerRoot');if(!host)return;
     if(openedOwner!==owner()){W.closeModal?.();return;}
     const data=db(),d=day(),prefs={simpleOnly:true,...data.preferences},t=d.target||d.plan?.target||data.target,eaten=totals(d);
+    if(catalogView){catalogOpen=true;host.innerHTML=`<h2 class="mp-title-source">Рецепты</h2>${navigationHTML()}<div class="mp-catalog-page">${catalogHTML()}</div><p class="mp-copy" aria-live="polite">Дневник за ${esc(new Date(activeDate+'T12:00:00').toLocaleDateString('ru-RU'))}: ${macros(eaten)}</p><div id="mp-error" role="alert" class="mp-error"></div>`;browse();W.refreshModalHeader?.();return;}
     if(replacementSlot){const current=d.plan?.meals.find(m=>m.id===replacementSlot);if(current&&!d.eaten[current.id]){host.innerHTML=`<h2 class="mp-title-source">Заменить блюдо</h2><button class="btn tiny" data-mp="replace-back">‹ Назад к меню</button><div class="mp-replace-head"><small>${esc(current.title)}</small><h3>Выбери блюдо</h3><p class="mp-copy">Сейчас: ${esc(current.name)}</p></div><input id="mp-search" type="search" placeholder="Блюдо, продукт или кухня" aria-label="Поиск замены" value="${esc(browseQuery)}"><div id="mp-recipes"></div><div id="mp-error" class="mp-error" role="alert"></div>`;browseReplacements();W.refreshModalHeader?.();return;}replacementSlot=null;}
     const np=state()?.nutritionPlannerV311?.result;
     const metric=()=>['k','p','f','c'].map((k,i)=>`<div class="mp-metric${k==='k'?' mp-energy':''}" style="--mp-color:${['var(--green)','#6899e8','#e0a34e','#b28ae5'][i]}"><small>${['Ккал','Белки','Жиры','Углеводы'][i]}</small><b>${fmt(eaten[k])}</b><span>${t?'Цель '+rangeText(t,k)+(k==='k'?'':' г'):'Нет цели'}</span><div class="mp-track" role="progressbar" aria-label="${['Калории','Белки','Жиры','Углеводы'][i]}" aria-valuenow="${eaten[k]}" aria-valuemin="0" aria-valuemax="${t?E.bounds(t,k)[1]:1}"><i style="width:${Math.min(100,t?eaten[k]/E.bounds(t,k)[1]*100:0)}%"></i></div></div>`).join('');
     const planned=d.plan?E.round(E.sum([d.plan.total,...d.extra.map(x=>x.nutrition)])):null;
     const within=planned&&t&&E.within(planned,t);
-    host.innerHTML=`<h2 class="mp-title-source">Питание</h2><div class="mp-head mp-intro"><div><div class="mp-eyebrow">ТВОЙ РАЦИОН</div><strong>Меню под твои КБЖУ</strong></div><button class="btn tiny" data-mp="calculator">КБЖУ</button></div>
+    host.innerHTML=`<h2 class="mp-title-source">Питание</h2>${navigationHTML()}<div class="mp-head mp-intro"><div><div class="mp-eyebrow">ТВОЙ РАЦИОН</div><strong>Меню под твои КБЖУ</strong></div><button class="btn tiny" data-mp="calculator">КБЖУ</button></div>
       ${protocolHTML()}
       <div class="mp-datebar"><button data-mp="date-prev" aria-label="Предыдущий день">‹</button><input aria-label="Дата дневника" id="mp-date" type="date" value="${activeDate}" data-mp-date><button data-mp="date-next" aria-label="Следующий день">›</button></div>
       <div class="mp-metrics">${metric()}</div>
@@ -102,7 +122,7 @@
       <button class="btn full" data-mp="save">Сохранить настройки</button></details>
       <button class="btn primary full" data-mp="generate">${d.plan?'Подобрать оставшееся меню':'Подобрать меню на день'}</button>
       ${ownFoodHTML()}
-      <details class="mp-library"><summary><span>Каталог блюд</span><span class="mp-tag">${E.catalog.recipes.length} рецептов</span></summary><div class="mp-browse-controls"><input id="mp-search" type="search" placeholder="Блюдо, продукт или кухня" aria-label="Поиск рецептов" value="${esc(browseQuery)}"><select id="mp-filter" aria-label="Фильтр приёма пищи">${[['','Все приёмы'],['breakfast','Завтраки'],['lunch','Обеды'],['dinner','Ужины'],['snack','Перекусы']].map(([v,n])=>`<option value="${v}"${v===browseType?' selected':''}>${n}</option>`).join('')}</select></div><div id="mp-recipes"></div></details>
+      ${catalogHTML()}
       ${d.plan?`<div class="mp-summary"><div class="mp-head"><b>Меню на день</b><span class="mp-tag ${within?'mp-ok':''}">${within?(t.ranges?'В диапазоне':'Близко к цели'):'Есть отклонение'}</span></div><div class="mp-plan-metrics">${['k','p','f','c'].map((k,i)=>`<div class="${k==='k'?'mp-plan-energy':''}"><small>${['Ккал','Белки','Жиры','Углеводы'][i]}</small><b>${fmt(planned[k])}</b><span>${statusText(planned,t,k)}</span></div>`).join('')}</div>${within?'':'<p class="mp-copy">Попробуй заменить блюдо, чтобы приблизиться к цели.</p>'}</div>`:''}
       ${(d.plan?.meals||[]).map(m=>{
         const done=!!d.eaten[m.id];
@@ -111,11 +131,12 @@
         <div class="mp-actions"><button class="btn${done?'':' primary'}" data-mp="eat" data-id="${m.id}">${done?'✓ Съедено · отменить':'✓ Записать приём'}</button>${done?'':`<button class="btn" data-mp="swap" data-id="${m.id}">Заменить</button>${E.servingWeight(m)?`<label class="mp-portion mp-eaten-grams">Съем готового, г<input id="mp-eaten-${m.id}" type="number" min="1" max="10000" inputmode="decimal" value="${E.servingWeight(m).grams}" aria-label="Съедено готового блюда, г"></label>`:''}<label class="mp-portion">Порция ×<input type="number" min="0.05" max="5" step="0.05" value="1" aria-label="Множитель съеденной порции" id="mp-portion-${m.id}"></label>`}</div></article>`;
       }).join('')}
 
-      ${d.extra.map(x=>`<div class="mp-extra"><div><b>${esc(x.name)} · ${fmt(x.grams)} г</b><div class="mp-copy">${esc(x.slot||'Своя еда')} · ${macros(x.nutrition)}</div></div><button class="btn tiny" data-mp="remove" data-id="${esc(x.id)}" aria-label="Удалить запись">✕</button></div>`).join('')}
+      ${d.extra.map(x=>`<div class="mp-extra"><div><b>${esc(x.name)} · ${x.grams?fmt(x.grams)+' г':fmt(x.servings||1)+' порц.'}</b><div class="mp-copy">${esc(x.slot||'Своя еда')} · ${macros(x.nutrition)}</div></div><button class="btn tiny" data-mp="remove" data-id="${esc(x.id)}" aria-label="Удалить запись">✕</button></div>`).join('')}
       ${d.plan?`<details class="mp-settings"><summary>Список покупок на этот день</summary><ul>${shopping(d.plan).map(i=>`<li>${esc(i.name)} · ${esc(i.amount)}</li>`).join('')}</ul><p class="mp-copy">Количество для всего выбранного меню.</p></details>`:''}
       ${referencesHTML()}
       <details class="mp-source"><summary>О КБЖУ и источниках</summary><p class="mp-copy">КБЖУ приблизительные. Для простых рецептов использованы усреднённые продукты; количество до приготовления, если не указано иное. Для мировой кухни взяты расчётные значения автора на порцию, состав масштабируется целиком.</p><p class="mp-copy">501 рецепт: <a href="https://theunitools.com/en/data" target="_blank" rel="noopener">UniTools</a> · <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>. Данные адаптированы, фотографии не использованы. При исключении аллергенов подбор использует только простые рецепты с известным составом.</p></details>
       <div id="mp-error" role="alert" class="mp-error"></div>`;
+    if(catalogOpen)browse();
     W.refreshModalHeader?.();
   }
   function shopping(plan){const grouped=new Map();for(const m of plan.meals){for(const row of ingredientRows(m)){const key=row.name+'|'+row.amount;const prev=grouped.get(key);if(prev)prev.count++;else grouped.set(key,{...row,count:1});}}return [...grouped.values()].map(r=>({...r,amount:r.amount+(r.count>1?' × '+r.count:'')}));}
@@ -133,14 +154,14 @@
     const all=E.round(E.sum([plan.total,extras]));plan.target={...target};plan.protocol=db().protocol||'manual';plan.delta=E.round(Object.fromEntries(['k','p','f','c'].map(k=>[k,all[k]-target[k]])));
     plan.withinTarget=E.within(all,target);return plan;
   }
-  function open(){activeDate=dateNow();browseQuery='';browseType='';browseLimit=24;replacementSlot=null;openedOwner=owner();W.modal('<div id="mealPlannerRoot"></div>');
+  function open(){activeDate=dateNow();browseQuery='';browseType='';browseLimit=24;replacementSlot=null;catalogOpen=false;catalogView=false;catalogFilters={diet:'',collection:'',calories:'',country:'',favorite:false};openedOwner=owner();W.modal('<div id="mealPlannerRoot"></div>');
     try{let data=db();if(data.protocol&&data.protocol!=='manual'&&state()?.nutritionPlannerV311?.result?.goals?.[data.protocol]&&!data.target?.ranges){selectProtocol(data.protocol);data=db();}const d=day(),target=d.target||data.target;
       if(data.protocol&&data.protocol!=='manual'&&target&&(!d.plan||d.menuStale)){const plan=build(target,data.preferences,d);mutate(data=>{data.days[activeDate]={...d,plan,target:{...target},protocol:data.protocol,menuStale:false};});}
       render();
     }catch(error){render();const out=D.getElementById('mp-error');if(out)out.textContent=error.message;}
   }
   W.openMealPlanner=open;
-  D.addEventListener('toggle',e=>{if(e.target.matches?.('.mp-library')&&e.target.open)browse();},true);
+  D.addEventListener('toggle',e=>{if(e.target.matches?.('.mp-library')&&e.target.isConnected){catalogOpen=e.target.open;if(catalogOpen)browse();}},true);
   D.addEventListener('input',e=>{if(e.target.id==='mp-search'){browseQuery=e.target.value;browseLimit=24;browse();}});
   D.addEventListener('input',e=>{
     if(!e.target.closest?.('#mealPlannerRoot')||!/^mp-(eaten|portion)-/.test(e.target.id))return;
@@ -149,7 +170,7 @@
     if(e.target.id==='mp-eaten-'+m.id)D.getElementById('mp-portion-'+m.id).value=Math.round(Number(e.target.value)/w.grams*10000)/10000;
     else D.getElementById('mp-eaten-'+m.id).value=Math.round(Number(e.target.value)*w.grams*10)/10;
   });
-  D.addEventListener('change',e=>{if(e.target.id==='mp-filter'){browseType=e.target.value;browseLimit=24;browse();}});
+  D.addEventListener('change',e=>{if(e.target.id==='mp-filter'||e.target.id==='mp-country'){if(e.target.id==='mp-filter')browseType=e.target.value;else catalogFilters.country=e.target.value;browseLimit=24;browse();}});
   D.addEventListener('change',e=>{if(!e.target.matches?.('[data-mp-date]'))return;if(/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)){activeDate=e.target.value;render();}});
   D.addEventListener('click',e=>{
     const b=e.target.closest?.('[data-mp]');if(!b)return;
@@ -158,6 +179,27 @@
     if(openedOwner!==owner()){W.closeModal?.();return;}
     try{
       const action=b.dataset.mp,d=day();
+      if(action==='nutrition-view'){catalogView=b.dataset.value==='recipes';replacementSlot=null;render();return;}
+      if(action==='catalog-filter'){
+        const key=b.dataset.key,value=b.dataset.value||'';
+        if(key==='type')browseType=browseType===value?'':value;
+        else if(key==='favorite')catalogFilters.favorite=!catalogFilters.favorite;
+        else if(['diet','collection','calories'].includes(key))catalogFilters[key]=catalogFilters[key]===value?'':value;
+        browseLimit=24;browse();return;
+      }
+      if(action==='catalog-reset'){browseQuery='';browseType='';catalogFilters={diet:'',collection:'',calories:'',country:'',favorite:false};browseLimit=24;D.getElementById('mp-search').value='';browse();return;}
+      if(action==='favorite'){
+        if(!E.catalog.recipes.some(r=>r.id===b.dataset.id))return;
+        mutate(data=>{const favorites=data.favorites||[];data.favorites=favorites.includes(b.dataset.id)?favorites.filter(id=>id!==b.dataset.id):[...favorites,b.dataset.id];});browse();return;
+      }
+      if(action==='catalog-record'){
+        const recipe=E.catalog.recipes.find(r=>r.id===b.dataset.id);if(!recipe||!E.allowed(recipe,{...db().preferences,maxTime:0,simpleOnly:false}))throw Error('Блюдо не подходит текущим предпочтениям');
+        const factor=Number(D.getElementById('mp-catalog-portion-'+recipe.id).value);
+        const meal=E.scaleMeal(E.fit(recipe,E.recipeInfo(recipe).nutrition),factor),weight=E.servingWeight(meal);
+        const slot=D.getElementById('mp-catalog-slot-'+recipe.id).value;
+        mutate(data=>{data.days[activeDate]={...d,extra:[...d.extra,{id:'recipe-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),recipeId:recipe.id,name:recipe.name,slot,nutrition:meal.nutrition,grams:weight?.grams||null,servings:factor}]};});
+        render();mount();W.toast?.('Порция записана');return;
+      }
       if(action==='date-prev'||action==='date-next'){const date=new Date(activeDate+'T12:00:00');date.setDate(date.getDate()+(action==='date-prev'?-1:1));activeDate=[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');render();return;}
       if(action==='saved-food'){
         const food=(db().savedFoods||[]).find(x=>x.id===b.dataset.id);if(!food)return;

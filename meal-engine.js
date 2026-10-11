@@ -140,7 +140,29 @@
     const total=round(sum(chosen.map(m=>m.nutrition))),delta=round(Object.fromEntries(keys.map(k=>[k,total[k]-target[k]])));
     return {version:1,target:{...target},meals:chosen,total,delta,withinTarget:within(total,target)};
   }
-  const api={servingWeight,scaleMeal,nutrition,sum,round,validateTarget,fromGoal,bounds,deviation,within,loss,subtractTarget,slots,allowed,fit,generate,catalog};
+  function recipeInfo(recipe){
+    const n=round(recipe.portionNutrition||nutrition(recipe.ingredients));
+    const vegetarian=allowed(recipe,{vegetarian:true});
+    const pescatarian=vegetarian||(recipe.source?(recipe.diets||[]).includes('pescatarian'):recipe.ingredients.every(i=>catalog.foods[i.id].vegetarian||['fish','salmon','tuna','shrimp'].includes(i.id)));
+    const collections=[];
+    if(!recipe.source&&recipe.slots.includes('breakfast'))collections.push('breakfast');
+    if(recipe.time<=20&&recipe.slots.includes('dinner'))collections.push('quick');
+    if(n.p>=25&&n.p*4/Math.max(1,n.k)>=.2)collections.push('protein');
+    if(!recipe.source&&/сэндвич|лаваш|ленивая овсянка|овсянка на ночь|ролл|маффин/i.test(recipe.name))collections.push('portable');
+    if(!recipe.source&&recipe.ingredients.some(i=>i.id==='egg'))collections.push('egg');
+    if(!recipe.source&&recipe.ingredients.some(i=>i.id==='buckwheat'))collections.push('buckwheat');
+    return {nutrition:n,vegetarian,pescatarian,collections,country:recipe.country||'Повседневная кухня'};
+  }
+  function matchesCatalog(recipe,filters={},favorites=[]){
+    const info=recipeInfo(recipe);
+    return (!filters.type||recipe.slots.includes(filters.type))&&
+      (!filters.diet||filters.diet==='all'||!!info[filters.diet])&&
+      (!filters.country||info.country===filters.country)&&
+      (!filters.collection||info.collections.includes(filters.collection))&&
+      (!filters.favorite||favorites.includes(recipe.id))&&
+      (filters.calories===undefined||filters.calories===''||(info.nutrition.k>=Number(filters.calories)&&info.nutrition.k<(Number(filters.calories)===700?Infinity:Number(filters.calories)+100)));
+  }
+  const api={servingWeight,scaleMeal,nutrition,sum,round,validateTarget,fromGoal,bounds,deviation,within,loss,subtractTarget,slots,allowed,fit,generate,recipeInfo,matchesCatalog,catalog};
   if(typeof module==='object'&&module.exports)module.exports=api;
   root.UNVRSLMealEngine=api;
 })(typeof window!=='undefined'?window:globalThis);
