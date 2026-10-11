@@ -62,6 +62,7 @@
   function localWeights(){return (st.bw||[]).map(x=>({d:x.d,v:num(x.w)})).filter(x=>x.d&&x.v!=null&&visibleWeight(x)).sort((a,b)=>a.d.localeCompare(b.d))}
   function workouts(){return cache.loaded&&cache.workouts.length?cache.workouts:localWorkouts()}
   function weights(){return cache.loaded?cache.weights:localWeights()}
+  window.homeStatsBodyweights=()=>weights().map(x=>({...x}));
   function goal(){return num(cache.goal)??num(st.weightGoalKg)}
 
   async function hydrate(force=false){
@@ -162,6 +163,7 @@
     const clientMode=isClientMode();
     const anchor=clientMode?(root.querySelector(':scope > .client-plan-card-v255')||cards[1]||cards[0]):(root.querySelector(':scope > .calendar-card')||cards[0]);
     if(anchor){if(anchor.nextElementSibling!==host)anchor.after(host)}else if(root.firstElementChild!==host)root.prepend(host);
+    window.dispatchEvent(new CustomEvent('unvrsl:home-progress-rendered'));
     requestAnimationFrame(()=>{const h=document.getElementById('homeHeatWrap');if(h)h.scrollLeft=h.scrollWidth});
   }
 

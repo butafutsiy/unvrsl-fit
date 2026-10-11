@@ -7,7 +7,7 @@
   const fmt=v=>v==null?'—':Number(v).toFixed(1).replace('.0','').replace('.',',');
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const dateLabel=s=>{const d=new Date(String(s).slice(0,10)+'T12:00:00');if(Number.isNaN(d.getTime()))return String(s||'');return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`};
-  let rows=[],selected=null,loading=false;
+  let rows=[],selected=null;
 
   const style=document.createElement('style');
   style.id='bodyweight-history-v190-style';
@@ -18,19 +18,13 @@
 
   function deletedDates(){return new Set((window.st?.deletedBodyweights||[]).map(x=>String(x?.d||x||'').slice(0,10)).filter(Boolean))}
   function localRows(){const deleted=deletedDates();return (window.st?.bw||[]).map(x=>({d:String(x.d||'').slice(0,10),v:N(x.w)})).filter(x=>x.d&&x.v!=null&&!deleted.has(x.d))}
-  async function load(){
-    if(loading)return;loading=true;
-    try{
-      let cloudRows=null;
-      if(window.cloud?.client&&window.cloud?.user){
-        const r=await window.cloud.client.from('bodyweights').select('measure_date,weight_kg').eq('user_id',window.cloud.user.id).order('measure_date',{ascending:true}).limit(1000);
-        if(!r.error){const deleted=deletedDates();cloudRows=(r.data||[]).map(x=>({d:String(x.measure_date).slice(0,10),v:N(x.weight_kg)})).filter(x=>x.v!=null&&!deleted.has(x.d))}
-      }
-      rows=Array.isArray(cloudRows)?cloudRows:localRows();rows.sort((a,b)=>a.d.localeCompare(b.d));
-      if(!selected||!rows.some(x=>x.d===selected))selected=rows.at(-1)?.d||null;
-      window.__unvrslSelectedBodyweightDate=selected
-    }catch(e){console.warn('bodyweight history load',e);rows=localRows()}
-    finally{loading=false}
+  function load(){
+    // The list and chart must read the same snapshot, including late sign-in.
+    const source=typeof window.homeStatsBodyweights==='function'?window.homeStatsBodyweights():localRows();
+    const deleted=deletedDates();
+    rows=(Array.isArray(source)?source:[]).map(x=>({d:String(x.d||'').slice(0,10),v:N(x.v)})).filter(x=>x.d&&x.v>0&&!deleted.has(x.d)).sort((a,b)=>a.d.localeCompare(b.d));
+    if(!selected||!rows.some(x=>x.d===selected))selected=rows.at(-1)?.d||null;
+    window.__unvrslSelectedBodyweightDate=selected;
   }
   function weightCards(){return [...document.querySelectorAll('#home .sd2-card')].filter(x=>x.querySelector('.sd2-weight-label')||/^\s*Вес тела/i.test((x.textContent||'').trim()))}
   function selectedRow(){return rows.find(x=>x.d===selected)||null}
@@ -50,13 +44,14 @@
     host.innerHTML=`<div class="bw190-head"><span class="bw190-title">История веса</span><button class="bw190-all" onclick="bw190History()">Все записи</button></div><div class="bw190-scroll" aria-label="Записи веса от ранних к новым">${view.map(r=>`<button class="bw190-chip ${selected===r.d?'on':''}" data-bw-chip-date="${r.d}" onclick="bw190SelectPoint('${r.d}')"><b>${fmt(r.v)} кг</b><span>${dateLabel(r.d)}</span></button>`).join('')||'<span class="muted small">Записей пока нет</span>'}</div>${x?`<div class="bw190-point-info"><div><b>${fmt(x.v)} кг</b><span>${dateLabel(x.d)}</span></div><button class="bw190-edit" onclick="bw190EditSelected()">Изменить</button></div>`:''}`;
     const scroller=host.querySelector('.bw190-scroll'),active=host.querySelector(`[data-bw-chip-date="${selected||''}"]`);if(scroller&&active)requestAnimationFrame(()=>{if(selected===view.at(-1)?.d)scroller.scrollLeft=scroller.scrollWidth;else{const left=active.offsetLeft,right=left+active.offsetWidth;if(left<scroller.scrollLeft)scroller.scrollLeft=Math.max(0,left-4);else if(right>scroller.scrollLeft+scroller.clientWidth)scroller.scrollLeft=right-scroller.clientWidth+4}})
   }
-  function render(){weightCards().forEach(renderCard);applySelection()}
+  function render(){load();weightCards().forEach(renderCard);applySelection()}
 
   window.bw190SelectedDate=()=>selected;
   window.bw190SelectPoint=d=>{if(!rows.some(x=>x.d===d))return;selected=d;window.__unvrslSelectedBodyweightDate=d;render()};
   window.bw190Select=window.bw190SelectPoint;
   window.bw190EditSelected=()=>{const x=selectedRow();if(x)editSheet(x)};
   window.bw190History=()=>{
+    load();
     if(typeof window.modal!=='function')return;
     window.modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>История веса</h2><div class="muted">Выбери запись, чтобы изменить или удалить</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="card bw190-list" style="margin-top:12px">${rows.slice().reverse().map(x=>`<button class="bw190-row" onclick="bw190Open('${x.d}')"><div><b>${fmt(x.v)} кг</b><small>${dateLabel(x.d)}</small></div><span class="chev">›</span></button>`).join('')||'<div class="muted">Записей пока нет</div>'}</div>`)
   };
@@ -99,7 +94,7 @@
   function scheduleRender(){if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;render()})}
   const observer=new MutationObserver(()=>{if(weightCards().some(c=>!c.querySelector('.bw190-wrap')))scheduleRender()});
   observer.observe(document.body,{childList:true,subtree:true});
-  (async()=>{await load();render()})();
-  [300,900,1800].forEach(t=>setTimeout(async()=>{await load();render()},t));
+  for(const event of ['unvrsl:home-progress-rendered','unvrsl:history-updated','unvrsl:storage-hydrated','unvrsl:cloud-ready','unvrsl:app-ready','pageshow'])window.addEventListener(event,scheduleRender);
+  render();
 })();
 
