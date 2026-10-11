@@ -42,7 +42,8 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
         regenerated:{method:regenerated.method,count:regenerated.sets.length},savedTest:serialized.weeks[7].days[1].ex[0].sets.map(s=>s.targetRepMin),
         configured:{start:configured.cycleOptions.startDate,priority:configured.cycleOptions.priority,phase:configured.weeks[7].phase,test:configured.weeks[7].testWeek}};
     })()`);
-    assert.ok(result.entryVisible&&result.currentPreserved&&result.originalPreserved&&result.historyPreserved);
+    assert.equal(result.entryVisible,false);
+    assert.ok(result.currentPreserved&&result.originalPreserved&&result.historyPreserved);
     assert.match(result.editor,/Периодизация/);assert.match(result.editor,/Изоляция:/);
     assert.deepEqual(Array.from(result.firstNames),['A1','B','C','A2','D']);
     assert.equal(result.french,'isolation');assert.equal(result.ropeSets,3);
