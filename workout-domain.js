@@ -70,30 +70,37 @@
     return {valid:!warnings.length,warnings,corridor:conflict?effort:intersection,effortCorridor:effort};
   }
   function exerciseKind(e,reg) {
-    const kind=e.kind||e.type||reg?.resolve(e)?.type;
-    if(kind)return /isol/i.test(kind)?'isolation':'base';
-    return /разгибан|сгибан|разведен|сведен|бицеп|трицеп|кроссов|икр|дельт|мах[и ]/i.test(e.n||'')?'isolation':'base';
+    const kind=e.kind||e.type;
+    if(/^(isolation|compound|base)$/i.test(kind||''))return /isol/i.test(kind)?'isolation':'base';
+    // Legacy "reps" describes the result, not whether a movement is compound.
+    if(/разгибан|сгибан|разведен|сведен|бицеп|трицеп|кроссов|икр|дельт|мах[и ]|французск|скотта|на носки/i.test(e.n||''))return 'isolation';
+    return /isol/i.test(reg?.resolve(e)?.type||'')?'isolation':'base';
   }
   function applyWeekProfile(week,p) {
     Object.assign(week,{weeklyLoadProfile:cloneProfile(p),phase:p.phase,deload:p.deload,testWeek:!!p.test,intensityMin:p.pct[0],intensityMax:p.pct[1],rpeMin:p.rpe[0],rpeMax:p.rpe[1],rirMin:10-p.rpe[1],rirMax:10-p.rpe[0],baseRepMin:p.base.reps[0],baseRepMax:p.base.reps[1],isolationRepMin:p.isolation.reps[0],isolationRepMax:p.isolation.reps[1],focus:p.focus,useIntensity:true,loadProfileRevision:465});
     return week;
   }
   function generateCycle(options) {
-    const {weeks,daysPerWeek=3,startDate,targetDate,testWeek=true,priority='strength',goal='',exercises=[]}=options;
+    const {weeks,daysPerWeek=3,startDate,targetDate,testWeek=true,priority='strength',goal='',exercises=[],weekExercises}=options;
+    if(weekExercises&&(!Array.isArray(weekExercises)||weekExercises.length!==weeks||weekExercises.some(x=>!Array.isArray(x))))throw new Error('Рецепты упражнений должны быть заданы для каждой недели');
     const roles=dayRoles(daysPerWeek),profiles=cycleProfiles(weeks,{testWeek,priority});
     const parse=d=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(d||''))throw new Error('Укажи дату в формате ГГГГ-ММ-ДД');const x=Date.parse(d+'T12:00:00Z');if(!Number.isFinite(x)||new Date(x).toISOString().slice(0,10)!==d)throw new Error('Некорректная дата');return x;};
     const start=parse(startDate),end=targetDate?parse(targetDate):start+(weeks*7-1)*86400000;
     if(end<start+((weeks-1)*7+daysPerWeek-1)*86400000||end>start+(weeks*7-1)*86400000)throw new Error('Целевая дата должна попадать в последнюю неделю цикла');
     const result={cycleSources:cloneProfile(exercises),cycleOptions:{weeks,daysPerWeek,startDate,targetDate:new Date(end).toISOString().slice(0,10),testWeek,priority,goal},weeks:profiles.map((p,i)=>applyWeekProfile({n:i+1,days:roles.map((role,di)=>({id:`cycle-${i}-${di}`,name:`День ${di+1}`,role,date:new Date(start+i*7*86400000+(daysPerWeek===1?(i===weeks-1?(end-start-i*7*86400000)/86400000:0):Math.floor(di*(i===weeks-1?(end-start-i*7*86400000)/86400000:6)/(daysPerWeek-1)))*86400000).toISOString().slice(0,10),ex:[]}))},p))};
-    for(const week of result.weeks)week.days=allocateWeek(week.weeklyLoadProfile,week.days,exercises);
+    if(weekExercises)result.cycleWeekSources=cloneProfile(weekExercises);
+    for(const [i,week] of result.weeks.entries())week.days=allocateWeek(week.weeklyLoadProfile,week.days,weekExercises?.[i]||exercises);
     return result;
   }
   function allocateWeek(p,days,exercises) {
     const week={days:days.map(d=>({...d,ex:[]}))},daysPerWeek=days.length;
       exercises.forEach((source,index)=>{
-        const kind=exerciseKind(source),spec=p[kind];if(!spec.sets)return;
         let selected=(source.dayIndices||[index%daysPerWeek]).filter((x,i,a)=>Number.isInteger(x)&&x>=0&&x<daysPerWeek&&a.indexOf(x)===i);
         if(!selected.length)selected=[index%daysPerWeek];
+        if(source.kind==='cardio'||source.workMode==='timer'||source.loadType==='time'){
+          selected.forEach(di=>week.days[di].ex.push({...cloneProfile(source),cycleManaged:false}));return;
+        }
+        const kind=exerciseKind(source),spec=p[kind];if(!spec.sets)return;
         if(p.test)selected=[selected.at(-1)];
         else if(!p.deload&&method(source)!=='STANDARD')selected=[selected[0]];
         const budget=p.test?3:p.deload?spec.sets:Math.max(0,Math.round(number(source.weeklySetsOverride)??spec.sets));
@@ -102,7 +109,7 @@
           const e=cloneProfile(source);e.kind=kind;e.cycleOriginalMethod=source.cycleOriginalMethod||source.method||'STANDARD';e.cycleOriginalSets=cloneProfile(source.cycleOriginalSets||source.sets||[]);e.method=p.deload?'STANDARD':e.cycleOriginalMethod;e.weeklySets=budget;e.cycleManaged=true;
           e.reps={mode:'auto',min:null,max:null};e.parameterOverrides={...e.parameterOverrides,reps:{mode:'auto'},effort:{mode:'auto'}};
           e.sets=Array.from({length:count},(_,k)=>({...source.sets?.[k],w:number(source.sets?.[k]?.w??source.sets?.[0]?.w)??0,r:spec.reps[0],targetRepMin:spec.reps[0],targetRepMax:spec.reps[1],targetRpeMin:spec.rpe[0],targetRpeMax:spec.rpe[1],allowFailure:false}));
-          if(!p.deload&&!p.test&&e.method!=='STANDARD'){e.sets=cloneProfile(e.cycleOriginalSets);e.cycleManaged=false;}
+           if(!p.deload&&!p.test&&e.method!=='STANDARD'){e.sets=cloneProfile(e.cycleOriginalSets);e.cycleManaged=false;e.reps={mode:'method',min:null,max:null};}
           if(p.test){e.method='STANDARD';e.sets.forEach((s,k)=>Object.assign(s,k===count-1?{role:'test_attempt',targetRepMin:1,targetRepMax:1,r:1,targetRpeMin:9.5,targetRpeMax:10,allowFailure:true}:{role:'test_preparation',targetRepMin:2,targetRepMax:4}));}
           week.days[di].ex.push(e);
         });

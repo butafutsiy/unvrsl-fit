@@ -59,7 +59,8 @@
   function defaultsFor(p,wi,useLive=true){const w=p?.weeks?.[wi],pr=w?.weeklyLoadProfile;if(pr&&!w.loadProfileManual)return {base:pr.base.reps,iso:pr.isolation.reps};return defaultsForBand(bandFor(p,wi,useLive))}
   function repProfile(p,wi,useLive=true){
     const w=p?.weeks?.[Number(wi)];if(!w)return null;
-    const band=bandFor(p,wi,useLive),d=defaultsForBand(band),manual=w.repGuidanceManual===true;
+    const band=bandFor(p,wi,useLive),canonical=w.weeklyLoadProfile&&!w.loadProfileManual?w.weeklyLoadProfile:null,
+      d=canonical?{base:canonical.base.reps,iso:canonical.isolation.reps}:defaultsForBand(band),manual=w.repGuidanceManual===true;
     const base=manual?pair(w.baseRepMin,w.baseRepMax,d.base):d.base;
     const iso=manual?pair(w.isolationRepMin,w.isolationRepMax,d.iso):d.iso;
     return {week:weekNo(w,wi),band,baseRepMin:base[0],baseRepMax:base[1],isolationRepMin:iso[0],isolationRepMax:iso[1],manual}

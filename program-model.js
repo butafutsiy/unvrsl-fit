@@ -88,7 +88,7 @@
     for(const key of ['repMode','repMin','repMax','repRange','repsMin','repsMax','minReps','maxReps','targetReps'])delete exercise[key];
     if(Array.isArray(exercise.sets))exercise.sets.forEach(set=>{
       if(!set||typeof set!=='object')return;
-      for(const key of ['rMin','rMax','repsMin','repsMax','targetRepMin','targetRepMax','targetRepLabel','repMode'])delete set[key]
+      if(!exercise.cycleManaged)for(const key of ['rMin','rMax','repsMin','repsMax','targetRepMin','targetRepMax','targetRepLabel','repMode'])delete set[key]
     });
     return exercise
   }
