@@ -83,7 +83,7 @@ test("23: activate removes old app caches while preserving unrelated caches", as
   await r.event("activate");
   assert.equal(r.buckets.has("unvrsl-shell-v391"), false);
   assert.ok(r.buckets.has("other-app"));
-  assert.ok(r.buckets.has("unvrsl-shell-v491"));
+  assert.ok(r.buckets.has("unvrsl-shell-v492"));
 });
 test("offline launch uses the fully installed current HTML and versioned scripts", async () => {
   const r = runtime();
@@ -96,20 +96,20 @@ test("offline launch uses the fully installed current HTML and versioned scripts
       mode: "navigate",
     },
   });
-  assert.match(await html.text(), /workout-store.js\?v=491/);
+  assert.match(await html.text(), /workout-store.js\?v=492/);
   const script = await r.event("fetch", {
-    request: { url: "https://app.test/unvrsl-fit/app.js?v=491", method: "GET" },
+    request: { url: "https://app.test/unvrsl-fit/app.js?v=492", method: "GET" },
   });
-  assert.match(await script.text(), /app.js\?v=491/);
-  const owner = await r.event('fetch',{request:{url:'https://app.test/unvrsl-fit/trainer-shell.js?v=491',method:'GET'}});
-  assert.match(await owner.text(),/trainer-shell.js\?v=491/);
+  assert.match(await script.text(), /app.js\?v=492/);
+  const owner = await r.event('fetch',{request:{url:'https://app.test/unvrsl-fit/trainer-shell.js?v=492',method:'GET'}});
+  assert.match(await owner.text(),/trainer-shell.js\?v=492/);
 });
-test("a v391 URL can never satisfy a v491 script request", async () => {
+test("a v391 URL can never satisfy a v492 script request", async () => {
   const r = runtime(),
-    cache = await r.caches.open("unvrsl-shell-v491");
+    cache = await r.caches.open("unvrsl-shell-v492");
   await cache.put("./app.js?v=391", new Response("OLD"));
   const res = await r.event("fetch", {
-    request: { url: "https://app.test/unvrsl-fit/app.js?v=491", method: "GET" },
+    request: { url: "https://app.test/unvrsl-fit/app.js?v=492", method: "GET" },
   });
   assert.notEqual(await res.text(), "OLD");
   assert.equal(r.requests.length, 1);

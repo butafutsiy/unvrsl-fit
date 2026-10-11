@@ -25,9 +25,12 @@ const plain=x=>JSON.parse(JSON.stringify(x));
  set(w,'mp-portion-meal-0',.5);click(w,'eat','meal-0');
  assert.equal(w.st.mealNutritionV1.days[date].eaten['meal-0'].ingredients[0].g,Math.round(first.plan.meals[0].ingredients[0].g*.5*10)/10);
  const eaten=plain(w.st.mealNutritionV1.days[date].eaten['meal-0']);
+ const originalFirst=plain(eaten.planned);
  const previousRecipes=plain(w.st.mealNutritionV1.days[date].plan.meals).map(m=>m.recipeId);
  click(w,'generate');assert.deepEqual(plain(w.st.mealNutritionV1.days[date].eaten['meal-0']),eaten);
  for(const m of w.st.mealNutritionV1.days[date].plan.meals.slice(1))assert.notEqual(m.recipeId,previousRecipes[Number(m.id.split('-')[1])]);
+ click(w,'eat','meal-0');assert.deepEqual(plain(w.st.mealNutritionV1.days[date].plan.meals[0].ingredients),originalFirst.ingredients,'undo after regeneration restores the original full portion');
+ set(w,'mp-portion-meal-0',.5);w.document.getElementById('mp-portion-meal-0').dispatchEvent(new w.Event('input',{bubbles:true}));assert.match(w.document.getElementById('mp-portion-preview-meal-0').textContent,/Будет записано/);click(w,'eat','meal-0');assert.deepEqual(plain(w.st.mealNutritionV1.days[date].eaten['meal-0']),eaten);
  // Weigh a complete cooked serving, then record exactly half of it in grams.
  const lunch=w.st.mealNutritionV1.days[date].plan.meals[1];
  set(w,'mp-ready-'+lunch.id,600);click(w,'ready-weight',lunch.id);
@@ -52,6 +55,9 @@ const plain=x=>JSON.parse(JSON.stringify(x));
  assert.equal(w.document.getElementById('mp-food-k').value,'70');
  assert.equal(w.document.querySelectorAll('.mp-reference-grid img').length,10);
 
+ click(w,'remove',w.st.mealNutritionV1.days[date].extra[0].id);assert.equal(w.st.mealNutritionV1.days[date].extra.length,0);click(w,'undo-remove');assert.equal(w.st.mealNutritionV1.days[date].extra.length,1);
+ const recipe=w.UNVRSLMealEngine.catalog.recipes.find(r=>r.id==='chicken-rice'),shoppingMeal=w.UNVRSLMealEngine.fit(recipe,w.UNVRSLMealEngine.nutrition(recipe.ingredients));
+ const rice=shoppingMeal.ingredients.find(i=>i.id==='rice');const list=w.UNVRSLMealUI.shopping({meals:[shoppingMeal,w.UNVRSLMealEngine.scaleMeal(shoppingMeal,.5)]});assert.equal(list.filter(x=>x.name===w.UNVRSLMealEngine.catalog.foods.rice.name).length,1);assert.equal(list.find(x=>x.name===w.UNVRSLMealEngine.catalog.foods.rice.name).amount,(rice.g*1.5).toLocaleString('ru-RU',{maximumFractionDigits:1})+' г');
  const total=w.UNVRSLMealUI.totals(w.st.mealNutritionV1.days[date]);assert.equal(total.k,Math.round((eaten.nutrition.k+140)*10)/10);
  click(w,'generate');assert.equal(w.st.mealNutritionV1.days[date].extra.length,1);
  const library=w.document.querySelector('.mp-library');library.open=true;library.dispatchEvent(new w.Event('toggle'));

@@ -149,7 +149,7 @@
     if(recipe.time<=20&&recipe.slots.includes('dinner'))collections.push('quick');
     if(n.p>=25&&n.p*4/Math.max(1,n.k)>=.2)collections.push('protein');
     if(!recipe.source&&/сэндвич|лаваш|ленивая овсянка|овсянка на ночь|ролл|маффин/i.test(recipe.name))collections.push('portable');
-    if(!recipe.source&&recipe.ingredients.some(i=>i.id==='egg'))collections.push('egg');
+    if(!recipe.source&&recipe.ingredients.some(i=>i.id==='egg')&&/яйц|омлет|яичн|шакшук|овсяноблин/i.test(recipe.name))collections.push('egg');
     if(!recipe.source&&recipe.ingredients.some(i=>i.id==='buckwheat'))collections.push('buckwheat');
     return {nutrition:n,vegetarian,pescatarian,collections,country:recipe.country||'Повседневная кухня'};
   }

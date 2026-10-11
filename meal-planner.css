@@ -171,3 +171,33 @@
 #mealPlannerRoot .mp-view-tabs button[aria-pressed=true]{background:var(--panel);color:var(--green);box-shadow:0 2px 8px #0000000a}
 #mealPlannerRoot .mp-catalog-page .mp-library{border:0;background:transparent;padding:0;margin:0}
 #mealPlannerRoot .mp-catalog-page .mp-library>summary{display:none}
+/* Nutrition UX: search first, optional filters and clear portion feedback. */
+#mealPlannerRoot .mp-view-tabs{position:sticky;top:0;z-index:3;background:var(--panel2)}
+#mealPlannerRoot .mp-searchbar{margin:10px 0}
+#mealPlannerRoot .mp-catalog-options{border:1px solid var(--line);border-radius:14px;background:var(--panel2);padding:0 12px;margin:8px 0 12px}
+#mealPlannerRoot .mp-catalog-options>summary{display:flex;justify-content:space-between;align-items:center;min-height:46px;font-size:13px;font-weight:600;list-style:none;cursor:pointer}
+#mealPlannerRoot .mp-catalog-options>summary:after{content:'⌄';color:var(--muted)}
+#mealPlannerRoot .mp-catalog-options[open]>summary:after{content:'⌃'}
+#mealPlannerRoot .mp-catalog-options .mp-catalog-selects{margin:12px 0}
+#mealPlannerRoot .mp-active-filters{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+#mealPlannerRoot .mp-active-filters .mp-tag{white-space:normal;font-size:11px}
+#mealPlannerRoot .mp-active-filters .btn{min-height:36px;padding:6px 9px}
+#mealPlannerRoot .mp-record-options{padding-top:8px}
+#mealPlannerRoot .mp-record-options>summary{color:var(--green);min-height:44px;display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer}
+#mealPlannerRoot .mp-record-options>summary:before{content:'＋';font-size:19px}
+#mealPlannerRoot .mp-record-options[open]>summary:before{content:'−'}
+#mealPlannerRoot .mp-catalog-record .mp-portion-preview{grid-column:1/-1;margin:3px 0}
+#mealPlannerRoot .mp-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+#mealPlannerRoot .mp-quick-actions>.btn{min-height:44px;font-size:13px}
+#mealPlannerRoot .mp-empty{padding:18px;border:1px dashed var(--line);border-radius:16px;margin:12px 0;color:var(--muted);font-size:13px}
+#mealPlannerRoot .mp-empty b{display:block;color:var(--text);font-size:16px}
+#mealPlannerRoot .mp-empty p{margin:7px 0 12px;line-height:1.5}
+#mealPlannerRoot .mp-portion-preview{font-variant-numeric:tabular-nums;border-radius:10px;background:var(--panel2);padding:10px;line-height:1.5}
+#mealPlannerRoot .mp-meal .mp-actions>.mp-portion{order:0}
+#mealPlannerRoot .mp-meal .mp-actions>.mp-portion-preview{order:1;grid-column:1/-1;margin:0 0 4px}
+#mealPlannerRoot .mp-meal .mp-actions>.btn{order:2}
+#mealPlannerRoot .mp-section-label{margin:18px 0 8px;font-size:14px;color:var(--muted)}
+#mealPlannerRoot .mp-undo{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:13px;margin:10px 0;font-size:13px}
+#mealPlannerRoot .btn.primary{color:#fff}
+#mealPlannerRoot .mp-recipe h3{margin:6px 0;font-size:18px}
+#mealPlannerRoot .mp-recipe .mp-ready{padding:9px 11px;font-size:12px;margin:9px 0}

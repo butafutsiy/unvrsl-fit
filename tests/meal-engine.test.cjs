@@ -122,5 +122,6 @@ test('catalog filters derive diets and nutrition from the original portion witho
  }
  const breakfast=E.catalog.recipes.filter(r=>E.matchesCatalog(r,{collection:'breakfast'}));assert.equal(breakfast.length,54);assert.ok(breakfast.every(r=>!r.source&&r.slots.includes('breakfast')));
  assert.equal(E.matchesCatalog(meat,{favorite:true},[]),false);assert.equal(E.matchesCatalog(meat,{favorite:true},[meat.id]),true);
+ assert.ok(E.catalog.recipes.filter(r=>E.matchesCatalog(r,{collection:'egg'})).every(r=>/яйц|омлет|яичн|шакшук|овсяноблин/i.test(r.name)));
  for(const collection of ['quick','protein','portable','egg','buckwheat'])assert.ok(E.catalog.recipes.some(r=>E.matchesCatalog(r,{collection})));
 });
