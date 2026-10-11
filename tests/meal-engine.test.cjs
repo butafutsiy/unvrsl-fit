@@ -33,7 +33,7 @@ test('existing calorie goals produce coherent macro targets and invalid inputs f
 });
 test('world recipe dataset preserves 501 complete recipes and coherent serving scaling',()=>{
  const world=E.catalog.recipes.filter(r=>r.source);
- assert.equal(world.length,501);assert.equal(E.catalog.recipes.length,648);
+ assert.equal(world.length,501);assert.equal(E.catalog.recipes.length,690);
  assert.equal(new Set(world.map(r=>r.id)).size,501);
  for(const r of world){
   assert.ok(r.name&&r.steps&&r.details.length&&r.baseServings>0);
@@ -60,9 +60,9 @@ test('range targets accept the full interval and reject values just outside it',
  const plan=E.generate(t,4,{simpleOnly:true,maxTime:45});assert.equal(plan.withinTarget,true,JSON.stringify(plan.total));
  assert.ok(plan.meals.every(m=>!E.catalog.recipes.find(r=>r.id===m.recipeId).source));
 });
-test('everyday catalog offers 147 simple meals including 54 breakfasts and keeps ingredient allergens and nutrition',()=>{
+test('everyday catalog offers 189 simple meals including 62 breakfasts and keeps ingredient allergens and nutrition',()=>{
  const simple=E.catalog.recipes.filter(r=>!r.source);
- assert.equal(simple.length,147);assert.equal(simple.filter(r=>r.slots.includes('breakfast')).length,54);
+ assert.equal(simple.length,189);assert.equal(simple.filter(r=>r.slots.includes('breakfast')).length,62);
  for(const r of simple){assert.ok(E.nutrition(r.ingredients).k>0);assert.ok(r.steps);assert.ok(r.ingredients.every(i=>E.catalog.foods[i.id]));}
  const cheese=E.catalog.recipes.find(r=>r.id==='omelet-cheese');assert.equal(E.allowed(cheese,{allergens:['milk']}),false);
  assert.ok(simple.filter(r=>r.guideUrl).every(r=>/^https:\/\/(www\.iamcook\.ru|www\.russianfood\.com)\//.test(r.guideUrl)));
@@ -120,7 +120,7 @@ test('catalog filters derive diets and nutrition from the original portion witho
  for(const r of E.catalog.recipes){
   const buckets=[0,100,200,300,400,500,600,700].filter(calories=>E.matchesCatalog(r,{calories:String(calories)}));assert.equal(buckets.length,1,r.name);
  }
- const breakfast=E.catalog.recipes.filter(r=>E.matchesCatalog(r,{collection:'breakfast'}));assert.equal(breakfast.length,54);assert.ok(breakfast.every(r=>!r.source&&r.slots.includes('breakfast')));
+ const breakfast=E.catalog.recipes.filter(r=>E.matchesCatalog(r,{collection:'breakfast'}));assert.equal(breakfast.length,62);assert.ok(breakfast.every(r=>!r.source&&r.slots.includes('breakfast')));
  assert.equal(E.matchesCatalog(meat,{favorite:true},[]),false);assert.equal(E.matchesCatalog(meat,{favorite:true},[meat.id]),true);
  assert.ok(E.catalog.recipes.filter(r=>E.matchesCatalog(r,{collection:'egg'})).every(r=>/яйц|омлет|яичн|шакшук|овсяноблин/i.test(r.name)));
  for(const collection of ['quick','protein','portable','egg','buckwheat'])assert.ok(E.catalog.recipes.some(r=>E.matchesCatalog(r,{collection})));
@@ -148,4 +148,33 @@ test('saved product nutrition stays in the ingredient snapshot and cooked yield 
  assert.deepEqual(E.scaleMeal({...composed,readyGrams:200},.5).nutrition,raw);
  assert.throws(()=>E.composeMeal(meal,[{id:'own-yogurt',name:'Мой йогурт',sourceNutrition:{...raw,p:NaN},g:200}]));
  assert.throws(()=>E.composeMeal(meal,[{id:'egg',sourceNutrition:{...raw,p:NaN},g:200}]));
+});
+
+
+test('24 pork meals use explicit raw tenderloin nutrition and participate in ingredient calculations and restrictions',()=>{
+ const pork=E.catalog.recipes.filter(r=>!r.source&&r.ingredients.some(i=>i.id==='pork'));
+ assert.equal(pork.length,24);assert.equal(new Set(pork.map(r=>r.id)).size,24);
+ assert.deepEqual(E.nutrition([{id:'pork',g:100}]),{k:128,p:20.7,f:3.5,c:0});
+ for(const r of pork){
+  assert.equal(E.allowed(r,{vegetarian:true}),false);assert.equal(E.matchesCatalog(r,{diet:'pescatarian'}),false);
+  assert.equal(E.allowed(r,{exclude:'свинин'}),false);
+  const meal=E.fit(r,E.nutrition(r.ingredients));assert.ok(E.servingWeight(meal).grams>0);
+  const changed=E.composeMeal(meal,meal.ingredients.map(i=>i.id==='pork'?{...i,g:100}:i));assert.deepEqual(changed.nutrition,E.nutrition(changed.ingredients));
+ }
+});
+test('ingredient search handles word order, Russian endings, familiar names and one typo without losing all-word matching',()=>{
+ const recipe=E.catalog.recipes.find(r=>r.id==='pork-buckwheat'),text=E.recipeSearchText(recipe);
+ for(const q of ['свинина гречка','гречка со свининой','СВИНОЙ ГРЕЧКОЙ','свиная греч','свиина гречка','свинина гречкаа'])assert.ok(E.searchMatches(text,q),q);
+ for(const q of ['свинина банан','свинина гречка лосось','индейка','тофу'])assert.equal(E.searchMatches(text,q),false,q);
+ assert.ok(E.searchMatches('Картофель очищенный','картошка'));assert.ok(E.searchMatches('Овсяные хлопья','овсянку'));assert.ok(E.searchMatches('Куриная грудка','курица'));
+ assert.ok(E.searchMatches('Яйцо без скорлупы','яйца'));assert.ok(E.searchMatches('Зелёный горошек','зеленый горошек'));assert.ok(E.searchMatches('Щи со свининой','щи'));assert.ok(E.searchMatches('Свинина','сви'));
+ assert.equal(E.searchMatches('Сыр 5%','сыр 9'),false);assert.equal(E.searchMatches('Сыр','сир'),false);
+});
+
+
+test('search prefers full exact matches and falls back to one typo only when needed',()=>{
+ const list=['Спагетти карбонара','Фламандская карбонада'];
+ assert.deepEqual(E.searchItems(list,'карбонара',s=>s),['Спагетти карбонара']);
+ assert.deepEqual(E.searchItems(list,'карбонада',s=>s),['Фламандская карбонада']);
+ assert.deepEqual(E.searchItems(list,'карбонараа',s=>s),['Спагетти карбонара']);
 });

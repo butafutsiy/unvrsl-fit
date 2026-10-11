@@ -5,11 +5,40 @@
   const blank=()=>({k:0,p:0,f:0,c:0});
   const sum=list=>list.reduce((a,x)=>{for(const k of keys)a[k]+=x[k]||0;return a},blank());
   const round=x=>Object.fromEntries(keys.map(k=>[k,Math.round(x[k]*10)/10]));
+  const foodSearchAliases={egg:'яйца яиц яйцо яичница',buckwheat:'гречка гречневая',oats:'овсянка геркулес',chicken:'курица куриная грудка',pork:'свинина свиной вырезка pork',tomato:'томаты помидоры',oil:'масло',curd:'творог творожный',fish:'рыба',potato:'картошка картофель'};
+  const normalizeSearch=value=>String(value||'').toLowerCase().replace(/ё/g,'е').replace(/[^а-яa-z0-9]+/g,' ').trim();
+  const searchWords=value=>normalizeSearch(value).split(/\s+/).filter(Boolean);
+  const stopWords=new Set(['с','со','и','из','на','в','для','по']);
+  function searchStem(word){
+    for(const [pattern,stem] of [[/^свин/,'свинин'],[/^кур(?:иц|ин)/,'куриц'],[/^греч/,'греч'],[/^карто(?:ф|ш)/,'картоф'],[/^(?:яй[цч]|яиц|яич)/,'яйц'],[/^(?:овся|геркул)/,'овся'],[/^твор/,'твор'],[/^(?:помидор|томат)/,'помидор']])if(pattern.test(word))return stem;
+    const stem=word.replace(/(?:иями|ями|ами|ией|ого|ему|ому|ими|ыми|ую|юю|ая|яя|ое|ее|ые|ие|ой|ей|ый|ий|ов|ев|ам|ям|ах|ях|ом|ем|а|я|ы|и|у|ю|е)$/,'');
+    return stem.length>=3?stem:word;
+  }
+  function oneEdit(a,b){
+    if(Math.abs(a.length-b.length)>1)return false;
+    let i=0,j=0,edits=0;
+    while(i<a.length&&j<b.length){if(a[i]===b[j]){i++;j++;continue;}if(++edits>1)return false;if(a.length>=b.length)i++;if(b.length>=a.length)j++;}
+    return edits+(a.length-i)+(b.length-j)<=1;
+  }
+  function searchMatches(text,query,allowTypo=true){
+    const words=searchWords(query).filter(w=>!stopWords.has(w));if(!words.length)return true;
+    const tokens=searchWords(text).map(word=>({word,stem:searchStem(word)}));
+    return words.every(word=>{const stem=searchStem(word);return tokens.some(t=>t.word===word||t.stem===stem||(word.length>=2&&t.word.startsWith(word))||(allowTypo&&word.length>=5&&t.word.length>=5&&(oneEdit(word,t.word)||(stem.length>=4&&t.stem.length>=4&&oneEdit(stem,t.stem)))));});
+  }
+  function searchItems(items,query,textOf){
+    const exact=items.filter(item=>searchMatches(textOf(item),query,false));
+    return exact.length?exact:items.filter(item=>searchMatches(textOf(item),query));
+  }
+  const recipeSearchCache=new WeakMap();
+  function recipeSearchText(recipe){
+    if(!recipeSearchCache.has(recipe))recipeSearchCache.set(recipe,[recipe.name,recipe.country||'',...(recipe.details||[]).map(i=>i.name),...recipe.ingredients.map(i=>[catalog.foods[i.id]?.name||'',foodSearchAliases[i.id]||''].join(' '))].join(' '));
+    return recipeSearchCache.get(recipe);
+  }
   function nutrition(ingredients){return round(sum(ingredients.map(i=>{
     const food=i.sourceNutrition||catalog.foods[i.id];if(!food||!Number.isFinite(i.g)||i.g<0)throw Error('Проверь ингредиенты');
     return Object.fromEntries(keys.map(k=>[k,food[k]*i.g/100]));
   })));}
-  const cookedFactors={rice:2.7,buckwheat:2.5,pasta:2.4,lentils:2.5,bulgur:2.5,millet:3,semolina:3,chicken:.75,turkey:.75,beef:.7,fish:.8,salmon:.8,shrimp:.8,potato:.95,egg:.95};
+  const cookedFactors={rice:2.7,buckwheat:2.5,pasta:2.4,lentils:2.5,bulgur:2.5,millet:3,semolina:3,chicken:.75,turkey:.75,beef:.7,pork:.75,fish:.8,salmon:.8,shrimp:.8,potato:.95,egg:.95};
   function servingWeight(meal){
     if(Number.isFinite(meal.readyGrams)&&meal.readyGrams>0)return {grams:meal.readyGrams,estimated:false};
     const recipe=catalog.recipes.find(r=>r.id===meal.recipeId);
@@ -174,7 +203,7 @@
       (!filters.favorite||favorites.includes(recipe.id))&&
       (filters.calories===undefined||filters.calories===''||(info.nutrition.k>=Number(filters.calories)&&info.nutrition.k<(Number(filters.calories)===700?Infinity:Number(filters.calories)+100)));
   }
-  const api={composeMeal,servingWeight,scaleMeal,nutrition,sum,round,validateTarget,fromGoal,bounds,deviation,within,loss,subtractTarget,slots,allowed,fit,generate,recipeInfo,matchesCatalog,catalog};
+  const api={searchItems,searchMatches,normalizeSearch,recipeSearchText,foodSearchAliases,composeMeal,servingWeight,scaleMeal,nutrition,sum,round,validateTarget,fromGoal,bounds,deviation,within,loss,subtractTarget,slots,allowed,fit,generate,recipeInfo,matchesCatalog,catalog};
   if(typeof module==='object'&&module.exports)module.exports=api;
   root.UNVRSLMealEngine=api;
 })(typeof window!=='undefined'?window:globalThis);

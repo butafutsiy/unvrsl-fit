@@ -1,0 +1,31 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {JSDOM}=require(process.env.UNVRSL_JSDOM||'jsdom');
+const dom=new JSDOM('<div id="sheet"></div>',{runScripts:'dangerously',url:'https://app.test/'}),w=dom.window,D=w.document;
+w.st={accountOwnerId:'alice'};w.modal=html=>D.getElementById('sheet').innerHTML=html;w.save=()=>true;
+for(const file of ['meal-recipes-data.js','meal-catalog.js','meal-engine.js','meal-planner-ui.js'])w.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
+const click=selector=>{const el=D.querySelector(selector);assert.ok(el,selector);el.click();};
+const tab=name=>click(`[data-mp="nutrition-view"][data-value="${name}"]`);
+const input=(id,value)=>{const el=D.getElementById(id);assert.ok(el,id);el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));};
+const quick=(context,term)=>click(`[data-mp="search-term"][data-context="${context}"][data-value="${term}"]`);
+const shown=()=>[...D.querySelectorAll('[data-mp="catalog-record"]')].map(el=>w.UNVRSLMealEngine.catalog.recipes.find(r=>r.id===el.dataset.id));
+w.openMealPlanner();tab('recipes');
+// A familiar shortcut clears view filters so it cannot appear that pork is missing.
+click('[data-mp="catalog-filter"][data-key="diet"][data-value="vegetarian"]');quick('recipes','Свинина');
+assert.equal(D.getElementById('mp-search').value,'Свинина');assert.equal(D.querySelector('[data-mp="search-term"][data-value="Свинина"]').getAttribute('aria-pressed'),'true');
+assert.equal(shown().length,24);assert.ok(shown().every(r=>!r.source&&r.ingredients.some(i=>i.id==='pork')));
+input('mp-search','гречка со свиина');assert.ok(shown().some(r=>r.id==='pork-buckwheat'));assert.ok(shown().every(r=>w.UNVRSLMealEngine.searchMatches(w.UNVRSLMealEngine.recipeSearchText(r),'гречка свинина')));
+input('mp-search','картошка свинина');assert.ok(shown().some(r=>r.id==='pork-potato'));
+input('mp-search','свинина абракадабра');assert.equal(shown().length,0);assert.match(D.querySelector('.mp-empty').textContent,/Ничего не найдено/);
+// Saved restrictions still apply after shortcuts; these are not catalog view filters.
+w.st.mealNutritionV1.preferences.exclude='свин';quick('recipes','Свинина');assert.equal(shown().length,0);w.st.mealNutritionV1.preferences.exclude='';
+tab('products');click('[data-mp="product-filter"][data-value="grain"]');quick('products','Свинина');assert.equal(D.querySelectorAll('.mp-product-card').length,1);assert.ok(D.querySelector('[data-id="base:pork"]'));
+input('mp-product-search','вырезка свиина');assert.ok(D.querySelector('[data-id="base:pork"]'));
+click('[data-mp="product-pick"][data-id="base:pork"]');input('mp-food-grams',150);assert.match(D.getElementById('mp-food-preview').textContent,/192 ккал/);click('[data-mp="extra"]');
+const date=D.getElementById('mp-date').value,entry=w.st.mealNutritionV1.days[date].extra[0];assert.equal(entry.nutrition.k,192);assert.equal(entry.productKey,'base:pork');assert.equal(entry.grams,150);
+for(const [k,v] of Object.entries({k:2400,p:160,f:80,c:260}))input('mp-'+k,v);click('[data-mp="generate"]');
+const lunch=w.st.mealNutritionV1.days[date].plan.meals.find(m=>m.type==='lunch');click(`[data-mp="swap"][data-id="${lunch.id}"]`);quick('recipes','Свинина');
+const options=[...D.querySelectorAll('[data-mp="replace-choice"]')];assert.ok(options.length);assert.ok(options.some(el=>el.dataset.id.startsWith('pork-')));
+input('mp-search','гречка свинина');assert.ok(D.querySelectorAll('[data-mp="replace-choice"]').length);const first=D.querySelector('[data-mp="replace-choice"]');click(`[data-mp="replace-choice"][data-id="${first.dataset.id}"]`);
+assert.ok(w.st.mealNutritionV1.days[date].plan.meals.find(m=>m.id===lunch.id).ingredients.some(i=>i.id==='pork'));assert.equal(w.st.mealNutritionV1.days[date].extra[0].nutrition.k,192);
+dom.window.close();console.log('Search shortcuts, everyday pork recipes, inflections, typos, multiple ingredients, restrictions, product recording and replacements passed');
