@@ -84,6 +84,24 @@
   }
   function generate(target,count,prefs={},options={}){
     validateTarget(target);
+    if(options.randomize&&!options.singleAttempt){
+      let best;
+      for(let attempt=0;attempt<6;attempt++){
+        const candidate=generate(target,count,prefs,{...options,singleAttempt:true});
+        if(candidate.withinTarget)return candidate;
+        if(!best||loss(candidate.total,target)<loss(best.total,target))best=candidate;
+      }
+      // If random shortlists miss the ranges, search the best fresh alternatives.
+      const banned={...options.banned};
+      for(const slot of slots(count)){
+        const previous=options.prior?.find(m=>m.id===slot.id);
+        if(options.locked?.[slot.id]||!previous)continue;
+        const existing=banned[slot.id]||[];
+        if(catalog.recipes.some(r=>r.slots.includes(slot.type)&&allowed(r,prefs)&&!existing.includes(r.id)&&r.id!==previous.recipeId))banned[slot.id]=[...existing,previous.recipeId];
+      }
+      const fallback=generate(target,count,prefs,{...options,randomize:false,banned});
+      return loss(fallback.total,target)<loss(best.total,target)?fallback:best;
+    }
     const meals=slots(count),locked=options.locked||{},prior=options.prior||[];
     const randomize=!!options.randomize,rng=options.rng||Math.random;
     let beam=[{meals:[],nutrition:blank(),penalty:0}];

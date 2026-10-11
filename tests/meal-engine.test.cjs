@@ -100,3 +100,15 @@ test('random menu refresh varies unfinished dishes while respecting ranges, excl
  }
  assert.equal(names.size,8);
 });
+
+
+test('random menus retain high-calorie protocol ranges after repeated refreshes',()=>{
+ const target=E.fromGoal({calories:[3530,3691],protein:[149,205],fat:[74,102],carbs:[448,607]});
+ let prior=[],seed=9;const rng=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+ for(let i=0;i<20;i++){
+  const plan=E.generate(target,4,{simpleOnly:true,maxTime:45},{randomize:true,rng,prior});
+  assert.equal(plan.withinTarget,true,JSON.stringify(plan.total));
+  for(const m of plan.meals)assert.notEqual(m.recipeId,prior.find(x=>x.id===m.id)?.recipeId);
+  prior=plan.meals;
+ }
+});

@@ -1,5 +1,5 @@
 "use strict";
-const SW_RELEASE = "v488",
+const SW_RELEASE = "v489",
   CACHE_PREFIX = "unvrsl-",
   SHELL = `${CACHE_PREFIX}shell-${SW_RELEASE}`,
   MEDIA = `${CACHE_PREFIX}media-${SW_RELEASE}`;
@@ -15,7 +15,7 @@ self.addEventListener("install", (event) => {
         ...[...html.matchAll(/<script src="([^"]+)"/g)].map((x) => x[1]),
         ...[...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((x) => x[1]),
       ];
-      await cache.addAll([...urls,"assets/story-plates-v472.png","assets/story-atlas-gym-v473.png","assets/story-atlas-vehicles-v473.png","assets/story-atlas-animals-v473.png","assets/story-atlas-heavy-v473.png","intake.html","intake.css?v=488","intake-page.js?v=488","intake-wizard.js?v=488","data/anatome-body-paths.json"]);
+      await cache.addAll([...urls,"assets/story-plates-v472.png","assets/story-atlas-gym-v473.png","assets/story-atlas-vehicles-v473.png","assets/story-atlas-animals-v473.png","assets/story-atlas-heavy-v473.png","intake.html","intake.css?v=489","intake-page.js?v=489","intake-wizard.js?v=489","data/anatome-body-paths.json"]);
       // The boot gate also needs dynamically loaded local owners when offline.
       // Resolve their exact current URLs from the installed loader itself.
       const loader = await cache.match(`frequent-patch.js?v=${SW_RELEASE.slice(1)}`);
