@@ -72,3 +72,8 @@ Energy has a full-width row in the plan calculator card, diary and menu summary;
 ## v486 – compact recipe cards
 
 Removed illustrative photos from the diary, recipe catalog and replacements at the user’s request. Cooked weights, recipe instructions and the user-supplied product reference sheets remain available.
+
+
+## v487 – eggs and buckwheat
+
+Added 16 egg dishes and 16 buckwheat recipes (some contain both). All use ingredient-derived macros, cooked serving estimates, allergy exclusions and the existing menu/replacement engine. The catalog now has 147 simple recipes and 501 world recipes, 648 total; 54 simple breakfast choices.

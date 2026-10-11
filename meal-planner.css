@@ -40,7 +40,7 @@
 
 .pp-nutrition{--green:var(--purple,#bf5af2)}.mp-public-modal .btn.primary{color:#fff}.mp-protocol-options{flex-wrap:nowrap}.mp-protocol-options button{min-width:0;padding:9px 4px;font-size:11px;word-break:normal;overflow-wrap:normal}.mp-protocol .mp-head{flex-wrap:wrap}.mp-guide{display:block;margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:12px;color:var(--green);font-size:12px;text-decoration:none}.mp-metrics span{line-height:1.5;font-variant-numeric:tabular-nums}.mp-plan-metrics span{line-height:1.5}.mp-public-modal .mp-protocol-options button[aria-pressed="true"]{background:rgba(191,90,242,.1)}
 
-/* v486: energy gets a full row, macro ranges keep equal columns and aligned tracks. */
+/* v487: energy gets a full row, macro ranges keep equal columns and aligned tracks. */
 #mealPlannerRoot{overflow-wrap:break-word}
 #mealPlannerRoot .mp-intro{margin-bottom:12px;gap:10px}
 #mealPlannerRoot .mp-intro strong{font-size:16px;line-height:1.3}
@@ -116,7 +116,7 @@
  .np311-plan-card .np311-current-goal>span:first-child b{font-size:15px}
 }
 @media(prefers-reduced-motion:reduce){#mealPlannerRoot *{scroll-behavior:auto!important}}
-/* v486: cooked servings, reusable own food and optional illustrated recipes. */
+/* v487: cooked servings, reusable own food and optional illustrated recipes. */
 #mealPlannerRoot .mp-ready{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:12px 0;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);font-size:14px}
 #mealPlannerRoot .mp-ready span{color:var(--muted)}
 #mealPlannerRoot .mp-ready b{white-space:nowrap}

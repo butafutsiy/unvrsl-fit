@@ -33,7 +33,7 @@ test('existing calorie goals produce coherent macro targets and invalid inputs f
 });
 test('world recipe dataset preserves 501 complete recipes and coherent serving scaling',()=>{
  const world=E.catalog.recipes.filter(r=>r.source);
- assert.equal(world.length,501);assert.equal(E.catalog.recipes.length,616);
+ assert.equal(world.length,501);assert.equal(E.catalog.recipes.length,648);
  assert.equal(new Set(world.map(r=>r.id)).size,501);
  for(const r of world){
   assert.ok(r.name&&r.steps&&r.details.length&&r.baseServings>0);
@@ -60,9 +60,9 @@ test('range targets accept the full interval and reject values just outside it',
  const plan=E.generate(t,4,{simpleOnly:true,maxTime:45});assert.equal(plan.withinTarget,true,JSON.stringify(plan.total));
  assert.ok(plan.meals.every(m=>!E.catalog.recipes.find(r=>r.id===m.recipeId).source));
 });
-test('everyday catalog offers 115 simple meals including 38 breakfasts and keeps ingredient allergens and nutrition',()=>{
+test('everyday catalog offers 147 simple meals including 54 breakfasts and keeps ingredient allergens and nutrition',()=>{
  const simple=E.catalog.recipes.filter(r=>!r.source);
- assert.equal(simple.length,115);assert.equal(simple.filter(r=>r.slots.includes('breakfast')).length,38);
+ assert.equal(simple.length,147);assert.equal(simple.filter(r=>r.slots.includes('breakfast')).length,54);
  for(const r of simple){assert.ok(E.nutrition(r.ingredients).k>0);assert.ok(r.steps);assert.ok(r.ingredients.every(i=>E.catalog.foods[i.id]));}
  const cheese=E.catalog.recipes.find(r=>r.id==='omelet-cheese');assert.equal(E.allowed(cheese,{allergens:['milk']}),false);
  assert.ok(simple.filter(r=>r.guideUrl).every(r=>/^https:\/\/(www\.iamcook\.ru|www\.russianfood\.com)\//.test(r.guideUrl)));
