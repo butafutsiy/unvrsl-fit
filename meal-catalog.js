@@ -4,6 +4,7 @@
 (function(root){
   const food=(name,p,f,c,allergens=[],vegetarian=true)=>({name,p,f,c,k:4*p+9*f+4*c,allergens,vegetarian});
   const foods={
+    salt:food('Соль',0,0,0), water:food('Вода',0,0,0),
     oats:food('Овсяные хлопья, сухие',12.3,6.1,59.5,['gluten']),
     rice:food('Рис, сухой',7,1,78), buckwheat:food('Гречка, сухая',12.6,3.3,62),
     pasta:food('Макароны, сухие',12,1.5,72,['gluten']),

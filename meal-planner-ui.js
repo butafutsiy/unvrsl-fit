@@ -51,6 +51,21 @@
   function ownFoodHTML(){return `<details class="mp-settings mp-own" id="mp-own"><summary>＋ Добавить своё</summary><p class="mp-copy">Продукт или готовое блюдо: КБЖУ на 100 г с упаковки или из своей карточки рецепта.</p><div class="field"><label for="mp-food-name">Название</label><input id="mp-food-name" maxlength="120" placeholder="Например: домашний борщ"></div><div class="mp-fields"><div class="field"><label for="mp-food-grams">Съедено, г</label><input id="mp-food-grams" type="number" min="1" max="3000" inputmode="decimal"></div>${['k','p','f','c'].map((k,i)=>`<div class="field"><label for="mp-food-${k}">${['Ккал','Белки','Жиры','Углеводы'][i]} на 100 г</label><input id="mp-food-${k}" type="number" min="0" inputmode="decimal" step="0.1"></div>`).join('')}<div class="field"><label for="mp-food-slot">Приём пищи</label><select id="mp-food-slot">${['Завтрак','Обед','Ужин','Перекус'].map(x=>`<option>${x}</option>`).join('')}</select></div></div><label class="mp-check"><input id="mp-food-keep" type="checkbox" checked>Сохранить в «Мои продукты и блюда»</label><button class="btn primary full" data-mp="extra">Записать в дневник</button>${(db().savedFoods||[]).length?`<div class="mp-saved"><h3>Мои продукты и блюда</h3>${db().savedFoods.map(x=>`<div class="mp-saved-row"><button class="btn" data-mp="saved-food" data-id="${esc(x.id)}"><b>${esc(x.name)}</b><small>${macros(x.raw)} на 100 г</small></button><button class="btn tiny" data-mp="saved-delete" data-id="${esc(x.id)}" aria-label="Удалить сохранённое блюдо ${esc(x.name)}">✕</button></div>`).join('')}</div>`:''}</details>`;}
   function referencesHTML(){const labels=['Белки · Лента','Белки · Пятёрочка','Жиры · Лента','Жиры · Пятёрочка','Углеводы · Лента','Углеводы · Пятёрочка','Клетчатка · Лента','Клетчатка · Пятёрочка','Сладости · Лента','Сладости · Пятёрочка'];return `<details class="mp-settings"><summary>Что купить · продукты и КБЖУ</summary><p class="mp-copy">Твои подборки продуктов. Для записи проверяй актуальную упаковку: на карточках часть БЖУ не указана, а значения могут отличаться у разных марок.</p><div class="mp-reference-grid">${labels.map((x,i)=>`<a href="assets/nutrition/products-${i}.jpg" target="_blank" rel="noopener noreferrer"><img src="assets/nutrition/products-${i}.jpg" alt="${x}" loading="lazy" decoding="async" width="240" height="320"><span>${x} ↗</span></a>`).join('')}</div></details>`;}
   function ingredientsHTML(m){const recipe=recipeOf(m);return `<ul>${ingredientRows(m).map(i=>`<li><span>${esc(i.name)}</span><b>${esc(i.amount)}</b>${i.note?`<small>${esc(i.note)}</small>`:''}</li>`).join('')}</ul>${recipe?.source?`<p class="mp-copy">Количество на ${fmt(m.ingredients[0].g/100)} порц. Шаги описывают исходный рецепт на ${recipe.baseServings} порц. Можно приготовить весь рецепт и отделить свою порцию.</p>`:''}<p class="mp-steps">${esc(m.steps).replace(/\n/g,'<br><br>')}</p>${recipe?.guideUrl?`<a class="mp-guide" href="${esc(recipe.guideUrl)}" target="_blank" rel="noopener noreferrer">Фото и пошаговый рецепт · ${esc(recipe.guideSite)} ↗</a><p class="mp-copy">Пример приготовления. Для дневника используй состав и граммовки выше: рецепт на сайте может отличаться.</p>`:''}`;}
+  function ingredientInputHTML(i){return `<label class="mp-ingredient-input"><span>${esc(E.catalog.foods[i.id].name)}${i.id==='egg'?'<small>Вес без скорлупы; 1 яйцо ≈ 50 г</small>':''}</span><span><input type="number" data-mp-ingredient="${esc(i.id)}" value="${i.g}" min="0" max="10000" step="0.1" inputmode="decimal" aria-label="${esc(E.catalog.foods[i.id].name)}, граммы"><small>г</small></span></label>`;}
+  function compositionHTML(m){
+    if(recipeOf(m)?.source)return '<p class="mp-copy">В этом рецепте известны только КБЖУ всей порции. Пересчёт отдельных ингредиентов недоступен.</p>';
+    return `<div class="mp-composition" data-meal="${m.id}"><p class="mp-copy">Укажи, сколько использовал каждого продукта. Вес сырой, если в названии не указано другое. 0 г – убрать продукт. Масло тоже учитывается.</p><div class="mp-ingredient-inputs">${m.ingredients.map(ingredientInputHTML).join('')}</div><div class="mp-add-ingredient"><select aria-label="Добавить ингредиент">${Object.entries(E.catalog.foods).sort((a,b)=>a[1].name.localeCompare(b[1].name,'ru')).map(([id,f])=>`<option value="${id}">${esc(f.name)}</option>`).join('')}</select><button class="btn" data-mp="ingredient-add" data-id="${m.id}">＋ Продукт</button></div><p class="mp-copy mp-composition-preview" aria-live="polite">Всё блюдо: ${macros(m.nutrition)}</p><button class="btn primary full" data-mp="composition-save" data-id="${m.id}">Сохранить состав и пересчитать</button></div>`;
+  }
+  function compositionDraft(editor){
+    const meal=day().plan?.meals.find(m=>m.id===editor.dataset.meal);
+    const ingredients=[...editor.querySelectorAll('[data-mp-ingredient]')].map(input=>({id:input.dataset.mpIngredient,g:input.value.trim()===''?NaN:Number(input.value)}));
+    const weight=D.getElementById('mp-ready-'+meal.id)?.value;
+    return E.composeMeal(meal,ingredients,weight?Number(weight):undefined);
+  }
+  function compositionPreview(editor){
+    const out=editor.querySelector('.mp-composition-preview');
+    try{const m=compositionDraft(editor),weight=E.servingWeight(m);out.textContent='Всё блюдо: '+macros(m.nutrition)+(weight?' · '+(weight.estimated?'≈ ':'')+fmt(weight.grams)+' г':'')+(m.readyGrams?' · На 100 г: '+macros(E.round(Object.fromEntries(['k','p','f','c'].map(k=>[k,m.nutrition[k]/m.readyGrams*100])))):'');}catch(err){out.textContent=err.message;}
+  }
   const collections=[['breakfast','🍳','Простые завтраки'],['quick','⏱','Ужин до 20 минут'],['protein','💪','Белковые блюда'],['portable','🥪','Взять с собой'],['egg','🥚','Блюда из яиц'],['buckwheat','🌾','С гречкой']];
   const mealCategories=[['breakfast','🍳','Завтрак'],['lunch','🍲','Обед'],['dinner','🍽','Ужин'],['snack','🍎','Перекус']];
   function catalogFiltersHTML(){
@@ -138,7 +153,7 @@
       ${(d.plan?.meals||[]).map(original=>{
         const m=d.eaten[original.id]||original,done=!!d.eaten[m.id];
         return `<article class="mp-meal${done?' mp-done':''}"><div class="mp-head"><small>${esc(m.title)}${done?' · записано':''}</small><span class="muted">${m.time} мин</span></div><h3>${esc(m.name)}</h3>${weightHTML(m)}<b class="mp-macro">${macros(m.nutrition)}</b>
-        <details><summary>Рецепт и ингредиенты</summary>${ingredientsHTML(m)}<p class="mp-copy">Готовый вес зависит от воды и способа приготовления. Для точной записи взвесь всё блюдо из состава выше после готовки, без посуды. Вода меняет вес, но не КБЖУ. Для части порции сохраняй пропорции ингредиентов.</p>${done?'':`<div class="mp-ready-edit"><label for="mp-ready-${m.id}">Фактический вес всей этой порции, г</label><input id="mp-ready-${m.id}" type="number" min="1" max="10000" inputmode="decimal" value="${m.readyGrams||''}" placeholder="Взвесь готовое блюдо"><button class="btn" data-mp="ready-weight" data-id="${m.id}">Сохранить вес</button></div>`}</details>
+        <details><summary>Рецепт и ингредиенты</summary>${done?ingredientsHTML(m):compositionHTML(m)+ingredientsHTML(recipeOf(m)?.source?m:{...m,ingredients:[]})}<p class="mp-copy">Готовый вес зависит от воды и способа приготовления. Для точной записи взвесь всё блюдо из состава выше после готовки, без посуды. Вода меняет вес, но не КБЖУ. Для части порции сохраняй пропорции ингредиентов.</p>${done?'':`<div class="mp-ready-edit"><label for="mp-ready-${m.id}">Фактический вес всей этой порции, г</label><input id="mp-ready-${m.id}" type="number" min="1" max="10000" inputmode="decimal" value="${m.readyGrams||''}" placeholder="Взвесь готовое блюдо"><button class="btn" data-mp="ready-weight" data-id="${m.id}">Сохранить вес</button></div>`}</details>
         <div class="mp-actions"><button class="btn${done?'':' primary'}" data-mp="eat" data-id="${m.id}">${done?'✓ Съедено · отменить':'✓ Записать приём'}</button>${done?'':`<button class="btn" data-mp="swap" data-id="${m.id}">Заменить</button>${E.servingWeight(m)?`<label class="mp-portion mp-eaten-grams">Съем готового, г<input id="mp-eaten-${m.id}" type="number" min="1" max="10000" inputmode="decimal" value="${E.servingWeight(m).grams}" aria-label="Съедено готового блюда, г"></label>`:''}<label class="mp-portion"><span>Доля порции ×</span><input type="number" min="0.05" max="5" step="0.05" value="1" aria-label="Множитель съеденной порции" id="mp-portion-${m.id}"></label><p id="mp-portion-preview-${m.id}" class="mp-copy mp-portion-preview" aria-live="polite">Будет записано: ${macros(m.nutrition)}</p>`}</div></article>`;
       }).join('')}
 
@@ -184,6 +199,9 @@
   D.addEventListener('input',e=>{if(e.target.id==='mp-search'){browseQuery=e.target.value;browseLimit=24;browse();}});
   D.addEventListener('input',e=>{
     if(!e.target.closest?.('#mealPlannerRoot'))return;
+    const editor=e.target.closest('.mp-composition');
+    if(editor&&e.target.matches('[data-mp-ingredient]')){editor.dataset.dirty='true';const ready=D.getElementById('mp-ready-'+editor.dataset.meal);if(ready)ready.value='';compositionPreview(editor);return;}
+    if(e.target.id.startsWith('mp-ready-')){const box=D.querySelector(`.mp-composition[data-meal="${e.target.id.slice(9)}"]`);if(box){box.dataset.dirty='true';compositionPreview(box);}return;}
     if(e.target.id.startsWith('mp-catalog-portion-')){
       const id=e.target.id.slice('mp-catalog-portion-'.length),r=E.catalog.recipes.find(r=>r.id===id),out=D.getElementById('mp-catalog-preview-'+id);
       if(r&&out){try{out.textContent=macros(E.scaleMeal(E.fit(r,E.recipeInfo(r).nutrition),Number(e.target.value)).nutrition);}catch(_){out.textContent='Укажи от 0,05 до 5 порций';}}return;
@@ -233,11 +251,24 @@
         D.getElementById('mp-food-grams').value=food.lastGrams||100;D.getElementById('mp-food-name').focus();return;
       }
       if(action==='saved-delete'){mutate(data=>{data.savedFoods=(data.savedFoods||[]).filter(x=>x.id!==b.dataset.id);});render();D.getElementById('mp-own').open=true;return;}
+      if(action==='ingredient-add'){
+        const editor=D.querySelector(`.mp-composition[data-meal="${b.dataset.id}"]`);if(!editor||d.eaten[b.dataset.id])return;
+        const id=editor.querySelector('select').value,existing=[...editor.querySelectorAll('[data-mp-ingredient]')].find(x=>x.dataset.mpIngredient===id);
+        if(existing){existing.focus();return;}
+        editor.dataset.dirty='true';editor.querySelector('.mp-ingredient-inputs').insertAdjacentHTML('beforeend',ingredientInputHTML({id,g:0}));editor.querySelector('[data-mp-ingredient="'+id+'"]').focus();return;
+      }
+      if(action==='composition-save'){
+        const editor=D.querySelector(`.mp-composition[data-meal="${b.dataset.id}"]`);if(!editor||d.eaten[b.dataset.id])return;
+        const meal=compositionDraft(editor),plan={...d.plan,meals:d.plan.meals.map(m=>m.id===meal.id?meal:m)};
+        plan.total=planTotal({...d,plan});
+        mutate(data=>{data.days[activeDate]={...d,plan};});render();
+        const card=[...D.querySelectorAll('.mp-meal')].find(el=>el.querySelector('[data-mp="eat"]')?.dataset.id===meal.id);if(card){card.querySelector('details').open=true;card.scrollIntoView?.({block:'start',behavior:'smooth'});}W.toast?.('Состав и КБЖУ обновлены');return;
+      }
       if(action==='ready-weight'){
         const meal=d.plan?.meals.find(x=>x.id===b.dataset.id);if(!meal||d.eaten[meal.id])return;
         const grams=Number(D.getElementById('mp-ready-'+meal.id).value);
         if(!Number.isFinite(grams)||grams<=0||grams>10000)throw Error('Укажи готовый вес от 1 до 10 000 г');
-        mutate(data=>{data.days[activeDate]={...d,plan:{...d.plan,meals:d.plan.meals.map(m=>m.id===meal.id?{...m,readyGrams:grams}:m)}};});render();return;
+        const editor=D.querySelector(`.mp-composition[data-meal="${meal.id}"]`),updated=editor?compositionDraft(editor):{...meal,readyGrams:grams};const plan={...d.plan,meals:d.plan.meals.map(m=>m.id===meal.id?updated:m)};plan.total=planTotal({...d,plan});mutate(data=>{data.days[activeDate]={...d,plan};});render();return;
       }
       if(action==='more'){browseLimit+=24;browse();return;}
       if(action==='replace-back'){replacementSlot=null;browseQuery='';render();return;}
@@ -259,6 +290,7 @@
         replacementSlot=current.id;browseQuery='';browseLimit=24;render();D.getElementById('sheet')?.scrollTo?.({top:0});return;
       }
       if(action==='eat'){
+        if(D.querySelector(`.mp-composition[data-meal="${b.dataset.id}"]`)?.dataset.dirty==='true')throw Error('Сначала сохрани изменённый состав и готовый вес блюда');
         const meal=d.plan?.meals.find(m=>m.id===b.dataset.id);if(!meal)return;
         const eaten={...d.eaten};
         const original=eaten[meal.id]?.planned||meal;

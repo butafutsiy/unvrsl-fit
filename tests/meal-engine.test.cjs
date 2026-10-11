@@ -125,3 +125,17 @@ test('catalog filters derive diets and nutrition from the original portion witho
  assert.ok(E.catalog.recipes.filter(r=>E.matchesCatalog(r,{collection:'egg'})).every(r=>/яйц|омлет|яичн|шакшук|овсяноблин/i.test(r.name)));
  for(const collection of ['quick','protein','portable','egg','buckwheat'])assert.ok(E.catalog.recipes.some(r=>E.matchesCatalog(r,{collection})));
 });
+
+test('custom ingredient weights recalculate nutrition and cooked gram portions',()=>{
+ const original={recipeId:'egg-beans',readyGrams:900,ingredients:[],nutrition:{k:0,p:0,f:0,c:0}};
+ const ingredients=[{id:'egg',g:150},{id:'oil',g:10},{id:'salt',g:2},{id:'water',g:30}];
+ const edited=E.composeMeal(original,ingredients,180);
+ assert.deepEqual(edited.nutrition,E.nutrition(ingredients));assert.equal(edited.readyGrams,180);
+ assert.deepEqual(E.scaleMeal(edited,.5).nutrition,E.nutrition(ingredients.map(i=>({...i,g:i.g/2}))));
+ assert.equal(E.scaleMeal(edited,.5).readyGrams,90);assert.equal(original.readyGrams,900);
+ assert.equal(E.composeMeal(original,ingredients).readyGrams,undefined);
+ assert.equal(E.composeMeal(original,[{id:'egg',g:100},{id:'oil',g:0}]).ingredients.length,1);
+ for(const g of [-1,NaN,Infinity,10001])assert.throws(()=>E.composeMeal(original,[{id:'egg',g}]));
+ assert.throws(()=>E.composeMeal(original,[{id:'egg',g:0}]));
+ const imported=E.catalog.recipes.find(r=>r.source);assert.throws(()=>E.composeMeal({recipeId:imported.id},ingredients));
+});

@@ -198,3 +198,11 @@
 #mealPlannerRoot .btn.primary{color:#fff}
 #mealPlannerRoot .mp-recipe h3{margin:6px 0;font-size:18px}
 #mealPlannerRoot .mp-recipe .mp-ready{padding:9px 11px;font-size:12px;margin:9px 0}
+
+#mealPlannerRoot .mp-ingredient-input{display:grid;grid-template-columns:minmax(0,1fr) 100px;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding:10px 0}
+#mealPlannerRoot .mp-ingredient-input>span:last-child{display:flex;align-items:center;gap:6px}
+#mealPlannerRoot .mp-ingredient-input small{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+#mealPlannerRoot .mp-ingredient-input input{min-width:0;width:100%;min-height:44px}
+#mealPlannerRoot .mp-add-ingredient{display:flex;gap:8px;margin:12px 0}
+#mealPlannerRoot .mp-add-ingredient select{min-width:0;flex:1}
+#mealPlannerRoot .mp-add-ingredient .btn{flex-shrink:0;min-height:44px}

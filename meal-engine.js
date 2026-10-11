@@ -29,6 +29,18 @@
     const ingredients=meal.ingredients.map(i=>({...i,g:Math.round(i.g*factor*10)/10}));
     return {...meal,ingredients,nutrition:nutrition(ingredients),...(meal.readyGrams?{readyGrams:Math.round(meal.readyGrams*factor*10)/10}:{})};
   }
+  function composeMeal(meal,ingredients,readyGrams){
+    if(catalog.recipes.find(r=>r.id===meal.recipeId)?.source)throw Error('У этого рецепта нет КБЖУ отдельных ингредиентов');
+    if(!Array.isArray(ingredients)||!ingredients.length||ingredients.length>60)throw Error('Добавь от 1 до 60 ингредиентов');
+    if(ingredients.some(i=>!catalog.foods[i.id]||!Number.isFinite(i.g)||i.g<0||i.g>10000))throw Error('Укажи граммовки от 0 до 10 000 г');
+    const rows=ingredients.filter(i=>i.g>0).map(i=>({...i}));
+    if(!rows.length)throw Error('Добавь хотя бы один ингредиент с весом больше нуля');
+    if(readyGrams!==undefined&&(!Number.isFinite(readyGrams)||readyGrams<=0||readyGrams>30000))throw Error('Проверь вес готового блюда');
+    const result={...meal,ingredients:rows,nutrition:nutrition(rows),customComposition:true};
+    delete result.readyGrams;
+    if(readyGrams!==undefined)result.readyGrams=readyGrams;
+    return result;
+  }
   function validateTarget(t){
     if(!t||keys.some(k=>!Number.isFinite(t[k])||t[k]<=0))throw Error('Укажи положительные калории и БЖУ');
     if(t.k>10000||t.p>600||t.f>400||t.c>1800)throw Error('Проверь дневные цели');
@@ -162,7 +174,7 @@
       (!filters.favorite||favorites.includes(recipe.id))&&
       (filters.calories===undefined||filters.calories===''||(info.nutrition.k>=Number(filters.calories)&&info.nutrition.k<(Number(filters.calories)===700?Infinity:Number(filters.calories)+100)));
   }
-  const api={servingWeight,scaleMeal,nutrition,sum,round,validateTarget,fromGoal,bounds,deviation,within,loss,subtractTarget,slots,allowed,fit,generate,recipeInfo,matchesCatalog,catalog};
+  const api={composeMeal,servingWeight,scaleMeal,nutrition,sum,round,validateTarget,fromGoal,bounds,deviation,within,loss,subtractTarget,slots,allowed,fit,generate,recipeInfo,matchesCatalog,catalog};
   if(typeof module==='object'&&module.exports)module.exports=api;
   root.UNVRSLMealEngine=api;
 })(typeof window!=='undefined'?window:globalThis);
