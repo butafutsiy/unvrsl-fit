@@ -139,3 +139,13 @@ test('custom ingredient weights recalculate nutrition and cooked gram portions',
  assert.throws(()=>E.composeMeal(original,[{id:'egg',g:0}]));
  const imported=E.catalog.recipes.find(r=>r.source);assert.throws(()=>E.composeMeal({recipeId:imported.id},ingredients));
 });
+
+test('saved product nutrition stays in the ingredient snapshot and cooked yield must be measured',()=>{
+ const meal={recipeId:'chicken-rice',ingredients:[],nutrition:{k:0,p:0,f:0,c:0}};
+ const raw={k:70,p:8,f:2,c:5};
+ const composed=E.composeMeal(meal,[{id:'own-yogurt',name:'Мой йогурт',sourceNutrition:raw,g:200}]);
+ assert.deepEqual(composed.nutrition,{k:140,p:16,f:4,c:10});assert.equal(E.servingWeight(composed),null);
+ assert.deepEqual(E.scaleMeal({...composed,readyGrams:200},.5).nutrition,raw);
+ assert.throws(()=>E.composeMeal(meal,[{id:'own-yogurt',name:'Мой йогурт',sourceNutrition:{...raw,p:NaN},g:200}]));
+ assert.throws(()=>E.composeMeal(meal,[{id:'egg',sourceNutrition:{...raw,p:NaN},g:200}]));
+});

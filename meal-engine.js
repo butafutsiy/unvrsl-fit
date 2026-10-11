@@ -13,7 +13,7 @@
   function servingWeight(meal){
     if(Number.isFinite(meal.readyGrams)&&meal.readyGrams>0)return {grams:meal.readyGrams,estimated:false};
     const recipe=catalog.recipes.find(r=>r.id===meal.recipeId);
-    if(!recipe||recipe.source)return null;
+    if(!recipe||recipe.source||meal.ingredients.some(i=>i.sourceNutrition))return null;
     const noCook=recipe.time<=5||/^overnight-/.test(recipe.id);
     const baked=/curd-(?:pancakes|bake)|pancake|cutlet|oat-pancake/.test(recipe.id);
     const grams=meal.ingredients.reduce((sum,i)=>{
@@ -32,7 +32,7 @@
   function composeMeal(meal,ingredients,readyGrams){
     if(catalog.recipes.find(r=>r.id===meal.recipeId)?.source)throw Error('У этого рецепта нет КБЖУ отдельных ингредиентов');
     if(!Array.isArray(ingredients)||!ingredients.length||ingredients.length>60)throw Error('Добавь от 1 до 60 ингредиентов');
-    if(ingredients.some(i=>!catalog.foods[i.id]||!Number.isFinite(i.g)||i.g<0||i.g>10000))throw Error('Укажи граммовки от 0 до 10 000 г');
+    if(ingredients.some(i=>(!catalog.foods[i.id]&&(!i.name||!i.sourceNutrition))||(i.sourceNutrition&&(keys.some(k=>!Number.isFinite(i.sourceNutrition[k])||i.sourceNutrition[k]<0)||i.sourceNutrition.k>1000||i.sourceNutrition.p+i.sourceNutrition.f+i.sourceNutrition.c>100.5))||!Number.isFinite(i.g)||i.g<0||i.g>10000))throw Error('Укажи граммовки от 0 до 10 000 г');
     const rows=ingredients.filter(i=>i.g>0).map(i=>({...i}));
     if(!rows.length)throw Error('Добавь хотя бы один ингредиент с весом больше нуля');
     if(readyGrams!==undefined&&(!Number.isFinite(readyGrams)||readyGrams<=0||readyGrams>30000))throw Error('Проверь вес готового блюда');

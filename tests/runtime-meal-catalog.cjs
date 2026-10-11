@@ -6,7 +6,7 @@ function make(seed={accountOwnerId:'alice'}){
  const dom=new JSDOM('<div id="sheet"></div>',{runScripts:'dangerously',url:'https://app.test/'}),w=dom.window;
  w.st=seed;w.modal=html=>w.document.getElementById('sheet').innerHTML=html;w.closeModal=()=>w.document.getElementById('sheet').innerHTML='';w.save=()=>{stored=JSON.stringify(w.st);return true;};
  for(const file of ['meal-recipes-data.js','meal-catalog.js','meal-engine.js','meal-planner-ui.js'])w.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
- w.openMealPlanner();assert.equal(w.document.querySelectorAll('.mp-library').length,0);assert.equal(w.document.querySelectorAll('#mp-own').length,1);w.document.querySelector('[data-mp="nutrition-view"][data-value="recipes"]').click();return dom;
+ w.openMealPlanner();assert.equal(w.document.querySelectorAll('.mp-library').length,0);assert.equal(w.document.querySelectorAll('#mp-own').length,0);w.document.querySelector('[data-mp="nutrition-view"][data-value="recipes"]').click();return dom;
 }
 const click=(w,selector)=>{const el=w.document.querySelector(selector);assert.ok(el,selector);el.click();};
 const filter=(w,key,value)=>click(w,`[data-mp="catalog-filter"][data-key="${key}"]${value===undefined?'':`[data-value="${value}"]`}`);
