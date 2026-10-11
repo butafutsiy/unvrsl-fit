@@ -80,3 +80,23 @@ test('cooked weight is distinct from nutrition and exact weighed portions scale 
  assert.deepEqual(E.servingWeight({...world,readyGrams:420}),{grams:420,estimated:false});
  const snack=E.catalog.recipes.find(x=>x.id==='curd-apple');assert.equal(E.servingWeight(E.fit(snack,E.nutrition(snack.ingredients))).estimated,false);
 });
+
+
+test('random menu refresh varies unfinished dishes while respecting ranges, exclusions and recorded meals',()=>{
+ const target=E.fromGoal({calories:[2300,2500],protein:[150,170],fat:[70,90],carbs:[200,320]});
+ const prefs={simpleOnly:true,maxTime:45,exclude:'рыба'};
+ let prior=E.generate(target,4,prefs),seed=12345;
+ const rng=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+ const locked={[prior.meals[0].id]:prior.meals[0]},names=new Set();
+ for(let i=0;i<8;i++){
+  const plan=E.generate(target,4,prefs,{randomize:true,rng,prior:prior.meals,locked});
+  assert.equal(plan.withinTarget,true,JSON.stringify(plan.total));
+  assert.deepEqual(plan.meals[0].ingredients,locked[plan.meals[0].id].ingredients);
+  for(const m of plan.meals.slice(1)){
+   assert.notEqual(m.recipeId,prior.meals.find(x=>x.id===m.id).recipeId);
+   assert.ok(E.allowed(E.catalog.recipes.find(r=>r.id===m.recipeId),prefs));
+  }
+  names.add(plan.meals.map(m=>m.recipeId).join(','));prior=plan;
+ }
+ assert.equal(names.size,8);
+});

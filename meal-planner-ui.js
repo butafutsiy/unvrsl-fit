@@ -126,10 +126,10 @@
     const current=day();if(current.plan&&Object.keys(current.eaten).length&&preferences.count!==current.plan.meals.length)throw Error('Сначала убери записи съеденных блюд, чтобы изменить число приёмов.');
     return {target,preferences};
   }
-  function build(target,prefs,d,banned){
+  function build(target,prefs,d,banned,randomize=false){
     const extras=E.sum(d.extra.map(x=>x.nutrition));
     const remaining=E.subtractTarget(target,extras);
-    const plan=E.generate(remaining,prefs.count,{simpleOnly:true,...prefs},{locked:d.eaten,prior:d.plan?.meals||[],banned});
+    const plan=E.generate(remaining,prefs.count,{simpleOnly:true,...prefs},{locked:d.eaten,prior:d.plan?.meals||[],banned,randomize});
     const all=E.round(E.sum([plan.total,extras]));plan.target={...target};plan.protocol=db().protocol||'manual';plan.delta=E.round(Object.fromEntries(['k','p','f','c'].map(k=>[k,all[k]-target[k]])));
     plan.withinTarget=E.within(all,target);return plan;
   }
@@ -184,7 +184,7 @@
       }
       if(action==='save'||action==='generate'){
         const {target,preferences}=readSettings();
-        const plan=action==='generate'?build(target,preferences,d):d.plan&&d.plan.meals.length===preferences.count?{...d.plan,target}:null;
+        const plan=action==='generate'?build(target,preferences,d,undefined,true):d.plan&&d.plan.meals.length===preferences.count?{...d.plan,target}:null;
         mutate(data=>{if(!sameTarget(data.target,target))data.protocol='manual';data.target=target;data.preferences=preferences;data.days[activeDate]={...d,plan,target:{...target},protocol:data.protocol||'manual',menuStale:false};});
       }
       if(action==='swap'){

@@ -85,6 +85,7 @@
   function generate(target,count,prefs={},options={}){
     validateTarget(target);
     const meals=slots(count),locked=options.locked||{},prior=options.prior||[];
+    const randomize=!!options.randomize,rng=options.rng||Math.random;
     let beam=[{meals:[],nutrition:blank(),penalty:0}];
     for(const slot of meals){
       const t=scaledTarget(target,slot.share),lock=locked[slot.id];
@@ -93,13 +94,15 @@
       else{
         const pool=catalog.recipes.filter(r=>r.slots.includes(slot.type)&&allowed(r,prefs)&&!(options.banned?.[slot.id]||[]).includes(r.id));
         if(!pool.length)throw Error('Нет блюд для '+slot.title.toLowerCase()+'. Измени исключения или время готовки.');
-        choices=pool.map(r=>fit(r,t)).sort((a,b)=>loss(a.nutrition,t)-loss(b.nutrition,t)).slice(0,6);
         const previous=prior.find(m=>m.id===slot.id);
-        if(previous&&pool.some(r=>r.id===previous.recipeId)&&!choices.some(m=>m.recipeId===previous.recipeId))choices.push({...previous,ingredients:previous.ingredients.map(i=>({...i})),nutrition:{...previous.nutrition}});
+        // A fresh press changes unfinished meals whenever the allowed pool has alternatives.
+        const fresh=randomize&&pool.length>1?pool.filter(r=>r.id!==previous?.recipeId):pool;
+        choices=fresh.map(r=>({meal:fit(r,t),noise:randomize?rng()*.15:0})).sort((a,b)=>loss(a.meal.nutrition,t)+a.noise-loss(b.meal.nutrition,t)-b.noise).slice(0,6).map(x=>x.meal);
+        if(!randomize&&previous&&pool.some(r=>r.id===previous.recipeId)&&!choices.some(m=>m.recipeId===previous.recipeId))choices.push({...previous,ingredients:previous.ingredients.map(i=>({...i})),nutrition:{...previous.nutrition}});
       }
       beam=beam.flatMap(b=>choices.map(m=>{
         const repeated=m.recipeId&&b.meals.some(x=>x.recipeId===m.recipeId);
-        const penalty=b.penalty+(lock?0:loss(m.nutrition,t)*.08)+(repeated?.1:0);
+        const penalty=b.penalty+(lock?0:loss(m.nutrition,t)*.08)+(repeated?.1:0)+(randomize&&!lock?rng()*.002:0);
         return {meals:[...b.meals,{...m,...slot,locked:!!lock}],nutrition:sum([b.nutrition,m.nutrition]),penalty};
       })).sort((a,b)=>loss(a.nutrition,scaledTarget(target,meals.slice(0,a.meals.length).reduce((s,m)=>s+m.share,0)))+a.penalty-loss(b.nutrition,scaledTarget(target,meals.slice(0,b.meals.length).reduce((s,m)=>s+m.share,0)))-b.penalty).slice(0,36);
     }

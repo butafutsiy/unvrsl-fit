@@ -25,7 +25,9 @@ const plain=x=>JSON.parse(JSON.stringify(x));
  set(w,'mp-portion-meal-0',.5);click(w,'eat','meal-0');
  assert.equal(w.st.mealNutritionV1.days[date].eaten['meal-0'].ingredients[0].g,Math.round(first.plan.meals[0].ingredients[0].g*.5*10)/10);
  const eaten=plain(w.st.mealNutritionV1.days[date].eaten['meal-0']);
+ const previousRecipes=plain(w.st.mealNutritionV1.days[date].plan.meals).map(m=>m.recipeId);
  click(w,'generate');assert.deepEqual(plain(w.st.mealNutritionV1.days[date].eaten['meal-0']),eaten);
+ for(const m of w.st.mealNutritionV1.days[date].plan.meals.slice(1))assert.notEqual(m.recipeId,previousRecipes[Number(m.id.split('-')[1])]);
  // Weigh a complete cooked serving, then record exactly half of it in grams.
  const lunch=w.st.mealNutritionV1.days[date].plan.meals[1];
  set(w,'mp-ready-'+lunch.id,600);click(w,'ready-weight',lunch.id);

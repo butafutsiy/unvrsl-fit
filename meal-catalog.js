@@ -155,7 +155,7 @@
     if(r.id.startsWith('porridge-')||r.id==='milk-oats')r.photo={path:'assets/nutrition/oatmeal.jpg',author:'Renee Comet / NCI',page:'https://commons.wikimedia.org/wiki/File:Oatmeal_(1).jpg',license:'Public domain',licenseUrl:'https://creativecommons.org/publicdomain/mark/1.0/'};
     if(r.id==='easy-scramble-curd')r.photo={path:'assets/nutrition/eggs-toast.jpg',author:'HaJunkiyada',page:'https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Scrambled_Eggs_on_Whole_Grain_Toast_with_Yellow_Tomatoes.jpg',license:'CC BY-SA 4.0',licenseUrl:'https://creativecommons.org/licenses/by-sa/4.0/'};
   }
-  // v487: familiar egg dishes and buckwheat, all using the ingredient nutrition model.
+  // v488: familiar egg dishes and buckwheat, all using the ingredient nutrition model.
   add("eg487-fried-tomato","Яичница с помидорами и хлебом",["breakfast"],10,[["egg", 150], ["tomato", 150], ["bread", 80], ["oil", 5]],"Нарежь помидоры и прогрей на указанном масле. Добавь яйца, готовь до схватывания белка и желтка. Подай с хлебом.");
   add("eg487-mushroom-omelet","Омлет с шампиньонами",["breakfast"],15,[["egg", 150], ["milk", 60], ["mushrooms", 150], ["bread", 70], ["oil", 5]],"Нарежь грибы и обжарь на указанном масле до готовности. Взбей яйца с молоком, залей грибы. Готовь под крышкой до полного схватывания. Подай с хлебом.");
   add("eg487-spinach-omelet","Омлет со шпинатом и сыром",["breakfast"],10,[["egg", 100], ["milk", 60], ["spinach", 100], ["cheese", 25], ["bread", 80], ["oil", 5]],"Промой шпинат, прогрей на указанном масле. Добавь взбитые с молоком яйца и сыр. Готовь под крышкой до полного схватывания. Подай с хлебом.");

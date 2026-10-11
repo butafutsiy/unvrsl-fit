@@ -77,3 +77,7 @@ Removed illustrative photos from the diary, recipe catalog and replacements at t
 ## v487 – eggs and buckwheat
 
 Added 16 egg dishes and 16 buckwheat recipes (some contain both). All use ingredient-derived macros, cooked serving estimates, allergy exclusions and the existing menu/replacement engine. The catalog now has 147 simple recipes and 501 world recipes, 648 total; 54 simple breakfast choices.
+
+
+### v488 — случайный подбор
+Каждое нажатие «Подобрать» заново выбирает незаписанные блюда с учётом КБЖУ, ограничений и времени готовки. Предыдущие блюда исключаются для соответствующего приёма, когда есть разрешённые альтернативы. Записанные приёмы сохраняются. Автоматическое открытие дневника не перемешивает меню.
