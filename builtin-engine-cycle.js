@@ -49,16 +49,16 @@
     return {exercises:[...sources.values()],cardio};
   }
 
-  W.buildBuiltinEngineCycle=function(startDate=iso(),priority='strength',testWeek=true,total=10){
+  W.buildBuiltinEngineCycle=function(startDate=iso(),_legacyPriority=null,testWeek=true,total=8){
     const firstDays=ROUTINES.filter(r=>r.w===1);
     if(!firstDays.length)throw new Error('Встроенный план ещё загружается');
-    const profiles=WorkoutDomain.cycleProfiles(total,{priority,testWeek});
+    const profiles=WorkoutDomain.cycleProfiles(total,{testWeek});
     const recipes=profiles.map(profile=>sourcesForWeek(profile.sourceWeek,firstDays));
     // W8 uses W1 exercise identities; old test/back-off labels are not recipes
     // for the new two-preparation-plus-single test protocol.
     if(profiles.at(-1).test)recipes.at(-1).exercises=copy(recipes[0].exercises);
     const cycle=WorkoutDomain.generateCycle({weeks:total,daysPerWeek:firstDays.length,startDate,
-      priority,testWeek,goal:'Прогресс силы и мышечной массы',
+      testWeek,goal:'',
       exercises:recipes[0].exercises,weekExercises:recipes.map(x=>x.exercises)});
     cycle.weeks.forEach((week,wi)=>week.days.forEach((day,di)=>{
       day.id=uid('day');day.name=`${firstDays[di].c} · ${firstDays[di].t}`;
@@ -79,15 +79,21 @@
         }
       });
     }));
-    return {id:uid('prog'),name:`Мой ${total}-недельный цикл · новый движок`,created:Date.now(),updated:Date.now(),builtinEngineTemplate:true,engineCycleRevision:501,...cycle};
+    return {id:uid('prog'),name:`Мой ${total}-недельный цикл · новый движок`,created:Date.now(),updated:Date.now(),builtinEngineTemplate:true,engineCycleRevision:502,...cycle};
   };
   // Upgrade only copies explicitly created by this adapter. Persisted IDs and
   // performed sessions remain stable; repeated source weeks receive fresh IDs.
-  W.upgradeBuiltinEngineCycleV501=function(program,idFactory=uid){
-    if(!program?.builtinEngineTemplate||program.engineCycleRevision>=501||program.weeks?.length!==8)return false;
+  W.upgradeBuiltinEngineCycleV502=function(program,idFactory=uid){
+    if(!program?.builtinEngineTemplate||program.engineCycleRevision>=502||![8,10].includes(program.weeks?.length)||program.assignedUserId||program.clientId)return false;
+    const candidates=(st.programs||[]).filter(p=>p.builtinEngineTemplate&&!p.assignedUserId&&!p.clientId);
+    const latest=candidates.reduce((a,p)=>!a||Number(p.created||0)>=Number(a.created||0)?p:a,null);
+    if(latest&&String(latest.id)!==String(program.id))return false;
     const before=copy(program),options=before.cycleOptions||{},first=before.weeks[0];
     if(!first?.days?.length)return false;
-    const profiles=WorkoutDomain.cycleProfiles(10,{priority:options.priority||'strength',testWeek:options.testWeek!==false});
+    const profiles=WorkoutDomain.cycleProfiles(8,{testWeek:options.testWeek!==false});
+    // Ten-week v501 inserted repeated source weeks. Match authored source weeks,
+    // taking the latest edited occurrence instead of shifting by array index.
+    const oldFor=profile=>before.weeks.findLast(w=>(w.weeklyLoadProfile?.sourceWeek||WorkoutDomain.weekProfiles[Number(w.n)]?.sourceWeek||Number(w.n))===profile.sourceWeek)||before.weeks.findLast(w=>w.phase===profile.phase)||before.weeks[Math.min(profile.sourceWeek-1,before.weeks.length-1)];
     const collect=week=>{
       const sources=new Map();
       week.days.forEach((day,di)=>(day.ex||[]).forEach((item,order)=>{
@@ -98,13 +104,13 @@
       }));
       return [...sources.values()];
     };
-    const recipes=profiles.map(pr=>collect(before.weeks[pr.test?0:pr.sourceWeek-1]));
-    const cycle=WorkoutDomain.generateCycle({weeks:10,daysPerWeek:first.days.length,
-      startDate:options.startDate||iso(),priority:options.priority||'strength',testWeek:options.testWeek!==false,
-      goal:options.goal||'Прогресс силы и мышечной массы',exercises:recipes[0],weekExercises:recipes});
+    const recipes=profiles.map(pr=>collect(pr.test?before.weeks[0]:oldFor(pr)));
+    const cycle=WorkoutDomain.generateCycle({weeks:8,daysPerWeek:first.days.length,
+      startDate:options.startDate||iso(),testWeek:options.testWeek!==false,
+      goal:options.goal==='Прогресс силы и мышечной массы'?'':options.goal||'',exercises:recipes[0],weekExercises:recipes});
     const used=new Set();
     cycle.weeks.forEach((week,wi)=>{
-      const oldWeek=before.weeks[profiles[wi].sourceWeek-1],repeat=used.has(profiles[wi].sourceWeek);
+      const oldWeek=oldFor(profiles[wi]),repeat=used.has(profiles[wi].sourceWeek);
       used.add(profiles[wi].sourceWeek);
       week.days.forEach((day,di)=>{
         const oldDay=oldWeek.days[di];day.name=oldDay?.name||first.days[di]?.name||day.name;
@@ -139,12 +145,14 @@
       });
     });
     program.previousCycle={weeks:before.weeks,cycleOptions:options,cycleSources:before.cycleSources||[],cycleWeekSources:before.cycleWeekSources||[],name:before.name};
-    Object.assign(program,cycle,{engineCycleRevision:501,updated:Date.now(),updatedAt:Date.now()});
-    if(!program.nameEdited&&/^Мой 8-недельный цикл/.test(program.name))program.name=program.name.replace('8-недельный','10-недельный');
+    Object.assign(program,cycle,{engineCycleRevision:502,updated:Date.now(),updatedAt:Date.now()});
+    if(!program.nameEdited&&/^Мой (8|10)-недельный цикл/.test(program.name))program.name=program.name.replace('10-недельный','8-недельный');
+    for(const key of ['primaryProgramWeeks','startProgramWeeks'])if(st[key]?.[program.id]){const priorWeek=before.weeks[Number(st[key][program.id])-1];const mapped=program.weeks.findIndex(w=>w.weeklyLoadProfile.sourceWeek===priorWeek?.weeklyLoadProfile?.sourceWeek);st[key][program.id]=mapped>=0?mapped+1:Math.min(8,Math.max(1,Number(st[key][program.id])));}
+    if(typeof programUi!=='undefined'&&programUi.pid===program.id)programUi.week=Math.min(programUi.week,7);
     queueMicrotask(()=>{try{save()}catch(error){console.warn('Personal cycle migration',error)}});
     return true;
   };
-  const upgradeSaved=()=>{for(const p of st.programs||[])W.upgradeBuiltinEngineCycleV501(p);};
+  const upgradeSaved=()=>{for(const p of st.programs||[])W.upgradeBuiltinEngineCycleV502(p);};
   ['unvrsl:storage-hydrated','unvrsl:app-ready','unvrsl:cloud-ready','unvrsl:history-updated'].forEach(event=>W.addEventListener(event,upgradeSaved));
   setTimeout(upgradeSaved,0);
 
@@ -162,7 +170,7 @@
     try{
       const field=id=>document.querySelector(`#modal.show #${id}`);
       const program=ensureProgramShape(W.buildBuiltinEngineCycle(field('npStart')?.value||iso(),
-        field('npPriority')?.value||'strength',field('npTest')?.checked!==false));
+        null,field('npTest')?.checked!==false,8));
       st.programs.push(program);save();closeModal();openProgramEditor(program.id,0,0);
       toast('Создан цикл по новому движку');return program;
     }catch(error){toast(error.message);return null;}

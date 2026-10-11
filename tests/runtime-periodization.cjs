@@ -24,7 +24,7 @@ const assert=require('node:assert/strict');const {make,wait,errors}=require('./r
  assert.deepEqual(Array.from(result.shape,x=>x.sets),[4,4,3,3]);
  assert.match(result.preview,/Периодизация/);assert.match(result.conflictPreview,/конфликтуют/);
  assert.equal(result.first.ex[0].set[0].w,80);assert.equal(result.first.ex[0].set[0].targetRepMin,10);
- assert.equal(result.deload.ex[0].set[0].targetRpeMax,6);assert.equal(result.deload.ex[0].set[0].targetRepMin,12);
+ assert.equal(result.deload.ex[0].set[0].targetRpeMax,6);assert.equal(result.deload.ex[0].set[0].targetRepMin,10);
  const attempts=result.test.ex.flatMap(e=>e.set);assert.equal(attempts.length,3);assert.equal(attempts.filter(s=>s.role==='test_attempt').length,1);assert.equal(attempts.at(-1).targetRepMin,1);
  assert.equal(result.replacement.phase,'deload');assert.equal(result.saved.cycleOptions.weeks,4);
  assert.deepEqual(errors,[]);console.log('Periodization UI: create, preview, distribute, manual load, deload, test, phase replacement, serialization passed');

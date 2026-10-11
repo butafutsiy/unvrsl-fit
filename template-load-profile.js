@@ -18,7 +18,7 @@
   }
   function profileFor(p,index){
     const kind=kindFor(p);
-    try{const pr=W.WorkoutDomain.cycleProfiles(p.weeks.length,{testWeek:p.cycleOptions?.testWeek===true,priority:kind==='strength'?'strength':'hypertrophy'})[index];return {kind,row:[...pr.pct,...pr.rpe]};}catch(_){return null;}
+    try{const pr=W.WorkoutDomain.cycleProfiles(p.weeks.length,{testWeek:p.cycleOptions?.testWeek===true})[index];return {kind,row:[...pr.pct,...pr.rpe]};}catch(_){return null;}
   }
   function put(o,k,v){if(!o||o[k]===v)return false;o[k]=v;return true}
   function applyProgram(p){

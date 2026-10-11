@@ -35,12 +35,12 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
       cycleUndo(p.id);
       const serialized=JSON.parse(JSON.stringify(p));ensureProgramShape(serialized);
       newProgramSheet();document.getElementById('npStart').value='2026-11-01';
-      document.getElementById('npPriority').value='hypertrophy';document.getElementById('npTest').checked=false;
+      document.getElementById('npTest').checked=false;
       const configured=createBuiltinEngineCycle();
       return {summary,firstNames,entryVisible,editor,currentPreserved,originalPreserved:JSON.stringify(ROUTINES)===original,
         historyPreserved:JSON.stringify(st.sessions)===history,french,ropeSets,cardio:cardio&&{mode:cardio.mode,seconds:cardio.set[0].workSeconds},
         regenerated:{method:regenerated.method,count:regenerated.sets.length},savedTest:serialized.weeks[7].days[1].ex[0].sets.map(s=>s.targetRepMin),
-        configured:{start:configured.cycleOptions.startDate,priority:configured.cycleOptions.priority,phase:configured.weeks[9].phase,test:configured.weeks[9].testWeek}};
+        configured:{start:configured.cycleOptions.startDate,priority:configured.cycleOptions.priority,phase:configured.weeks[7].phase,test:configured.weeks[7].testWeek}};
     })()`);
     assert.equal(result.entryVisible,false);
     assert.ok(result.currentPreserved&&result.originalPreserved&&result.historyPreserved);
@@ -67,7 +67,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
     }
     assert.equal(result.summary[0].bench[0].w,110,'authored manual weight is retained');
     assert.equal(result.regenerated.method,'UNVRSL');assert.equal(result.regenerated.count,8);
-    assert.deepEqual(JSON.parse(JSON.stringify(result.configured)),{start:'2026-11-01',priority:'hypertrophy',phase:'intensification',test:false});
+    assert.deepEqual(JSON.parse(JSON.stringify(result.configured)),{start:'2026-11-01',phase:'strength',test:false});
     assert.deepEqual(Array.from(result.savedTest),[2,2,1]);assert.deepEqual(errors,[]);
     console.log('Built-in engine cycle: 8 weeks, 5 days, base/isolation, method roles, weekly volume, cardio, manual weights, regeneration and history protection passed');
   }finally{dom.window.close();}

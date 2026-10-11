@@ -39,7 +39,7 @@
     existing?.remove();const pct=weekBandPct(w),node=D.createElement('div');node.className='pi261-week';node.dataset.editorKey=editorKey;const lo=pct?.[0]??'',hi=pct?.[1]??'';
     node.innerHTML=`<div class="pi261-week-head"><div class="pi261-week-title">Интенсивность недели</div><div class="pi261-band">${pct?`${String(lo).replace('.',',')}–${String(hi).replace('.',',')}%`:'Не задана'}</div></div>
       <div class="pi261-grid"><div class="field"><label>От, %</label><input id="pi261Min" inputmode="decimal" placeholder="70" value="${lo}"></div><div class="field"><label>До, %</label><input id="pi261Max" inputmode="decimal" placeholder="75" value="${hi}"></div></div>
-      <div class="pi261-presets"><button class="pi261-preset" onclick="programWeekIntensityPresetV261(60,70)">60–70%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(70,75)">70–75%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(75,80)">75–80%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(80,85)">80–85%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(85,88)">85–88%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(88,90)">88–90%</button><button class="pi261-preset" onclick="programWeekIntensityPresetV261(90,100)">90–100%</button></div>
+      <div class="pi261-presets">${[[60,65],[65,70],[70,75],[75,80],[80,85],[85,88],[88,90],[90,95],[95,100],[100,105]].map(([lo,hi])=>`<button class="pi261-preset" onclick="programWeekIntensityPresetV261(${lo},${hi})">${lo===100?'100+':`${lo}–${hi}`}%</button>`).join('')}</div>
       <label class="pi261-toggle"><span><b>Учитывать при расчёте веса</b><div class="muted small">Корректировать нагрузку по интенсивности недели</div></span><input id="pi261Use" type="checkbox" ${w.useIntensity===false?'':'checked'}></label>
       <div class="pi261-note">Рекомендации учитывают завершённые подходы, шаг оборудования и самочувствие.</div>
       <button class="btn primary full" style="margin-top:11px" onclick="programWeekIntensitySaveV261('${String(p.id).replace(/'/g,"\\'")}',${wi})">Сохранить интенсивность</button>`;
@@ -49,7 +49,7 @@
   W.programWeekIntensityPresetV261=(lo,hi)=>{const a=D.getElementById('pi261Min'),b=D.getElementById('pi261Max');if(a)a.value=lo;if(b)b.value=hi};
   W.programWeekIntensitySaveV261=(pid,wi)=>{
     const p=program(pid),w=p?.weeks?.[Number(wi)];if(!p||!w)return;let lo=N(D.getElementById('pi261Min')?.value),hi=N(D.getElementById('pi261Max')?.value);
-    if(lo==null&&hi==null){delete w.intensityMin;delete w.intensityMax;w.useIntensity=false}else{if(lo==null)lo=hi;if(hi==null)hi=lo;lo=clamp(lo,40,100);hi=clamp(hi,40,100);w.intensityMin=Math.min(lo,hi);w.intensityMax=Math.max(lo,hi);w.useIntensity=D.getElementById('pi261Use')?.checked!==false}
+    if(lo==null&&hi==null){delete w.intensityMin;delete w.intensityMax;w.useIntensity=false}else{if(lo==null)lo=hi;if(hi==null)hi=lo;lo=clamp(lo,40,110);hi=clamp(hi,40,110);w.intensityMin=Math.min(lo,hi);w.intensityMax=Math.max(lo,hi);w.useIntensity=D.getElementById('pi261Use')?.checked!==false}
     p.updated=Date.now();saveState();try{typeof renderProgramEditor==='function'&&renderProgramEditor()}catch(_){}recalc(true)
   };
 

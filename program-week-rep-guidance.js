@@ -24,7 +24,7 @@
   function normalizeBand(a,b){
     let lo=N(a),hi=N(b);if(lo==null||hi==null)return null;
     if(lo>0&&lo<=1)lo*=100;if(hi>0&&hi<=1)hi*=100;
-    lo=clamp(lo,40,100);hi=clamp(hi,40,100);
+    lo=clamp(lo,40,110);hi=clamp(hi,40,110);
     return [Math.min(lo,hi),Math.max(lo,hi)]
   }
   function storedBand(p,wi){
@@ -56,10 +56,10 @@
     if(mid<=95)return PRESETS[7];
     return PRESETS[8]
   }
-  function defaultsFor(p,wi,useLive=true){const w=p?.weeks?.[wi],pr=w?.weeklyLoadProfile;if(pr&&!w.loadProfileManual)return {base:pr.base.reps,iso:pr.isolation.reps};return defaultsForBand(bandFor(p,wi,useLive))}
+  function defaultsFor(p,wi,useLive=true){const w=p?.weeks?.[wi],pr=w?.weeklyLoadProfile;if(pr&&(!useLive||bandFor(p,wi,true).every((n,i)=>approx(n,pr.pct[i]))))return {base:pr.base.reps,iso:pr.isolation.reps};return defaultsForBand(bandFor(p,wi,useLive))}
   function repProfile(p,wi,useLive=true){
     const w=p?.weeks?.[Number(wi)];if(!w)return null;
-    const band=bandFor(p,wi,useLive),canonical=w.weeklyLoadProfile&&!w.loadProfileManual?w.weeklyLoadProfile:null,
+    const band=bandFor(p,wi,useLive),canonical=w.weeklyLoadProfile,
       d=canonical?{base:canonical.base.reps,iso:canonical.isolation.reps}:defaultsForBand(band),manual=w.repGuidanceManual===true;
     const base=manual?pair(w.baseRepMin,w.baseRepMax,d.base):d.base;
     const iso=manual?pair(w.isolationRepMin,w.isolationRepMax,d.iso):d.iso;
@@ -92,7 +92,7 @@
   function field(id){return D.getElementById(id)}
   function setVal(id,v,force=false){const el=field(id);if(el&&v!=null&&(force||D.activeElement!==el))el.value=v}
   function fillFields(rp,force=false){if(!rp)return;setVal('wrg268BaseMin',rp.baseRepMin,force);setVal('wrg268BaseMax',rp.baseRepMax,force);setVal('wrg268IsoMin',rp.isolationRepMin,force);setVal('wrg268IsoMax',rp.isolationRepMax,force)}
-  function updateBoxLabel(box,rp){const s=box?.querySelector('.wrg268-head span');if(s&&rp)s.textContent=`по ${pctLabel(rp.band)}`}
+  function updateBoxLabel(box,rp){const s=box?.querySelector('.wrg268-head span');if(s&&rp&&s.textContent!==`по ${pctLabel(rp.band)}`)s.textContent=`по ${pctLabel(rp.band)}`}
   function markRepInputs(box){
     ['wrg268BaseMin','wrg268BaseMax','wrg268IsoMin','wrg268IsoMax'].forEach(id=>{
       const el=field(id);if(!el||el.dataset.wrg269TouchBound==='1')return;el.dataset.wrg269TouchBound='1';

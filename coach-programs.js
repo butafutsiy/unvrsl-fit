@@ -22,11 +22,29 @@ window.unvrslMigrateProgramsV386=migrateProgramsV386
 const _planPageCoach=planPage;
 planPage=function(){_planPageCoach();appendProgramStudio()}
 function appendProgramStudio(){const root=$('#plan');if(!root)return;const list=st.programs.map(p=>`<div class="card coach-program"><div class="row between"><div class="grow"><div class="title">${esc(p.name)}</div><div class="muted small">${p.weeks.length} нед. · ${p.weeks.reduce((a,w)=>a+w.days.length,0)} тренировок</div></div><button class="btn tiny" onclick="openProgramEditor('${p.id}')">Открыть</button></div><div class="coach-actions"><button class="btn tiny" onclick="shareProgram('${p.id}')">Поделиться</button><button class="btn tiny" onclick="saveProgramAsTemplate('${p.id}')">В шаблоны</button><button class="btn tiny danger" onclick="deleteProgram('${p.id}')">Удалить</button></div></div>`).join('');root.insertAdjacentHTML('beforeend',`${window.intakeToolbarHtml?.()||''}<div class="section">МОИ ПРОГРАММЫ</div><div class="card"><div class="row between"><div><div class="title">Конструктор программ</div><div class="muted small">Недели, дни, упражнения, RPE, темп, отдых и методы сетов</div></div><button class="btn primary" onclick="newProgramSheet()">＋</button></div><div class="coach-actions"><button class="btn" onclick="templatesSheet()">Шаблоны</button><button class="btn" onclick="cloneBuiltInCycle()">Копия моего 8-недельного цикла</button></div></div>${list||'<div class="card muted">Пока нет своих программ.</div>'}`)}
-function newProgramSheet(){modal(`<div class="sheet-grabber"></div><h2>Новая программа</h2><div class="field"><label>Название</label><input id="npName" value="Новая программа"></div><div class="field"><label>Количество недель</label><select id="npWeeks">${[3,4,6,8,10,11,12].map(n=>`<option value="${n}" ${n===8?'selected':''}>${n}</option>`).join('')}</select></div><div class="field"><label>Тренировок в неделю</label><select id="npDays">${[1,2,3,4,5].map(n=>`<option value="${n}" ${n===3?'selected':''}>${n}</option>`).join('')}</select></div><div class="field"><label>Дата начала</label><input id="npStart" type="date" value="${iso()}"></div><div class="field"><label>Целевая дата (необязательно)</label><input id="npTarget" type="date"></div><div class="field"><label>Цель цикла</label><input id="npGoal" placeholder="Например, увеличить рабочие веса"></div><div class="field"><label>Приоритет</label><select id="npPriority"><option value="strength">Сила</option><option value="hypertrophy">Гипертрофия</option></select></div><label><input id="npTest" type="checkbox" checked> Тестовая неделя</label><button class="btn primary full" onclick="createProgram()">Создать</button>`)}
+function cycleOptionsFields(options={}){
+ const weeks=options.weeks||8,days=options.daysPerWeek||3,manualWeeks=![4,6,8,10,12].includes(weeks);
+ return `<div class="field"><label>Количество недель</label><select id="npWeeks" onchange="cycleOptionsChanged(true)">${[4,6,8,10,12].map(n=>`<option value="${n}" ${n===weeks?'selected':''}>${n}</option>`).join('')}<option value="manual" ${manualWeeks?'selected':''}>Вручную</option></select></div><div class="field" id="npManualWeeksField" ${manualWeeks?'':'hidden'}><label>Недели · от 1 до 52</label><input id="npManualWeeks" type="number" min="1" max="52" value="${weeks}" onchange="cycleOptionsChanged(true)"></div><div class="field"><label>Тренировок в неделю</label><select id="npDays">${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${n===days?'selected':''}>${n}</option>`).join('')}</select></div><div class="field"><label>Дата начала</label><input id="npStart" type="date" value="${esc(options.startDate||iso())}"></div><div class="field"><label>Целевая дата (необязательно)</label><input id="npTarget" type="date" value="${esc(options.targetDate||'')}"></div><div class="field"><label>Периодизация</label><select id="npPeriodization" onchange="cycleOptionsChanged()"><option value="auto" ${options.periodizationMode!=='manual'?'selected':''}>Предложить автоматически</option><option value="manual" ${options.periodizationMode==='manual'?'selected':''}>Задать по неделям</option></select></div><label id="npTestLabel"><input id="npTest" type="checkbox" ${options.testWeek!==false?'checked':''} onchange="cycleOptionsChanged()"> Тест в конце цикла</label><div id="npPhases"></div><div class="field"><label>Заметка к циклу</label><input id="npGoal" value="${esc(options.goal||'')}" placeholder="Необязательно"></div>`;
+}
+window.cycleOptionsChanged=function(resize=false,saved){
+ const select=$('#npWeeks');if(!select)return;
+ const total=select.value==='manual'?Number($('#npManualWeeks')?.value):Number(select.value),manual=$('#npPeriodization')?.value==='manual',host=$('#npPhases');
+ $('#npManualWeeksField').hidden=select.value!=='manual';$('#npTestLabel').hidden=manual;
+ if(resize)$('#npTarget').value='';
+ const prior=saved||[...host.querySelectorAll('select')].map(x=>x.value);
+ try{const profiles=WorkoutDomain.cycleProfiles(total,{testWeek:$('#npTest')?.checked!==false}),phases=Object.values(WorkoutDomain.weekProfiles);
+  host.innerHTML=manual?`<p class="small muted">Выбери рабочие, разгрузочные и тестовые недели. Проценты, повторы и RPE можно уточнить в редакторе недели.</p>${profiles.map((pr,i)=>`<div class="field"><label>Неделя ${i+1}</label><select data-cycle-phase="${i}">${phases.map(x=>`<option value="${x.phase}" ${(prior[i]||pr.phase)===x.phase?'selected':''}>${esc(x.focus)} · ${x.pct.join('–')}%</option>`).join('')}</select></div>`).join('')}`:`<p class="small muted">${profiles.map((pr,i)=>`W${i+1}: ${esc(pr.focus)}`).join(' · ')}</p>`;
+ }catch(error){host.innerHTML=`<p class="small muted">${esc(error.message)}</p>`;}
+};
+window.readCycleOptions=function(){
+ const manual=$('#npPeriodization')?.value==='manual';
+ return {weeks:$('#npWeeks')?.value==='manual'?Number($('#npManualWeeks')?.value):Number($('#npWeeks')?.value),daysPerWeek:Number($('#npDays')?.value),startDate:$('#npStart')?.value||iso(),targetDate:$('#npTarget')?.value||null,goal:$('#npGoal')?.value||'',testWeek:$('#npTest')?.checked!==false,periodizationMode:manual?'manual':'auto',...(manual?{phaseSchedule:[...document.querySelectorAll('#npPhases [data-cycle-phase]')].map(x=>x.value)}:{})};
+};
+function newProgramSheet(){modal(`<div class="sheet-grabber"></div><h2>Новая программа</h2><div class="field"><label>Название</label><input id="npName" value="Новая программа"></div>${cycleOptionsFields()}<button class="btn primary full" onclick="createProgram()">Создать</button>`);cycleOptionsChanged();}
 function createProgram(){
  if(window.__unvrslProgramCreatingV386)return false;
- const name=String($('#npName')?.value||'').trim()||'Программа',wc=Math.max(1,Math.min(16,+$('#npWeeks')?.value||4)),dc=Math.max(1,Math.min(7,+$('#npDays')?.value||3));
- let cycle;try{cycle=WorkoutDomain.generateCycle({weeks:wc,daysPerWeek:dc,startDate:$('#npStart')?.value||iso(),targetDate:$('#npTarget')?.value||null,goal:$('#npGoal')?.value||'',priority:$('#npPriority')?.value||'strength',testWeek:$('#npTest')?.checked!==false})}catch(error){toast(error.message);return false}
+ const name=String($('#npName')?.value||'').trim()||'Программа';
+ let cycle;try{cycle=WorkoutDomain.generateCycle(readCycleOptions())}catch(error){toast(error.message);return false}
  const p=ensureProgramShape({id:uid('prog'),name,created:Date.now(),updated:Date.now(),...cycle});
  p.weeks.forEach(w=>w.days.forEach(d=>d.id=uid('day')));
  window.__unvrslProgramCreatingV386=true;
@@ -180,9 +198,9 @@ save();setTimeout(()=>{planPage();if(window.__unvrslStartupComplete)handleShared
 window.cycleEditorHtml=function(p,wi){
  const w=p.weeks[wi],profile=w?.weeklyLoadProfile;
  const phases=Object.values(WorkoutDomain.weekProfiles);
- const labels=(spec,test=false)=>test?'90–100%+ · 2×2–4 + 1×1 · RPE 9–10':spec.sets?`${spec.pct.join('–')}% · ${spec.sets}×${spec.reps.join('–')} · RPE ${spec.rpe.join('–')} · RIR ${spec.rir.join('–')}`:'не назначается';
+ const labels=(spec,test=false)=>test?'90–100%+ · 2×2–3 + 1×1 · RPE 9–10':spec.sets?`${spec.pct.join('–')}% · ${spec.sets}×${spec.reps.join('–')} · RPE ${spec.rpe.join('–')} · RIR ${spec.rir.join('–')}`:'не назначается';
  const warnings=profile?['base','isolation'].flatMap(k=>WorkoutDomain.validatePrescription(profile[k]).warnings.map(x=>`${k==='base'?'База':'Изоляция'}: ${x}`)):[];
- return `<div class="card"><details><summary>Периодизация · ${p.weeks.length} недель · ${w.days.length} дней</summary><p class="small muted">${esc(p.cycleOptions?.goal||'Цель не задана')} · ${esc(p.cycleOptions?.startDate||'')} → ${esc(p.cycleOptions?.targetDate||'')}</p>${p.weeks.map((x,i)=>`<div class="listline small">W${i+1} · ${esc(x.weeklyLoadProfile?.focus||x.focus||'Ручная неделя')}${x.deload?' · разгрузка':''}${x.testWeek?' · тест':''}${x.weeklyLoadProfile?`<br>База: ${labels(x.weeklyLoadProfile.base,x.testWeek)}<br>Изоляция: ${labels(x.weeklyLoadProfile.isolation)}`:''}<br>${(x.days||[]).map(d=>esc(d.role||'Middle')).join(' / ')}</div>`).join('')}</details><div class="field"><label>Фаза выбранной недели</label><select onchange="cycleReplacePhase('${p.id}',${wi},this.value)">${phases.map(x=>`<option value="${x.phase}" ${profile?.phase===x.phase?'selected':''}>${esc(x.focus)}</option>`).join('')}</select></div>${warnings.map(x=>`<p class="small" style="color:var(--orange)">${esc(x)}</p>`).join('')}<p class="small muted">Добавь упражнения в первую неделю и сформируй цикл. Повторения одного упражнения в разные дни делят его недельные подходы. Ручные веса сохраняются.</p>${p.previousCycle?`<button class="btn full" onclick="cycleUndo('${p.id}')">Отменить формирование цикла</button>`:''}<button class="btn full" onclick="cycleBuildFromFirstWeek('${p.id}')">Сформировать цикл из первой недели</button></div>`;
+ return `<div class="card"><details><summary>Периодизация · ${p.weeks.length} недель · ${w.days.length} дней</summary><p class="small muted">${esc(p.cycleOptions?.goal||'Цель не задана')} · ${esc(p.cycleOptions?.startDate||'')} → ${esc(p.cycleOptions?.targetDate||'')}</p>${p.weeks.map((x,i)=>`<div class="listline small">W${i+1} · ${esc(x.weeklyLoadProfile?.focus||x.focus||'Ручная неделя')}${x.deload?' · разгрузка':''}${x.testWeek?' · тест':''}${x.weeklyLoadProfile?`<br>База: ${labels(x.weeklyLoadProfile.base,x.testWeek)}<br>Изоляция: ${labels(x.weeklyLoadProfile.isolation)}`:''}<br>${(x.days||[]).map(d=>esc(d.role||'Middle')).join(' / ')}</div>`).join('')}</details><button class="btn full" onclick="cycleSettingsSheet('${p.id}')">Настроить срок и периодизацию</button><div class="field"><label>Фаза выбранной недели</label><select onchange="cycleReplacePhase('${p.id}',${wi},this.value)">${phases.map(x=>`<option value="${x.phase}" ${profile?.phase===x.phase?'selected':''}>${esc(x.focus)}</option>`).join('')}</select></div>${warnings.map(x=>`<p class="small" style="color:var(--orange)">${esc(x)}</p>`).join('')}<p class="small muted">Добавь упражнения в первую неделю и сформируй цикл. Повторения одного упражнения в разные дни делят его недельные подходы. Ручные веса сохраняются.</p>${p.previousCycle?`<button class="btn full" onclick="cycleUndo('${p.id}')">Отменить формирование цикла</button>`:''}<button class="btn full" onclick="cycleBuildFromFirstWeek('${p.id}')">Сформировать цикл из первой недели</button></div>`;
 };
 window.cycleBuildFromFirstWeek=function(pid){
  const p=programById(pid);if(!p)return;
@@ -193,14 +211,14 @@ window.cycleBuildFromFirstWeek=function(pid){
  }));
  if(!source.size)return toast('Сначала добавь упражнения в первую неделю');
  try{
-  const options={weeks:p.weeks.length,daysPerWeek:first.days.length,startDate:iso(),testWeek:true,priority:'strength',...p.cycleOptions,weeks:p.weeks.length,daysPerWeek:first.days.length,exercises:[...source.values()]};
-  if(p.cycleOptions?.weeks!==options.weeks)options.targetDate=null;
+  const options={weeks:p.weeks.length,daysPerWeek:first.days.length,startDate:iso(),testWeek:true,...p.cycleOptions,weeks:p.weeks.length,daysPerWeek:first.days.length,exercises:[...source.values()]};
+  if(p.cycleOptions?.weeks!==options.weeks){options.targetDate=null;if(options.periodizationMode==='manual'){const auto=WorkoutDomain.cycleProfiles(options.weeks,{testWeek:options.testWeek});options.weekProfiles=p.weeks.map((w,i)=>clone(w.weeklyLoadProfile||auto[i]));options.phaseSchedule=options.weekProfiles.map(pr=>pr.phase);}}
   options.weekExercises=window.builtinEngineWeekRecipes?.(p,options.exercises);
   const cycle=WorkoutDomain.generateCycle(options);
   // Keep one reversible program snapshot, never modify performed workouts.
   p.previousCycle={weeks:clone(p.weeks),cycleOptions:clone(p.cycleOptions||{}),cycleSources:clone(p.cycleSources||[]),cycleWeekSources:clone(p.cycleWeekSources||[])};
   p.weeks=cycle.weeks;p.cycleOptions=cycle.cycleOptions;p.cycleSources=cycle.cycleSources;p.cycleWeekSources=cycle.cycleWeekSources||[];
-  p.weeks.forEach(w=>w.days.forEach((d,i)=>{d.id=uid('day');d.name=first.days[i]?.name||d.name;d.ex.forEach(e=>e.id=uid('pex'))}));
+  p.weeks.forEach((w,wi)=>w.days.forEach((d,i)=>{const oldDay=p.previousCycle.weeks[wi]?.days[i];d.id=oldDay?.id||uid('day');d.name=oldDay?.name||first.days[i]?.name||d.name;if(oldDay?.conditioning)d.conditioning=clone(oldDay.conditioning);d.ex.forEach(e=>{const old=oldDay?.ex.find(x=>cycleExerciseIdentity(x)===cycleExerciseIdentity(e));e.id=old?.id||uid('pex');if(old)cyclePreserveExerciseEdits(e,old);});}));
   p.updated=Date.now();save();renderProgramEditor();toast('Цикл сформирован');
  }catch(error){toast(error.message)}
 };
@@ -211,7 +229,7 @@ window.cycleReplacePhase=function(pid,wi,phase){
  if(prior.testWeek&&!profile.test)for(const e of p.cycleSources||[]){const key=[e.exerciseId||e.sourceId||e.n,e.equipmentProfileId||'',e.techniqueId||'',e.loadType||'',e.method||'STANDARD'].join('|');if(!sources.has(key))sources.set(key,clone(e));}
  // Reuse the same allocator for a replacement phase.
  const chosen=WorkoutDomain.allocateWeek(w.weeklyLoadProfile,w.days,[...sources.values()]);
- w.days=chosen;w.previousPhase=prior;p.updated=Date.now();save();renderProgramEditor();
+ w.days=chosen;w.days.forEach((d,di)=>d.ex.forEach(e=>{const old=prior.days[di]?.ex.find(x=>cycleExerciseIdentity(x)===cycleExerciseIdentity(e));e.id=old?.id||uid('pex');if(old)cyclePreserveExerciseEdits(e,old);}));w.previousPhase=prior;cycleRememberManualProfiles(p);p.updated=Date.now();save();renderProgramEditor();
 };
 
 window.cycleUndo=function(pid){const p=programById(pid);if(!p?.previousCycle)return;Object.assign(p,p.previousCycle);delete p.previousCycle;p.updated=Date.now();save();renderProgramEditor();};
@@ -226,3 +244,50 @@ window.cycleExercisePreview=function(p,d,e){
  const rec=WorkoutDomain.recommend(current.ex[0],target,current,history,workoutRegistry,st.exerciseWeightProfiles||{}),fmt=(x,digits=1)=>x==null?'нет данных':Number(x).toLocaleString('ru-RU',{maximumFractionDigits:digits});
  return `<details class="small muted" style="margin-top:8px"><summary>${esc(d.role||'Middle')} · e1RM ${fmt(rec.strength?.estimate)}${rec.strength?.estimate!=null?' кг':''}</summary><p>Расчёт: ${fmt(rec.calculatedWeight,6)} · рекомендация: ${rec.sessionIds.length?fmt(rec.weight,6)+' кг':'после первой тренировки'}${rec.allowedWeightRange?` · коридор ${fmt(rec.allowedWeightRange.min)}–${fmt(rec.allowedWeightRange.max)} кг`:''}</p><p>${spec.reps.join('–')} повторений · RPE ${spec.rpe.join('–')} · RIR ${spec.rir.join('–')}</p><p>${esc(rec.evidence[0]||'Нет сопоставимой истории')}</p><p>${esc(rec.reason)}</p></details>`;
 };
+
+// A week edit becomes part of the saved manual schedule, including independent
+// isolation intensity. Rebuilding a cycle must never silently reset that edit.
+window.cycleRememberManualProfiles=function(p){
+ if(!p?.weeks?.every(w=>w.weeklyLoadProfile))return;
+ p.cycleOptions={...p.cycleOptions,weeks:p.weeks.length,periodizationMode:'manual',weekProfiles:p.weeks.map(w=>clone(w.weeklyLoadProfile)),phaseSchedule:p.weeks.map(w=>w.weeklyLoadProfile.phase),testWeek:p.weeks.some(w=>w.testWeek)};
+ delete p.cycleOptions.priority;
+};
+window.cycleSettingsSheet=function(pid){
+ const p=programById(pid);if(!p)return;
+ modal(`<div class="sheet-grabber"></div><h2>Настройки цикла</h2>${cycleOptionsFields({...p.cycleOptions,weeks:p.weeks.length,daysPerWeek:p.weeks[0]?.days.length||3})}<p class="small muted">Настройки применятся к программе. Упражнения и ручные веса сохранятся.</p><button class="btn primary full" onclick="cycleSaveSettings('${p.id}')">Применить</button><button class="btn full" onclick="openProgramEditor('${p.id}')">Назад</button>`);
+ cycleOptionsChanged(false,p.weeks.map(w=>w.weeklyLoadProfile?.phase));
+};
+window.cycleSaveSettings=function(pid){
+ const p=programById(pid);if(!p)return;
+ try{
+  const options=readCycleOptions(),before=clone(p),profiles=WorkoutDomain.cycleProfiles(options.weeks,options);
+  if(options.periodizationMode==='manual')options.weekProfiles=profiles.map((profile,i)=>{const old=before.weeks[i]?.weeklyLoadProfile;return old?.phase===profile.phase?clone(old):profile;});
+  const identity=e=>[e.exerciseId||e.sourceId||e.n,e.equipmentProfileId||'',e.techniqueId||'',e.loadType||'',e.method||'STANDARD'].join('|');
+  const collect=week=>{const sources=new Map();(week?.days||[]).forEach((d,di)=>(d.ex||[]).forEach((e,order)=>{const k=identity(e),old=sources.get(k);if(old){old.dayIndices.push(di);old.builtinOrderByDay[di]=order;}else sources.set(k,{...clone(e),dayIndices:[di],builtinOrderByDay:{[di]:order}});}));return [...sources.values()];};
+  const first=collect(before.weeks[0]),recipes=profiles.map((pr,i)=>{const old=before.weeks[i];return old&&!old.testWeek?collect(old):clone(first);});
+  const cycle=WorkoutDomain.generateCycle({...options,exercises:first,weekExercises:recipes});
+  cycle.weeks.forEach((w,wi)=>w.days.forEach((d,di)=>{
+   const oldDay=before.weeks[wi]?.days[di];d.id=oldDay?.id||uid('day');d.name=oldDay?.name||before.weeks[0]?.days[di]?.name||d.name;
+   if(oldDay?.conditioning)d.conditioning=clone(oldDay.conditioning);
+   d.ex.forEach(e=>{const old=oldDay?.ex.find(x=>identity(x)===identity(e));e.id=old?.id||uid('pex');if(old)cyclePreserveExerciseEdits(e,old);});
+  }));
+  p.previousCycle={weeks:before.weeks,cycleOptions:before.cycleOptions||{},cycleSources:before.cycleSources||[],cycleWeekSources:before.cycleWeekSources||[]};Object.assign(p,cycle);p.updated=Date.now();programUi.week=Math.min(programUi.week,p.weeks.length-1);save();openProgramEditor(p.id,programUi.week);toast('Настройки цикла сохранены');
+ }catch(error){toast(error.message);}
+};
+
+window.cycleReapplyWeek=function(p,wi){
+ const w=p.weeks[wi],before=clone(w.days),sources=new Map(),identity=e=>[e.exerciseId||e.sourceId||e.n,e.equipmentProfileId||'',e.techniqueId||'',e.loadType||'',e.method||'STANDARD'].join('|');
+ before.forEach((d,di)=>(d.ex||[]).forEach(e=>{const key=identity(e),old=sources.get(key);if(old)old.dayIndices.push(di);else sources.set(key,{...clone(e),dayIndices:[di]});}));
+ if(!w.testWeek)for(const e of p.cycleSources||[])if(!sources.has(identity(e)))sources.set(identity(e),clone(e));
+ w.days=WorkoutDomain.allocateWeek(w.weeklyLoadProfile,w.days,[...sources.values()]);
+ w.days.forEach((d,di)=>d.ex.forEach(e=>{const old=before[di]?.ex.find(x=>identity(x)===identity(e));e.id=old?.id||uid('pex');if(old)cyclePreserveExerciseEdits(e,old);}));
+};
+
+function cycleExerciseIdentity(e){return [e.exerciseId||e.sourceId||e.n,e.equipmentProfileId||'',e.techniqueId||'',e.loadType||'',e.method||'STANDARD'].join('|');}
+function cyclePreserveExerciseEdits(e,old){
+ e.sets.forEach((s,k)=>s.w=old.sets?.[k]?.w??old.sets?.[0]?.w??s.w);
+ if(old.reps?.mode==='manual')e.reps=clone(old.reps);
+ for(const key of ['reps','effort','tempo','rest','weight'])if(old.parameterOverrides?.[key]?.mode==='manual')e.parameterOverrides={...e.parameterOverrides,[key]:clone(old.parameterOverrides[key])};
+ if(old.parameterOverrides?.version)e.parameterOverrides.version=old.parameterOverrides.version;
+ for(const key of ['effortSourceMode','effortType','rpeMin','rpeMax','tempoMode','tempo','restMode','rest','weightMode'])if(old[key]!=null)e[key]=old[key];
+}

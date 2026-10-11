@@ -17,7 +17,7 @@ test('eight-week canonical phases, real deload and no ordinary isolation during 
  for(const i of [3,5]){assert.deepEqual(p[i].base.rpe,[4,6]);assert.equal(p[i].isolation.sets,2);}
  assert.equal(p[7].isolation.sets,0);
  assert.equal(A.cycleProfiles(3,{testWeek:false}).at(-1).phase,'strength');
- assert.equal(A.cycleProfiles(3,{testWeek:false,priority:'hypertrophy'}).at(-1).phase,'intensification');
+ assert.equal(A.cycleProfiles(3,{testWeek:false,priority:'hypertrophy'}).at(-1).phase,'strength');
 });
 test('formula and external pull-up load exclude body mass',()=>{
  const e=ex('pull');assert.equal(A.e1rm(e,work(20,6,8),{bodyWeight:100},reg),25.3);
@@ -79,12 +79,30 @@ test('ten-week progression has two working blocks, recovery and an explicit fina
  const profiles=A.cycleProfiles(10);
  assert.deepEqual(profiles.map(p=>p.sourceWeek),[1,2,3,4,2,3,5,6,7,8]);
  assert.deepEqual(profiles.map(p=>p.base.pct),[[70,75],[75,80],[80,85],[60,65],[75,80],[80,85],[85,88],[65,70],[88,90],[90,100]]);
- assert.deepEqual(profiles.map(p=>p.isolation.reps),[[10,12],[12,15],[12,15],[15,20],[12,15],[12,15],[15,20],[15,20],[12,15],[0,0]]);
- assert.deepEqual(profiles.map(p=>p.base.reps),[[10,12],[8,10],[6,8],[12,15],[8,10],[6,8],[5,7],[12,15],[4,6],[2,4]]);
+ assert.deepEqual(profiles.map(p=>p.isolation.reps),[[10,12],[12,15],[15,20],[15,20],[12,15],[15,20],[15,20],[15,20],[15,20],[0,0]]);
+ assert.deepEqual(profiles.map(p=>p.base.reps),[[10,12],[8,10],[6,8],[10,12],[8,10],[6,8],[4,6],[10,12],[3,5],[2,3]]);
  const cycle=A.generateCycle({weeks:10,daysPerWeek:5,startDate:'2026-10-11',exercises:[{n:'Присед',kind:'compound',dayIndices:[0],sets:[{w:100}]},{n:'Разгибание ног',kind:'isolation',dayIndices:[0],sets:[{w:50}]}]});
  for(const week of cycle.weeks)for(const day of week.days)for(const e of day.ex){
   const spec=week.weeklyLoadProfile[e.kind==='isolation'?'isolation':'base'];
   assert.deepEqual([e.targetIntensityMin,e.targetIntensityMax],spec.pct);
  }
- assert.deepEqual(cycle.weeks[9].days[0].ex[0].sets.map(s=>[s.role,s.targetRepMin,s.targetRepMax]),[['test_preparation',2,4],['test_preparation',2,4],['test_attempt',1,1]]);
+ assert.deepEqual(cycle.weeks[9].days[0].ex[0].sets.map(s=>[s.role,s.targetRepMin,s.targetRepMax]),[['test_preparation',2,3],['test_preparation',2,3],['test_attempt',1,1]]);
+});
+
+test('automatic periods cover every manual length and all training-day counts',()=>{
+ for(let weeks=1;weeks<=52;weeks++)for(let days=1;days<=7;days++){
+  const cycle=A.generateCycle({weeks,daysPerWeek:days,startDate:'2026-10-11'});
+  assert.equal(cycle.weeks.length,weeks);assert.equal(cycle.weeks.at(-1).testWeek,true);
+  for(const w of cycle.weeks){assert.equal(w.days.length,days);assert.equal(new Set(w.days.map(d=>d.date)).size,days);assert.ok(w.weeklyLoadProfile.base.reps[1]<=12);}
+  assert.equal('priority' in cycle.cycleOptions,false);
+ }
+});
+test('manual phases and separate isolation profiles survive serialization and rebuild',()=>{
+ const options={weeks:5,daysPerWeek:6,startDate:'2026-10-11',periodizationMode:'manual',testWeek:false,phaseSchedule:['work','test','recovery','heavy','volume']};
+ const cycle=A.generateCycle(options);assert.deepEqual(cycle.weeks.map(w=>w.phase),options.phaseSchedule);
+ const saved=JSON.parse(JSON.stringify(cycle.cycleOptions));saved.weekProfiles[0].isolation={pct:[70,75],sets:5,reps:[10,12],rpe:[8,9],rir:[1,2]};
+ const rebuilt=A.generateCycle(saved);assert.deepEqual(rebuilt.weeks[0].weeklyLoadProfile.isolation,saved.weekProfiles[0].isolation);
+ assert.deepEqual(rebuilt.weeks[0].weeklyLoadProfile.base.pct,[75,80]);
+ assert.throws(()=>A.cycleProfiles(5,{periodizationMode:'manual',phaseSchedule:['work']}));assert.throws(()=>A.cycleProfiles(5,{periodizationMode:'manual',phaseSchedule:['bad','work','work','work','work']}));
+ assert.throws(()=>A.cycleProfiles(0));assert.throws(()=>A.dayRoles(8));
 });
