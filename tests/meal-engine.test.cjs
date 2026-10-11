@@ -166,7 +166,7 @@ test('ingredient search handles word order, Russian endings, familiar names and 
  const recipe=E.catalog.recipes.find(r=>r.id==='pork-buckwheat'),text=E.recipeSearchText(recipe);
  for(const q of ['свинина гречка','гречка со свининой','СВИНОЙ ГРЕЧКОЙ','свиная греч','свиина гречка','свинина гречкаа'])assert.ok(E.searchMatches(text,q),q);
  for(const q of ['свинина банан','свинина гречка лосось','индейка','тофу'])assert.equal(E.searchMatches(text,q),false,q);
- assert.ok(E.searchMatches('Картофель очищенный','картошка'));assert.ok(E.searchMatches('Овсяные хлопья','овсянку'));assert.ok(E.searchMatches('Куриная грудка','курица'));
+ assert.ok(E.searchMatches('Картофель очищенный','картошка'));assert.ok(E.searchMatches('Овсяные хлопья','овсянку'));assert.equal(E.searchMatches('Греческий йогурт','гречка'),false);assert.ok(E.searchMatches('Куриная грудка','курица'));
  assert.ok(E.searchMatches('Яйцо без скорлупы','яйца'));assert.ok(E.searchMatches('Зелёный горошек','зеленый горошек'));assert.ok(E.searchMatches('Щи со свининой','щи'));assert.ok(E.searchMatches('Свинина','сви'));
  assert.equal(E.searchMatches('Сыр 5%','сыр 9'),false);assert.equal(E.searchMatches('Сыр','сир'),false);
 });

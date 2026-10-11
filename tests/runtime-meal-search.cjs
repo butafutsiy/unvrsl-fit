@@ -14,7 +14,7 @@ w.openMealPlanner();tab('recipes');
 click('[data-mp="catalog-filter"][data-key="diet"][data-value="vegetarian"]');quick('recipes','Свинина');
 assert.equal(D.getElementById('mp-search').value,'Свинина');assert.equal(D.querySelector('[data-mp="search-term"][data-value="Свинина"]').getAttribute('aria-pressed'),'true');
 assert.equal(shown().length,24);assert.ok(shown().every(r=>!r.source&&r.ingredients.some(i=>i.id==='pork')));
-input('mp-search','гречка со свиина');assert.ok(shown().some(r=>r.id==='pork-buckwheat'));assert.ok(shown().every(r=>w.UNVRSLMealEngine.searchMatches(w.UNVRSLMealEngine.recipeSearchText(r),'гречка свинина')));
+input('mp-search','гречка со свиина');assert.ok(shown().some(r=>r.id==='pork-buckwheat'));assert.ok(shown().every(r=>r.ingredients.some(i=>i.id==='buckwheat')));assert.ok(shown().every(r=>w.UNVRSLMealEngine.searchMatches(w.UNVRSLMealEngine.recipeSearchText(r),'гречка свинина')));
 input('mp-search','картошка свинина');assert.ok(shown().some(r=>r.id==='pork-potato'));
 input('mp-search','свинина абракадабра');assert.equal(shown().length,0);assert.match(D.querySelector('.mp-empty').textContent,/Ничего не найдено/);
 // Saved restrictions still apply after shortcuts; these are not catalog view filters.
