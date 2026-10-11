@@ -60,7 +60,7 @@ const plain=x=>JSON.parse(JSON.stringify(x));
  const rice=shoppingMeal.ingredients.find(i=>i.id==='rice');const list=w.UNVRSLMealUI.shopping({meals:[shoppingMeal,w.UNVRSLMealEngine.scaleMeal(shoppingMeal,.5)]});assert.equal(list.filter(x=>x.name===w.UNVRSLMealEngine.catalog.foods.rice.name).length,1);assert.equal(list.find(x=>x.name===w.UNVRSLMealEngine.catalog.foods.rice.name).amount,(rice.g*1.5).toLocaleString('ru-RU',{maximumFractionDigits:1})+' г');
  const total=w.UNVRSLMealUI.totals(w.st.mealNutritionV1.days[date]);assert.equal(total.k,Math.round((eaten.nutrition.k+140)*10)/10);
  click(w,'generate');assert.equal(w.st.mealNutritionV1.days[date].extra.length,1);
- const library=w.document.querySelector('.mp-library');library.open=true;library.dispatchEvent(new w.Event('toggle'));
+ assert.equal(w.document.querySelectorAll('.mp-library').length,0);assert.equal(w.document.querySelectorAll('#mp-own').length,1);assert.equal(w.document.querySelectorAll('[data-mp="open-own"]').length,0);w.document.querySelector('[data-mp="nutrition-view"][data-value="recipes"]').click();
  assert.equal(w.document.querySelectorAll('.mp-recipe').length,24);
  click(w,'more');assert.equal(w.document.querySelectorAll('.mp-recipe').length,48);
  set(w,'mp-search','борщ');w.document.getElementById('mp-search').dispatchEvent(new w.Event('input',{bubbles:true}));assert.ok(w.document.querySelectorAll('.mp-recipe').length>0,'catalog includes recipes slower than automatic menu preference');

@@ -172,7 +172,6 @@
 #mealPlannerRoot .mp-catalog-page .mp-library{border:0;background:transparent;padding:0;margin:0}
 #mealPlannerRoot .mp-catalog-page .mp-library>summary{display:none}
 /* Nutrition UX: search first, optional filters and clear portion feedback. */
-#mealPlannerRoot .mp-view-tabs{position:sticky;top:0;z-index:3;background:var(--panel2)}
 #mealPlannerRoot .mp-searchbar{margin:10px 0}
 #mealPlannerRoot .mp-catalog-options{border:1px solid var(--line);border-radius:14px;background:var(--panel2);padding:0 12px;margin:8px 0 12px}
 #mealPlannerRoot .mp-catalog-options>summary{display:flex;justify-content:space-between;align-items:center;min-height:46px;font-size:13px;font-weight:600;list-style:none;cursor:pointer}
@@ -187,8 +186,6 @@
 #mealPlannerRoot .mp-record-options>summary:before{content:'＋';font-size:19px}
 #mealPlannerRoot .mp-record-options[open]>summary:before{content:'−'}
 #mealPlannerRoot .mp-catalog-record .mp-portion-preview{grid-column:1/-1;margin:3px 0}
-#mealPlannerRoot .mp-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
-#mealPlannerRoot .mp-quick-actions>.btn{min-height:44px;font-size:13px}
 #mealPlannerRoot .mp-empty{padding:18px;border:1px dashed var(--line);border-radius:16px;margin:12px 0;color:var(--muted);font-size:13px}
 #mealPlannerRoot .mp-empty b{display:block;color:var(--text);font-size:16px}
 #mealPlannerRoot .mp-empty p{margin:7px 0 12px;line-height:1.5}
