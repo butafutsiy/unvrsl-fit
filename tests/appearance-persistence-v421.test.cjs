@@ -50,11 +50,11 @@ test('appearance is keyed by person and invalid stored accents cannot change the
   const other = appearance(storage, 'user-b');
   vm.runInContext("restoreAppearance('user-b')", other);
   assert.equal(other.st.theme, 'dark');
-  assert.equal(other.st.accent, '#30d158');
+  assert.equal(other.st.accent, '#bf5af2');
   values.set('unvrsl-appearance-v1', JSON.stringify({'user-b': {theme: 'light', accent: 'red'}}));
   vm.runInContext("restoreAppearance('user-b')", other);
   assert.equal(other.st.theme, 'light');
-  assert.equal(other.st.accent, '#30d158');
+  assert.equal(other.st.accent, '#bf5af2');
 });
 
 test('account refresh reapplies preferences and light workout detail cards have readable values', () => {
@@ -65,4 +65,29 @@ test('account refresh reapplies preferences and light workout detail cards have 
   for (const cls of ['.cj107-metric', '.cj107-metric b', '.cj107-metric span', '.tcv3-session-metric'])
     assert.ok(css.includes(cls), cls);
   assert.match(css, /body #modal \.cj107-metric,[\s\S]*?background:#f4f5f8!important;color:#19191d!important/);
+});
+
+
+test('legacy default green migrates to purple without changing a saved custom accent', () => {
+  const values = new Map([['unvrsl-appearance-v1', JSON.stringify({'user-a': {theme: 'light', accent: '#30d158'}, 'user-b': {theme: 'dark', accent: '#0a84ff'}})]]);
+  const storage = {getItem: k => values.get(k) || null, setItem: (k, v) => values.set(k, v)};
+  const current = appearance(storage);
+  vm.runInContext("restoreAppearance('user-a')", current);
+  assert.equal(current.st.accent, '#bf5af2');
+  assert.equal(current.st.theme, 'light');
+  const other = appearance(storage, 'user-b');
+  vm.runInContext("restoreAppearance('user-b')", other);
+  assert.equal(other.st.accent, '#0a84ff');
+});
+
+test('green selected after migration survives reload and account refresh', () => {
+  const values = new Map();
+  const storage = {getItem: k => values.get(k) || null, setItem: (k, v) => values.set(k, v)};
+  const current = appearance(storage);
+  vm.runInContext("restoreAppearance('user-a')", current);
+  current.st.accent = '#30d158';
+  vm.runInContext('rememberAppearance()', current);
+  const reopened = appearance(storage);
+  vm.runInContext("restoreAppearance('user-a')", reopened);
+  assert.equal(reopened.st.accent, '#30d158');
 });

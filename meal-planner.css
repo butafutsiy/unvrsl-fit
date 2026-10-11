@@ -40,7 +40,7 @@
 
 .pp-nutrition{--green:var(--purple,#bf5af2)}.mp-public-modal .btn.primary{color:#fff}.mp-protocol-options{flex-wrap:nowrap}.mp-protocol-options button{min-width:0;padding:9px 4px;font-size:11px;word-break:normal;overflow-wrap:normal}.mp-protocol .mp-head{flex-wrap:wrap}.mp-guide{display:block;margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:12px;color:var(--green);font-size:12px;text-decoration:none}.mp-metrics span{line-height:1.5;font-variant-numeric:tabular-nums}.mp-plan-metrics span{line-height:1.5}.mp-public-modal .mp-protocol-options button[aria-pressed="true"]{background:rgba(191,90,242,.1)}
 
-/* v482: energy gets a full row, macro ranges keep equal columns and aligned tracks. */
+/* v483: energy gets a full row, macro ranges keep equal columns and aligned tracks. */
 #mealPlannerRoot{overflow-wrap:break-word}
 #mealPlannerRoot .mp-intro{margin-bottom:12px;gap:10px}
 #mealPlannerRoot .mp-intro strong{font-size:16px;line-height:1.3}

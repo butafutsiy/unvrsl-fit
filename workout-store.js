@@ -118,7 +118,7 @@
           nextSuggestions: {},
           current: null,
           week: 1,
-          accent: "#30d158",
+          accent: "#bf5af2",
           theme: "dark",
           body: state.body || "male",
           created: now(),

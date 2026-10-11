@@ -11,23 +11,22 @@ const BASEWORDS=['присед','жим лёжа','тяга штанги','ру�
 const ROUTINES=window.UNVRSL_ROUTINES||[];
 const rmap=new Map(ROUTINES.map(r=>[`${r.w}-${r.c}`,r]));
 const CYCLE_START='2026-08-31';
-const COLORS=['#30d158','#0a84ff','#ff9f0a','#bf5af2','#ff375f','#ff453a','#64d2ff','#ffd60a'];
+const COLORS=['#bf5af2','#30d158','#0a84ff','#ff9f0a','#ff375f','#ff453a','#64d2ff','#ffd60a'];
 let viewDate=new Date();
 let timerId=null,timerEnd=0;
 function savedAppearance(ownerId){try{const all=JSON.parse(localStorage.getItem(APPEARANCE_KEY)||'{}');return all?.[String(ownerId||'local')]||null}catch(_){return null}}
-function restoreAppearance(ownerId){const choice=savedAppearance(ownerId);if(choice?.theme==='light'||choice?.theme==='dark')st.theme=choice.theme;if(COLORS.includes(choice?.accent))st.accent=choice.accent;applyAccent();applyTheme()}
-function rememberAppearance(){try{const owner=String(window.cloud?.user?.id||st.accountOwnerId||'local');const all=JSON.parse(localStorage.getItem(APPEARANCE_KEY)||'{}');all[owner]={theme:st.theme,accent:st.accent};localStorage.setItem(APPEARANCE_KEY,JSON.stringify(all))}catch(error){console.warn('Appearance preference unavailable',error)}}
-function loadState(){for(const key of [KEY,OLDKEY]){try{const value=JSON.parse(localStorage.getItem(key));if(value&&typeof value==='object')return value}catch(e){}}return {bw:[],goal:null,sessions:[],current:null,week:1,accent:'#30d158',body:'male',theme:'dark',created:Date.now()}}
+function restoreAppearance(ownerId){const choice=savedAppearance(ownerId);if(choice?.theme==='light'||choice?.theme==='dark')st.theme=choice.theme;st.accent=COLORS.includes(choice?.accent)?choice.accent:(COLORS.includes(st.accent)?st.accent:'#bf5af2');if(st.accent==='#30d158'&&choice?.defaultAccentVersion!==2)st.accent='#bf5af2';applyAccent();applyTheme();rememberAppearance(ownerId||'local')}
+function rememberAppearance(ownerId){try{const owner=String(ownerId||window.cloud?.user?.id||st.accountOwnerId||'local');const all=JSON.parse(localStorage.getItem(APPEARANCE_KEY)||'{}');all[owner]={theme:st.theme,accent:st.accent,defaultAccentVersion:2};localStorage.setItem(APPEARANCE_KEY,JSON.stringify(all))}catch(error){console.warn('Appearance preference unavailable',error)}}
+function loadState(){for(const key of [KEY,OLDKEY]){try{const value=JSON.parse(localStorage.getItem(key));if(value&&typeof value==='object')return value}catch(e){}}return {bw:[],goal:null,sessions:[],current:null,week:1,accent:'#bf5af2',body:'male',theme:'dark',created:Date.now()}}
 const workoutRegistry=WorkoutDomain.registry(window.UNVRSL_EXERCISES||[]);
 const workoutStore=WorkoutStore.create(localStorage);
 let st=loadState();
 WorkoutDomain.migrate(st,workoutRegistry);workoutStore.restore(st);timerEnd=st.current?.timerEnd||0;
 Object.defineProperty(window,'st',{configurable:true,get:()=>st,set:value=>{st=value;workoutStore.restore(st);restoreAppearance(st.accountOwnerId)}});
 if(!Array.isArray(st.bw))st.bw=[];if(!Array.isArray(st.sessions))st.sessions=[];if(!st.week)st.week=1;
-if(st.accountOwnerId&&!savedAppearance(st.accountOwnerId))rememberAppearance();
 restoreAppearance(st.accountOwnerId);try{save()}catch(error){console.warn('Local persistence unavailable',error)}
 function save(options={}){if(st.current){st.current.userId=st.current.userId||window.cloud?.user?.id||null;const snapshot=window.workoutTimerSnapshot?.();if(snapshot&&snapshot.workoutId===String(st.current.id)){st.current.timer=snapshot;st.current.timerEnd=snapshot.end}else if(!st.current.timer)st.current.timerEnd=timerEnd;if(document.querySelector('#start.active'))st.current.scrollY=window.scrollY||0}if(options.draftOnly){workoutStore.checkpoint(st);return true}return workoutStore.save(st)}
-function applyAccent(){document.documentElement.style.setProperty('--green',st.accent||'#30d158')}
+function applyAccent(){const accent=COLORS.includes(st.accent)?st.accent:'#bf5af2';for(const token of ['--green','--green2','--accent'])document.documentElement.style.setProperty(token,accent)}
 function applyTheme(){const theme=st.theme==='light'?'light':'dark';document.documentElement.dataset.theme=theme;document.documentElement.style.colorScheme=theme;const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=theme==='light'?'#f4f5f7':'#050505';const scheme=document.querySelector('meta[name="color-scheme"]');if(scheme)scheme.content=theme}
 function esc(x){return String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function iso(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
