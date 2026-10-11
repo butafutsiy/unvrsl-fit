@@ -95,6 +95,7 @@
   const fallbackId=prefix=>`${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
   function normalizeProgram(program,idFactory=fallbackId){
     if(!program||typeof program!=='object')program={};
+    if(typeof window!=='undefined')window.upgradeBuiltinEngineCycleV501?.(program,idFactory);
     program.id=program.id==null||program.id===''?idFactory('prog'):String(program.id);
     program.name=String(program.name||'Программа');
     if(!Array.isArray(program.weeks))program.weeks=[];

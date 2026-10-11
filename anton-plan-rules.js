@@ -27,7 +27,7 @@
  upgradeAll();setTimeout(upgradeAll,1000);
 
  const oldPrescription=window.prescriptionText;
- if(typeof oldPrescription==='function')window.prescriptionText=function(e){if(e?.displayPrescription)return e.displayPrescription;return oldPrescription(e)};
+ if(typeof oldPrescription==='function')window.prescriptionText=function(e){if(e?.displayPrescription)return e.displayPrescription;return oldPrescription.apply(this,arguments)};
 
  function groupDayExercises(d){const out=[];let i=0;const a=d.ex||[];while(i<a.length){const e=a[i];if(e.superGroup){const items=[];let j=i;while(j<a.length&&a[j].superGroup===e.superGroup){items.push(a[j]);j++}out.push({type:'group',label:e.superLabel,items,transition:items.slice(0,-1).map(x=>x.transitionLabel||String(x.transitionSec||'')).filter(Boolean).join(' / '),after:e.afterGroupRestLabel||String(e.afterGroupRestSec||'')});i=j}else{out.push({type:'single',items:[e]});i++}}return out}
  const oldProgramDayCard=window.programDayCard;

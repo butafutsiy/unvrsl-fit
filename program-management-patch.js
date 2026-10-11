@@ -31,7 +31,7 @@
   if(!st.primaryProgramId)st.primaryProgramId=BUILTIN;
   if(!st.primaryProgramWeeks||typeof st.primaryProgramWeeks!=='object')st.primaryProgramWeeks={};
 
-  function customProgram(id){return (Array.isArray(st.programs)?st.programs:[]).find(p=>p&&!p.archived&&String(p.id)===String(id))||null}
+  function customProgram(id){const p=(Array.isArray(st.programs)?st.programs:[]).find(p=>p&&!p.archived&&String(p.id)===String(id))||null;return p&&typeof ensureProgramShape==='function'?ensureProgramShape(p):p}
   function validPrimary(id){return String(id)===BUILTIN||!!customProgram(id)}
   function primaryId(){if(!validPrimary(st.primaryProgramId))st.primaryProgramId=BUILTIN;return String(st.primaryProgramId||BUILTIN)}
 
@@ -100,7 +100,7 @@
   };
   window.previewPrimaryProgramDay=function(pid,wi,di){
     const p=customProgram(pid),d=p?.weeks?.[wi]?.days?.[di];if(!p||!d)return;
-    const lines=(d.ex||[]).map(e=>`<div class="program-ex"><b>${esc(e.n||'Упражнение')}</b><div class="muted small">${typeof prescriptionText==='function'?esc(prescriptionText(e)):''}${e.rpe?` · RPE ${e.rpe}`:''}${e.tempo?` · темп ${esc(e.tempo)}`:''}${e.rest?` · отдых ${e.rest} сек`:''}</div></div>`).join('');
+    const lines=(d.ex||[]).map(e=>`<div class="program-ex"><b>${esc(e.n||'Упражнение')}</b><div class="muted small">${window.programExerciseDetails?window.programExerciseDetails(p.id,wi,e):esc(prescriptionText(e,p.id,wi))}</div></div>`).join('');
     modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${esc(d.name||'Тренировка')}</h2><div class="muted">${esc(p.name||'Программа')} · W${wi+1}</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div>${lines||''}${window.conditioningPreviewHtml?.(d)||''}${!lines&&!d.conditioning?.length?'<div class="card muted">Упражнения не добавлены.</div>':''}<button class="btn primary full" data-program-editor-start="1" style="margin-top:16px" onclick="return programStartFromEditorV386(event,'${p.id}',${wi},${di})">Старт</button>`)
   };
 

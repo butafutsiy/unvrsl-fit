@@ -49,14 +49,15 @@
     return {exercises:[...sources.values()],cardio};
   }
 
-  W.buildBuiltinEngineCycle=function(startDate=iso(),priority='strength',testWeek=true){
+  W.buildBuiltinEngineCycle=function(startDate=iso(),priority='strength',testWeek=true,total=10){
     const firstDays=ROUTINES.filter(r=>r.w===1);
     if(!firstDays.length)throw new Error('Встроенный план ещё загружается');
-    const recipes=Array.from({length:8},(_,i)=>sourcesForWeek(i+1,firstDays));
+    const profiles=WorkoutDomain.cycleProfiles(total,{priority,testWeek});
+    const recipes=profiles.map(profile=>sourcesForWeek(profile.sourceWeek,firstDays));
     // W8 uses W1 exercise identities; old test/back-off labels are not recipes
     // for the new two-preparation-plus-single test protocol.
-    recipes[7].exercises=copy(recipes[0].exercises);
-    const cycle=WorkoutDomain.generateCycle({weeks:8,daysPerWeek:firstDays.length,startDate,
+    if(profiles.at(-1).test)recipes.at(-1).exercises=copy(recipes[0].exercises);
+    const cycle=WorkoutDomain.generateCycle({weeks:total,daysPerWeek:firstDays.length,startDate,
       priority,testWeek,goal:'Прогресс силы и мышечной массы',
       exercises:recipes[0].exercises,weekExercises:recipes.map(x=>x.exercises)});
     cycle.weeks.forEach((week,wi)=>week.days.forEach((day,di)=>{
@@ -65,7 +66,7 @@
       day.ex.sort((a,b)=>(a.builtinOrderByDay?.[di]??999)-(b.builtinOrderByDay?.[di]??999));
       day.ex.forEach(e=>{
         e.id=uid('pex');
-        if(e.kind==='cardio')return;
+        if(e.kind==='cardio'){e.rpe=5;e.tempo='равномерный';e.rest=0;delete e.displayPrescription;return;}
         if(e.kind==='base')e.kind='compound';
         const profile=week.weeklyLoadProfile,spec=profile[e.kind==='isolation'?'isolation':'base'];
         e.targetIntensityMin=spec.pct[0];e.targetIntensityMax=spec.pct[1];
@@ -78,8 +79,75 @@
         }
       });
     }));
-    return {id:uid('prog'),name:'Мой 8-недельный цикл · новый движок',created:Date.now(),updated:Date.now(),builtinEngineTemplate:true,...cycle};
+    return {id:uid('prog'),name:`Мой ${total}-недельный цикл · новый движок`,created:Date.now(),updated:Date.now(),builtinEngineTemplate:true,engineCycleRevision:501,...cycle};
   };
+  // Upgrade only copies explicitly created by this adapter. Persisted IDs and
+  // performed sessions remain stable; repeated source weeks receive fresh IDs.
+  W.upgradeBuiltinEngineCycleV501=function(program,idFactory=uid){
+    if(!program?.builtinEngineTemplate||program.engineCycleRevision>=501||program.weeks?.length!==8)return false;
+    const before=copy(program),options=before.cycleOptions||{},first=before.weeks[0];
+    if(!first?.days?.length)return false;
+    const profiles=WorkoutDomain.cycleProfiles(10,{priority:options.priority||'strength',testWeek:options.testWeek!==false});
+    const collect=week=>{
+      const sources=new Map();
+      week.days.forEach((day,di)=>(day.ex||[]).forEach((item,order)=>{
+        const e=copy(item),key=identity(e),existing=sources.get(key);
+        if(existing){existing.dayIndices.push(di);existing.builtinOrderByDay[di]=order;return;}
+        e.dayIndices=[di];e.builtinOrderByDay={[di]:order};
+        sources.set(key,e);
+      }));
+      return [...sources.values()];
+    };
+    const recipes=profiles.map(pr=>collect(before.weeks[pr.test?0:pr.sourceWeek-1]));
+    const cycle=WorkoutDomain.generateCycle({weeks:10,daysPerWeek:first.days.length,
+      startDate:options.startDate||iso(),priority:options.priority||'strength',testWeek:options.testWeek!==false,
+      goal:options.goal||'Прогресс силы и мышечной массы',exercises:recipes[0],weekExercises:recipes});
+    const used=new Set();
+    cycle.weeks.forEach((week,wi)=>{
+      const oldWeek=before.weeks[profiles[wi].sourceWeek-1],repeat=used.has(profiles[wi].sourceWeek);
+      used.add(profiles[wi].sourceWeek);
+      week.days.forEach((day,di)=>{
+        const oldDay=oldWeek.days[di];day.name=oldDay?.name||first.days[di]?.name||day.name;
+        day.id=!repeat&&oldDay?.id?oldDay.id:idFactory('day');
+        if(oldDay?.conditioning)day.conditioning=copy(oldDay.conditioning);
+        day.ex.sort((a,b)=>(a.builtinOrderByDay?.[di]??999)-(b.builtinOrderByDay?.[di]??999));
+        day.ex.forEach(e=>{
+          const original=oldDay?.ex?.find(x=>identity(x)===identity(e));
+          e.id=!repeat&&original?.id?original.id:idFactory('pex');
+          // Each placement retains its authored or edited kilogram values.
+          if(original){
+            e.sets.forEach((set,i)=>{set.w=original.sets?.[i]?.w??original.sets?.[0]?.w??set.w;});
+            if(original.parameterOverrides?.version){
+              e.parameterOverrides=copy(original.parameterOverrides);e.reps=copy(original.reps||e.reps);
+              for(const key of ['effortSourceMode','effortType','rpeMin','rpeMax','tempoMode','tempo','restMode','rest','weightMode'])if(original[key]!=null)e[key]=original[key];
+            }
+          }
+          if(e.kind==='cardio'){
+            if(!e.parameterOverrides?.version){e.rpe=5;e.tempo='равномерный';e.rest=0;delete e.displayPrescription;}
+            return;
+          }
+          const spec=week.weeklyLoadProfile[e.kind==='isolation'?'isolation':'base'];
+          e.targetIntensityMin=spec.pct[0];e.targetIntensityMax=spec.pct[1];
+          if(e.method==='STANDARD'){
+            if(e.parameterOverrides?.tempo?.mode!=='manual')e.tempo=week.weeklyLoadProfile.tempo;
+            if(e.parameterOverrides?.rest?.mode!=='manual'){
+              const rest=e.kind==='isolation'?week.weeklyLoadProfile.isoRest:week.weeklyLoadProfile.baseRest;
+              e.rest=(rest[0]+rest[1])/2;e.sets.forEach(set=>set.rest=e.rest);
+            }
+          }
+        });
+      });
+    });
+    program.previousCycle={weeks:before.weeks,cycleOptions:options,cycleSources:before.cycleSources||[],cycleWeekSources:before.cycleWeekSources||[],name:before.name};
+    Object.assign(program,cycle,{engineCycleRevision:501,updated:Date.now(),updatedAt:Date.now()});
+    if(!program.nameEdited&&/^Мой 8-недельный цикл/.test(program.name))program.name=program.name.replace('8-недельный','10-недельный');
+    queueMicrotask(()=>{try{save()}catch(error){console.warn('Personal cycle migration',error)}});
+    return true;
+  };
+  const upgradeSaved=()=>{for(const p of st.programs||[])W.upgradeBuiltinEngineCycleV501(p);};
+  ['unvrsl:storage-hydrated','unvrsl:app-ready','unvrsl:cloud-ready','unvrsl:history-updated'].forEach(event=>W.addEventListener(event,upgradeSaved));
+  setTimeout(upgradeSaved,0);
+
   W.builtinEngineWeekRecipes=function(program,firstSources){
     if(!program.builtinEngineTemplate||program.cycleWeekSources?.length!==program.weeks.length)return undefined;
     const movement=e=>[e.exerciseId||e.sourceId||e.n,e.equipmentProfileId||'',e.techniqueId||'',e.loadType||''].join('|');

@@ -43,11 +43,11 @@
   }
   const cloneProfile=p=>JSON.parse(JSON.stringify(p));
   function cycleProfiles(total,{testWeek=true,priority='strength'}={}) {
-    const templates={3:[1,3,8],4:[1,2,4,8],6:[1,2,3,4,7,8],8:[1,2,3,4,5,6,7,8],10:[1,2,3,4,1,2,3,6,7,8],11:[1,2,3,4,1,2,3,5,6,7,8],12:[1,2,3,4,1,2,3,4,5,6,7,8]};
+    const templates={3:[1,3,8],4:[1,2,4,8],6:[1,2,3,4,7,8],8:[1,2,3,4,5,6,7,8],10:[1,2,3,4,2,3,5,6,7,8],11:[1,2,3,4,1,2,3,5,6,7,8],12:[1,2,3,4,1,2,3,4,5,6,7,8]};
     if(!templates[total])throw new Error('Поддерживаются циклы на 3, 4, 6, 8, 10, 11 или 12 недель');
     return templates[total].map((n,i)=>{
       if(!testWeek&&n===8)n=priority==='hypertrophy'?3:7;
-      const p=cloneProfile(weekProfiles[n]);p.week=i+1;
+      const p=cloneProfile(weekProfiles[n]);p.week=i+1;p.sourceWeek=n;
       // The canonical eight-week sequence is preserved; priority controls the
       // position inside each compatible load corridor, never a second engine.
       p.priority=priority;return p;
@@ -108,6 +108,9 @@
           const count=Math.floor(budget/selected.length)+(j<budget%selected.length?1:0);if(!count)return;
           const e=cloneProfile(source);e.kind=kind;e.cycleOriginalMethod=source.cycleOriginalMethod||source.method||'STANDARD';e.cycleOriginalSets=cloneProfile(source.cycleOriginalSets||source.sets||[]);e.method=p.deload?'STANDARD':e.cycleOriginalMethod;e.weeklySets=budget;e.cycleManaged=true;
           e.reps={mode:'auto',min:null,max:null};e.parameterOverrides={...e.parameterOverrides,reps:{mode:'auto'},effort:{mode:'auto'}};
+          e.targetIntensityMin=spec.pct[0];e.targetIntensityMax=spec.pct[1];
+          e.rpe=(spec.rpe[0]+spec.rpe[1])/2;
+          delete e.repLabel;delete e.rpeLabel;delete e.displayPrescription;
           e.sets=Array.from({length:count},(_,k)=>({...source.sets?.[k],w:number(source.sets?.[k]?.w??source.sets?.[0]?.w)??0,r:spec.reps[0],targetRepMin:spec.reps[0],targetRepMax:spec.reps[1],targetRpeMin:spec.rpe[0],targetRpeMax:spec.rpe[1],allowFailure:false}));
            if(!p.deload&&!p.test&&e.method!=='STANDARD'){e.sets=cloneProfile(e.cycleOriginalSets);e.cycleManaged=false;e.reps={mode:'method',min:null,max:null};}
           if(p.test){e.method='STANDARD';e.sets.forEach((s,k)=>Object.assign(s,k===count-1?{role:'test_attempt',targetRepMin:1,targetRepMax:1,r:1,targetRpeMin:9.5,targetRpeMax:10,allowFailure:true}:{role:'test_preparation',targetRepMin:2,targetRepMax:4}));}

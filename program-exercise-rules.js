@@ -81,7 +81,7 @@
   function weeklyDefaults(pid,wi,kind){
     const p=programById(pid),w=p?.weeks?.[Number(wi)]||{},profile=typeof window.unvrslWeekLoadProfileV263==='function'?window.unvrslWeekLoadProfileV263(p,Number(wi),true):null;
     const canonical=w.weeklyLoadProfile?.[kind==='isolation'?'isolation':'base'];
-    if(canonical)return {week:Number(w.n)||Number(wi)+1,reps:canonical.reps,rpe:canonical.rpe,rir:canonical.rir,tempo:w.weeklyLoadProfile.tempo||recommendedTempo(kind),rest:kind==='isolation'?w.weeklyLoadProfile.isoRest:w.weeklyLoadProfile.baseRest,intensity:canonical.pct};
+    if(canonical&&!w.loadProfileManual)return {week:Number(w.n)||Number(wi)+1,reps:w.repGuidanceManual?orderedPair(kind==='isolation'?w.isolationRepMin:w.baseRepMin,kind==='isolation'?w.isolationRepMax:w.baseRepMax,canonical.reps):canonical.reps,rpe:canonical.rpe,rir:canonical.rir,tempo:w.weeklyLoadProfile.tempo||recommendedTempo(kind),rest:kind==='isolation'?w.weeklyLoadProfile.isoRest:w.weeklyLoadProfile.baseRest,intensity:canonical.pct};
     const fallbackReps=repDefaultsFromIntensity(w,kind),reps=orderedPair(kind==='isolation'?(profile?.isolationRepMin??w.isolationRepMin):(profile?.baseRepMin??w.baseRepMin),kind==='isolation'?(profile?.isolationRepMax??w.isolationRepMax):(profile?.baseRepMax??w.baseRepMax),fallbackReps);
     const rpe=orderedPair(profile?.rpeMin??w.rpeMin,profile?.rpeMax??w.rpeMax,[7,8]),rir=[Math.max(0,10-rpe[1]),Math.max(0,10-rpe[0])];
     const rest=orderedPair(kind==='isolation'?(profile?.isolationRestMin??w.isolationRestMin):(profile?.baseRestMin??w.baseRestMin),kind==='isolation'?(profile?.isolationRestMax??w.isolationRestMax):(profile?.baseRestMax??w.baseRestMax),[autoRest(kind,'STANDARD'),autoRest(kind,'STANDARD')]);
@@ -101,7 +101,7 @@
   function manualValue(e,key,name,fallback){const v=e?.parameterOverrides?.[key]?.[name];return v!=null?v:fallback}
   function resolvedParameters(pid,wi,e={}){
     if(!e.reps&&window.programModel)e=programModel.normalizeExercise(JSON.parse(JSON.stringify(e)));
-    const kind=e.kind||inferKind(e.n||''),defaults=weeklyDefaults(pid,wi,kind),method=String(e.method||'STANDARD').toUpperCase(),overrides=e.parameterOverrides||{},canonical=e.reps||{};
+    const kind=WorkoutDomain.exerciseKind(e,workoutRegistry)==='isolation'?'isolation':'compound',defaults=weeklyDefaults(pid,wi,kind),method=String(e.method||'STANDARD').toUpperCase(),overrides=e.parameterOverrides||{},canonical=e.reps||{};
     const repMode=method==='UNVRSL'||method==='SLDR'?'method':legacyMode(e,'reps',false),repManual=orderedPair(canonical.min,canonical.max,defaults.reps),reps=repMode==='manual'?repManual:defaults.reps;
     const effortMode=legacyMode(e,'effort',false),effortType=String(overrides.effort?.type||e.effortType||'rpe').toLowerCase()==='rir'?'rir':'rpe';
     const ownRpe=orderedPair(manualValue(e,'effort','rpeMin',e.rpeMin??e.rpe),manualValue(e,'effort','rpeMax',e.rpeMax??e.rpe),defaults.rpe),ownRir=orderedPair(manualValue(e,'effort','rirMin',e.rirMin),manualValue(e,'effort','rirMax',e.rirMax),defaults.rir);

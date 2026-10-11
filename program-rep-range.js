@@ -5,17 +5,6 @@
   W.__unvrslProgramRepAuthorityV373=true;
   W.__unvrslProgramRepRangeV266=true;
 
-  const PRESETS=[
-    {hi:65,base:[12,15],iso:[15,20]},
-    {hi:70,base:[10,12],iso:[12,15]},
-    {hi:75,base:[8,10],iso:[12,15]},
-    {hi:80,base:[6,8],iso:[10,12]},
-    {hi:85,base:[5,7],iso:[8,12]},
-    {hi:88,base:[4,6],iso:[8,10]},
-    {hi:90,base:[3,5],iso:[6,10]},
-    {hi:95,base:[2,3],iso:[8,12]},
-    {hi:101,base:[1,3],iso:[8,12]}
-  ];
   const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
   const state=()=>{try{return typeof st!=='undefined'?st:W.st}catch(_){return W.st}};
   const saveState=()=>{try{if(typeof save==='function')save();else W.save?.()}catch(_){}};
@@ -40,8 +29,8 @@
     const manualWeek=w.repGuidanceManual===true;
     const a=kind==='isolation'?[N(w.isolationRepMin),N(w.isolationRepMax)]:[N(w.baseRepMin),N(w.baseRepMax)];
     if(a[0]!=null&&a[1]!=null&&(manualWeek||w.repGuidanceRevision!=null))return[Math.min(a[0],a[1]),Math.max(a[0],a[1])];
-    const b=band(w),mid=(b[0]+b[1])/2,pr=PRESETS.find(x=>mid<=x.hi)||PRESETS.at(-1);
-    return(kind==='isolation'?pr.iso:pr.base).slice()
+    const canonical=w.weeklyLoadProfile?.[kind==='isolation'?'isolation':'base'];
+    return (canonical?.reps||W.WorkoutDomain.bandPrescription(band(w),kind==='isolation').reps).slice()
   }
   function ensureStyle(){
     if(D.getElementById('pr373-style'))return;
@@ -54,10 +43,7 @@
     if(typeof cur!=='function'||cur.__pr373)return false;
     const wrapped=function(e){
       const s=e?.sets||[],method=String(e?.method||'STANDARD').toUpperCase();if(!s.length)return cur.apply(this,arguments);
-      let resolved=null;try{const u=typeof programUi!=='undefined'?programUi:null,p=u?.pid?program(u.pid):null;if(p&&typeof W.programResolveExerciseParametersV381==='function')resolved=W.programResolveExerciseParametersV381(p.id,Number(u.week)||0,e)}catch(_){ }
-      const repMin=resolved?.reps?.min??N(e.repMin)??N(s[0]?.r)??0,repMax=resolved?.reps?.max??N(e.repMax)??N(s[0]?.r)??0,rpe=resolved?.effort?label(resolved.effort.rpeMin,resolved.effort.rpeMax):e.rpe||8,weight=resolved?.weight?.mode==='auto'?'Авто':`${s[0]?.w||0} кг`;
-      if(method==='STANDARD')return `${s.length}×${label(repMin,repMax)} · ${weight} · RPE ${rpe}`;
-      if(method==='FST-7')return `7×${label(repMin,repMax)} · ${weight} · RPE ${rpe}`;
+      if(e.kind==='cardio'||e.workMode==='timer'||e.loadType==='time'||method==='STANDARD'||method==='FST-7')return cur.apply(this,arguments);
       if(method==='DS'&&N(e.dsRepStart)!=null&&N(e.dsRepEnd)!=null)return `${s.length} ступеней · ${label(e.dsRepStart,e.dsRepEnd,true)} · ${s[0]?.w||0} кг`;
       if(method==='SLDR'&&e.sldrPattern)return `${e.sldrPattern} · ${s[0]?.w||0} кг · 15 сек`;
       return cur.apply(this,arguments)
@@ -66,17 +52,20 @@
   }
 
   function sourceTargets(p,wi,di,current){
-    const d=p?.weeks?.[Number(wi)]?.days?.[Number(di)];if(!d||!current)return false;let cursor=0;
+    const week=p?.weeks?.[Number(wi)],d=week?.days?.[Number(di)];if(!d||!current)return false;
+    if(current.weeklyLoadProfile&&week.weeklyLoadProfile&&JSON.stringify(current.weeklyLoadProfile)!==JSON.stringify(week.weeklyLoadProfile))return false;
+    let cursor=0;
     const snapshot=()=>JSON.stringify((current.ex||[]).map(e=>({rpe:[e.targetRpeMin,e.targetRpeMax],sets:(e.set||[]).map(s=>[s.targetRepMin,s.targetRepMax,s.targetRepLabel,s.targetRpeMin,s.targetRpeMax,s.repMode,s.r])})));
     const before=snapshot();
     (d.ex||[]).forEach(block=>{
+      if(block.kind==='cardio'||block.workMode==='timer'||block.loadType==='time'){cursor++;return;}
       const method=String(block?.method||'STANDARD').toUpperCase(),auto=autoRange(p,wi,block),sets=block?.sets||[];
       const resolved=typeof W.programResolveExerciseParametersV381==='function'?W.programResolveExerciseParametersV381(p.id,wi,block):null;
       const rpeMin=resolved?.effort?.rpeMin,rpeMax=resolved?.effort?.rpeMax;
       if(method==='STANDARD'||method==='FST-7'){
         const e=current.ex?.[cursor++];if(!e)return;const lo=resolved?.reps?.min??(block.repMode==='manual'?N(block.repMin):null)??auto[0],hi=resolved?.reps?.max??(block.repMode==='manual'?N(block.repMax):null)??auto[1],lab=label(lo,hi);
         if(rpeMin!=null&&rpeMax!=null){e.targetRpeMin=rpeMin;e.targetRpeMax=rpeMax;e.targetRirMin=Math.max(0,10-rpeMax);e.targetRirMax=Math.max(0,10-rpeMin)}
-        (e.set||[]).forEach(set=>{set.targetRepMin=lo;set.targetRepMax=hi;set.targetRepLabel=lab;set.repMode=resolved?.reps?.mode||block.repMode||'auto';if(rpeMin!=null&&rpeMax!=null){set.targetRpeMin=rpeMin;set.targetRpeMax=rpeMax;set.targetRirMin=Math.max(0,10-rpeMax);set.targetRirMax=Math.max(0,10-rpeMin)}if(!set.ok&&!set.manualFields?.r&&!set.repEntered)set.r=''})
+        (e.set||[]).forEach((set,si)=>{const src=sets[si],managed=block.cycleManaged&&src?.targetRepMin!=null,autoReps=managed&&resolved?.reps?.mode==='auto',autoEffort=managed&&resolved?.effort?.mode==='auto',low=autoReps?src.targetRepMin:lo,high=autoReps?src.targetRepMax:hi,effortLo=autoEffort?(src.targetRpeMin??rpeMin):rpeMin,effortHi=autoEffort?(src.targetRpeMax??rpeMax):rpeMax;set.targetRepMin=low;set.targetRepMax=high;set.targetRepLabel=label(low,high);set.repMode=resolved?.reps?.mode||block.repMode||'auto';if(effortLo!=null&&effortHi!=null){set.targetRpeMin=effortLo;set.targetRpeMax=effortHi;set.targetRirMin=Math.max(0,10-effortHi);set.targetRirMax=Math.max(0,10-effortLo)}if(!set.ok&&!set.manualFields?.r&&!set.repEntered)set.r=''})
       }else{
         sets.forEach((src)=>{
           const e=current.ex?.[cursor++],set=e?.set?.[0];if(!set)return;
@@ -98,6 +87,7 @@
   function installBegin(){
     let cur=W.beginProgramDay;try{if(typeof beginProgramDay==='function')cur=beginProgramDay}catch(_){ }
     if(typeof cur!=='function'||cur.__pr373)return false;
+    for(let fn=cur,depth=0;fn&&depth<16;depth++,fn=fn.__te205Base||fn.__pi261Base){if(fn.__pr373)return false;}
     const wrapped=function(pid,wi,di){const out=cur.apply(this,arguments),s=state()?.current,p=program(pid);if(s&&p&&String(s.programId)===String(pid)){if(sourceTargets(p,wi,di,s)){saveState();W.dispatchEvent?.(new CustomEvent('unvrsl:prescription-updated'))}try{W.startPage?.()}catch(_){ }}return out};
     wrapped.__pr373=true;wrapped.__pr373Base=cur;W.beginProgramDay=wrapped;try{beginProgramDay=wrapped}catch(_){ }return true
   }

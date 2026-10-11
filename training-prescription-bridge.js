@@ -5,6 +5,7 @@
   W.__unvrslTrainingPrescriptionBridgeV288=true;
 
   const SPECIAL=/UNVRSL|SLDR|\bDS\b|FST-?7/i;
+  const timed=ex=>ex?.kind==='cardio'||ex?.mode==='cardio'||ex?.mode==='timer'||ex?.loadType==='time';
   const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const base=n=>String(n||'').split(' — ')[0].trim();
@@ -48,7 +49,7 @@
     if(out.size)cache.set(key,out);return out.size?out:null
   }
   function explicitTargetRpe(ex,set,cur){return [N(set?.targetRpe),N(ex?.targetRpe),N(ex?.rpeTarget),N(ex?.target),N(ex?.rpe),N(cur?.target),8].find(x=>x!=null&&x>0)||8}
-  function programWeek(cur){const p=programFor(cur);if(!p)return null;const wi=Math.max(0,(N(cur?.programWeekNumber)||N(cur?.w)||1)-1);return{p,wi,w:p?.weeks?.[wi]||null}}
+  function programWeek(cur){const p=programFor(cur);if(!p)return null;const dayWeek=cur.programDayId?p.weeks?.findIndex(w=>w.days?.some(d=>String(d.id)===String(cur.programDayId))):-1,wi=dayWeek>=0?dayWeek:Math.max(0,(N(cur?.programWeekNumber)||N(cur?.w)||1)-1);return{p,wi,w:p?.weeks?.[wi]||null}}
   function programWeekTarget(cur){const ctx=programWeek(cur),w=ctx?.w,a=N(cur?.programWeekRpeMin??w?.rpeMin??w?.weekRpeMin),b=N(cur?.programWeekRpeMax??w?.rpeMax??w?.weekRpeMax);if(!(a>0)||!(b>0))return null;return Math.round(((Math.min(a,b)+Math.max(a,b))/2)*2)/2}
   function sourceBlock(cur,ex){
     const ctx=programWeek(cur),w=ctx?.w;if(!w)return null;let days=w.days||[],day=days.find(d=>String(d?.name||'')===String(cur?.c||''));if(day)days=[day,...days.filter(d=>d!==day)];const id=String(ex?.sourceId||''),bn=base(ex?.n).toLowerCase();
@@ -63,14 +64,14 @@
       const r1=N(w.rpeMin??w.weekRpeMin),r2=N(w.rpeMax??w.weekRpeMax);if(r1>0&&r2>0){if(N(cur.programWeekRpeMin)!==Math.min(r1,r2)){cur.programWeekRpeMin=Math.min(r1,r2);changed=true}if(N(cur.programWeekRpeMax)!==Math.max(r1,r2)){cur.programWeekRpeMax=Math.max(r1,r2);changed=true}cur.programWeekRirMin=Math.max(0,10-Math.max(r1,r2));cur.programWeekRirMax=Math.max(0,10-Math.min(r1,r2))}
     }
     const weekTarget=programWeekTarget(cur);if(weekTarget!=null&&Math.abs((N(cur.target)||0)-weekTarget)>.001){cur.target=weekTarget;changed=true}
-    (cur.ex||[]).forEach(ex=>{if(ex?.mode==='cardio'||SPECIAL.test(String(ex?.n||'')))return;const src=sourceBlock(cur,ex),first=src?.sets?.[0]||{};(ex.set||[]).forEach((set,i)=>{const ss=src?.sets?.[i]||first,lo=N(ss?.targetRepMin??ss?.rMin??src?.repMin??set?.targetRepMin??set?.rMin),hi=N(ss?.targetRepMax??ss?.rMax??src?.repMax??set?.targetRepMax??set?.rMax);if(lo>0){if(N(set.targetRepMin)!==lo){set.targetRepMin=lo;changed=true}const top=hi>=lo?hi:lo;if(N(set.targetRepMax)!==top){set.targetRepMax=top;changed=true}if(!repsAreManual(set)&&set.r!==''){set.r='';changed=true}}})});return changed
+    (cur.ex||[]).forEach(ex=>{if(timed(ex)||SPECIAL.test(String(ex?.n||'')))return;const src=sourceBlock(cur,ex),first=src?.sets?.[0]||{},resolved=src&&W.programResolveExerciseParametersV381?.(ctx.p.id,ctx.wi,src),manualReps=resolved?.reps?.mode==='manual';(ex.set||[]).forEach((set,i)=>{const ss=src?.sets?.[i]||first,lo=manualReps?N(resolved.reps.min):N(ss?.targetRepMin??ss?.rMin??src?.repMin??set?.targetRepMin??set?.rMin),hi=manualReps?N(resolved.reps.max):N(ss?.targetRepMax??ss?.rMax??src?.repMax??set?.targetRepMax??set?.rMax);if(lo>0){if(N(set.targetRepMin)!==lo){set.targetRepMin=lo;changed=true}const top=hi>=lo?hi:lo;if(N(set.targetRepMax)!==top){set.targetRepMax=top;changed=true}if(!repsAreManual(set)&&set.r!==''){set.r='';changed=true}}})});return changed
   }
   function annotateBuiltInRanges(cur){
-    const ranges=captureBuiltInRanges(cur);if(!ranges)return false;let changed=false;(cur.ex||[]).forEach(ex=>{if(ex?.mode==='cardio'||SPECIAL.test(String(ex?.n||'')))return;const range=ranges.get(String(ex.n||'').trim())||(!/тест|back-off/i.test(ex.n||'')?ranges.get(base(ex.n)):null);if(!range)return;const[lo,hi]=range;(ex.set||[]).forEach(set=>{if(N(set.targetRepMin)!==lo){set.targetRepMin=lo;changed=true}if(N(set.targetRepMax)!==hi){set.targetRepMax=hi;changed=true}const label=lo===hi?String(lo):`${lo}–${hi}`;if(set.targetRepLabel!==label){set.targetRepLabel=label;changed=true}set.repPrescriptionSource='built_in_exact_stage_v439';if(/тест/i.test(ex.n||'')){set.role='test_attempt';set.plannedReps=lo}else if(/back-off/i.test(ex.n||'')){set.role='backoff';if(set.targetRpeMin!==7||set.targetRpeMax!==8)changed=true;set.targetRpeMin=7;set.targetRpeMax=8;}if(!repsAreManual(set)&&set.r!==''){set.r='';changed=true}})});return changed
+    const ranges=captureBuiltInRanges(cur);if(!ranges)return false;let changed=false;(cur.ex||[]).forEach(ex=>{if(timed(ex)||SPECIAL.test(String(ex?.n||'')))return;const range=ranges.get(String(ex.n||'').trim())||(!/тест|back-off/i.test(ex.n||'')?ranges.get(base(ex.n)):null);if(!range)return;const[lo,hi]=range;(ex.set||[]).forEach(set=>{if(N(set.targetRepMin)!==lo){set.targetRepMin=lo;changed=true}if(N(set.targetRepMax)!==hi){set.targetRepMax=hi;changed=true}const label=lo===hi?String(lo):`${lo}–${hi}`;if(set.targetRepLabel!==label){set.targetRepLabel=label;changed=true}set.repPrescriptionSource='built_in_exact_stage_v439';if(/тест/i.test(ex.n||'')){set.role='test_attempt';set.plannedReps=lo}else if(/back-off/i.test(ex.n||'')){set.role='backoff';if(set.targetRpeMin!==7||set.targetRpeMax!==8)changed=true;set.targetRpeMin=7;set.targetRpeMax=8;}if(!repsAreManual(set)&&set.r!==''){set.r='';changed=true}})});return changed
   }
-  function annotateEffort(cur){let changed=false;(cur?.ex||[]).forEach(ex=>{if(ex?.mode==='cardio')return;(ex.set||[]).forEach(set=>{const lo=N(set?.targetRpeMin),hi=N(set?.targetRpeMax),specified=lo!=null&&hi!=null?(lo+hi)/2:null,rpe=clamp(specified??explicitTargetRpe(ex,set,cur),1,10),rir=clamp(10-rpe,0,9);if(N(set.targetRpeResolved)!==rpe){set.targetRpeResolved=rpe;changed=true}if(N(set.targetRir)!==rir){set.targetRir=rir;changed=true}})});return changed}
+  function annotateEffort(cur){let changed=false;(cur?.ex||[]).forEach(ex=>{if(timed(ex))return;(ex.set||[]).forEach(set=>{const lo=N(set?.targetRpeMin),hi=N(set?.targetRpeMax),specified=lo!=null&&hi!=null?(lo+hi)/2:null,rpe=clamp(specified??explicitTargetRpe(ex,set,cur),1,10),rir=clamp(10-rpe,0,9);if(N(set.targetRpeResolved)!==rpe){set.targetRpeResolved=rpe;changed=true}if(N(set.targetRir)!==rir){set.targetRir=rir;changed=true}})});return changed}
   function annotateCanonical(cur){
-    const ctx=programWeek(cur),pr=ctx?.w?.weeklyLoadProfile||cur.weeklyLoadProfile;if(!pr)return false;
+    const ctx=programWeek(cur),pr=cur.weeklyLoadProfile||ctx?.w?.weeklyLoadProfile;if(!pr)return false;
     cur.weeklyLoadProfile=pr;cur.deload=!!pr.deload;cur.testWeek=!!pr.test;
     let changed=false;
     for(const ex of cur.ex||[]){

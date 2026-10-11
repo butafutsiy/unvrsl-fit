@@ -23,6 +23,7 @@
   function currentRange(cur){
     const lo=num(cur?.programWeekRpeMin),hi=num(cur?.programWeekRpeMax);
     if(lo!=null&&hi!=null)return {min:Math.min(lo,hi),max:Math.max(lo,hi)};
+    const snapshot=cur?.weeklyLoadProfile?.rpe;if(Array.isArray(snapshot))return {min:snapshot[0],max:snapshot[1]};
     const stored=storedProgramRange(cur);if(stored)return stored;
     const p=W.UNVRSL_BUILTIN_LOAD_PROFILE?.[Number(cur?.w)]?.rpe;
     if(Array.isArray(p)&&num(p[0])!=null&&num(p[1])!=null)return {min:Math.min(+p[0],+p[1]),max:Math.max(+p[0],+p[1])};
@@ -37,7 +38,7 @@
     const rpeLabel=label(range.min,range.max),rirMin=Math.max(0,10-range.max),rirMax=Math.max(0,10-range.min),rirLabel=label(rirMin,rirMax);
     const put=(o,k,v)=>{if(o[k]===v)return;o[k]=v;changed=true};
     put(cur,'targetRpeMin',range.min);put(cur,'targetRpeMax',range.max);put(cur,'targetRpeLabel',rpeLabel);put(cur,'targetRirMin',rirMin);put(cur,'targetRirMax',rirMax);put(cur,'targetRirLabel',rirLabel);
-    (cur.ex||[]).forEach(ex=>{const ownMin=num(ex?.targetRpeMin),ownMax=num(ex?.targetRpeMax),own=ownMin!=null&&ownMax!=null?{min:Math.min(ownMin,ownMax),max:Math.max(ownMin,ownMax)}:range,ownRpeLabel=label(own.min,own.max),ownRirMin=Math.max(0,10-own.max),ownRirMax=Math.max(0,10-own.min),ownRirLabel=label(ownRirMin,ownRirMax);put(ex,'targetRpeMin',own.min);put(ex,'targetRpeMax',own.max);put(ex,'targetRpeLabel',ownRpeLabel);put(ex,'targetRirMin',ownRirMin);put(ex,'targetRirMax',ownRirMax);put(ex,'targetRirLabel',ownRirLabel);(ex.set||[]).forEach(set=>{put(set,'targetRpeMin',own.min);put(set,'targetRpeMax',own.max);put(set,'targetRpeLabel',ownRpeLabel);put(set,'targetRirMin',ownRirMin);put(set,'targetRirMax',ownRirMax);put(set,'targetRirLabel',ownRirLabel)})});
+    (cur.ex||[]).forEach(ex=>{if(ex.kind==='cardio'||ex.mode==='cardio'||ex.mode==='timer'||ex.loadType==='time')return;const ownMin=num(ex?.targetRpeMin),ownMax=num(ex?.targetRpeMax),own=ownMin!=null&&ownMax!=null?{min:Math.min(ownMin,ownMax),max:Math.max(ownMin,ownMax)}:range,ownRpeLabel=label(own.min,own.max),ownRirMin=Math.max(0,10-own.max),ownRirMax=Math.max(0,10-own.min),ownRirLabel=label(ownRirMin,ownRirMax);put(ex,'targetRpeMin',own.min);put(ex,'targetRpeMax',own.max);put(ex,'targetRpeLabel',ownRpeLabel);put(ex,'targetRirMin',ownRirMin);put(ex,'targetRirMax',ownRirMax);put(ex,'targetRirLabel',ownRirLabel);(ex.set||[]).forEach(set=>{const r=setRange(cur,ex,set)||own,lo=Math.max(0,10-r.max),hi=Math.max(0,10-r.min);put(set,'targetRpeMin',r.min);put(set,'targetRpeMax',r.max);put(set,'targetRpeLabel',label(r.min,r.max));put(set,'targetRirMin',lo);put(set,'targetRirMax',hi);put(set,'targetRirLabel',label(lo,hi))})});
     if(changed){cur.rpeRangeDisplayRevision=VERSION;saveState()}return changed;
   }
   function parseIndex(input){
@@ -53,7 +54,8 @@
       if(after!==before)el.textContent=after;
     });
     D.querySelectorAll('#start .exercise').forEach(card=>{
-      card.querySelectorAll('.chip').forEach(ch=>{const t=String(ch.textContent||'').trim();if(/^RPE\s+\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?$/i.test(t))ch.textContent='RPE '+rpeText});
+      const ranges=[...card.querySelectorAll('.setrow input')].map(input=>{const idx=parseIndex(input);return idx?setRange(cur,cur.ex?.[idx.ei],cur.ex?.[idx.ei]?.set?.[idx.si]):null}).filter(Boolean);
+      if(ranges.length){const cardLabel=label(Math.min(...ranges.map(r=>r.min)),Math.max(...ranges.map(r=>r.max)));card.querySelectorAll('.chip').forEach(ch=>{const t=String(ch.textContent||'').trim();if(/^RPE\s+\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?$/i.test(t))ch.textContent='RPE '+cardLabel});}
       card.querySelectorAll('.setrow input').forEach(input=>{
         const idx=parseIndex(input);if(!idx)return;const set=cur.ex?.[idx.ei]?.set?.[idx.si],r=setRange(cur,cur.ex?.[idx.ei],set)||range;
         const kind=input.dataset.effort||input.dataset.u174Kind||(input.classList.contains('u174-rir-input')||input.classList.contains('rir-input')?'rir':((input.getAttribute('onchange')||'').includes("'rpe'")?'rpe':''));

@@ -15,7 +15,7 @@
 
   const basePrescription=window.prescriptionText;
   if(typeof basePrescription==='function'&&!basePrescription.__antonLabels){
-    const wrapped=function(e){return e?.displayPrescription||basePrescription(e)};
+    const wrapped=function(e){return e?.displayPrescription||basePrescription.apply(this,arguments)};
     wrapped.__antonLabels=true;window.prescriptionText=wrapped;try{prescriptionText=wrapped}catch(e){}
   }
 

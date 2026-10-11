@@ -76,6 +76,7 @@ test('an already opened client workout replaces old point placeholders with week
     requestAnimationFrame:()=>0,setTimeout:(fn,ms)=>{if(ms===0)fn();return 0},setInterval:()=>0,CustomEvent:function(type){this.type=type}};
   context.window=context;context.addEventListener=()=>{};context.dispatchEvent=()=>{};
   context.programResolveExerciseParametersV381=resolve;
+  context.WorkoutDomain=require('../workout-domain.js');
   context.document={documentElement:{},head:{appendChild:()=>{}},createElement:()=>({}),getElementById:()=>null,
     querySelector:()=>null,querySelectorAll:()=>[]};
   vm.runInNewContext(read('program-rep-range.js'),context);

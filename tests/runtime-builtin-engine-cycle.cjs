@@ -8,7 +8,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
       const original=JSON.stringify(ROUTINES),history=JSON.stringify(st.sessions);
       const current=st.current;
       newProgramSheet();const entryVisible=document.getElementById('sheet').textContent.includes('Мой цикл · 8 недель · новый движок');
-      const p=createBuiltinEngineCycle();if(!p)throw Error('Cycle creation failed');
+      const p=ensureProgramShape(buildBuiltinEngineCycle(iso(),'strength',true,8));st.programs.push(p);openProgramEditor(p.id);if(!p)throw Error('Cycle creation failed');
       const currentPreserved=current===st.current;
       const editor=document.getElementById('sheet').textContent;
       const summary=[];
@@ -40,7 +40,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
       return {summary,firstNames,entryVisible,editor,currentPreserved,originalPreserved:JSON.stringify(ROUTINES)===original,
         historyPreserved:JSON.stringify(st.sessions)===history,french,ropeSets,cardio:cardio&&{mode:cardio.mode,seconds:cardio.set[0].workSeconds},
         regenerated:{method:regenerated.method,count:regenerated.sets.length},savedTest:serialized.weeks[7].days[1].ex[0].sets.map(s=>s.targetRepMin),
-        configured:{start:configured.cycleOptions.startDate,priority:configured.cycleOptions.priority,phase:configured.weeks[7].phase,test:configured.weeks[7].testWeek}};
+        configured:{start:configured.cycleOptions.startDate,priority:configured.cycleOptions.priority,phase:configured.weeks[9].phase,test:configured.weeks[9].testWeek}};
     })()`);
     assert.equal(result.entryVisible,false);
     assert.ok(result.currentPreserved&&result.originalPreserved&&result.historyPreserved);
