@@ -207,7 +207,7 @@
 #mealPlannerRoot .mp-add-ingredient select{min-width:0;flex:1}
 #mealPlannerRoot .mp-add-ingredient .btn{flex-shrink:0;min-height:44px}
 
-/* v497: connected diary, food lookup and recipes. */
+/* v498: connected diary, food lookup and recipes. */
 #mealPlannerRoot .mp-view-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
 #mealPlannerRoot .mp-view-tabs button{font-size:13px;min-width:0}
 #mealPlannerRoot .mp-product-heading h3{font-size:22px;margin:4px 0}
@@ -228,7 +228,13 @@
 #mealPlannerRoot .mp-remaining-macros .mp-tag{font-size:11px;white-space:normal}
 @media(max-width:380px){#mealPlannerRoot .mp-ingredient-input{grid-template-columns:minmax(0,1fr) 90px;gap:8px}#mealPlannerRoot .mp-view-tabs button{font-size:12px}}
 
-/* v497: familiar ingredient shortcuts use the nutrition theme accent. */
+/* v498: familiar ingredient shortcuts use the nutrition theme accent. */
 #mealPlannerRoot .mp-quick-search{display:flex;gap:6px;overflow-x:auto;max-width:100%;margin:8px 0 12px;padding-bottom:3px;scrollbar-width:thin}
 #mealPlannerRoot .mp-quick-search .btn{flex:0 0 auto;min-height:44px;white-space:nowrap}
 #mealPlannerRoot .mp-quick-search [aria-pressed=true]{border-color:var(--green)!important;color:var(--green)!important;background:color-mix(in srgb,var(--green) 9%,var(--panel2))!important}
+/* Online products share the local search and the existing account diary. */
+#mp-online-results:not(:empty){margin:16px 0;padding:16px 0;border-block:1px solid var(--border,#ddddE4)}
+#mp-online-results h4{margin:0 0 8px}
+#mp-online-results[aria-busy="true"]{opacity:.65;pointer-events:none}
+#mp-food-source:empty{display:none}
+#mp-online-results a,#mp-food-source a{color:var(--green);text-underline-offset:3px}

@@ -117,3 +117,13 @@ Added 16 egg dishes and 16 buckwheat recipes (some contain both). All use ingred
 
 ### v497 – финальная проверка поиска
 Поиск «гречка» не объединяет гречневую крупу с греческим йогуртом. Выбранные быстрые кнопки сохраняют фиолетовый акцент, в том числе при общих стилях тёмной темы.
+
+### v498 – Open Food Facts online products
+
+The Products tab uses one query for instant local matches and explicit online search (button or Enter), including numeric barcodes. No search-as-you-type requests. The official CORS-enabled `/cgi/search.pl` full-text endpoint returns 20 products per page; `/api/v2/product/{code}` refreshes nutrition before selection. No keys, proxy or paid services. Only the search text or barcode is sent, never account, goals or diary data. Separate in-memory caches and conservative limits (8 searches and 12 lookups/minute) reduce requests; timeout, offline, rate-limit and empty/incomplete results have visible states.
+
+Macros use declared `_100g` fields; missing values remain blank, never zero. kJ converts to kcal only when declared kcal is missing. Users check the packaging and can explicitly choose grams or millilitres. Liquid quantity/category hints default to ml. Volume foods can be recorded directly; gram-based ingredient editing requires per-100g values instead of assuming density. Complete weight-based foods can be inserted into a recipe, recomposed and weighed after cooking. Source snapshots, barcode and ODbL attribution persist in saved foods, diary and ingredients. Selected products are saved only on explicit diary recording (checked save option); saved records work offline and remain isolated under the existing account/private-share contexts. Remote results are transient and are not merged into the bundled recipe database. Photos are not loaded.
+
+Sources: https://openfoodfacts.github.io/openfoodfacts-server/api/ and https://opendatacommons.org/licenses/odbl/1-0/. Open Food Facts database: ODbL; individual contents: DbCL. OFF is a packaged-product database, not a replacement for the bundled 690 recipes. Browser requests identify the app through `app_name` and `app_version`; the browser owns the User-Agent. Public-share nutrition data remains local to that private link; no Supabase changes.
+
+Validation: adapter normalization/cache/paging/rate-limit tests; DOM flow covering explicit search, grams recording, source persistence, adding an ingredient, draft navigation, offline and stale response/account isolation. All automated tests use fixtures, not production API traffic.
