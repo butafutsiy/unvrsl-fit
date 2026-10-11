@@ -33,7 +33,7 @@ test('existing calorie goals produce coherent macro targets and invalid inputs f
 });
 test('world recipe dataset preserves 501 complete recipes and coherent serving scaling',()=>{
  const world=E.catalog.recipes.filter(r=>r.source);
- assert.equal(world.length,501);assert.equal(E.catalog.recipes.length,572);
+ assert.equal(world.length,501);assert.equal(E.catalog.recipes.length,616);
  assert.equal(new Set(world.map(r=>r.id)).size,501);
  for(const r of world){
   assert.ok(r.name&&r.steps&&r.details.length&&r.baseServings>0);
@@ -60,10 +60,23 @@ test('range targets accept the full interval and reject values just outside it',
  const plan=E.generate(t,4,{simpleOnly:true,maxTime:45});assert.equal(plan.withinTarget,true,JSON.stringify(plan.total));
  assert.ok(plan.meals.every(m=>!E.catalog.recipes.find(r=>r.id===m.recipeId).source));
 });
-test('everyday catalog offers thirty breakfasts and keeps ingredient allergens and nutrition',()=>{
+test('everyday catalog offers 115 simple meals including 38 breakfasts and keeps ingredient allergens and nutrition',()=>{
  const simple=E.catalog.recipes.filter(r=>!r.source);
- assert.equal(simple.length,71);assert.equal(simple.filter(r=>r.slots.includes('breakfast')).length,30);
+ assert.equal(simple.length,115);assert.equal(simple.filter(r=>r.slots.includes('breakfast')).length,38);
  for(const r of simple){assert.ok(E.nutrition(r.ingredients).k>0);assert.ok(r.steps);assert.ok(r.ingredients.every(i=>E.catalog.foods[i.id]));}
  const cheese=E.catalog.recipes.find(r=>r.id==='omelet-cheese');assert.equal(E.allowed(cheese,{allergens:['milk']}),false);
  assert.ok(simple.filter(r=>r.guideUrl).every(r=>/^https:\/\/(www\.iamcook\.ru|www\.russianfood\.com)\//.test(r.guideUrl)));
+});
+
+test('cooked weight is distinct from nutrition and exact weighed portions scale consistently',()=>{
+ const r=E.catalog.recipes.find(x=>x.id==='chicken-rice'),m=E.fit(r,E.nutrition(r.ingredients));
+ const n={...m.nutrition},w=E.servingWeight(m);assert.equal(w.estimated,true);assert.ok(w.grams>0);
+ const exact={...m,readyGrams:600},half=E.scaleMeal(exact,.5);
+ assert.deepEqual(E.servingWeight(exact),{grams:600,estimated:false});
+ assert.deepEqual(E.servingWeight(half),{grams:300,estimated:false});
+ assert.deepEqual(half.nutrition,E.nutrition(half.ingredients));assert.deepEqual(m.nutrition,n);
+ assert.throws(()=>E.scaleMeal(m,0));assert.throws(()=>E.scaleMeal(m,NaN));
+ const world=E.fit(E.catalog.recipes.find(x=>x.source),{k:600,p:30,f:20,c:80});assert.equal(E.servingWeight(world),null);
+ assert.deepEqual(E.servingWeight({...world,readyGrams:420}),{grams:420,estimated:false});
+ const snack=E.catalog.recipes.find(x=>x.id==='curd-apple');assert.equal(E.servingWeight(E.fit(snack,E.nutrition(snack.ingredients))).estimated,false);
 });

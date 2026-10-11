@@ -9,6 +9,26 @@
     const food=i.sourceNutrition||catalog.foods[i.id];if(!food||!Number.isFinite(i.g)||i.g<0)throw Error('Проверь ингредиенты');
     return Object.fromEntries(keys.map(k=>[k,food[k]*i.g/100]));
   })));}
+  const cookedFactors={rice:2.7,buckwheat:2.5,pasta:2.4,lentils:2.5,bulgur:2.5,millet:3,semolina:3,chicken:.75,turkey:.75,beef:.7,fish:.8,salmon:.8,shrimp:.8,potato:.95,egg:.95};
+  function servingWeight(meal){
+    if(Number.isFinite(meal.readyGrams)&&meal.readyGrams>0)return {grams:meal.readyGrams,estimated:false};
+    const recipe=catalog.recipes.find(r=>r.id===meal.recipeId);
+    if(!recipe||recipe.source)return null;
+    const noCook=recipe.time<=5||/^overnight-/.test(recipe.id);
+    const baked=/curd-(?:pancakes|bake)|pancake|cutlet|oat-pancake/.test(recipe.id);
+    const grams=meal.ingredients.reduce((sum,i)=>{
+      let factor=noCook?1:(cookedFactors[i.id]||1);
+      if(i.id==='oats')factor=noCook||baked?1:2.5;
+      if(baked&&['flour','semolina','curd','milk'].includes(i.id))factor=.9;
+      return sum+i.g*factor;
+    },0);
+    return {grams:Math.round(grams),estimated:!noCook};
+  }
+  function scaleMeal(meal,factor){
+    if(!Number.isFinite(factor)||factor<.05||factor>5)throw Error('Количество должно быть от 5% до 500% порции');
+    const ingredients=meal.ingredients.map(i=>({...i,g:Math.round(i.g*factor*10)/10}));
+    return {...meal,ingredients,nutrition:nutrition(ingredients),...(meal.readyGrams?{readyGrams:Math.round(meal.readyGrams*factor*10)/10}:{})};
+  }
   function validateTarget(t){
     if(!t||keys.some(k=>!Number.isFinite(t[k])||t[k]<=0))throw Error('Укажи положительные калории и БЖУ');
     if(t.k>10000||t.p>600||t.f>400||t.c>1800)throw Error('Проверь дневные цели');
@@ -99,7 +119,7 @@
     const total=round(sum(chosen.map(m=>m.nutrition))),delta=round(Object.fromEntries(keys.map(k=>[k,total[k]-target[k]])));
     return {version:1,target:{...target},meals:chosen,total,delta,withinTarget:within(total,target)};
   }
-  const api={nutrition,sum,round,validateTarget,fromGoal,bounds,deviation,within,loss,subtractTarget,slots,allowed,fit,generate,catalog};
+  const api={servingWeight,scaleMeal,nutrition,sum,round,validateTarget,fromGoal,bounds,deviation,within,loss,subtractTarget,slots,allowed,fit,generate,catalog};
   if(typeof module==='object'&&module.exports)module.exports=api;
   root.UNVRSLMealEngine=api;
 })(typeof window!=='undefined'?window:globalThis);

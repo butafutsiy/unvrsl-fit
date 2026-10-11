@@ -26,6 +26,15 @@ const plain=x=>JSON.parse(JSON.stringify(x));
  assert.equal(w.st.mealNutritionV1.days[date].eaten['meal-0'].ingredients[0].g,Math.round(first.plan.meals[0].ingredients[0].g*.5*10)/10);
  const eaten=plain(w.st.mealNutritionV1.days[date].eaten['meal-0']);
  click(w,'generate');assert.deepEqual(plain(w.st.mealNutritionV1.days[date].eaten['meal-0']),eaten);
+ // Weigh a complete cooked serving, then record exactly half of it in grams.
+ const lunch=w.st.mealNutritionV1.days[date].plan.meals[1];
+ set(w,'mp-ready-'+lunch.id,600);click(w,'ready-weight',lunch.id);
+ assert.equal(w.st.mealNutritionV1.days[date].plan.meals[1].readyGrams,600);
+ set(w,'mp-eaten-'+lunch.id,300);w.document.getElementById('mp-eaten-'+lunch.id).dispatchEvent(new w.Event('input',{bubbles:true}));
+ assert.equal(Number(w.document.getElementById('mp-portion-'+lunch.id).value),.5);
+ click(w,'eat',lunch.id);const weighed=w.st.mealNutritionV1.days[date].eaten[lunch.id];
+ assert.equal(weighed.readyGrams,300);assert.deepEqual(plain(weighed.nutrition),plain(w.UNVRSLMealEngine.nutrition(weighed.ingredients)));
+ click(w,'eat',lunch.id);assert.equal(w.st.mealNutritionV1.days[date].eaten[lunch.id],undefined);
  const before=plain(w.st.mealNutritionV1.days[date].plan.meals),old=before[1].recipeId;click(w,'swap','meal-1');
  assert.equal(w.st.mealNutritionV1.days[date].plan.meals[1].recipeId,old,'opening chooser does not change the menu');
  assert.ok(w.document.querySelectorAll('[data-mp="replace-choice"]').length>1);
@@ -35,6 +44,12 @@ const plain=x=>JSON.parse(JSON.stringify(x));
  for(const [id,value] of Object.entries({'mp-food-name':'Йогурт <script>','mp-food-grams':200,'mp-food-k':70,'mp-food-p':8,'mp-food-f':2,'mp-food-c':5}))set(w,id,value);
  click(w,'extra');assert.equal(w.st.mealNutritionV1.days[date].extra[0].nutrition.k,140);
  assert.equal(w.document.querySelector('#mealPlannerRoot script'),null);
+ assert.equal(w.st.mealNutritionV1.savedFoods.length,1);
+ const savedId=w.st.mealNutritionV1.savedFoods[0].id;click(w,'saved-food',savedId);
+ assert.equal(w.document.getElementById('mp-food-name').value,'Йогурт <script>');
+ assert.equal(w.document.getElementById('mp-food-k').value,'70');
+ assert.equal(w.document.querySelectorAll('.mp-reference-grid img').length,10);
+
  const total=w.UNVRSLMealUI.totals(w.st.mealNutritionV1.days[date]);assert.equal(total.k,Math.round((eaten.nutrition.k+140)*10)/10);
  click(w,'generate');assert.equal(w.st.mealNutritionV1.days[date].extra.length,1);
  const library=w.document.querySelector('.mp-library');library.open=true;library.dispatchEvent(new w.Event('toggle'));

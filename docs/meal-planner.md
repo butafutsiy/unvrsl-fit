@@ -57,3 +57,13 @@ Shared client progress pages load the same catalog, engine and diary UI using a 
 ### v482 – nutrition layout refinement
 
 Energy has a full-width row in the plan calculator card, diary and menu summary; protein, fat and carbs keep three equal columns. Range values retain their original numbers and never use truncation. Diary progress tracks align consistently, the native date field loses its nested border, remaining calories can wrap as a whole line, and meal actions and ingredient quantities use explicit grids. Client purple and each app user's theme/accent stay intact. Existing diary and calculator behavior is unchanged.
+
+
+## v484 – ready portions and own food
+
+- 115 simple recipes (38 breakfasts) and 501 world recipes, 616 total. Added 44 independent everyday recipes. Shellfish and seed exclusion options cover the new ingredients.
+- `servingWeight` estimates the cooked mass of simple meals from ingredient yields; uncooked assembled food uses its ingredient sum. Water and cooking methods vary, so cooked estimates are labelled ≈. World recipes have no guessed mass. A user can enter the measured final mass of the entire displayed serving, including all sides, excluding the container.
+- Record cooked grams or a serving multiplier. Both controls describe the same portion; ingredient-derived macros scale with that fraction. Measured mass scales in consumed snapshots too. Original macro ranges and consumed history are preserved.
+- Add own product/dish with per-100-g macros, grams and meal name. Save up to 100 reusable foods per account; duplicate names update the saved food, existing diary entries remain snapshots. Deleting a reusable food does not delete history.
+- Ten user-supplied product reference sheets are optional lazy-loaded local images. Their incomplete/brand-specific values are not imported into the macro engine.
+- Optional locally hosted photos show example plating, not exact recipe composition. Commons attribution and license links are visible under each photo; see `data/meal-photos-source.md`.

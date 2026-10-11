@@ -30,7 +30,20 @@
     kefir:food('Кефир 2,5%',3,2.5,4,['milk']),
     tuna:food('Тунец в собственном соку, без жидкости',23,1,0,['fish'],false),
     beans:food('Фасоль варёная, без соуса',8,1,20),
-    sugar:food('Сахар',0,0,100)
+    sugar:food('Сахар',0,0,100),
+    bulgur:food('Булгур, сухой',12,1.3,63,['gluten']),
+    lavash:food('Лаваш тонкий',8,1.5,48,['gluten']),
+    avocado:food('Авокадо без кожуры и косточки',2,15,9),
+    shrimp:food('Креветки очищенные, сырые',20,1,0,['shellfish'],false),
+    peas:food('Горошек зелёный, готовый',5,.5,10),
+    corn:food('Кукуруза консервированная, без жидкости',3,1.5,16),
+    cabbage:food('Капуста белокочанная',1.8,.1,5),
+    carrot:food('Морковь',1,.2,7),
+    broccoli:food('Брокколи',3,.4,4),
+    raisins:food('Изюм',3,.5,75),
+    seeds:food('Тыквенные семечки, очищенные',30,49,11,['seeds']),
+    orange:food('Апельсин без кожуры',1,.2,9)
+
   };
   // [food, grams, minimum, maximum, adjustment step]; eggs change by one ~50 g egg.
   const ingredient=(id,g)=>({id,g,min:id==='egg'?50:id==='oil'?0:id==='vegetables'?100:Math.round(g*.5),max:id==='egg'?200:id==='oil'?25:id==='vegetables'?g:Math.round(g*1.8),step:id==='egg'?50:id==='oil'?1:5});
@@ -95,6 +108,49 @@
   add('tuna-sandwich','Бутерброд с тунцом',['snack'],5,[['tuna',120],['bread',80],['vegetables',100],['oil',5]],'1. Слей жидкость из тунца.\n2. Выложи рыбу и овощи на хлеб.\n3. Указанное масло добавь к овощам, не добавляй неучтённый майонез.');
   add('cheese-apple-snack','Сыр, яблоко и тосты',['snack'],5,[['cheese',35],['apple',150],['bread',60],['yogurt',150]],'1. Подсуши хлеб.\n2. Нарежь сыр и яблоко.\n3. Подай с йогуртом без сахара.');
   add('egg-snack','Варёные яйца с хлебом и овощами',['snack'],15,[['egg',100],['bread',65],['vegetables',100]],'1. Свари яйца до готовности, остуди и очисти.\n2. Подай с хлебом и овощами.');
+  // More everyday recipes: independent ingredient lists and original cooking instructions.
+  for(const [protein,label] of [['chicken','Курица'],['turkey','Индейка'],['fish','Минтай'],['shrimp','Креветки']]){
+    for(const [side,title] of [['bulgur','булгуром'],['pasta','макаронами'],['potato','картофелем'],['lentils','чечевицей']]){
+      const id='easy-'+protein+'-'+side;
+      add(id,label+' с '+title+' и брокколи',main,30,[[protein,180],[side,side==='potato'?280:75],['broccoli',180],['oil',8]],'1. Отвари гарнир до мягкости по времени на упаковке; картофель нарежь и свари.\n2. Приготовь мясо, рыбу или креветки до полной готовности на указанном масле.\n3. Брокколи отвари отдельно до мягкости. Подай всё вместе.');
+    }
+  }
+  const more=[
+    ['easy-eggs-avocado','Яйца с авокадо и хлебом',breakfast,15,[['egg',100],['avocado',60],['bread',80],['vegetables',150]],'Свари яйца. Нарежь авокадо и овощи. Подай с хлебом.'],
+    ['easy-omelet-broccoli','Омлет с брокколи',breakfast,15,[['egg',150],['milk',60],['broccoli',150],['cheese',20],['oil',5]],'Отвари брокколи. Взбей яйца с молоком, добавь брокколи и сыр. Готовь на указанном масле под крышкой до полного схватывания.'],
+    ['easy-scramble-curd','Яичница-болтунья с творогом и тостами',breakfast,10,[['egg',100],['curd',100],['bread',80],['vegetables',150],['oil',5]],'Взбей яйца. Готовь на указанном масле, помешивая, до схватывания. Подай на хлебе с творогом и овощами.'],
+    ['easy-lavash-egg','Лаваш с яйцом и сыром',breakfast,15,[['lavash',70],['egg',100],['cheese',25],['vegetables',150],['oil',5]],'Свари яйца и нарежь. Положи яйца и сыр в лаваш, сверни и прогрей на указанном масле. Овощи подай отдельно.'],
+    ['easy-curd-raisins','Творог с изюмом и йогуртом',breakfast,5,[['curd',180],['yogurt',100],['raisins',30],['oats',35]],'Смешай творог с йогуртом. Добавь промытый изюм и хлопья, оставь хлопья размягчиться.'],
+    ['easy-buckwheat-milk','Гречневая каша с молоком',breakfast,20,[['buckwheat',65],['milk',200],['curd',100],['banana',100]],'Отвари гречку в воде. Добавь молоко и прогрей. Творог и банан подай отдельно.'],
+    ['easy-rice-egg','Рис с яйцом и горошком',breakfast,20,[['rice',65],['egg',100],['peas',100],['oil',5]],'Отвари рис. Приготовь яйца на указанном масле до схватывания. Добавь рис и горошек, перемешай и прогрей.'],
+    ['easy-cheese-toast','Горячие тосты с сыром и творогом',breakfast,10,[['bread',90],['cheese',25],['curd',100],['vegetables',150]],'Подсуши хлеб, добавь сыр и прогрей до расплавления. Подай с творогом и овощами.'],
+    ['easy-chicken-lavash','Домашняя шаурма с курицей',main,25,[['chicken',180],['lavash',80],['vegetables',200],['yogurt',80],['oil',8]],'Приготовь курицу до полной готовности на указанном масле. Нарежь овощи. Заверни курицу и овощи в лаваш, добавь йогурт как соус. Прогрей без дополнительного масла.'],
+    ['easy-tuna-rice','Рис с тунцом и кукурузой',main,20,[['rice',80],['tuna',150],['corn',100],['vegetables',150],['oil',5]],'Отвари рис. Слей жидкость с тунца и кукурузы. Смешай с рисом и указанным маслом, подай с овощами.'],
+    ['easy-beans-bulgur','Булгур с фасолью и овощами',main,20,[['bulgur',80],['beans',180],['vegetables',200],['oil',8]],'Отвари булгур. Добавь готовую фасоль и овощи, прогрей с указанным маслом.'],
+    ['easy-cabbage-beef','Тушёная капуста с говядиной',main,45,[['beef',180],['cabbage',250],['carrot',80],['potato',200],['oil',8]],'Нарежь мясо мелко и потуши с указанным маслом и небольшим количеством воды. Добавь капусту, морковь и картофель. Туши под крышкой до полной готовности мяса и мягкости овощей.'],
+    ['easy-chicken-cutlet','Куриные котлеты с гречкой',main,30,[['chicken',180],['egg',50],['bread',25],['buckwheat',75],['vegetables',150],['oil',8]],'Измельчи курицу с яйцом и размоченным в воде хлебом. Сформируй котлеты и приготовь на указанном масле до полной готовности. Отвари гречку и подай с овощами.'],
+    ['easy-fish-cutlet','Рыбные котлеты с картофелем',main,30,[['fish',200],['egg',50],['bread',25],['potato',250],['vegetables',150],['oil',8]],'Измельчи рыбу с яйцом и размоченным хлебом. Сформируй котлеты и приготовь на указанном масле до полной готовности. Отвари картофель и подай с овощами.'],
+    ['easy-pasta-cheese','Макароны с сыром и овощами',main,15,[['pasta',85],['cheese',35],['peas',100],['vegetables',150],['oil',5]],'Отвари макароны. Добавь горошек, сыр и указанное масло, прогрей. Подай с овощами.'],
+    ['easy-potato-curd','Картофель с творожным соусом',main,30,[['potato',300],['curd',180],['yogurt',80],['vegetables',150],['oil',8]],'Нарежь картофель и запеки на указанном масле до мягкости. Смешай творог с йогуртом. Подай с овощами.'],
+    ['easy-tuna-lavash','Лаваш с тунцом и овощами',['snack'],5,[['lavash',60],['tuna',100],['vegetables',100],['yogurt',50]],'Слей жидкость с тунца. Заверни рыбу и овощи в лаваш с йогуртом.'],
+    ['easy-yogurt-orange','Йогурт с апельсином и орехами',['snack'],5,[['yogurt',220],['orange',150],['nuts',15]],'Очисти апельсин. Добавь к йогурту и посыпь орехами.'],
+    ['easy-kefir-banana','Кефир с бананом и хлопьями',['snack'],5,[['kefir',250],['banana',100],['oats',35]],'Смешай кефир, банан и хлопья блендером или вилкой. Дай хлопьям размягчиться.'],
+    ['easy-curd-seeds','Творог с ягодами и семечками',['snack'],5,[['curd',180],['berries',100],['seeds',15]],'Добавь к творогу ягоды и очищенные семечки.'],
+    ['easy-hummus-toast','Фасолевый паштет на хлебе',['snack'],10,[['beans',150],['bread',70],['vegetables',100],['oil',5]],'Разомни готовую фасоль с указанным маслом и небольшим количеством воды. Намажь на хлеб и подай с овощами.'],
+    ['easy-avocado-curd-toast','Тосты с авокадо и творогом',['snack'],5,[['bread',65],['avocado',50],['curd',120],['vegetables',100]],'Подсуши хлеб. Добавь творог, авокадо и овощи.'],
+    ['easy-egg-lavash-snack','Рулет с яйцом и йогуртом',['snack'],15,[['lavash',50],['egg',100],['yogurt',50],['vegetables',100]],'Свари яйца. Нарежь и заверни в лаваш с овощами и йогуртом.'],
+    ['easy-curd-orange','Творог с апельсином',['snack'],5,[['curd',180],['orange',150],['nuts',10]],'Очисти апельсин и нарежь. Подай с творогом и орехами.'],
+    ['easy-yogurt-raisins','Йогурт с изюмом и хлопьями',['snack'],5,[['yogurt',200],['raisins',25],['oats',35]],'Добавь к йогурту промытый изюм и хлопья, оставь до мягкости.'],
+    ['easy-cheese-lavash','Лаваш с сыром и овощами',['snack'],10,[['lavash',60],['cheese',30],['vegetables',150],['yogurt',100]],'Заверни сыр в лаваш, прогрей без масла. Подай с овощами и йогуртом.'],
+    ['easy-shrimp-toast','Бутерброды с креветками',['snack'],10,[['shrimp',150],['bread',70],['vegetables',100],['yogurt',50]],'Отвари креветки до полной готовности. Выложи на хлеб с овощами и йогуртом.'],
+    ['easy-milk-banana','Молочный коктейль с бананом и творогом',['snack'],5,[['milk',200],['banana',100],['curd',120]],'Смешай всё блендером до однородности. Не добавляй неучтённый сахар.']
+  ];
+  for(const row of more)add(...row);
+  for(const r of recipes){
+    if(r.id.startsWith('curd-pancakes-'))r.photo={path:'assets/nutrition/syrniki.jpg',author:'Juerg Vollmer',page:'https://commons.wikimedia.org/wiki/File:Syrniki.jpg',license:'CC BY-SA 2.0',licenseUrl:'https://creativecommons.org/licenses/by-sa/2.0/'};
+    if(r.id.startsWith('porridge-')||r.id==='milk-oats')r.photo={path:'assets/nutrition/oatmeal.jpg',author:'Renee Comet / NCI',page:'https://commons.wikimedia.org/wiki/File:Oatmeal_(1).jpg',license:'Public domain',licenseUrl:'https://creativecommons.org/publicdomain/mark/1.0/'};
+    if(r.id==='easy-scramble-curd')r.photo={path:'assets/nutrition/eggs-toast.jpg',author:'HaJunkiyada',page:'https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Scrambled_Eggs_on_Whole_Grain_Toast_with_Yellow_Tomatoes.jpg',license:'CC BY-SA 4.0',licenseUrl:'https://creativecommons.org/licenses/by-sa/4.0/'};
+  }
   // Links show a related technique; linked recipe nutrition is never substituted for our portions.
   for(const r of recipes){
     let url;
@@ -113,7 +169,7 @@
   }
   const world=typeof module==='object'&&module.exports?require('./meal-recipes-data.js'):(root.UNVRSLWorldRecipes||[]);
   recipes.push(...world.map(r=>({...r,ingredients:[{id:r.id,g:100,min:50,max:250,step:5,sourceNutrition:r.portionNutrition}]})));
-  const catalog={foods,recipes,version:2};
+  const catalog={foods,recipes,version:3};
   if(typeof module==='object'&&module.exports)module.exports=catalog;
   root.UNVRSLMealCatalog=catalog;
 })(typeof window!=='undefined'?window:globalThis);
