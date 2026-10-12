@@ -112,7 +112,7 @@
     "No Safari/iPhone or physical screen keyboard",
     "Narrow layouts checked by CSS and DOM, not physical phones"
   ],
-  "finalRelease": "v504",
+  "finalRelease": "v505",
   "manualChrome": {
     "lightThemeReload": true,
     "burgerRecipeSaveReload": true,
@@ -121,5 +121,11 @@
     "testProfile": "anonymous local only",
     "recordedGrams": 160,
     "recordedCaloriesDisplayed": 287.7
+  },
+  "userCorrections": {
+    "strengthRecordsChronological": true,
+    "fourMealCategories": true,
+    "settingsNoSplitActionLabels": true,
+    "navigationCaption": "selected tab only"
   }
 }
