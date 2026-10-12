@@ -124,7 +124,25 @@
     "browserBackPreservesSearch": true,
     "testProfile": "anonymous local only",
     "recordedGrams": 160,
-    "recordedCaloriesDisplayed": 287.7
+    "recordedCaloriesDisplayed": 287.7,
+    "productsBeefResults": 21,
+    "recipeLunchResults": 205,
+    "lunchSoupUnder30Results": 1,
+    "singleMealSelector": true,
+    "publicGoalFixture": {
+      "measurements": [
+        60,
+        62
+      ],
+      "goal": 80,
+      "lineVisible": true,
+      "lightAndDarkReload": true,
+      "selectedText": "rgb(27, 32, 48)"
+    },
+    "proofFiles": [
+      "docs/qa-filters-v511.jpg",
+      "docs/qa-goal-v511.jpg"
+    ]
   },
   "userCorrections": {
     "strengthRecordsChronological": true,
@@ -139,5 +157,14 @@
     "productsDoNotShowMealCategories": true,
     "replacementKeepsItsScreen": true,
     "sharedPageThemePersists": true
+  },
+  "publication": {
+    "codeCommit": "9aaed39f8de70c7554374e7f94936c3f55e911f4",
+    "ciRun": 38219813174,
+    "pagesRun": 38219813163,
+    "ci": "success",
+    "pages": "success",
+    "liveHtmlMatchesLocal": true,
+    "htmlSHA256": "976b469999f60e604c0c6da9f09e621a7663d62db764d2bcfac4785c577c28c4"
   }
 }
