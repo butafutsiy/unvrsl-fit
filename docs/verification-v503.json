@@ -1,0 +1,115 @@
+{
+  "date": "2026-10-12",
+  "baseline": "f897451c92481ca251ec3beb57711439025444ec",
+  "contracts": {
+    "passed": 364,
+    "failed": 0
+  },
+  "runtimeScenarios": [
+    {
+      "test": "tests/runtime-meal-planner.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-meal-protocol.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-meal-catalog.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-meal-products.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-meal-search.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-meal-online.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-recipe-builder.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-nutrition-units.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-client-save.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-bodyweight-history.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-story-layouts.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-strength-equipment.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-offline-history.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-v392.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-methods-v438.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-storage-v393.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-adaptive-load.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-weekly-calculated-weight.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-equipment-steps.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-periodization.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-builtin-engine-cycle.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-eight-week-cycle.cjs",
+      "exit": 0
+    },
+    {
+      "test": "tests/runtime-cycle-settings.cjs",
+      "exit": 0
+    }
+  ],
+  "reimport": {
+    "stableHashes": true,
+    "products": 839,
+    "readyRecipes": 310
+  },
+  "javascriptSyntax": "passed",
+  "exerciseAudit": "strict passed: 189/189",
+  "serverIsolation": "unknown authenticated UID: 0 states, workouts and plans; anon access denied; updated_at trigger present",
+  "limits": [
+    "No real-account sign-in in the browser",
+    "No Safari/iPhone or physical screen keyboard",
+    "Narrow layouts checked by CSS and DOM, not physical phones"
+  ]
+}

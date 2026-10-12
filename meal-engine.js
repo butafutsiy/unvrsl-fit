@@ -2,20 +2,22 @@
 (function(root){
   const catalog=typeof module==='object'&&module.exports?require('./meal-catalog.js'):root.UNVRSLMealCatalog;
   const keys=['k','p','f','c'];
+  const servingReferences=new Set(catalog.recipes.filter(r=>r.source).map(r=>r.id));
   const blank=()=>({k:0,p:0,f:0,c:0});
   const sum=list=>list.reduce((a,x)=>{for(const k of keys)a[k]+=x[k]||0;return a},blank());
   const round=x=>Object.fromEntries(keys.map(k=>[k,Math.round(x[k]*10)/10]));
-  const foodSearchAliases={egg:'яйца яиц яйцо яичница',buckwheat:'гречка гречневая',oats:'овсянка геркулес',chicken:'курица куриная грудка',pork:'свинина свиной вырезка pork',tomato:'томаты помидоры',oil:'масло',curd:'творог творожный',fish:'рыба',potato:'картошка картофель'};
+  const foodSearchAliases={egg:'яйца яиц яйцо яичница',buckwheat:'гречка гречневая',oats:'овсянка геркулес',chicken:'курица куриная грудка',beef:'говядина говяжий',pork:'свинина свиной вырезка pork',tomato:'томаты помидоры',oil:'масло',curd:'творог творожный',fish:'рыба',potato:'картошка картофель'};
   const normalizeSearch=value=>String(value||'').toLowerCase().replace(/ё/g,'е').replace(/[^а-яa-z0-9]+/g,' ').trim();
   const searchWords=value=>normalizeSearch(value).split(/\s+/).filter(Boolean);
   const stopWords=new Set(['с','со','и','из','на','в','для','по']);
   function searchStem(word){
-    for(const [pattern,stem] of [[/^свин/,'свинин'],[/^кур(?:иц|ин)/,'куриц'],[/^греч(?:к|н|их)/,'греч'],[/^карто(?:ф|ш)/,'картоф'],[/^(?:яй[цч]|яиц|яич)/,'яйц'],[/^(?:овся|геркул)/,'овся'],[/^твор/,'твор'],[/^(?:помидор|томат)/,'помидор']])if(pattern.test(word))return stem;
+    for(const [pattern,stem] of [[/^говя[дж]/,'говядин'],[/^свин/,'свинин'],[/^кур(?:иц|ин)/,'куриц'],[/^греч(?:к|н|их)/,'греч'],[/^карто(?:ф|ш)/,'картоф'],[/^(?:яй[цч]|яиц|яич)/,'яйц'],[/^(?:овся|геркул)/,'овся'],[/^твор/,'твор'],[/^(?:помидор|томат)/,'помидор']])if(pattern.test(word))return stem;
     const stem=word.replace(/(?:иями|ями|ами|ией|ого|ему|ому|ими|ыми|ую|юю|ая|яя|ое|ее|ые|ие|ой|ей|ый|ий|ов|ев|ам|ям|ах|ях|ом|ем|а|я|ы|и|у|ю|е)$/,'');
     return stem.length>=3?stem:word;
   }
   function oneEdit(a,b){
     if(Math.abs(a.length-b.length)>1)return false;
+    if(a.length===b.length){let k=0;while(k<a.length&&a[k]===b[k])k++;if(k+1<a.length&&a[k]===b[k+1]&&a[k+1]===b[k]&&a.slice(k+2)===b.slice(k+2))return true;}
     let i=0,j=0,edits=0;
     while(i<a.length&&j<b.length){if(a[i]===b[j]){i++;j++;continue;}if(++edits>1)return false;if(a.length>=b.length)i++;if(b.length>=a.length)j++;}
     return edits+(a.length-i)+(b.length-j)<=1;
@@ -27,22 +29,26 @@
   }
   function searchItems(items,query,textOf){
     const exact=items.filter(item=>searchMatches(textOf(item),query,false));
-    return exact.length?exact:items.filter(item=>searchMatches(textOf(item),query));
+    return (exact.length?exact:items.filter(item=>searchMatches(textOf(item),query))).sort((a,b)=>searchRank(textOf(a),query)-searchRank(textOf(b),query));
   }
+  function searchRank(text,query){const q=normalizeSearch(query),t=normalizeSearch(text);if(!q)return 0;if(t===q)return 0;if(t.startsWith(q+' ')||t.startsWith(q))return 1;if(searchMatches(t,q,false))return 2;return 3;}
+  function foodText(id){const f=catalog.foods[id];return [f?.name,f?.aliases,foodSearchAliases[id],({beef:'говядина говяжий мясо',pork:'свинина свиной мясо',poultry:'птица мясо',fish:'рыба рыбный',nuts:'орехи семечки',dairy:'молочное молоко'})[f?.category]].filter(Boolean).join(' ');}
   const recipeSearchCache=new WeakMap();
   function recipeSearchText(recipe){
-    if(!recipeSearchCache.has(recipe))recipeSearchCache.set(recipe,[recipe.name,recipe.country||'',...(recipe.details||[]).map(i=>i.name),...recipe.ingredients.map(i=>[catalog.foods[i.id]?.name||'',foodSearchAliases[i.id]||''].join(' '))].join(' '));
+    if(!recipeSearchCache.has(recipe))recipeSearchCache.set(recipe,[recipe.name,recipe.country||'',...(recipe.details||[]).map(i=>i.name),...recipe.ingredients.map(i=>[i.name||'',foodText(i.id)].join(' '))].join(' '));
     return recipeSearchCache.get(recipe);
   }
-  function nutrition(ingredients){return round(sum(ingredients.map(i=>{
+  function nutrition(ingredients){return sum(ingredients.map(i=>{
     const food=i.sourceNutrition||catalog.foods[i.id];if(!food||!Number.isFinite(i.g)||i.g<0)throw Error('Проверь ингредиенты');
-    return Object.fromEntries(keys.map(k=>[k,food[k]*i.g/100]));
-  })));}
+    if(keys.some(k=>!Number.isFinite(food[k])||food[k]<0)||(!servingReferences.has(i.id)&&(food.k>1000||food.p+food.f+food.c>100.5)))throw Error('Неполные или неверные КБЖУ ингредиента');return Object.fromEntries(keys.map(k=>[k,food[k]*i.g/100]));
+  }));}
+  function foodAmount(raw,quantity){return nutrition([{id:'manual-amount',sourceNutrition:raw,g:quantity}]);}
   const cookedFactors={rice:2.7,buckwheat:2.5,pasta:2.4,lentils:2.5,bulgur:2.5,millet:3,semolina:3,chicken:.75,turkey:.75,beef:.7,pork:.75,fish:.8,salmon:.8,shrimp:.8,potato:.95,egg:.95};
   function servingWeight(meal){
     if(Number.isFinite(meal.readyGrams)&&meal.readyGrams>0)return {grams:meal.readyGrams,estimated:false};
     const recipe=catalog.recipes.find(r=>r.id===meal.recipeId);
-    if(!recipe||recipe.source||meal.ingredients.some(i=>i.sourceNutrition))return null;
+    if(!recipe||recipe.source||meal.customComposition||recipe.custom||meal.ingredients.some(i=>i.sourceNutrition&&!catalog.foods[i.id]))return null;
+    if(recipe.estimatedYieldGrams){const factor=meal.ingredients.reduce((a,i)=>a+i.g,0)/recipe.ingredients.reduce((a,i)=>a+i.g,0);return {grams:Math.round(recipe.estimatedYieldGrams*factor),estimated:true};}
     const noCook=recipe.time<=5||/^overnight-/.test(recipe.id);
     const baked=/curd-(?:pancakes|bake)|pancake|cutlet|oat-pancake/.test(recipe.id);
     const grams=meal.ingredients.reduce((sum,i)=>{
@@ -53,10 +59,13 @@
     },0);
     return {grams:Math.round(grams),estimated:!noCook};
   }
+  const freezeIngredients=ingredients=>ingredients.map(i=>{if(i.sourceNutrition)return i;const f=catalog.foods[i.id],s=f.sourceInfo||{};return {...i,name:f.name,sourceNutrition:Object.fromEntries(keys.map(k=>[k,f[k]])),sourceInfo:s.provider==='USDA SR28'?{provider:s.provider,code:s.code,release:s.release}:{...s},allergens:[...f.allergens],allergensUncertain:!!f.allergensUncertain,vegetarian:f.vegetarian};});
+  function isLegacyMeal(meal){if(!meal.nutrition||meal.ingredients.every(i=>i.sourceNutrition))return false;try{const current=nutrition(meal.ingredients);return keys.some(k=>Math.abs(current[k]-meal.nutrition[k])>.11);}catch(_){return true;}}
   function scaleMeal(meal,factor){
     if(!Number.isFinite(factor)||factor<.05||factor>5)throw Error('Количество должно быть от 5% до 500% порции');
     const ingredients=meal.ingredients.map(i=>({...i,g:Math.round(i.g*factor*10)/10}));
-    return {...meal,ingredients,nutrition:nutrition(ingredients),...(meal.readyGrams?{readyGrams:Math.round(meal.readyGrams*factor*10)/10}:{})};
+    const legacy=isLegacyMeal(meal);if(legacy&&keys.some(k=>!Number.isFinite(meal.nutrition[k])||meal.nutrition[k]<0))throw Error('Проверь сохранённые КБЖУ');
+    return {...meal,ingredients,nutrition:legacy?Object.fromEntries(keys.map(k=>[k,meal.nutrition[k]*factor])):nutrition(ingredients),...(legacy?{legacySnapshot:true}:{}),...(meal.readyGrams?{readyGrams:Math.round(meal.readyGrams*factor*10)/10}:{})};
   }
   function composeMeal(meal,ingredients,readyGrams){
     if(catalog.recipes.find(r=>r.id===meal.recipeId)?.source)throw Error('У этого рецепта нет КБЖУ отдельных ингредиентов');
@@ -92,18 +101,18 @@
   }
   function allowed(recipe,prefs={}){
     if(prefs.simpleOnly&&recipe.source)return false;
-    if(prefs.maxTime&&recipe.time>Number(prefs.maxTime))return false;
+    if(prefs.maxTime&&(!Number.isFinite(recipe.time)||recipe.time>Number(prefs.maxTime)))return false;
+    const excluded=String(prefs.exclude||'').split(/[,;\n]/).map(x=>normalizeSearch(x)).filter(Boolean);
     if(recipe.source){
       if((prefs.allergens||[]).length)return false;
       if(prefs.vegetarian&&!recipe.diets.some(d=>d==='vegetarian'||d==='vegan'))return false;
-      const excluded=String(prefs.exclude||'').toLowerCase().split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
-      return !excluded.some(x=>[recipe.name,...recipe.details.map(i=>i.name+' '+i.note)].join(' ').toLowerCase().includes(x));
+      return !excluded.some(x=>searchMatches(recipeSearchText(recipe),x,false));
     }
-    const excluded=String(prefs.exclude||'').toLowerCase().split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
     return recipe.ingredients.every(i=>{
-      const f=catalog.foods[i.id];
-      return (!prefs.vegetarian||f.vegetarian)&&!(prefs.allergens||[]).some(a=>f.allergens.includes(a))&&!excluded.some(x=>f.name.toLowerCase().includes(x));
-    })&&!excluded.some(x=>recipe.name.toLowerCase().includes(x));
+      const f=catalog.foods[i.id]||i.sourceNutrition;if(!f)return false;
+      const allergens=catalog.foods[i.id]?.allergens||i.allergens,uncertain=catalog.foods[i.id]?.allergensUncertain||i.allergensUncertain;
+      return (!prefs.vegetarian||(i.vegetarian??f.vegetarian)===true)&&(!(prefs.allergens||[]).length||!uncertain&&Array.isArray(allergens)&&!prefs.allergens.some(a=>allergens.includes(a)))&&!excluded.some(x=>searchMatches([i.name,foodText(i.id)].join(' '),x,false));
+    })&&!excluded.some(x=>searchMatches(recipe.name,x,false));
   }
   const bounds=(t,k)=>t.ranges?.[k]||[t[k],t[k]];
   const deviation=(n,t,k)=>{const [lo,hi]=bounds(t,k);return n[k]<lo?n[k]-lo:n[k]>hi?n[k]-hi:0};
@@ -114,7 +123,8 @@
   function grams(i,v){return Math.max(i.min,Math.min(i.max,Math.round(v/i.step)*i.step));}
   function fit(recipe,target){
     const base=nutrition(recipe.ingredients),factor=target.k/base.k;
-    const ingredients=recipe.ingredients.map(i=>({...i,g:grams(i,i.g*factor)}));
+    if(recipe.fixedRatios){const ratio=Math.min(recipe.maxPortions||1.75,Math.max(.5,factor));const ingredients=freezeIngredients(recipe.ingredients.map(i=>({...i,g:i.g*ratio})));return {recipeId:recipe.id,name:recipe.name,time:recipe.time,steps:recipe.steps,ingredients,nutrition:nutrition(ingredients),fixedRatios:true,...(recipe.readyGrams?{readyGrams:recipe.readyGrams*ratio}:{})};}
+    const ingredients=freezeIngredients(recipe.ingredients.map(i=>({...i,g:grams(i,i.g*factor)})));
     for(let pass=0;pass<5;pass++)for(const i of ingredients){
       let best=i.g,score=loss(nutrition(ingredients),target);
       for(const v of [i.g-i.step,i.g+i.step,i.g*.8,i.g*1.2]){
@@ -149,7 +159,7 @@
     for(const slot of meals){
       const t=scaledTarget(target,slot.share),lock=locked[slot.id];
       let choices;
-      if(lock)choices=[{...lock,ingredients:lock.ingredients?.map(i=>({...i})),nutrition:lock.ingredients?nutrition(lock.ingredients):round(lock.nutrition)}];
+      if(lock)choices=[{...lock,ingredients:lock.ingredients?.map(i=>({...i})),nutrition:{...lock.nutrition}}];
       else{
         const pool=catalog.recipes.filter(r=>r.slots.includes(slot.type)&&allowed(r,prefs)&&!(options.banned?.[slot.id]||[]).includes(r.id));
         if(!pool.length)throw Error('Нет блюд для '+slot.title.toLowerCase()+'. Измени исключения или время готовки.');
@@ -169,7 +179,7 @@
     // Coordinate descent adjusts real ingredients while preserving edible portion bounds.
     const objective=()=>loss(sum(chosen.map(m=>m.nutrition)),target)+chosen.reduce((s,m)=>s+(m.locked?0:loss(m.nutrition,scaledTarget(target,m.share))*.03),0);
     for(let pass=0;pass<7;pass++)for(const m of chosen){
-      if(m.locked||!m.ingredients)continue;
+      if(m.locked||m.fixedRatios||!m.ingredients)continue;
       for(const i of m.ingredients){
         let best=i.g,bestScore=objective();const original=i.g;
         for(const v of [original-i.step,original+i.step,original*.85,original*1.15]){
@@ -183,27 +193,29 @@
   }
   function recipeInfo(recipe){
     const n=round(recipe.portionNutrition||nutrition(recipe.ingredients));
+    const kind=recipe.kind||(/суп|борщ|рассольник|уха|щи/i.test(recipe.name)?'soup':/салат|винегрет|оливье/i.test(recipe.name)?'salad':/бургер|бутерброд|сэндвич|шаурма|лаваш/i.test(recipe.name)?'sandwich':recipe.slots.length===1&&recipe.slots[0]==='breakfast'?'breakfast':'main');
     const vegetarian=allowed(recipe,{vegetarian:true});
     const pescatarian=vegetarian||(recipe.source?(recipe.diets||[]).includes('pescatarian'):recipe.ingredients.every(i=>catalog.foods[i.id].vegetarian||['fish','salmon','tuna','shrimp'].includes(i.id)));
     const collections=[];
+    if(recipe.custom)collections.push('mine');
     if(!recipe.source&&recipe.slots.includes('breakfast'))collections.push('breakfast');
     if(recipe.time<=20&&recipe.slots.includes('dinner'))collections.push('quick');
     if(n.p>=25&&n.p*4/Math.max(1,n.k)>=.2)collections.push('protein');
     if(!recipe.source&&/сэндвич|лаваш|ленивая овсянка|овсянка на ночь|ролл|маффин/i.test(recipe.name))collections.push('portable');
     if(!recipe.source&&recipe.ingredients.some(i=>i.id==='egg')&&/яйц|омлет|яичн|шакшук|овсяноблин/i.test(recipe.name))collections.push('egg');
     if(!recipe.source&&recipe.ingredients.some(i=>i.id==='buckwheat'))collections.push('buckwheat');
-    return {nutrition:n,vegetarian,pescatarian,collections,country:recipe.country||'Повседневная кухня'};
+    return {kind,nutrition:n,vegetarian,pescatarian,collections,country:recipe.country||'Повседневная кухня'};
   }
   function matchesCatalog(recipe,filters={},favorites=[]){
     const info=recipeInfo(recipe);
-    return (!filters.type||recipe.slots.includes(filters.type))&&
+    return (!filters.kind||info.kind===filters.kind)&&(!filters.maxTime||recipe.time<=Number(filters.maxTime))&&(!filters.type||recipe.slots.includes(filters.type))&&
       (!filters.diet||filters.diet==='all'||!!info[filters.diet])&&
       (!filters.country||info.country===filters.country)&&
       (!filters.collection||info.collections.includes(filters.collection))&&
       (!filters.favorite||favorites.includes(recipe.id))&&
       (filters.calories===undefined||filters.calories===''||(info.nutrition.k>=Number(filters.calories)&&info.nutrition.k<(Number(filters.calories)===700?Infinity:Number(filters.calories)+100)));
   }
-  const api={searchItems,searchMatches,normalizeSearch,recipeSearchText,foodSearchAliases,composeMeal,servingWeight,scaleMeal,nutrition,sum,round,validateTarget,fromGoal,bounds,deviation,within,loss,subtractTarget,slots,allowed,fit,generate,recipeInfo,matchesCatalog,catalog};
+  const api={isLegacyMeal,foodAmount,foodText,searchRank,searchItems,searchMatches,normalizeSearch,recipeSearchText,foodSearchAliases,composeMeal,servingWeight,scaleMeal,nutrition,sum,round,validateTarget,fromGoal,bounds,deviation,within,loss,subtractTarget,slots,allowed,fit,generate,recipeInfo,matchesCatalog,catalog};
   if(typeof module==='object'&&module.exports)module.exports=api;
   root.UNVRSLMealEngine=api;
 })(typeof window!=='undefined'?window:globalThis);

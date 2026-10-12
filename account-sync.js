@@ -5,7 +5,7 @@
 
   const META_KEY='unvrsl-account-sync-meta-v1';
   const DEVICE_KEY='unvrsl-device-id-v1';
-  let suppress=false,timerId=null,inflight=null,lastUserId=null;
+  let suppress=false,timerId=null,inflight=null,lastUserId=null,conflictRetries=0;
   const structuredCache=new Map(),uploadedSessions=new Map();
 
   const clone=x=>{try{return JSON.parse(JSON.stringify(x))}catch(e){return null}};
@@ -15,9 +15,10 @@
     if(!id){id='d_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10);localStorage.setItem(DEVICE_KEY,id)}
     return id;
   }
-  function meta(){return parse(localStorage.getItem(META_KEY))||{localModifiedAt:0,lastSyncedAt:0}}
-  function setMeta(patch){const m={...meta(),...patch};localStorage.setItem(META_KEY,JSON.stringify(m));return m}
-  function markLocal(){if(!suppress)setMeta({localModifiedAt:Date.now()})}
+  function metaKey(){return META_KEY+':'+String(typeof window!=='undefined'?window.cloud?.user?.id||window.st?.accountOwnerId||'local':'local')}
+  function meta(){return parse(localStorage.getItem(metaKey()))||{localModifiedAt:0,lastSyncedAt:0,lastUserId:typeof window!=='undefined'?window.st?.accountOwnerId||null:null}}
+  function setMeta(patch){const m={...meta(),...patch};localStorage.setItem(metaKey(),JSON.stringify(m));return m}
+  function markLocal(){if(!suppress){setMeta({localModifiedAt:Date.now()});window.__unvrslSyncState={status:'pending',owner:window.cloud?.user?.id||st?.accountOwnerId||null};window.dispatchEvent(new CustomEvent('unvrsl:sync-state'))}}
   function arr(x){return Array.isArray(x)?x:[]}
   function doneCount(session){return arr(session?.ex).reduce((sum,e)=>sum+arr(e?.set).filter(x=>x?.ok).length,0)}
   function sessionTime(s){for(const value of [s?.ended,s?.endedAt,s?.started,s?.startedAt,s?.date]){if(typeof value==='number'&&Number.isFinite(value))return value;const num=Number(value);if(Number.isFinite(num)&&num>1e11)return num;const parsed=typeof value==='string'?Date.parse(value):NaN;if(Number.isFinite(parsed))return parsed}return 0}
@@ -44,6 +45,9 @@
     base.deletedBodyweights=base.deletedBodyweights.filter(x=>{const d=String(x?.d||x||'').slice(0,10),deletedAt=Number(x?.at||x?.t||0);return d&&deletedAt>=Number(weightStamp.get(d)||0)});
     const deletedWeights=new Set(base.deletedBodyweights.map(x=>String(x?.d||x||'').slice(0,10)).filter(Boolean));
     base.bw=base.bw.filter(x=>!deletedWeights.has(String(x.d||'').slice(0,10)));
+    base.deletedSessionIds=[...new Set([...arr(local.deletedSessionIds),...arr(remote.deletedSessionIds)])];
+    const deletedSessions=new Set(base.deletedSessionIds.map(String));base.sessions=base.sessions.filter(x=>!deletedSessions.has(String(x.id)));
+    base.mealNutritionV1=(typeof window!=='undefined'?window.UNVRSLNutritionState:null)?.merge(local.mealNutritionV1,remote.mealNutritionV1,preferRemote)||base.mealNutritionV1;
     base.deletedProgramKeys=[...new Set([...arr(local.deletedProgramKeys),...arr(remote.deletedProgramKeys)])];
     const deletedPrograms=new Set(base.deletedProgramKeys);
     const programKeys=p=>[p.id&&`id:${p.id}`,p.isMasterPlan&&'seed:master-trainer-plan',p.seedId&&`seed:${p.seedId}`,p.cloudPlanId&&`cloud:${p.cloudPlanId}`,p.templateKey&&`template:${p.templateKey}`,(p.seedId||p.internetTemplate||p.femaleTemplate||p.templateKey)&&p.name&&`name:${String(p.name).toLowerCase().replace(/[·•]/g,' ').replace(/\s+/g,' ').trim()}`].filter(Boolean);
@@ -101,6 +105,7 @@
     const user=c?.user;
     if(!c?.client||!user||window.__workoutFinishing)return false;
     if(inflight)return inflight;
+    window.__unvrslSyncState={status:'loading',owner:user.id};window.dispatchEvent(new CustomEvent('unvrsl:sync-state'));
     st=workoutStore.activateAccount(st,user.id,meta().lastUserId);workoutStore.restore(st,user.id);
     inflight=(async()=>{
       try{
@@ -121,16 +126,22 @@
         const stamp=Math.max(Date.now(),Number(meta().localModifiedAt||0),remoteStamp||0);
         setMeta({localModifiedAt:stamp});
         const payload={user_id:user.id,state:clone(st),client_updated_at:new Date(stamp).toISOString(),device_id:deviceId()};
-        const up=await c.client.from('user_app_state').upsert(payload,{onConflict:'user_id'});
-        if(up.error)throw up.error;
+        let up;
+        if(c.user?.id!==user.id)return false;
+        if(stateRes.data?.updated_at){
+          up=await c.client.from('user_app_state').update(payload).eq('user_id',user.id).eq('updated_at',stateRes.data.updated_at).select('user_id');
+          if(!up.error&&Array.isArray(up.data)&&!up.data.length)throw new Error('Другой прибор обновил данные. Повтори синхронизацию.');
+        }else up=await c.client.from('user_app_state').insert(payload);
+        if(up.error)throw up.error;conflictRetries=0;
+        if(c.user?.id!==user.id)return false;
         if(typeof cloudSyncSession==='function')for(const s of arr(st.sessions)){if(s.userId&&s.userId!==user.id||s.pendingCompletion)continue;const key=user.id+':'+s.id,value=JSON.stringify(s);if(uploadedSessions.get(key)===value)continue;if(await cloudSyncSession(s)!==true)throw new Error('Не удалось синхронизировать тренировку');uploadedSessions.set(key,value);}
         if(typeof cloudSyncBodyweights==='function')await cloudSyncBodyweights();
-        setMeta({lastSyncedAt:Date.now(),lastUserId:user.id});
+        setMeta({lastSyncedAt:Date.now(),lastUserId:user.id});window.__unvrslSyncState={status:meta().localModifiedAt>stamp?'pending':'synced',owner:user.id,at:Date.now()};window.dispatchEvent(new CustomEvent('unvrsl:sync-state'));
         if(!quiet)try{toast(remoteExists?'Данные аккаунта синхронизированы':'Облачная копия создана')}catch(e){}
         window.dispatchEvent?.(new CustomEvent('unvrsl:history-updated',{detail:{sessions:arr(st.sessions).length}}));
         try{render();if(document.querySelector('#programs.active'))window.trainerProgramsPage?.()}catch(e){}
         return true;
-      }catch(e){console.warn('UNVRSL account sync',e);if(!quiet)try{toast('Не удалось синхронизировать аккаунт')}catch(_){}return false}
+      }catch(e){if((e.code==='23505'||/Другой прибор обновил/.test(e.message))&&conflictRetries<2){conflictRetries++;setTimeout(()=>{if(window.cloud?.user?.id===user.id)reconcile({quiet:true})},350)}window.__unvrslSyncState={status:'error',owner:user.id,message:e.message};window.dispatchEvent(new CustomEvent('unvrsl:sync-state'));console.warn('UNVRSL account sync',e);if(!quiet)try{toast('Не удалось синхронизировать аккаунт')}catch(_){}return false}
       finally{inflight=null}
     })();
     return inflight;
@@ -143,7 +154,7 @@
 
   const baseSave=typeof window.save==='function'?window.save:null;
   if(baseSave){
-    window.save=function(){const result=baseSave.apply(this,arguments);markLocal();schedule();return result};
+    window.save=function(){const result=baseSave.apply(this,arguments);if(result!==false){markLocal();schedule()}return result};
     try{save=window.save}catch(e){}
   }
 

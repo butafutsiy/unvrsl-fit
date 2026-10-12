@@ -1,0 +1,10 @@
+{
+  "runtime": "v24.19.0",
+  "platform": "linux",
+  "environment": "container Node, no browser paint or network latency",
+  "catalog": 811,
+  "searchMedianMs": 16.39,
+  "searchP95Ms": 37.31,
+  "searchMaxMs": 48.57,
+  "menuGenerationMs": 276.39
+}

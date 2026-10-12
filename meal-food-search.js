@@ -9,7 +9,7 @@
     const complete=Object.values(raw).every(v=>v!==null)&&raw.k<=1000&&raw.p+raw.f+raw.c<=100.5;
     const volume=/(?:^|[\s\d])(?:ml|cl|мл|l|л)(?:$|\s)/i.test(String(p.quantity||'')+' '+String(p.serving_size||''))||String(p.nutrition_data_per||'').includes('ml')||(p.categories_tags||[]).some(t=>['en:beverages','en:milks'].includes(t));
     const code=String(p.code),brand=Array.isArray(p.brands)?p.brands.join(', '):String(p.brands||''),title=String(p.product_name_ru||p.product_name||'Продукт '+code).slice(0,100);
-    return {key:'off:'+code,id:'off-'+code,name:(title+(brand?' · '+brand:'' )).slice(0,120),raw,complete,unit:volume?'ml':'g',source:'Open Food Facts',sourceInfo:{provider:'openfoodfacts',code,url:'https://world.openfoodfacts.org/product/'+code,license:'ODbL',fetchedAt:new Date().toISOString()}};
+    return {key:'off:'+code,id:'off-'+code,name:(title+(brand?' · '+brand:'' )).slice(0,120),raw,complete,unit:volume?'ml':'g',source:'Open Food Facts',sourceInfo:{provider:'openfoodfacts',code,url:'https://world.openfoodfacts.org/product/'+code,license:'ODbL',unitEstimated:volume&&!String(p.nutrition_data_per||'').includes('ml'),fetchedAt:new Date().toISOString()}};
   }
   function createClient(fetcher=root.fetch?.bind(root),clock=()=>Date.now()){
     const cache=new Map(),requests=[];

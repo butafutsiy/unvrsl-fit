@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {JSDOM}=require(process.env.UNVRSL_JSDOM||'jsdom');
 const dom=new JSDOM('<div id="sheet"></div>',{runScripts:'dangerously',url:'https://app.test/'}),w=dom.window,D=w.document;
 w.st={accountOwnerId:'alice'};w.modal=html=>D.getElementById('sheet').innerHTML=html;w.save=()=>true;
-for(const file of ['meal-recipes-data.js','meal-catalog.js','meal-engine.js','meal-planner-ui.js'])w.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
+for(const file of ['meal-recipes-data.js','nutrition-foods-data.js','nutrition-labels-data.js','everyday-recipes-data.js','nutrition-state.js','meal-catalog.js','meal-engine.js','recipe-builder.js','meal-planner-ui.js','recipe-builder-ui.js'])w.eval(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
 const click=selector=>{const el=D.querySelector(selector);assert.ok(el,selector);el.click();};
 const tab=name=>click(`[data-mp="nutrition-view"][data-value="${name}"]`);
 const input=(id,value)=>{const el=D.getElementById(id);assert.ok(el,id);el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));};
@@ -19,13 +19,13 @@ input('mp-search','картошка свинина');assert.ok(shown().some(r=>r
 input('mp-search','свинина абракадабра');assert.equal(shown().length,0);assert.match(D.querySelector('.mp-empty').textContent,/Ничего не найдено/);
 // Saved restrictions still apply after shortcuts; these are not catalog view filters.
 w.st.mealNutritionV1.preferences.exclude='свин';quick('recipes','Свинина');assert.equal(shown().length,0);w.st.mealNutritionV1.preferences.exclude='';
-tab('products');click('[data-mp="product-filter"][data-value="grain"]');quick('products','Свинина');assert.equal(D.querySelectorAll('.mp-product-card').length,1);assert.ok(D.querySelector('[data-id="base:pork"]'));
+tab('products');click('[data-mp="product-filter"][data-value="grain"]');quick('products','Свинина');assert.ok(D.querySelectorAll('.mp-product-card').length>=13);assert.ok(D.querySelector('[data-id="base:pork"]'));
 input('mp-product-search','вырезка свиина');assert.ok(D.querySelector('[data-id="base:pork"]'));
-click('[data-mp="product-pick"][data-id="base:pork"]');input('mp-food-grams',150);assert.match(D.getElementById('mp-food-preview').textContent,/192 ккал/);click('[data-mp="extra"]');
-const date=D.getElementById('mp-date').value,entry=w.st.mealNutritionV1.days[date].extra[0];assert.equal(entry.nutrition.k,192);assert.equal(entry.productKey,'base:pork');assert.equal(entry.grams,150);
+click('[data-mp="product-pick"][data-id="base:pork"]');input('mp-food-grams',150);assert.match(D.getElementById('mp-food-preview').textContent,/163,5 ккал/);click('[data-mp="extra"]');
+const date=D.getElementById('mp-date').value,entry=w.st.mealNutritionV1.days[date].extra[0];assert.equal(entry.nutrition.k,163.5);assert.equal(entry.productKey,'base:pork');assert.equal(entry.grams,150);
 for(const [k,v] of Object.entries({k:2400,p:160,f:80,c:260}))input('mp-'+k,v);click('[data-mp="generate"]');
 const lunch=w.st.mealNutritionV1.days[date].plan.meals.find(m=>m.type==='lunch');click(`[data-mp="swap"][data-id="${lunch.id}"]`);quick('recipes','Свинина');
 const options=[...D.querySelectorAll('[data-mp="replace-choice"]')];assert.ok(options.length);assert.ok(options.some(el=>el.dataset.id.startsWith('pork-')));
 input('mp-search','гречка свинина');assert.ok(D.querySelectorAll('[data-mp="replace-choice"]').length);const first=D.querySelector('[data-mp="replace-choice"]');click(`[data-mp="replace-choice"][data-id="${first.dataset.id}"]`);
-assert.ok(w.st.mealNutritionV1.days[date].plan.meals.find(m=>m.id===lunch.id).ingredients.some(i=>i.id==='pork'));assert.equal(w.st.mealNutritionV1.days[date].extra[0].nutrition.k,192);
+assert.ok(w.st.mealNutritionV1.days[date].plan.meals.find(m=>m.id===lunch.id).ingredients.some(i=>i.id==='pork'));assert.equal(w.st.mealNutritionV1.days[date].extra[0].nutrition.k,163.5);
 dom.window.close();console.log('Search shortcuts, everyday pork recipes, inflections, typos, multiple ingredients, restrictions, product recording and replacements passed');

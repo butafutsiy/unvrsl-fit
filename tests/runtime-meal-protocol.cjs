@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {JSDOM}=require(process.env.UNVRSL_JSDOM||'jsdom');
 const E=require('../meal-engine.js'),N=require('../nutrition-planner.js'),root=path.resolve(__dirname,'..');
-const files=['meal-recipes-data.js','meal-catalog.js','meal-engine.js','meal-planner-ui.js'];
+const files=['meal-recipes-data.js','nutrition-foods-data.js','nutrition-labels-data.js','everyday-recipes-data.js','nutrition-state.js','meal-catalog.js','meal-engine.js','recipe-builder.js','meal-planner-ui.js','recipe-builder-ui.js'];
 const plain=x=>JSON.parse(JSON.stringify(x));
 const load=(w,file)=>w.eval(fs.readFileSync(path.join(root,file),'utf8'));
 const tick=w=>new Promise(r=>w.setTimeout(r,35));

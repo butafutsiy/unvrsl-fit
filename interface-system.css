@@ -1,0 +1,52 @@
+/* Semantic surfaces shared by both themes. Kept after legacy theme rules. */
+:root{--surface:var(--panel);--surface-raised:var(--panel2);--border:var(--line);--text-primary:var(--text);--text-secondary:var(--muted);--action:color-mix(in srgb,var(--accent) 65%,#29123e);--action-text:#fff;--success:#3eaf78;--warning:#e0a34e;--error:#ff6961;--focus:var(--accent);--shadow:0 12px 40px rgb(0 0 0 / .2);--control-height:44px;--space:8px}
+html[data-theme="light"]{--bg:#f4f5f8;--panel:#fff;--panel2:#eef0f5;--line:#d2d6df;--text:#1b2030;--muted:#596274;--success:#167744;--warning:#925408;--error:#b4232d;--shadow:0 12px 32px rgb(22 31 51 / .12)}
+html body button,html body summary{touch-action:manipulation}
+html body .btn,html body .check,html body .arrow,html body .nav button,html body .mp-datebar button,html body .mp-quick-search button,html body .mp-product-filters button,html body .seg button{min-height:44px}
+html body .btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);line-height:1.3;overflow-wrap:anywhere;white-space:normal}
+html body .btn.primary,html[data-theme="light"] body .btn.primary{background:var(--action)!important;border-color:var(--action)!important;color:var(--action-text)!important}
+html body .btn.danger{background:color-mix(in srgb,var(--error) 10%,var(--panel))!important;color:var(--error)!important;border-color:color-mix(in srgb,var(--error) 35%,var(--line))!important}
+html body button:disabled{opacity:.55;cursor:default}
+html body :is(button,input,textarea,select,summary,a):focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+html body :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]):not([type="file"]){font-size:16px;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:12px;min-width:0;max-width:100%;min-height:44px}
+html body input:-webkit-autofill{-webkit-text-fill-color:var(--text);box-shadow:0 0 0 1000px var(--panel) inset}
+html body .setrow input{font-variant-numeric:tabular-nums}
+html body .topbar{padding-top:max(16px,env(safe-area-inset-top));background:var(--bg)!important}
+html body .brand{font-size:clamp(24px,7vw,32px);letter-spacing:-.8px;overflow-wrap:anywhere}
+html body .gear{width:44px;height:44px;flex:0 0 44px;background:var(--panel2);border:1px solid var(--line);color:var(--text)}
+html body .row>div,html body .grow,html body .today-main,html body .mp-head>div{min-width:0}
+html body .mp-recipe h3,html body .mp-meal h3,html body .mp-extra b{overflow-wrap:anywhere}
+html body #unvrsl-startup-v258{background:var(--bg)!important}
+html body #unvrsl-startup-v258 .u-brand{color:var(--text)!important;font-size:36px}
+html body #unvrsl-startup-v258 .u-status{color:var(--muted)!important}
+html body .toast{border-radius:14px;box-shadow:var(--shadow);line-height:1.4}
+html body .mp-error{color:var(--error)}
+html body .mp-copy{line-height:1.5}
+html body .mp-recipe-tools{flex-wrap:wrap;justify-content:flex-end}
+html body .mp-actions>.btn{min-width:0;text-align:center}
+html body .seg{flex-wrap:wrap;gap:2px}
+html body .setting:has([onclick^="setTheme"]){flex-wrap:wrap}
+html body .strength-value-pill text{fill:#fff!important}
+html body .mp-save-status{font-size:12px;color:var(--muted);margin:8px 0}
+html body #modal .sheet{scroll-padding:16px 0 100px}
+html body #modal .sheet input{scroll-margin:90px 0}
+html body .mp-recipe-editor{display:grid;gap:12px;margin:12px 0;padding:14px;background:var(--panel2);border:1px solid var(--line);border-radius:16px}
+html body .mp-recipe-editor label{display:grid;gap:6px;font-size:13px}
+html body .mp-recipe-editor textarea{width:100%;padding:12px}
+html body .mp-recipe-editor-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+html body .mp-editor-totals{line-height:1.5;font-variant-numeric:tabular-nums}
+html body .mp-source-badge{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+@media(max-width:360px){html body .page{padding-inline:10px}html body #modal .sheet{padding-inline:12px!important}html body .sethead,html body .setrow{grid-template-columns:24px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 44px;gap:4px}html body .setrow input{padding-inline:3px}html body .setting{gap:8px}html body .mp-recipe-editor-actions{grid-template-columns:1fr}html body .mp-metrics{gap:6px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important;scroll-behavior:auto!important}}
+
+html body .check{min-width:44px}html body .color{width:44px;height:44px}
+html body .strength-value-pill rect{fill:var(--action)!important}html body .strength-marker.e1 .strength-value-pill rect{fill:#17679e!important}
+html[data-theme="light"] body .green,html[data-theme="light"] body .nav button.active{color:var(--action)!important}
+html body #modal.modal{height:var(--visible-height,100dvh);bottom:auto}
+
+/* Legacy mobile inset rules must not combine with desktop translateX. */
+html body .nav{left:8px!important;right:8px!important;width:auto!important;max-width:760px!important;transform:none!important}
+@media(min-width:780px){html body .nav{left:50%!important;right:auto!important;transform:translateX(-50%)!important;width:calc(100% - 32px)!important}}
+html body .btn{box-shadow:none!important;background-image:none!important}
+
+html body [hidden]{display:none!important}

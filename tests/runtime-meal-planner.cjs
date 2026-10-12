@@ -10,7 +10,7 @@ function make(seed){
  w.closeModal=()=>{w.document.getElementById('sheet').innerHTML=''};
  w.save=()=>{persisted=JSON.stringify(w.st);return true};
  w.openNutritionPlannerV311=()=>{};
- for(const file of ['meal-recipes-data.js','meal-catalog.js','meal-engine.js','meal-planner-ui.js'])w.eval(fs.readFileSync(path.join(root,file),'utf8'));
+ for(const file of ['meal-recipes-data.js','nutrition-foods-data.js','nutrition-labels-data.js','everyday-recipes-data.js','nutrition-state.js','meal-catalog.js','meal-engine.js','recipe-builder.js','meal-planner-ui.js','recipe-builder-ui.js'])w.eval(fs.readFileSync(path.join(root,file),'utf8'));
  return dom;
 }
 const click=(w,action,id)=>w.document.querySelector(`[data-mp="${action}"]${id?`[data-id="${id}"]`:''}`).click();
@@ -38,7 +38,7 @@ const plain=x=>JSON.parse(JSON.stringify(x));
  click(w,'generate');assert.deepEqual(plain(w.st.mealNutritionV1.days[date].eaten['meal-0']),eaten);
  for(const m of w.st.mealNutritionV1.days[date].plan.meals.slice(1))assert.notEqual(m.recipeId,previousRecipes[Number(m.id.split('-')[1])]);
  click(w,'eat','meal-0');assert.deepEqual(plain(w.st.mealNutritionV1.days[date].plan.meals[0].ingredients),originalFirst.ingredients,'undo after regeneration restores the original full portion');
- set(w,'mp-portion-meal-0',.5);w.document.getElementById('mp-portion-meal-0').dispatchEvent(new w.Event('input',{bubbles:true}));assert.match(w.document.getElementById('mp-portion-preview-meal-0').textContent,/Будет записано/);click(w,'eat','meal-0');assert.deepEqual(plain(w.st.mealNutritionV1.days[date].eaten['meal-0']),eaten);
+ set(w,'mp-portion-meal-0',.5);w.document.getElementById('mp-portion-meal-0').dispatchEvent(new w.Event('input',{bubbles:true}));assert.match(w.document.getElementById('mp-portion-preview-meal-0').textContent,/Будет записано/);click(w,'eat','meal-0');assert.deepEqual({...plain(w.st.mealNutritionV1.days[date].eaten['meal-0']),updatedAt:eaten.updatedAt},eaten);
  // Weigh a complete cooked serving, then record exactly half of it in grams.
  const lunch=w.st.mealNutritionV1.days[date].plan.meals[1];
  set(w,'mp-ready-'+lunch.id,600);click(w,'ready-weight',lunch.id);
@@ -74,7 +74,7 @@ const plain=x=>JSON.parse(JSON.stringify(x));
  assert.equal(w.document.querySelectorAll('.mp-recipe').length,24);
  click(w,'more');assert.equal(w.document.querySelectorAll('.mp-recipe').length,48);
  set(w,'mp-search','борщ');w.document.getElementById('mp-search').dispatchEvent(new w.Event('input',{bubbles:true}));assert.ok(w.document.querySelectorAll('.mp-recipe').length>0,'catalog includes recipes slower than automatic menu preference');
- set(w,'mp-search','Карбонара');w.document.getElementById('mp-search').dispatchEvent(new w.Event('input',{bubbles:true}));
+ w.document.getElementById('mp-show-world').checked=true;w.document.getElementById('mp-show-world').dispatchEvent(new w.Event('change',{bubbles:true}));set(w,'mp-search','Карбонара');w.document.getElementById('mp-search').dispatchEvent(new w.Event('input',{bubbles:true}));
  assert.equal(w.document.querySelectorAll('.mp-recipe').length,1);
  assert.match(w.document.getElementById('mp-recipes').textContent,/Гуанчале/);
  const chosenSlot=w.document.getElementById('mp-pick-ut-spaghetti-carbonara').value;

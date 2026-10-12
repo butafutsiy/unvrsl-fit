@@ -1,0 +1,20 @@
+{
+  "products": 839,
+  "verifiedProducts": 839,
+  "legacyEstimates": [],
+  "recipes": 310,
+  "readyRecipes": 310,
+  "supplementalWorld": 501,
+  "coverage": {
+    "beef": 52,
+    "pork": 27,
+    "poultry": 58,
+    "fish": 46,
+    "breakfast": 88,
+    "soup": 26,
+    "salad": 22,
+    "snackAndSandwich": 24,
+    "burgerWrapSandwich": 15
+  },
+  "errors": []
+}

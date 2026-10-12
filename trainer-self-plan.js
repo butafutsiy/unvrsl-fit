@@ -274,7 +274,7 @@
     window.st.deletedSessionIds=A(window.st.deletedSessionIds);if(id&&!window.st.deletedSessionIds.map(String).includes(id))window.st.deletedSessionIds.push(id);
     window.st.sessions=A(window.st.sessions).filter(x=>String(x.id)!==id);if(window.st.current&&String(window.st.current.id)===id)window.st.current=null;
     if(typeof save==='function')save();
-    await c.client.from('user_app_state').upsert({user_id:c.user.id,state:window.st,client_updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    await window.accountSyncNow?.({quiet:true});
     C.at=0;closeModal();await renderSelf(true);toast('Тренировка удалена');
   };
 

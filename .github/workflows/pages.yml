@@ -32,6 +32,8 @@ jobs:
         run: node --test tests/*.test.cjs
       - name: Require complete canonical catalog
         run: node scripts/audit-exercises.cjs --strict
+      - name: Require verified nutrition catalog
+        run: node scripts/audit-nutrition.cjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:

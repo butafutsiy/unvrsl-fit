@@ -1,0 +1,8 @@
+{
+  "archiveSHA256": "8308fd1d224ef1e5331093748007180da01a7ac713cbac6a1f5bc2a03e1ee70a",
+  "foodDescriptionsSHA256": "bb2047218cdad1d830da69e760386409fde3b7afabceae604c5479f280d4fa2e",
+  "nutrientDataSHA256": "506c9ee39a276ac8f53565d270597e430944ec3363adb53a91cc6ee8c061fac5",
+  "count": 835,
+  "missingNutrients": 0,
+  "duplicateNames": 0
+}

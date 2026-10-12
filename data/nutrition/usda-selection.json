@@ -1,0 +1,6444 @@
+{
+  "01001": {
+    "name": "Масло сливочное солёное",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01003": {
+    "name": "Масло топлёное",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01004": {
+    "name": "Сыр с голубой плесенью",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01006": {
+    "name": "Сыр бри",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01007": {
+    "name": "Сыр камамбер",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01009": {
+    "name": "Сыр чеддер",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01010": {
+    "name": "Сыр чешир",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01011": {
+    "name": "Сыр колби",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01012": {
+    "name": "Творожное зерно со сливками",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01014": {
+    "name": "Творожное зерно обезжиренное",
+    "state": "dry",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01015": {
+    "name": "Творожное зерно 2%",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01016": {
+    "name": "Творожное зерно 1%",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01017": {
+    "name": "Сливочный сыр",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01018": {
+    "name": "Сыр эдам",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01019": {
+    "name": "Сыр фета",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01020": {
+    "name": "Сыр фонтина",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01022": {
+    "name": "Сыр гауда",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01023": {
+    "name": "Сыр грюйер",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01026": {
+    "name": "Моцарелла из цельного молока",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01028": {
+    "name": "Моцарелла из частично обезжиренного молока",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01033": {
+    "name": "Сыр пармезан",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01035": {
+    "name": "Сыр проволоне",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01036": {
+    "name": "Рикотта из цельного молока",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01037": {
+    "name": "Рикотта из частично обезжиренного молока",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01039": {
+    "name": "Сыр рокфор",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01040": {
+    "name": "Швейцарский сыр",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01041": {
+    "name": "Сыр тильзитер",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01049": {
+    "name": "Сливки half-and-half",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01050": {
+    "name": "Сливки лёгкие",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01052": {
+    "name": "Сливки для взбивания",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01053": {
+    "name": "Сливки жирные для взбивания",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01055": {
+    "name": "Сметана пониженной жирности, справочник",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01056": {
+    "name": "Сметана обычная, справочник",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01088": {
+    "name": "Пахта кисломолочная нежирная",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01090": {
+    "name": "Молоко сухое цельное",
+    "state": "dry",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01095": {
+    "name": "Молоко сгущённое с сахаром",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01106": {
+    "name": "Молоко козье",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01109": {
+    "name": "Молоко овечье",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01112": {
+    "name": "Сыворотка кислая жидкая",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01114": {
+    "name": "Сыворотка сладкая жидкая",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01116": {
+    "name": "Йогурт натуральный цельномолочный",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01117": {
+    "name": "Йогурт натуральный нежирный",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01118": {
+    "name": "Йогурт натуральный обезжиренный",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01123": {
+    "name": "Яйцо куриное сырое без скорлупы",
+    "state": "raw",
+    "category": "dairy",
+    "allergens": [
+      "egg"
+    ],
+    "vegetarian": true
+  },
+  "01124": {
+    "name": "Белок куриного яйца сырой",
+    "state": "raw",
+    "category": "dairy",
+    "allergens": [
+      "egg"
+    ],
+    "vegetarian": true
+  },
+  "01125": {
+    "name": "Желток куриного яйца сырой",
+    "state": "raw",
+    "category": "dairy",
+    "allergens": [
+      "egg"
+    ],
+    "vegetarian": true
+  },
+  "01128": {
+    "name": "Яйцо куриное жареное, справочник",
+    "state": "cooked",
+    "category": "dairy",
+    "allergens": [
+      "egg"
+    ],
+    "vegetarian": true
+  },
+  "01129": {
+    "name": "Яйцо куриное варёное без скорлупы",
+    "state": "cooked",
+    "category": "dairy",
+    "allergens": [
+      "egg"
+    ],
+    "vegetarian": true
+  },
+  "01131": {
+    "name": "Яйцо пашот",
+    "state": "cooked",
+    "category": "dairy",
+    "allergens": [
+      "egg"
+    ],
+    "vegetarian": true
+  },
+  "01140": {
+    "name": "Яйцо перепелиное сырое без скорлупы",
+    "state": "raw",
+    "category": "dairy",
+    "allergens": [
+      "egg"
+    ],
+    "vegetarian": true
+  },
+  "01145": {
+    "name": "Масло сливочное несолёное",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01151": {
+    "name": "Молоко обезжиренное, без витаминных добавок",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01155": {
+    "name": "Молоко сухое обезжиренное",
+    "state": "dry",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01156": {
+    "name": "Козий сыр твёрдый",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01157": {
+    "name": "Козий сыр полумягкий",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01159": {
+    "name": "Козий сыр мягкий",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01174": {
+    "name": "Молоко 2%, без витаминных добавок",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01175": {
+    "name": "Молоко 1%, без витаминных добавок",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01211": {
+    "name": "Молоко 3,25%, без витаминных добавок",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01214": {
+    "name": "Молоко концентрированное",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01256": {
+    "name": "Йогурт греческий натуральный обезжиренный",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01287": {
+    "name": "Йогурт греческий натуральный нежирный",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "01293": {
+    "name": "Йогурт греческий натуральный цельномолочный",
+    "state": "ready",
+    "category": "dairy",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "02001": {
+    "name": "Перец душистый молотый",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02002": {
+    "name": "Анис семена",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02003": {
+    "name": "Базилик сушёный",
+    "state": "dry",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02004": {
+    "name": "Лавровый лист сушёный",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02005": {
+    "name": "Тмин семена",
+    "state": "raw",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02006": {
+    "name": "Кардамон",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02007": {
+    "name": "Сельдерей семена",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [
+      "celery"
+    ],
+    "vegetarian": true
+  },
+  "02009": {
+    "name": "Перец чили порошок",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02010": {
+    "name": "Корица молотая",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02011": {
+    "name": "Гвоздика молотая",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02012": {
+    "name": "Кинза сушёная",
+    "state": "dry",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02013": {
+    "name": "Кориандр семена",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02014": {
+    "name": "Зира семена",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02015": {
+    "name": "Карри порошок",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02016": {
+    "name": "Укроп семена",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02017": {
+    "name": "Укроп сушёный",
+    "state": "dry",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02018": {
+    "name": "Фенхель семена",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02019": {
+    "name": "Пажитник семена",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02020": {
+    "name": "Чеснок сушёный порошок",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02021": {
+    "name": "Имбирь молотый",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02023": {
+    "name": "Майоран сушёный",
+    "state": "dry",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02024": {
+    "name": "Горчица семена молотые",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [
+      "mustard"
+    ],
+    "vegetarian": true
+  },
+  "02025": {
+    "name": "Мускатный орех молотый",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02026": {
+    "name": "Лук сушёный порошок",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02027": {
+    "name": "Орегано сушёный",
+    "state": "dry",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02028": {
+    "name": "Паприка",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02029": {
+    "name": "Петрушка сушёная",
+    "state": "dry",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02030": {
+    "name": "Перец чёрный молотый",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02031": {
+    "name": "Перец красный молотый",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02032": {
+    "name": "Перец белый молотый",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02033": {
+    "name": "Мак семена",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02036": {
+    "name": "Розмарин сушёный",
+    "state": "dry",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02037": {
+    "name": "Шафран",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02038": {
+    "name": "Шалфей молотый",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02041": {
+    "name": "Эстрагон сушёный",
+    "state": "dry",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02042": {
+    "name": "Тимьян сушёный",
+    "state": "dry",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02043": {
+    "name": "Куркума молотая",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02044": {
+    "name": "Базилик свежий",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02045": {
+    "name": "Укроп свежий",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02046": {
+    "name": "Горчица столовая",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [
+      "mustard"
+    ],
+    "vegetarian": true
+  },
+  "02047": {
+    "name": "Соль поваренная",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02048": {
+    "name": "Уксус яблочный",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02049": {
+    "name": "Тимьян свежий",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02053": {
+    "name": "Уксус столовый",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02054": {
+    "name": "Каперсы консервированные",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02055": {
+    "name": "Хрен столовый",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02063": {
+    "name": "Розмарин свежий",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02064": {
+    "name": "Мята перечная свежая",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02068": {
+    "name": "Уксус винный красный",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "02069": {
+    "name": "Уксус бальзамический",
+    "state": "ready",
+    "category": "spice",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "04001": {
+    "name": "Жир говяжий топлёный",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "04002": {
+    "name": "Жир свиной топлёный",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "04025": {
+    "name": "Майонез обычный, справочник",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [
+      "mustard",
+      "egg"
+    ],
+    "vegetarian": true
+  },
+  "04037": {
+    "name": "Масло рисовых отрубей",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "04042": {
+    "name": "Масло арахисовое",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "04044": {
+    "name": "Масло соевое",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [
+      "soy"
+    ],
+    "vegetarian": true
+  },
+  "04047": {
+    "name": "Масло кокосовое",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "04053": {
+    "name": "Масло оливковое",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "04058": {
+    "name": "Масло кунжутное",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [
+      "seeds",
+      "sesame"
+    ],
+    "vegetarian": true
+  },
+  "04506": {
+    "name": "Масло подсолнечное",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "04517": {
+    "name": "Масло виноградной косточки",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "04518": {
+    "name": "Масло кукурузное",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "04528": {
+    "name": "Масло грецкого ореха",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "04529": {
+    "name": "Масло миндальное",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "04542": {
+    "name": "Жир куриный",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "04574": {
+    "name": "Жир утиный",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "04576": {
+    "name": "Жир гусиный",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "04581": {
+    "name": "Масло авокадо",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "04582": {
+    "name": "Масло рапсовое",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "04583": {
+    "name": "Масло горчичное",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [
+      "mustard"
+    ],
+    "vegetarian": true
+  },
+  "04641": {
+    "name": "Майонез лёгкий, справочник",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [
+      "mustard",
+      "egg"
+    ],
+    "vegetarian": true
+  },
+  "05023": {
+    "name": "Куриные желудки сырые",
+    "state": "raw",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05024": {
+    "name": "Куриные желудки варёные",
+    "state": "cooked",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05025": {
+    "name": "Куриное сердце сырое",
+    "state": "raw",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05026": {
+    "name": "Куриное сердце варёное",
+    "state": "cooked",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05027": {
+    "name": "Куриная печень сырая",
+    "state": "raw",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05028": {
+    "name": "Куриная печень варёная",
+    "state": "cooked",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05062": {
+    "name": "Куриная грудка без кожи сырая",
+    "state": "raw",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05064": {
+    "name": "Куриная грудка без кожи запечённая",
+    "state": "cooked",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05080": {
+    "name": "Куриная голень и бедро без кожи сырые",
+    "state": "raw",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05096": {
+    "name": "Куриное бедро без кожи сырое",
+    "state": "raw",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05141": {
+    "name": "Утка мясо без кожи сырое",
+    "state": "raw",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05148": {
+    "name": "Гусь мясо без кожи сырое",
+    "state": "raw",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05167": {
+    "name": "Индейка целая, мясо без кожи сырое",
+    "state": "raw",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05168": {
+    "name": "Индейка целая, мясо без кожи запечённое",
+    "state": "cooked",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05177": {
+    "name": "Печень индейки сырая",
+    "state": "raw",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05178": {
+    "name": "Печень индейки варёная",
+    "state": "cooked",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05710": {
+    "name": "Грудка индейки без кожи сырая",
+    "state": "raw",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "05717": {
+    "name": "Бедро индейки без кожи сырое",
+    "state": "raw",
+    "category": "poultry",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "06150": {
+    "name": "Соус барбекю, справочник",
+    "state": "ready",
+    "category": "sauce",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09003": {
+    "name": "Яблоко, сырой продукт, с кожурой",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09004": {
+    "name": "Яблоко, сырой продукт, без кожуры",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09005": {
+    "name": "Яблоко, сырой продукт, варёный, без кожуры",
+    "state": "cooked",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09006": {
+    "name": "Яблоко, сырой продукт, приготовленный, без кожуры",
+    "state": "cooked",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09007": {
+    "name": "Яблоко, консервированный, с сахаром, без жидкости",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09009": {
+    "name": "Яблоко, сырой продукт, сушёный, приготовленный",
+    "state": "cooked",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09010": {
+    "name": "Яблоко, сушёный, приготовленный",
+    "state": "cooked",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09014": {
+    "name": "Яблоко, замороженный, без сахара",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09021": {
+    "name": "Абрикос, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09022": {
+    "name": "Абрикос, консервированный, с кожурой",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09023": {
+    "name": "Абрикос, консервированный, без кожуры",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09025": {
+    "name": "Абрикос, консервированный, в лёгком сиропе, с кожурой",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09027": {
+    "name": "Абрикос, консервированный, в густом сиропе, с кожурой",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09028": {
+    "name": "Абрикос, консервированный, в густом сиропе, без кожуры",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09030": {
+    "name": "Абрикос, сырой продукт, сушёный, приготовленный",
+    "state": "cooked",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09031": {
+    "name": "Абрикос, сушёный, приготовленный",
+    "state": "cooked",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09035": {
+    "name": "Абрикос, замороженный, с сахаром",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09038": {
+    "name": "Авокадо, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09040": {
+    "name": "Банан, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09041": {
+    "name": "Банан, сушёный",
+    "state": "dry",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09042": {
+    "name": "Ежевика, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09046": {
+    "name": "Ежевика, консервированный, в густом сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09048": {
+    "name": "Ежевика, замороженный, без сахара",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09050": {
+    "name": "Голубика, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09052": {
+    "name": "Голубика, консервированный, в густом сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09054": {
+    "name": "Голубика, замороженный, без сахара",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09055": {
+    "name": "Голубика, замороженный, с сахаром",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09063": {
+    "name": "Вишня, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09065": {
+    "name": "Вишня, консервированный, в лёгком сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09066": {
+    "name": "Вишня, консервированный, в густом сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09068": {
+    "name": "Вишня, замороженный, без сахара",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09070": {
+    "name": "Черешня, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09071": {
+    "name": "Черешня, консервированный",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09073": {
+    "name": "Черешня, консервированный, в лёгком сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09074": {
+    "name": "Черешня, консервированный, в густом сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09076": {
+    "name": "Черешня, замороженный, с сахаром",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09078": {
+    "name": "Клюква, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09079": {
+    "name": "Клюква, сушёный, с сахаром",
+    "state": "dry",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09083": {
+    "name": "Чёрная смородина, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09084": {
+    "name": "Красная и белая смородина, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09087": {
+    "name": "Финики, готовый продукт",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09089": {
+    "name": "Инжир, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09090": {
+    "name": "Инжир, консервированный",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09091": {
+    "name": "Инжир, консервированный, в лёгком сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09092": {
+    "name": "Инжир, консервированный, в густом сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09094": {
+    "name": "Инжир, сырой продукт, сушёный, приготовленный",
+    "state": "cooked",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09095": {
+    "name": "Инжир, сушёный, приготовленный",
+    "state": "cooked",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09107": {
+    "name": "Крыжовник, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09109": {
+    "name": "Крыжовник, консервированный, в лёгком сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09111": {
+    "name": "Грейпфрут, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09119": {
+    "name": "Грейпфрут, консервированный",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09121": {
+    "name": "Грейпфрут, консервированный, в лёгком сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09123": {
+    "name": "Грейпфрутовый сок, консервированный, без сахара",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09124": {
+    "name": "Грейпфрутовый сок, консервированный, с сахаром",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09125": {
+    "name": "Грейпфрутовый сок, замороженный, без сахара",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09127": {
+    "name": "Грейпфрутовый сок, готовый продукт",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09128": {
+    "name": "Грейпфрутовый сок, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09129": {
+    "name": "Виноград, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09130": {
+    "name": "Виноградный сок, консервированный, без сахара",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09139": {
+    "name": "Гуава, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09148": {
+    "name": "Киви, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09150": {
+    "name": "Лимон, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09152": {
+    "name": "Лимонный сок сырой",
+    "state": "raw",
+    "category": "sauce",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09153": {
+    "name": "Лимонный сок, консервированный",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09154": {
+    "name": "Лимонный сок, замороженный, без сахара",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09159": {
+    "name": "Лайм, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09163": {
+    "name": "Голубика, сушёный, с сахаром",
+    "state": "dry",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09176": {
+    "name": "Манго, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09177": {
+    "name": "Манго, консервированный",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09181": {
+    "name": "Дыня канталупа, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09184": {
+    "name": "Дыня медовая, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09191": {
+    "name": "Нектарин, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09193": {
+    "name": "Оливки, консервированный",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09200": {
+    "name": "Апельсин сырой без кожуры",
+    "state": "raw",
+    "category": "sauce",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09201": {
+    "name": "Апельсин, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09205": {
+    "name": "Апельсин, сырой продукт, с кожурой",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09206": {
+    "name": "Апельсиновый сок, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09207": {
+    "name": "Апельсиновый сок, консервированный, без сахара",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09209": {
+    "name": "Апельсиновый сок, готовый продукт",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09212": {
+    "name": "Апельсиновый сок, замороженный, без сахара",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09218": {
+    "name": "Мандарин, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09220": {
+    "name": "Мандарин, консервированный, в лёгком сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09226": {
+    "name": "Папайя, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09236": {
+    "name": "Персик, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09237": {
+    "name": "Персик, консервированный",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09239": {
+    "name": "Персик, консервированный, в лёгком сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09241": {
+    "name": "Персик, консервированный, в густом сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09244": {
+    "name": "Персик, сырой продукт, сушёный, приготовленный",
+    "state": "cooked",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09245": {
+    "name": "Персик, сушёный, приготовленный",
+    "state": "cooked",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09250": {
+    "name": "Персик, замороженный, с сахаром",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09252": {
+    "name": "Груша, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09253": {
+    "name": "Груша, консервированный",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09255": {
+    "name": "Груша, консервированный, в лёгком сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09257": {
+    "name": "Груша, консервированный, в густом сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09259": {
+    "name": "Груша, сырой продукт, сушёный, приготовленный",
+    "state": "cooked",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09263": {
+    "name": "Хурма, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09264": {
+    "name": "Хурма, сушёный",
+    "state": "dry",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09266": {
+    "name": "Ананас, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09267": {
+    "name": "Ананас, консервированный",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09269": {
+    "name": "Ананас, консервированный, в лёгком сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09270": {
+    "name": "Ананас, консервированный, в густом сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09272": {
+    "name": "Ананас, замороженный, с сахаром",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09274": {
+    "name": "Ананасовый сок, замороженный, без сахара",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09279": {
+    "name": "Слива, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09281": {
+    "name": "Слива, консервированный",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09283": {
+    "name": "Слива, консервированный, в лёгком сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09284": {
+    "name": "Слива, консервированный, в густом сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09286": {
+    "name": "Гранат, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09288": {
+    "name": "Чернослив, консервированный, в густом сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09289": {
+    "name": "Чернослив, сырой продукт, сушёный, приготовленный",
+    "state": "cooked",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09290": {
+    "name": "Чернослив, сушёный, приготовленный",
+    "state": "cooked",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09291": {
+    "name": "Слива, сырой продукт, сушёный, приготовленный",
+    "state": "cooked",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09298": {
+    "name": "Изюм без косточек",
+    "state": "ready",
+    "category": "sauce",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09299": {
+    "name": "Изюм, готовый продукт",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09302": {
+    "name": "Малина, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09304": {
+    "name": "Малина, консервированный, в густом сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09306": {
+    "name": "Малина, замороженный, с сахаром",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09316": {
+    "name": "Клубника, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09317": {
+    "name": "Клубника, сырой продукт, консервированный, в густом сиропе",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09318": {
+    "name": "Клубника, сырой продукт, замороженный, без сахара",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09319": {
+    "name": "Клубника, сырой продукт, замороженный, с сахаром",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09326": {
+    "name": "Арбуз, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09352": {
+    "name": "Голубика, консервированный, в лёгком сиропе, без жидкости",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09357": {
+    "name": "Абрикос, консервированный, в густом сиропе, без жидкости",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09367": {
+    "name": "Черешня, консервированный, в густом сиропе, без жидкости",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09370": {
+    "name": "Персик, консервированный, в густом сиропе, без жидкости",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09374": {
+    "name": "Груша, консервированный, в густом сиропе, без жидкости",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09379": {
+    "name": "Слива, консервированный, в густом сиропе, без жидкости",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09400": {
+    "name": "Яблочный сок, консервированный, без сахара",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09401": {
+    "name": "Яблоко, консервированный, без сахара",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09403": {
+    "name": "Абрикосовый нектар, консервированный",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09407": {
+    "name": "Персиковый нектар, консервированный",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09408": {
+    "name": "Грушевый нектар, консервированный",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09409": {
+    "name": "Ананасовый сок, консервированный, без сахара",
+    "state": "canned",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09410": {
+    "name": "Яблочный сок, замороженный, без сахара",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09416": {
+    "name": "Грейпфрутовый сок, без сахара",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09433": {
+    "name": "Клементин, сырой продукт",
+    "state": "raw",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09518": {
+    "name": "Малина, замороженный, без сахара",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09522": {
+    "name": "Клюквенный сок, готовый продукт",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "09523": {
+    "name": "Лимонный сок, готовый продукт",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "10005": {
+    "name": "Свинина грудинка сырая",
+    "state": "raw",
+    "category": "pork",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "10060": {
+    "name": "Свинина вырезка нежирная сырая",
+    "state": "raw",
+    "category": "pork",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "10061": {
+    "name": "Свинина вырезка нежирная запечённая",
+    "state": "cooked",
+    "category": "pork",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "10070": {
+    "name": "Свинина лопатка с жиром сырая",
+    "state": "raw",
+    "category": "pork",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "10071": {
+    "name": "Свинина лопатка с жиром запечённая",
+    "state": "cooked",
+    "category": "pork",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "10072": {
+    "name": "Свинина лопатка нежирная сырая",
+    "state": "raw",
+    "category": "pork",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "10073": {
+    "name": "Свинина лопатка нежирная запечённая",
+    "state": "cooked",
+    "category": "pork",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "10110": {
+    "name": "Печень свиная сырая",
+    "state": "raw",
+    "category": "pork",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "10111": {
+    "name": "Печень свиная тушёная",
+    "state": "cooked",
+    "category": "pork",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "10972": {
+    "name": "Фарш свиной 16% жира сырой",
+    "state": "raw",
+    "category": "pork",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "10973": {
+    "name": "Фарш свиной 4% жира сырой",
+    "state": "raw",
+    "category": "pork",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "10975": {
+    "name": "Фарш свиной 16% жира приготовленный крошкой",
+    "state": "cooked",
+    "category": "pork",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "10976": {
+    "name": "Фарш свиной 4% жира приготовленный крошкой",
+    "state": "cooked",
+    "category": "pork",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "11007": {
+    "name": "Артишок, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11008": {
+    "name": "Артишок, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11009": {
+    "name": "Артишок, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11010": {
+    "name": "Артишок, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11011": {
+    "name": "Спаржа, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11012": {
+    "name": "Спаржа, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11013": {
+    "name": "Спаржа, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11015": {
+    "name": "Спаржа, консервированный, без жидкости",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11018": {
+    "name": "Спаржа, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11019": {
+    "name": "Спаржа, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11052": {
+    "name": "Зелёная стручковая фасоль, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11053": {
+    "name": "Зелёная стручковая фасоль, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11054": {
+    "name": "Зелёная стручковая фасоль, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11056": {
+    "name": "Зелёная стручковая фасоль, консервированный, без жидкости",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11060": {
+    "name": "Зелёная стручковая фасоль, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11061": {
+    "name": "Зелёная стручковая фасоль, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11062": {
+    "name": "Зелёная стручковая фасоль, замороженный",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11063": {
+    "name": "Зелёная стручковая фасоль, готовый продукт",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11080": {
+    "name": "Свёкла сырая",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11081": {
+    "name": "Свёкла, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11082": {
+    "name": "Свёкла, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11084": {
+    "name": "Свёкла, консервированный, без жидкости",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11086": {
+    "name": "Свекольная ботва, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11087": {
+    "name": "Свекольная ботва, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11090": {
+    "name": "Брокколи, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11091": {
+    "name": "Брокколи, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11092": {
+    "name": "Брокколи, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11093": {
+    "name": "Брокколи, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11097": {
+    "name": "Брокколи, приготовленный",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11098": {
+    "name": "Брюссельская капуста, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11099": {
+    "name": "Брюссельская капуста, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11100": {
+    "name": "Брюссельская капуста, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11101": {
+    "name": "Брюссельская капуста, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11109": {
+    "name": "Капуста белокочанная сырая",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11110": {
+    "name": "Белокочанная капуста, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11112": {
+    "name": "Краснокочанная капуста, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11113": {
+    "name": "Краснокочанная капуста, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11114": {
+    "name": "Савойская капуста, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11115": {
+    "name": "Савойская капуста, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11116": {
+    "name": "Капуста пак-чой, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11117": {
+    "name": "Капуста пак-чой, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11118": {
+    "name": "Белокочанная капуста, готовый продукт",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11119": {
+    "name": "Пекинская капуста, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11120": {
+    "name": "Пекинская капуста, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11124": {
+    "name": "Морковь сырая",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11125": {
+    "name": "Морковь, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11126": {
+    "name": "Морковь, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11128": {
+    "name": "Морковь, консервированный, без жидкости",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11130": {
+    "name": "Морковь, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11131": {
+    "name": "Морковь, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11135": {
+    "name": "Цветная капуста, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11136": {
+    "name": "Цветная капуста, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11137": {
+    "name": "Цветная капуста, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11138": {
+    "name": "Цветная капуста, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11141": {
+    "name": "Сельдерей корневой, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [
+      "celery"
+    ],
+    "vegetarian": true
+  },
+  "11142": {
+    "name": "Сельдерей корневой, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [
+      "celery"
+    ],
+    "vegetarian": true
+  },
+  "11143": {
+    "name": "Сельдерей стеблевой, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [
+      "celery"
+    ],
+    "vegetarian": true
+  },
+  "11144": {
+    "name": "Сельдерей стеблевой, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [
+      "celery"
+    ],
+    "vegetarian": true
+  },
+  "11167": {
+    "name": "Кукуруза жёлтая, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11168": {
+    "name": "Кукуруза жёлтая, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11170": {
+    "name": "Кукуруза жёлтая, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11172": {
+    "name": "Кукуруза жёлтая, консервированный, без жидкости",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11178": {
+    "name": "Кукуруза жёлтая, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11179": {
+    "name": "Кукуруза жёлтая, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11205": {
+    "name": "Огурец с кожурой сырой",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11206": {
+    "name": "Огурец, сырой продукт, без кожуры",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11209": {
+    "name": "Баклажан, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11210": {
+    "name": "Баклажан, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11215": {
+    "name": "Чеснок, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11233": {
+    "name": "Кале, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11234": {
+    "name": "Кале, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11235": {
+    "name": "Кале, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11236": {
+    "name": "Кале, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11238": {
+    "name": "Шиитаке, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11239": {
+    "name": "Лисички, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11240": {
+    "name": "Сморчки, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11243": {
+    "name": "Портобелло, готовый продукт",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11246": {
+    "name": "Лук-порей, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11247": {
+    "name": "Лук-порей, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11251": {
+    "name": "Салат ромэн, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11252": {
+    "name": "Салат айсберг, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11253": {
+    "name": "Листовой зелёный салат, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11257": {
+    "name": "Листовой красный салат, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11260": {
+    "name": "Шампиньоны сырые",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11261": {
+    "name": "Шампиньоны, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11263": {
+    "name": "Шампиньоны, жареный",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11265": {
+    "name": "Портобелло, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11266": {
+    "name": "Коричневые шампиньоны, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11267": {
+    "name": "Шиитаке, жареный",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11268": {
+    "name": "Шиитаке, сушёный",
+    "state": "dry",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11269": {
+    "name": "Шиитаке, приготовленный",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11278": {
+    "name": "Бамия, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11279": {
+    "name": "Бамия, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11280": {
+    "name": "Бамия, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11281": {
+    "name": "Бамия, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11282": {
+    "name": "Репчатый лук сырой",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11283": {
+    "name": "Репчатый лук, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11284": {
+    "name": "Репчатый лук, сушёный",
+    "state": "dry",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11285": {
+    "name": "Репчатый лук, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11286": {
+    "name": "Репчатый лук, готовый продукт",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11287": {
+    "name": "Репчатый лук, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11288": {
+    "name": "Репчатый лук, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11291": {
+    "name": "Зелёный лук, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11294": {
+    "name": "Сладкий репчатый лук, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11297": {
+    "name": "Петрушка, готовый продукт",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11298": {
+    "name": "Пастернак, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11299": {
+    "name": "Пастернак, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11300": {
+    "name": "Стручковый горох, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11301": {
+    "name": "Стручковый горох, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11302": {
+    "name": "Стручковый горох, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11303": {
+    "name": "Стручковый горох, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11304": {
+    "name": "Зелёный горошек, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11305": {
+    "name": "Зелёный горошек, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11306": {
+    "name": "Зелёный горошек, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11311": {
+    "name": "Зелёный горошек, консервированный, без жидкости",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11312": {
+    "name": "Зелёный горошек, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11313": {
+    "name": "Зелёный горошек, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11329": {
+    "name": "Острый перец чили, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11333": {
+    "name": "Зелёный сладкий перец, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11334": {
+    "name": "Зелёный сладкий перец, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11335": {
+    "name": "Зелёный сладкий перец, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11337": {
+    "name": "Зелёный сладкий перец, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11338": {
+    "name": "Зелёный сладкий перец, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11339": {
+    "name": "Зелёный сладкий перец, готовый продукт",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11352": {
+    "name": "Картофель сырой с кожурой",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11356": {
+    "name": "Картофель, запечённый",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11361": {
+    "name": "Картофель, сырой продукт, замороженный, запечённый",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11365": {
+    "name": "Картофель, варёный",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11367": {
+    "name": "Картофель, варёный, без кожуры",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11368": {
+    "name": "Картофель, приготовленный",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11374": {
+    "name": "Картофель, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11376": {
+    "name": "Картофель, консервированный, без жидкости",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11378": {
+    "name": "Картофель, сушёный",
+    "state": "dry",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11385": {
+    "name": "Картофель, готовый продукт",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11390": {
+    "name": "Картофель, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11391": {
+    "name": "Картофель, замороженный, жареный, в масле",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11397": {
+    "name": "Картофель, замороженный",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11401": {
+    "name": "Картофель, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11416": {
+    "name": "Тыква, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11417": {
+    "name": "Тыква, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11422": {
+    "name": "Тыква сырая",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11424": {
+    "name": "Тыква, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11429": {
+    "name": "Редис, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11431": {
+    "name": "Редис, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11432": {
+    "name": "Редис, сушёный",
+    "state": "dry",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11435": {
+    "name": "Брюква, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11436": {
+    "name": "Брюква, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11439": {
+    "name": "Квашеная капуста, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11457": {
+    "name": "Шпинат, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11458": {
+    "name": "Шпинат, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11459": {
+    "name": "Шпинат, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11461": {
+    "name": "Шпинат, консервированный, без жидкости",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11463": {
+    "name": "Шпинат, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11464": {
+    "name": "Шпинат, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11475": {
+    "name": "Патиссон, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11476": {
+    "name": "Патиссон, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11477": {
+    "name": "Кабачок, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11478": {
+    "name": "Кабачок, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11479": {
+    "name": "Кабачок, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11480": {
+    "name": "Кабачок, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11481": {
+    "name": "Кабачок, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11485": {
+    "name": "Мускатная тыква, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11486": {
+    "name": "Мускатная тыква, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11487": {
+    "name": "Мускатная тыква, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11488": {
+    "name": "Мускатная тыква, замороженный, варёный",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11507": {
+    "name": "Батат, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11508": {
+    "name": "Батат, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11510": {
+    "name": "Батат, варёный, без кожуры",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11512": {
+    "name": "Батат, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11516": {
+    "name": "Батат, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11517": {
+    "name": "Батат, замороженный, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11527": {
+    "name": "Зелёный помидор, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11529": {
+    "name": "Помидор сырой",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11530": {
+    "name": "Помидор, приготовленный",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11531": {
+    "name": "Помидор, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11533": {
+    "name": "Помидор, консервированный, приготовленный",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11546": {
+    "name": "Томатная паста без добавленной соли",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11547": {
+    "name": "Томатное пюре без добавленной соли",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11549": {
+    "name": "Томатный соус консервированный",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11564": {
+    "name": "Репа, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11565": {
+    "name": "Репа, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11566": {
+    "name": "Репа, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11567": {
+    "name": "Репа, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11583": {
+    "name": "Смесь овощей замороженная, справочная",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11624": {
+    "name": "Лук-порей, сушёный",
+    "state": "dry",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11625": {
+    "name": "Петрушка, сушёный",
+    "state": "dry",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11634": {
+    "name": "Зелёный сладкий перец, сушёный",
+    "state": "dry",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11647": {
+    "name": "Батат, консервированный, без жидкости",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11658": {
+    "name": "Шпинат, готовый продукт",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11670": {
+    "name": "Острый перец чили, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11695": {
+    "name": "Оранжевый помидор, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11696": {
+    "name": "Жёлтый помидор, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11722": {
+    "name": "Жёлтая стручковая фасоль, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11724": {
+    "name": "Жёлтая стручковая фасоль, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11727": {
+    "name": "Жёлтая стручковая фасоль, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11730": {
+    "name": "Жёлтая стручковая фасоль, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11732": {
+    "name": "Жёлтая стручковая фасоль, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11821": {
+    "name": "Красный сладкий перец, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11823": {
+    "name": "Красный сладкий перец, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11886": {
+    "name": "Томатный сок, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11900": {
+    "name": "Кукуруза белая, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11901": {
+    "name": "Кукуруза белая, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11903": {
+    "name": "Кукуруза белая, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11905": {
+    "name": "Кукуруза белая, консервированный, без жидкости",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11910": {
+    "name": "Кукуруза белая, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11911": {
+    "name": "Кукуруза белая, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11916": {
+    "name": "Красный сладкий перец, консервированный",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11917": {
+    "name": "Красный сладкий перец, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11918": {
+    "name": "Красный сладкий перец, замороженный, варёный, без жидкости",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11921": {
+    "name": "Красный сладкий перец, готовый продукт",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11931": {
+    "name": "Красный сладкий перец, сушёный",
+    "state": "dry",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11932": {
+    "name": "Жёлтая стручковая фасоль, консервированный, без жидкости",
+    "state": "canned",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11935": {
+    "name": "Кетчуп, справочник",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11937": {
+    "name": "Маринованный огурец, готовый продукт",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11951": {
+    "name": "Жёлтый сладкий перец, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11957": {
+    "name": "Фенхель, сырой продукт",
+    "state": "raw",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11970": {
+    "name": "Белокочанная капуста, приготовленный",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "11992": {
+    "name": "Шампиньоны, готовый продукт",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "12006": {
+    "name": "Семена чиа, сушёный",
+    "state": "dry",
+    "category": "nuts",
+    "allergens": [
+      "seeds"
+    ],
+    "vegetarian": true
+  },
+  "12014": {
+    "name": "Тыквенные семечки, сушёный",
+    "state": "dry",
+    "category": "nuts",
+    "allergens": [
+      "seeds"
+    ],
+    "vegetarian": true
+  },
+  "12016": {
+    "name": "Тыквенные семечки, запечённый",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "seeds"
+    ],
+    "vegetarian": true
+  },
+  "12023": {
+    "name": "Кунжут, сушёный",
+    "state": "dry",
+    "category": "nuts",
+    "allergens": [
+      "seeds",
+      "sesame"
+    ],
+    "vegetarian": true
+  },
+  "12024": {
+    "name": "Кунжут, запечённый",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "seeds",
+      "sesame"
+    ],
+    "vegetarian": true
+  },
+  "12036": {
+    "name": "Семечки подсолнечника, сушёный",
+    "state": "dry",
+    "category": "nuts",
+    "allergens": [
+      "seeds"
+    ],
+    "vegetarian": true
+  },
+  "12037": {
+    "name": "Семечки подсолнечника, запечённый",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "seeds"
+    ],
+    "vegetarian": true
+  },
+  "12038": {
+    "name": "Семечки подсолнечника, запечённый, в масле",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "seeds"
+    ],
+    "vegetarian": true
+  },
+  "12039": {
+    "name": "Семечки подсолнечника, готовый продукт",
+    "state": "ready",
+    "category": "nuts",
+    "allergens": [
+      "seeds"
+    ],
+    "vegetarian": true
+  },
+  "12061": {
+    "name": "Миндаль, готовый продукт",
+    "state": "ready",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12063": {
+    "name": "Миндаль, запечённый",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12065": {
+    "name": "Миндаль, запечённый, в масле",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12078": {
+    "name": "Бразильский орех, сушёный",
+    "state": "dry",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12085": {
+    "name": "Кешью, запечённый",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12086": {
+    "name": "Кешью, запечённый, в масле",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12087": {
+    "name": "Кешью, сырой продукт",
+    "state": "raw",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12093": {
+    "name": "Каштан, сырой продукт",
+    "state": "raw",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12094": {
+    "name": "Каштан, сушёный",
+    "state": "dry",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12095": {
+    "name": "Каштан, варёный",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12096": {
+    "name": "Каштан, запечённый",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12097": {
+    "name": "Каштан, сырой продукт, без кожуры",
+    "state": "raw",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12099": {
+    "name": "Каштан, сушёный, без кожуры",
+    "state": "dry",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12104": {
+    "name": "Кокосовая мякоть, сырой продукт",
+    "state": "raw",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12108": {
+    "name": "Кокосовая мякоть, сушёный, с сахаром",
+    "state": "dry",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12110": {
+    "name": "Кокосовая мякоть, консервированный, сушёный, с сахаром",
+    "state": "dry",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12114": {
+    "name": "Кокосовая мякоть, сушёный",
+    "state": "dry",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12117": {
+    "name": "Кокосовое молоко, сырой продукт",
+    "state": "raw",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12118": {
+    "name": "Кокосовое молоко, консервированный",
+    "state": "canned",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12120": {
+    "name": "Фундук, готовый продукт",
+    "state": "ready",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12122": {
+    "name": "Фундук, запечённый",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12131": {
+    "name": "Макадамия, сырой продукт",
+    "state": "raw",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12132": {
+    "name": "Макадамия, запечённый",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12142": {
+    "name": "Пекан, готовый продукт",
+    "state": "ready",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12143": {
+    "name": "Пекан, запечённый",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12144": {
+    "name": "Пекан, запечённый, в масле",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12147": {
+    "name": "Кедровые орехи, сушёный",
+    "state": "dry",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12151": {
+    "name": "Фисташки, сырой продукт",
+    "state": "raw",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12152": {
+    "name": "Фисташки, запечённый",
+    "state": "cooked",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12155": {
+    "name": "Грецкий орех, готовый продукт",
+    "state": "ready",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12176": {
+    "name": "Кокосовое молоко, замороженный",
+    "state": "ready",
+    "category": "nuts",
+    "allergens": [
+      "nuts"
+    ],
+    "vegetarian": true
+  },
+  "12220": {
+    "name": "Льняные семена, готовый продукт",
+    "state": "ready",
+    "category": "nuts",
+    "allergens": [
+      "seeds"
+    ],
+    "vegetarian": true
+  },
+  "13023": {
+    "name": "Говядина грудинка нежирная сырая",
+    "state": "raw",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "13325": {
+    "name": "Печень говяжья сырая",
+    "state": "raw",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "13326": {
+    "name": "Печень говяжья тушёная",
+    "state": "cooked",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "13327": {
+    "name": "Печень говяжья жареная",
+    "state": "cooked",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "14411": {
+    "name": "Вода питьевая",
+    "state": "ready",
+    "category": "sauce",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "15001": {
+    "name": "Анчоус европейский, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15002": {
+    "name": "Анчоус европейский, консервированный, в масле, без жидкости",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15006": {
+    "name": "Налим, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15008": {
+    "name": "Карп, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15009": {
+    "name": "Карп, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15011": {
+    "name": "Канальный сом, приготовленный, жареный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15015": {
+    "name": "Треска атлантическая, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15016": {
+    "name": "Треска атлантическая, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15017": {
+    "name": "Треска атлантическая, консервированный",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15019": {
+    "name": "Треска тихоокеанская, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15025": {
+    "name": "Угорь, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15026": {
+    "name": "Угорь, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15028": {
+    "name": "Камбала, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15029": {
+    "name": "Камбала, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15033": {
+    "name": "Пикша, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15034": {
+    "name": "Пикша, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15035": {
+    "name": "Пикша, готовый продукт",
+    "state": "ready",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15036": {
+    "name": "Палтус, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15037": {
+    "name": "Палтус, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15038": {
+    "name": "Палтус гренландский, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15039": {
+    "name": "Сельдь атлантическая, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15040": {
+    "name": "Сельдь атлантическая, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15041": {
+    "name": "Сельдь атлантическая, готовый продукт",
+    "state": "ready",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15043": {
+    "name": "Сельдь тихоокеанская, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15046": {
+    "name": "Скумбрия атлантическая, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15047": {
+    "name": "Скумбрия атлантическая, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15050": {
+    "name": "Скумбрия тихоокеанская, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15060": {
+    "name": "Окунь, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15061": {
+    "name": "Окунь, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15062": {
+    "name": "Щука, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15063": {
+    "name": "Щука, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15064": {
+    "name": "Судак американский, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15065": {
+    "name": "Сайда, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15066": {
+    "name": "Минтай, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15067": {
+    "name": "Минтай, замороженный, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15072": {
+    "name": "Рыбная икра, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15077": {
+    "name": "Чавыча, готовый продукт",
+    "state": "ready",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15078": {
+    "name": "Чавыча, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15079": {
+    "name": "Кета, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15080": {
+    "name": "Кета, консервированный, без жидкости",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15083": {
+    "name": "Горбуша, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15084": {
+    "name": "Горбуша, консервированный",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15085": {
+    "name": "Нерка, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15086": {
+    "name": "Нерка, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15087": {
+    "name": "Нерка, консервированный, без жидкости",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15088": {
+    "name": "Сардина, консервированный, в масле, без жидкости",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15089": {
+    "name": "Сардина, консервированный, без жидкости",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15099": {
+    "name": "Корюшка, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15100": {
+    "name": "Корюшка, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15104": {
+    "name": "Осётр, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15105": {
+    "name": "Осётр, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15106": {
+    "name": "Осётр, готовый продукт",
+    "state": "ready",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15110": {
+    "name": "Рыба-меч, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15111": {
+    "name": "Рыба-меч, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15114": {
+    "name": "Форель, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15119": {
+    "name": "Тунец светлый, консервированный, в масле, без жидкости",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15121": {
+    "name": "Тунец светлый, консервированный, в воде, без жидкости",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15124": {
+    "name": "Тунец белый, консервированный, в масле, без жидкости",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15126": {
+    "name": "Тунец белый, консервированный, в воде, без жидкости",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15132": {
+    "name": "Мерланг, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15133": {
+    "name": "Мерланг, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15136": {
+    "name": "Камчатский краб, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "shellfish"
+    ],
+    "vegetarian": false
+  },
+  "15137": {
+    "name": "Камчатский краб, приготовленный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "shellfish"
+    ],
+    "vegetarian": false
+  },
+  "15144": {
+    "name": "Краб-стригун, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "shellfish"
+    ],
+    "vegetarian": false
+  },
+  "15149": {
+    "name": "Креветка, сырой продукт, замороженный",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "shellfish"
+    ],
+    "vegetarian": false
+  },
+  "15150": {
+    "name": "Креветка, приготовленный, жареный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "shellfish"
+    ],
+    "vegetarian": false
+  },
+  "15151": {
+    "name": "Креветка, замороженный, приготовленный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "shellfish"
+    ],
+    "vegetarian": false
+  },
+  "15152": {
+    "name": "Креветка, консервированный",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "shellfish"
+    ],
+    "vegetarian": false
+  },
+  "15164": {
+    "name": "Мидия, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  },
+  "15165": {
+    "name": "Мидия, приготовленный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  },
+  "15166": {
+    "name": "Осьминог, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  },
+  "15168": {
+    "name": "Устрица, приготовленный, жареный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  },
+  "15170": {
+    "name": "Устрица, консервированный",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  },
+  "15171": {
+    "name": "Устрица, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  },
+  "15172": {
+    "name": "Морской гребешок, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  },
+  "15173": {
+    "name": "Морской гребешок, приготовленный, жареный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  },
+  "15175": {
+    "name": "Кальмар, сырой продукт",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  },
+  "15176": {
+    "name": "Кальмар, приготовленный, жареный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  },
+  "15190": {
+    "name": "Налим, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15192": {
+    "name": "Треска тихоокеанская, замороженный, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15196": {
+    "name": "Палтус гренландский, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15197": {
+    "name": "Сельдь тихоокеанская, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15201": {
+    "name": "Скумбрия тихоокеанская, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15204": {
+    "name": "Судак американский, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15205": {
+    "name": "Сайда, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15207": {
+    "name": "Рыбная икра, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15210": {
+    "name": "Чавыча, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15211": {
+    "name": "Кета, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15212": {
+    "name": "Горбуша, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15219": {
+    "name": "Форель, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15220": {
+    "name": "Тунец полосатый, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15221": {
+    "name": "Тунец желтопёрый, приготовленный, запечённый",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15227": {
+    "name": "Краб-стригун, приготовленный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "shellfish"
+    ],
+    "vegetarian": false
+  },
+  "15230": {
+    "name": "Осьминог, приготовленный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  },
+  "15231": {
+    "name": "Устрица, приготовленный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  },
+  "15234": {
+    "name": "Канальный сом, сырой продукт, выращенный",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15235": {
+    "name": "Канальный сом, приготовленный, запечённый, выращенный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15236": {
+    "name": "Лосось атлантический, сырой продукт, выращенный",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15237": {
+    "name": "Лосось атлантический, приготовленный, запечённый, выращенный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15238": {
+    "name": "Кижуч, сырой продукт, выращенный",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15239": {
+    "name": "Кижуч, приготовленный, запечённый, выращенный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15240": {
+    "name": "Радужная форель, сырой продукт, выращенный",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15241": {
+    "name": "Радужная форель, приготовленный, запечённый, выращенный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15242": {
+    "name": "Речной рак, сырой продукт, выращенный",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "shellfish"
+    ],
+    "vegetarian": false
+  },
+  "15243": {
+    "name": "Речной рак, приготовленный, выращенный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "shellfish"
+    ],
+    "vegetarian": false
+  },
+  "15245": {
+    "name": "Устрица, сырой продукт, выращенный",
+    "state": "raw",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  },
+  "15246": {
+    "name": "Устрица, приготовленный, запечённый, выращенный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  },
+  "15260": {
+    "name": "Горбуша, консервированный, без жидкости",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15265": {
+    "name": "Горбуша, консервированный, без кожуры, без жидкости",
+    "state": "canned",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15267": {
+    "name": "Минтай, замороженный, приготовленный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "15269": {
+    "name": "Треска тихоокеанская, замороженный, приготовленный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "fish"
+    ],
+    "vegetarian": false
+  },
+  "16001": {
+    "name": "Фасоль адзуки, сухие зёрна",
+    "state": "dry",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16002": {
+    "name": "Фасоль адзуки, варёный",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16003": {
+    "name": "Фасоль адзуки, консервированный, с сахаром",
+    "state": "canned",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16014": {
+    "name": "Чёрная фасоль, сухие зёрна",
+    "state": "dry",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16015": {
+    "name": "Чёрная фасоль, варёный",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16018": {
+    "name": "Чёрная фасоль, консервированный",
+    "state": "canned",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16027": {
+    "name": "Фасоль обыкновенная, сухие зёрна",
+    "state": "dry",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16028": {
+    "name": "Фасоль обыкновенная, варёный",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16029": {
+    "name": "Фасоль обыкновенная, консервированный",
+    "state": "canned",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16032": {
+    "name": "Красная фасоль, сухие зёрна",
+    "state": "dry",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16033": {
+    "name": "Красная фасоль, варёный",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16034": {
+    "name": "Красная фасоль, консервированный",
+    "state": "canned",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16037": {
+    "name": "Мелкая белая фасоль, сухие зёрна",
+    "state": "dry",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16038": {
+    "name": "Мелкая белая фасоль, варёный",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16039": {
+    "name": "Мелкая белая фасоль, консервированный",
+    "state": "canned",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16042": {
+    "name": "Пёстрая фасоль, сухие зёрна",
+    "state": "dry",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16043": {
+    "name": "Пёстрая фасоль, варёный",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16044": {
+    "name": "Пёстрая фасоль, консервированный",
+    "state": "canned",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16049": {
+    "name": "Белая фасоль, сухие зёрна",
+    "state": "dry",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16050": {
+    "name": "Белая фасоль, варёный",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16051": {
+    "name": "Белая фасоль, консервированный",
+    "state": "canned",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16056": {
+    "name": "Нут, сухие зёрна",
+    "state": "dry",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16057": {
+    "name": "Нут, варёный",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16058": {
+    "name": "Нут, консервированный",
+    "state": "canned",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16069": {
+    "name": "Чечевица сухая",
+    "state": "raw",
+    "category": "sauce",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16070": {
+    "name": "Чечевица, варёный",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16085": {
+    "name": "Горох колотый сухой",
+    "state": "raw",
+    "category": "sauce",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16086": {
+    "name": "Горох колотый, варёный",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16087": {
+    "name": "Арахис, сырой продукт",
+    "state": "raw",
+    "category": "legume",
+    "allergens": [
+      "peanuts"
+    ],
+    "vegetarian": true
+  },
+  "16098": {
+    "name": "Арахисовая паста гладкая с солью",
+    "state": "ready",
+    "category": "sauce",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16108": {
+    "name": "Соевые бобы, сухие зёрна",
+    "state": "dry",
+    "category": "legume",
+    "allergens": [
+      "soy"
+    ],
+    "vegetarian": true
+  },
+  "16109": {
+    "name": "Соевые бобы, варёный",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [
+      "soy"
+    ],
+    "vegetarian": true
+  },
+  "16111": {
+    "name": "Соевые бобы, запечённый",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [
+      "soy"
+    ],
+    "vegetarian": true
+  },
+  "16114": {
+    "name": "Темпе, готовый продукт",
+    "state": "ready",
+    "category": "legume",
+    "allergens": [
+      "soy"
+    ],
+    "vegetarian": true
+  },
+  "16120": {
+    "name": "Соевое молоко, готовый продукт",
+    "state": "ready",
+    "category": "legume",
+    "allergens": [
+      "soy"
+    ],
+    "vegetarian": true
+  },
+  "16126": {
+    "name": "Тофу, готовый продукт",
+    "state": "ready",
+    "category": "legume",
+    "allergens": [
+      "soy"
+    ],
+    "vegetarian": true
+  },
+  "16128": {
+    "name": "Тофу, замороженный, сушёный",
+    "state": "dry",
+    "category": "legume",
+    "allergens": [
+      "soy"
+    ],
+    "vegetarian": true
+  },
+  "16129": {
+    "name": "Тофу, жареный",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [
+      "soy"
+    ],
+    "vegetarian": true
+  },
+  "16145": {
+    "name": "Красная фасоль, консервированный, без жидкости",
+    "state": "canned",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16146": {
+    "name": "Пёстрая фасоль, консервированный, без жидкости",
+    "state": "canned",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16150": {
+    "name": "Арахисовая паста, готовый продукт",
+    "state": "ready",
+    "category": "legume",
+    "allergens": [
+      "peanuts"
+    ],
+    "vegetarian": true
+  },
+  "16158": {
+    "name": "Хумус готовый, справочник",
+    "state": "ready",
+    "category": "sauce",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16174": {
+    "name": "Темпе, приготовленный",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [
+      "soy"
+    ],
+    "vegetarian": true
+  },
+  "16222": {
+    "name": "Соевое молоко, без сахара",
+    "state": "ready",
+    "category": "legume",
+    "allergens": [
+      "soy"
+    ],
+    "vegetarian": true
+  },
+  "16358": {
+    "name": "Нут, консервированный, без жидкости",
+    "state": "canned",
+    "category": "legume",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "16389": {
+    "name": "Арахис, запечённый, в масле, обжарка в масле",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [
+      "peanuts"
+    ],
+    "vegetarian": true
+  },
+  "16390": {
+    "name": "Арахис, запечённый, сухая обжарка",
+    "state": "cooked",
+    "category": "legume",
+    "allergens": [
+      "peanuts"
+    ],
+    "vegetarian": true
+  },
+  "16426": {
+    "name": "Тофу, сырой продукт",
+    "state": "raw",
+    "category": "legume",
+    "allergens": [
+      "soy"
+    ],
+    "vegetarian": true
+  },
+  "18042": {
+    "name": "Пита цельнозерновая",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "18060": {
+    "name": "Хлеб ржаной",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "18061": {
+    "name": "Хлеб ржаной подсушенный",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "18064": {
+    "name": "Хлеб пшеничный",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "18065": {
+    "name": "Хлеб пшеничный подсушенный",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "18066": {
+    "name": "Хлеб с пшеничными отрубями",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "18069": {
+    "name": "Хлеб белый",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "18070": {
+    "name": "Хлеб белый подсушенный",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "18075": {
+    "name": "Хлеб цельнозерновой",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "18076": {
+    "name": "Хлеб цельнозерновой подсушенный",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "18216": {
+    "name": "Хлебцы ржаные",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "18350": {
+    "name": "Булочка для бургера белая",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "18364": {
+    "name": "Тортилья пшеничная готовая к прогреву",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "18413": {
+    "name": "Пита белая",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "19120": {
+    "name": "Шоколад молочный",
+    "state": "ready",
+    "category": "sweet",
+    "allergens": [
+      "milk"
+    ],
+    "vegetarian": true
+  },
+  "19165": {
+    "name": "Какао-порошок без сахара",
+    "state": "dry",
+    "category": "sweet",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "19296": {
+    "name": "Мёд",
+    "state": "ready",
+    "category": "sweet",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "19304": {
+    "name": "Варенье и джем, справочник",
+    "state": "ready",
+    "category": "sweet",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "19335": {
+    "name": "Сахар белый",
+    "state": "ready",
+    "category": "sweet",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "19902": {
+    "name": "Шоколад тёмный 45–59% какао",
+    "state": "ready",
+    "category": "sweet",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "19903": {
+    "name": "Шоколад тёмный 60–69% какао",
+    "state": "ready",
+    "category": "sweet",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "19904": {
+    "name": "Шоколад тёмный 70–85% какао",
+    "state": "ready",
+    "category": "sweet",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20005": {
+    "name": "Перловая крупа сухая",
+    "state": "raw",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20006": {
+    "name": "Перловая крупа варёная",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20008": {
+    "name": "Гречиха зерно сухое",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20009": {
+    "name": "Гречка ядрица сухая обжаренная",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20010": {
+    "name": "Гречка варёная",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20011": {
+    "name": "Мука гречневая",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20012": {
+    "name": "Булгур сухой",
+    "state": "dry",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20013": {
+    "name": "Булгур варёный",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20016": {
+    "name": "Мука кукурузная цельнозерновая",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20020": {
+    "name": "Крупа кукурузная цельнозерновая",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20027": {
+    "name": "Крахмал кукурузный",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20028": {
+    "name": "Кускус сухой",
+    "state": "dry",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20029": {
+    "name": "Кускус варёный",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20031": {
+    "name": "Пшено сухое",
+    "state": "raw",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20032": {
+    "name": "Пшено варёное",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20033": {
+    "name": "Отруби овсяные сухие",
+    "state": "raw",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20034": {
+    "name": "Отруби овсяные варёные",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20035": {
+    "name": "Киноа сухая",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20036": {
+    "name": "Рис бурый длиннозёрный сухой",
+    "state": "raw",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20037": {
+    "name": "Рис бурый длиннозёрный варёный",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20038": {
+    "name": "Овёс сухой",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20040": {
+    "name": "Рис бурый среднезёрный сухой",
+    "state": "raw",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20041": {
+    "name": "Рис бурый среднезёрный варёный",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20061": {
+    "name": "Мука рисовая белая",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20062": {
+    "name": "Рожь зерно сухое",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20063": {
+    "name": "Мука ржаная тёмная",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20064": {
+    "name": "Мука ржаная средняя",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20065": {
+    "name": "Мука ржаная светлая",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20077": {
+    "name": "Отруби пшеничные",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20078": {
+    "name": "Зародыши пшеницы",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20080": {
+    "name": "Мука пшеничная цельнозерновая",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20088": {
+    "name": "Дикий рис сухой",
+    "state": "raw",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20089": {
+    "name": "Дикий рис варёный",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20090": {
+    "name": "Мука из бурого риса",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20114": {
+    "name": "Лапша гречневая соба сухая",
+    "state": "dry",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20115": {
+    "name": "Лапша гречневая соба варёная",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20124": {
+    "name": "Макароны цельнозерновые сухие",
+    "state": "dry",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20125": {
+    "name": "Макароны цельнозерновые варёные",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20129": {
+    "name": "Мука пшеничная хлебопекарная",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20132": {
+    "name": "Мука овсяная",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20133": {
+    "name": "Лапша рисовая сухая",
+    "state": "dry",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20134": {
+    "name": "Лапша рисовая варёная",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20137": {
+    "name": "Киноа варёная",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20140": {
+    "name": "Полба сухая",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20141": {
+    "name": "Полба варёная",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20409": {
+    "name": "Лапша яичная сухая",
+    "state": "dry",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20410": {
+    "name": "Лапша яичная варёная",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20420": {
+    "name": "Макароны сухие",
+    "state": "dry",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20421": {
+    "name": "Макароны варёные без соли",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20444": {
+    "name": "Рис белый длиннозёрный сухой",
+    "state": "raw",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20445": {
+    "name": "Рис белый длиннозёрный варёный",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20446": {
+    "name": "Рис пропаренный сухой",
+    "state": "dry",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20447": {
+    "name": "Рис пропаренный варёный",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20450": {
+    "name": "Рис белый среднезёрный сухой",
+    "state": "raw",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20451": {
+    "name": "Рис белый среднезёрный варёный",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20452": {
+    "name": "Рис белый круглозёрный сухой",
+    "state": "raw",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20453": {
+    "name": "Рис белый круглозёрный варёный",
+    "state": "cooked",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "20466": {
+    "name": "Манная крупа сухая",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20481": {
+    "name": "Мука пшеничная общего назначения",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "20647": {
+    "name": "Мука пшённая",
+    "state": "ready",
+    "category": "grain",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "23401": {
+    "name": "Говядина грудинка новозеландская нежирная сырая",
+    "state": "raw",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23402": {
+    "name": "Говядина грудинка новозеландская нежирная тушёная",
+    "state": "cooked",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23439": {
+    "name": "Говядина вырезка новозеландская нежирная жареная",
+    "state": "cooked",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23441": {
+    "name": "Говядина вырезка новозеландская нежирная сырая",
+    "state": "raw",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23472": {
+    "name": "Фарш говяжий 7% жира сырой",
+    "state": "raw",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23477": {
+    "name": "Фарш говяжий 3% жира сырой",
+    "state": "raw",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23557": {
+    "name": "Фарш говяжий 5% жира сырой",
+    "state": "raw",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23562": {
+    "name": "Фарш говяжий 10% жира сырой",
+    "state": "raw",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23563": {
+    "name": "Котлета из говяжьего фарша 10% жира гриль",
+    "state": "cooked",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23565": {
+    "name": "Говяжий фарш 10% жира обжаренный крошкой",
+    "state": "cooked",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23567": {
+    "name": "Фарш говяжий 15% жира сырой",
+    "state": "raw",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23568": {
+    "name": "Котлета из говяжьего фарша 15% жира гриль",
+    "state": "cooked",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23570": {
+    "name": "Говяжий фарш 15% жира обжаренный крошкой",
+    "state": "cooked",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23572": {
+    "name": "Фарш говяжий 20% жира сырой",
+    "state": "raw",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23573": {
+    "name": "Котлета из говяжьего фарша 20% жира гриль",
+    "state": "cooked",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "23575": {
+    "name": "Говяжий фарш 20% жира обжаренный крошкой",
+    "state": "cooked",
+    "category": "beef",
+    "allergens": [],
+    "vegetarian": false
+  },
+  "28313": {
+    "name": "Булочка для бургера цельнозерновая",
+    "state": "ready",
+    "category": "bread",
+    "allergens": [
+      "gluten"
+    ],
+    "vegetarian": true
+  },
+  "31022": {
+    "name": "Картофель, жареный, в масле",
+    "state": "cooked",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "42231": {
+    "name": "Масло льняное холодного отжима",
+    "state": "ready",
+    "category": "oil",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "43142": {
+    "name": "Редис, готовый продукт",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "43146": {
+    "name": "Баклажан, готовый продукт",
+    "state": "ready",
+    "category": "vegetable",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "43382": {
+    "name": "Клюквенный сок, без сахара",
+    "state": "ready",
+    "category": "fruit",
+    "allergens": [],
+    "vegetarian": true
+  },
+  "44055": {
+    "name": "Сельдерей стеблевой, сушёный",
+    "state": "dry",
+    "category": "vegetable",
+    "allergens": [
+      "celery"
+    ],
+    "vegetarian": true
+  },
+  "90240": {
+    "name": "Морской гребешок, приготовленный",
+    "state": "cooked",
+    "category": "fish",
+    "allergens": [
+      "mollusks"
+    ],
+    "vegetarian": false
+  }
+}

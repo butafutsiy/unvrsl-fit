@@ -11,8 +11,8 @@
     potato:food('Картофель, очищенный',2,.4,17), bread:food('Хлеб цельнозерновой',9,3.5,43,['gluten']),
     chicken:food('Куриная грудка, сырая',23,2,0,[],false),
     turkey:food('Филе индейки, сырое',23,2,0,[],false),
-    // USDA Fresh Pork SR Release 2.01, raw boneless tenderloin (data/meal-recipes-source.md).
-    pork:{...food('Свинина нежирная (вырезка), сырая',20.65,3.53,0,[],false),k:128},
+    // USDA SR28, NDB 10060: raw tenderloin, separable lean only.
+    pork:{...food('Свинина вырезка нежирная сырая',20.95,2.17,0,[],false),k:109},
     beef:food('Говядина нежирная, сырая',21,7,0,[],false),
     fish:food('Белая рыба, сырая',18,1,0,['fish'],false),
     salmon:food('Лосось, сырой',20,13,0,['fish'],false),
@@ -252,7 +252,14 @@
   }
   const world=typeof module==='object'&&module.exports?require('./meal-recipes-data.js'):(root.UNVRSLWorldRecipes||[]);
   recipes.push(...world.map(r=>({...r,ingredients:[{id:r.id,g:100,min:50,max:250,step:5,sourceNutrition:r.portionNutrition}]})));
-  const catalog={foods,recipes,version:5};
+  const verified=typeof module==='object'&&module.exports?require('./nutrition-foods-data.js'):(root.UNVRSLVerifiedFoods||{});const labels=typeof module==='object'&&module.exports?require('./nutrition-labels-data.js'):(root.UNVRSLLabelFoods||{});Object.assign(foods,verified,labels);
+  const aliases={"pork":"sr28-10060","salt":"sr28-02047","water":"sr28-14411","oats":"sr28-20038","rice":"sr28-20444","buckwheat":"sr28-20009","pasta":"sr28-20420","potato":"sr28-11352","bread":"sr28-18075","chicken":"sr28-05062","turkey":"sr28-05710","beef":"sr28-23441","fish":"sr28-15015","salmon":"sr28-15236","egg":"sr28-01123","curd":"label-curd5","yogurt":"sr28-01287","milk":"label-milk25","tofu":"sr28-16126","lentils":"sr28-16069","banana":"sr28-09040","apple":"sr28-09003","berries":"sr28-09050","vegetables":"sr28-11583","nuts":"sr28-12155","oil":"sr28-04506","flour":"sr28-20481","semolina":"sr28-20466","millet":"sr28-20031","cheese":"sr28-01009","kefir":"label-kefir25","tuna":"sr28-15121","beans":"sr28-16033","sugar":"sr28-19335","bulgur":"sr28-20012","lavash":"sr28-18364","avocado":"sr28-09038","shrimp":"sr28-15152","peas":"sr28-11305","corn":"sr28-11168","cabbage":"sr28-11109","carrot":"sr28-11124","broccoli":"sr28-11090","raisins":"sr28-09298","seeds":"sr28-12014","orange":"sr28-09200","tomato":"sr28-11529","mushrooms":"sr28-11260","spinach":"sr28-11457","butter":"sr28-01145"};for(const [id,target] of Object.entries(aliases))if(foods[target])foods[id]={...foods[target],aliasOf:target};
+  for(const [id,f] of Object.entries(foods))if(!f.sourceInfo){f.nutritionQuality='legacy-estimate';f.sourceInfo={provider:'Оценка прежнего каталога',verified:false};}
+  const everyday=typeof module==='object'&&module.exports?require('./everyday-recipes-data.js'):(root.UNVRSLEverydayRecipes||[]);const ids=new Set(recipes.map(r=>r.id));for(const r of everyday)if(!ids.has(r.id)){recipes.push(r);ids.add(r.id);}
+  for(const r of recipes)if(!r.source)r.ingredients=r.ingredients.flatMap(i=>i.id==='vegetables'?[['tomato',.4],['carrot',.3],['cabbage',.3]].map(([id,factor])=>({...i,id,g:i.g*factor,min:i.min*factor,max:i.max*factor,step:1})):[i]);
+  Object.assign(foods.pork,{category:'pork',state:'raw',basisGrams:100,unit:'g',fatPer100g:foods.pork.f});
+  for(const r of recipes)if(!r.source){r.baseServings=r.baseServings||1;r.nutritionMethod='ingredient-calculation';r.yieldNote=r.yieldNote||'Выход оценён по ингредиентам. Для записи готовых граммов взвесь блюдо.';}
+  const catalog={foods,recipes,version:6};
   if(typeof module==='object'&&module.exports)module.exports=catalog;
   root.UNVRSLMealCatalog=catalog;
 })(typeof window!=='undefined'?window:globalThis);
