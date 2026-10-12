@@ -21,5 +21,12 @@ async function page(goal,weights=[60,62]){
  let dom=await page(80,[60]);assert.ok(dom.window.document.querySelector('.pp-weight-target'));assert.equal(dom.window.document.querySelectorAll('.pp-weight-marker').length,1);dom.window.close();
  for(const goal of [null,0,501]){dom=await page(goal);assert.equal(dom.window.document.querySelector('.pp-weight-target'),null);assert.equal(dom.window.document.querySelector('.pp-weight-goal'),null);dom.window.close();}
  dom=await page(80,[]);assert.match(dom.window.document.querySelector('.pp-empty').textContent,/Пока нет данных/);dom.window.close();
+ const appearance=new JSDOM('<meta name="theme-color"><meta name="color-scheme"><select id="pp-theme-mode"><option value="dark">dark</option><option value="light">light</option><option value="system">system</option></select>',{url:'https://fixture.test/',runScripts:'dangerously'}),a=appearance.window;
+ let systemLight=false,listener; a.matchMedia=()=>({get matches(){return systemLight;},addEventListener:(type,callback)=>listener=callback});
+ const account=JSON.stringify({accountOwnerId:'alice',theme:'dark',privateHistory:['unchanged']});a.localStorage.setItem('unvrsl-fit-v3',account);a.localStorage.setItem('unvrsl-appearance-v1',JSON.stringify({alice:{theme:'light'}}));
+ const source=fs.readFileSync(path.join(__dirname,'../public-appearance.js'),'utf8');a.eval(source);assert.equal(a.document.documentElement.dataset.theme,'light');assert.equal(a.document.querySelector('[name="theme-color"]').content,'#f4f5f8');
+ const select=a.document.getElementById('pp-theme-mode');select.value='system';select.dispatchEvent(new a.Event('change',{bubbles:true}));assert.equal(a.document.documentElement.dataset.theme,'dark');systemLight=true;listener();assert.equal(a.document.documentElement.dataset.theme,'light');assert.equal(a.localStorage.getItem('unvrsl-public-theme-v1'),'system');
+ select.value='dark';select.dispatchEvent(new a.Event('change',{bubbles:true}));listener();assert.equal(a.document.documentElement.dataset.theme,'dark');assert.equal(a.localStorage.getItem('unvrsl-fit-v3'),account);a.eval(source);assert.equal(select.value,'dark');appearance.window.close();
+ console.log('Shared appearance: inherited light preference, persisted override, system changes and untouched account data passed');
  console.log('Shared weight goal: gain, loss, reached, extreme valid targets, one point, invalid goals and unchanged measured statistics passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

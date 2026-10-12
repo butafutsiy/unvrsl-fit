@@ -116,7 +116,7 @@
     "No Safari/iPhone or physical screen keyboard",
     "Narrow layouts checked by CSS and DOM, not physical phones"
   ],
-  "finalRelease": "v508",
+  "finalRelease": "v509",
   "manualChrome": {
     "lightThemeReload": true,
     "burgerRecipeSaveReload": true,
@@ -134,6 +134,10 @@
     "ingredientHintsContainOnlyFoods": true,
     "combinedRecipeFiltersPreserved": true,
     "filterResetSynchronizesFields": true,
-    "sharedWeightGoalLineAndDomain": true
+    "sharedWeightGoalLineAndDomain": true,
+    "singleRecipeMealSelector": true,
+    "productsDoNotShowMealCategories": true,
+    "replacementKeepsItsScreen": true,
+    "sharedPageThemePersists": true
   }
 }

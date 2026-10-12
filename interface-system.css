@@ -63,7 +63,8 @@ html body .mp-meal-categories{display:grid;grid-template-columns:repeat(4,minmax
 html body .mp-meal-categories .btn{padding:10px 4px;font-size:13px;min-width:0}
 html body .mp-meal-categories [aria-pressed="true"]{background:var(--action)!important;color:var(--action-text)!important;border-color:var(--action)!important}
 html body .mp-ingredient-filters{margin:8px 0 12px;color:var(--muted)}
-html body .mp-ingredient-filters summary{font-size:13px;min-height:44px;display:flex;align-items:center;cursor:pointer}
+html body .mp-ingredient-filters .mp-section-label{margin:12px 0 4px}
+html body .mp-quick-search [aria-pressed="true"],html body .mp-product-filters [aria-pressed="true"]{background:var(--action)!important;color:var(--action-text)!important;border-color:var(--action)!important}
 html body .strength-records{direction:ltr}
 /* iOS date controls must stay inside their grid cell. */
 html body .cj107-fields input,html body .measurement-grid input,html body .profile-edit-grid input,html body .progress-entry-grid input{width:100%;min-width:0}

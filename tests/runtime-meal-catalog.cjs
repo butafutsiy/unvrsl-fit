@@ -19,12 +19,18 @@ const recipes=w=>[...w.document.querySelectorAll('[data-mp="catalog-record"]')].
   click(w,`[data-mp="meal-category"][data-value="${type}"]`);
   assert.ok(recipes(w).length);assert.ok(recipes(w).every(r=>r.slots.includes(type)));
   assert.equal(w.document.querySelector(`[data-mp="meal-category"][data-value="${type}"]`).getAttribute('aria-pressed'),'true');
+  assert.equal(w.document.querySelectorAll('[data-mp="meal-category"][aria-pressed="true"]').length,1);
+  w.document.querySelector('.mp-catalog-options').open=true;
+  assert.equal(w.document.querySelectorAll('[data-key="type"]').length,0);
  }
  click(w,'[data-mp="nutrition-view"][data-value="products"]');
- click(w,'[data-mp="meal-category"][data-value="breakfast"]');assert.ok(w.document.querySelector('.mp-catalog-page'));assert.ok(recipes(w).every(r=>r.slots.includes('breakfast')));
+ assert.equal(w.document.querySelector('[data-mp="meal-category"]'),null);assert.equal(w.document.querySelector('.mp-catalog-page'),null);
+ assert.equal(w.document.querySelectorAll('[data-mp="search-term"][data-value="Говядина"]').length,1);
+ click(w,'[data-mp="nutrition-view"][data-value="recipes"]');
+ assert.equal(w.document.querySelectorAll('.mp-meal-categories').length,1);assert.equal(w.document.querySelector('#mp-filter'),null);assert.equal(w.document.querySelector('[data-key="type"]'),null);
  click(w,'[data-mp="catalog-reset"]');
  filter(w,'collection','egg');assert.ok(recipes(w).length);assert.ok(recipes(w).every(r=>E.recipeInfo(r).collections.includes('egg')));
- filter(w,'type','breakfast');filter(w,'diet','vegetarian');assert.ok(recipes(w).every(r=>r.slots.includes('breakfast')&&E.recipeInfo(r).vegetarian));
+ click(w,'[data-mp="meal-category"][data-value="breakfast"]');filter(w,'diet','vegetarian');assert.ok(recipes(w).every(r=>r.slots.includes('breakfast')&&E.recipeInfo(r).vegetarian));
  click(w,'[data-mp="catalog-reset"]');
  const kind=w.document.getElementById('mp-kind-filter');kind.value='soup';kind.dispatchEvent(new w.Event('change',{bubbles:true}));
  const time=w.document.getElementById('mp-cook-time-filter');time.value='30';time.dispatchEvent(new w.Event('change',{bubbles:true}));

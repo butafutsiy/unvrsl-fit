@@ -26,6 +26,7 @@ const date=D.getElementById('mp-date').value,entry=w.st.mealNutritionV1.days[dat
 for(const [k,v] of Object.entries({k:2400,p:160,f:80,c:260}))input('mp-'+k,v);click('[data-mp="generate"]');
 const lunch=w.st.mealNutritionV1.days[date].plan.meals.find(m=>m.type==='lunch');click(`[data-mp="swap"][data-id="${lunch.id}"]`);quick('recipes','Свинина');
 const options=[...D.querySelectorAll('[data-mp="replace-choice"]')];assert.ok(options.length);assert.ok(options.some(el=>el.dataset.id.startsWith('pork-')));
+click('[data-mp="meal-category"][data-value="dinner"]');assert.ok(D.querySelector('[data-mp="replace-back"]'));assert.equal(D.querySelector('.mp-catalog-page'),null);assert.ok([...D.querySelectorAll('[data-mp="replace-choice"]')].every(b=>w.UNVRSLMealEngine.catalog.recipes.find(r=>r.id===b.dataset.id).slots.includes('dinner')));
 input('mp-search','гречка свинина');assert.ok(D.querySelectorAll('[data-mp="replace-choice"]').length);const first=D.querySelector('[data-mp="replace-choice"]');click(`[data-mp="replace-choice"][data-id="${first.dataset.id}"]`);
 assert.ok(w.st.mealNutritionV1.days[date].plan.meals.find(m=>m.id===lunch.id).ingredients.some(i=>i.id==='pork'));assert.equal(w.st.mealNutritionV1.days[date].extra[0].nutrition.k,163.5);
 dom.window.close();console.log('Search shortcuts, everyday pork recipes, inflections, typos, multiple ingredients, restrictions, product recording and replacements passed');

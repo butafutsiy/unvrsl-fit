@@ -1,0 +1,32 @@
+/* Public client pages share semantic surfaces and readable controls with the app. */
+:root{--accent:#bf5af2}
+html[data-theme="light"]{--purple:#9445b8;--green:#167744;--cyan:#17679e}
+.pp-theme-control{display:flex;gap:12px;align-items:center;justify-content:flex-end;margin:12px 0;color:var(--muted);font-size:13px}
+.pp-theme-control select{padding:8px 12px}
+html body :is(.pp-tabs button,.pp-entry-tabs button,.pp-edit,.pp-close,.pp-delete){min-height:44px;min-width:44px}
+html body :is(.pp-tabs button,.pp-entry-tabs,.pp-entry-tabs button,.pp-edit,.pp-close,.pp-action-secondary){background:var(--panel2);border-color:var(--line);color:var(--text)}
+html body :is(.pp-tabs button.on,.pp-entry-tabs button.on,.pp-primary,.pp-action-primary,.pp-avatar){background:var(--action);color:var(--action-text);box-shadow:none}
+html body :is(.pp-nutrition,.pp-entry,.pp-profile-edit){background:var(--panel);border-color:var(--line)}
+html body :is(.pp-goal-picker,.pp-weight-goal,.pp-chart-focus,.pp-point-chip.on){background:color-mix(in srgb,var(--purple) 8%,var(--panel));border-color:color-mix(in srgb,var(--purple) 40%,var(--line))}
+html body :is(.pp-point-chip,.pp-weight-stats>div,.pp-focus-note,.pp-journal summary small,.pp-journal-list article){background:var(--panel2);border-color:var(--line)}
+html body :is(.pp-focus-top b,.pp-focus-grid b,.pp-point-chip b,.pp-goal-picker b,.pp-weight-goal b){color:var(--text)}
+html body :is(.pp-value small,.pp-change small,.pp-axis,.pp-strength-label,.pp-footer,.pp-nutrition-note,.pp-entry-hint,.pp-form label>span,.pp-point-chip span,.pp-point-chip small,.pp-goal-picker label,.pp-goal-picker small,.pp-weight-goal span,.pp-weight-goal small,.pp-journal summary,.pp-journal-list p,.pp-journal-list blockquote){color:var(--muted)}
+html body :is(.pp-change,.pp-focus-top strong,.pp-goal-picker-control:after){color:var(--purple)}
+html body .pp-journal{border-color:var(--line)}
+html body :is(.pp-flash,.pp-e1rm span,.pp-e1rm small,.pp-e1rm b){color:var(--success)}
+html body .pp-entry-unavailable{color:var(--warning)}
+html body .pp-delete{color:var(--error)}
+html body .pp-source.client{color:var(--cyan)}
+html body .pp-source.trainer{color:var(--purple)}
+html body .pp-weight-grid{stroke:var(--line)}
+html body :is(.pp-y-label,.pp-x-label,.pp-y-unit){fill:var(--muted)}
+html body .pp-weight-line{stroke:var(--purple)}
+html body .pp-marker-pill{fill:var(--panel2);stroke:var(--purple)}
+html body .pp-marker-value{fill:var(--text)}
+html body .pp-marker-dot{fill:var(--purple);stroke:var(--panel)}
+html body :is(.pp-weight-marker:hover,.pp-weight-marker:focus,.pp-weight-marker.is-selected) .pp-marker-pill{fill:var(--action);stroke:var(--action)}
+html body :is(.pp-weight-marker:hover,.pp-weight-marker:focus,.pp-weight-marker.is-selected) .pp-marker-value{fill:var(--action-text)}
+html body .pp-skeleton{background:var(--panel2)}
+html[data-theme="light"] body .pp-chart svg>line{stroke:var(--line)}
+html[data-theme="light"] body .pp-chart-dot{stroke:var(--panel)}
+@media(max-width:360px){.pp-theme-control{justify-content:space-between}.pp-theme-control select{max-width:70%}.pp-client-name h1{overflow-wrap:anywhere}}
