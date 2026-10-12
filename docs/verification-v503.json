@@ -112,7 +112,7 @@
     "No Safari/iPhone or physical screen keyboard",
     "Narrow layouts checked by CSS and DOM, not physical phones"
   ],
-  "finalRelease": "v505",
+  "finalRelease": "v506",
   "manualChrome": {
     "lightThemeReload": true,
     "burgerRecipeSaveReload": true,

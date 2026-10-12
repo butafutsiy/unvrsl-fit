@@ -72,5 +72,7 @@ html body input[type="date"]{inline-size:100%;min-inline-size:0;box-sizing:borde
 @media(max-width:430px){html body .pp-form-grid label:has(input[type="date"]){grid-column:1/-1}}
 
 html body .seg button{color:var(--muted)!important}
-html body .seg button.on,html body .seg button[aria-pressed="true"]{background:var(--action)!important;color:var(--action-text)!important}
+html[data-theme] body .seg button.on,html[data-theme] body .seg button[aria-pressed="true"]{background:var(--action)!important;color:var(--action-text)!important}
 html[data-theme="light"] body #home .weight-actions button{color:var(--action)!important}
+
+html[data-theme="light"] body .weekbtn.on,html[data-theme="light"] body .anatome-seg button.on{background:var(--action)!important;color:var(--action-text)!important}
