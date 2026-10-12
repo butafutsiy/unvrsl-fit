@@ -14,6 +14,15 @@ const recipes=w=>[...w.document.querySelectorAll('[data-mp="catalog-record"]')].
 (async()=>{
  let dom=make(),w=dom.window,E=w.UNVRSLMealEngine;
  click(w,'[data-mp="nutrition-view"][data-value="recipes"]');assert.ok(w.document.querySelector('.mp-catalog-page'));assert.ok(w.document.querySelector('.mp-datebar'));assert.equal(w.document.querySelector('.mp-catalog-options').open,false);assert.ok(w.document.getElementById('mp-search').compareDocumentPosition(w.document.querySelector('.mp-catalog-options'))&w.Node.DOCUMENT_POSITION_FOLLOWING);assert.equal(recipes(w).length,24);assert.equal(w.document.querySelectorAll('#mp-catalog-filters img').length,0);
+ assert.deepEqual([...w.document.querySelectorAll('.mp-meal-categories button')].map(b=>b.textContent),['Завтрак','Обед','Ужин','Перекус']);
+ for(const type of ['breakfast','lunch','dinner','snack']){
+  click(w,`[data-mp="meal-category"][data-value="${type}"]`);
+  assert.ok(recipes(w).length);assert.ok(recipes(w).every(r=>r.slots.includes(type)));
+  assert.equal(w.document.querySelector(`[data-mp="meal-category"][data-value="${type}"]`).getAttribute('aria-pressed'),'true');
+ }
+ click(w,'[data-mp="nutrition-view"][data-value="products"]');
+ click(w,'[data-mp="meal-category"][data-value="breakfast"]');assert.ok(w.document.querySelector('.mp-catalog-page'));assert.ok(recipes(w).every(r=>r.slots.includes('breakfast')));
+ click(w,'[data-mp="catalog-reset"]');
  filter(w,'collection','egg');assert.ok(recipes(w).length);assert.ok(recipes(w).every(r=>E.recipeInfo(r).collections.includes('egg')));
  filter(w,'type','breakfast');filter(w,'diet','vegetarian');assert.ok(recipes(w).every(r=>r.slots.includes('breakfast')&&E.recipeInfo(r).vegetarian));
  click(w,'[data-mp="catalog-reset"]');filter(w,'calories','400');assert.ok(recipes(w).length);assert.ok(recipes(w).every(r=>E.recipeInfo(r).nutrition.k>=400&&E.recipeInfo(r).nutrition.k<500));

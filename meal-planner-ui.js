@@ -106,8 +106,13 @@
     try{const m=compositionDraft(editor),weight=E.servingWeight(m);out.textContent='Всё блюдо: '+macros(m.nutrition)+(weight?' · '+(weight.estimated?'≈ ':'')+fmt(weight.grams)+' г':'')+(m.readyGrams?' · На 100 г: '+macros(E.round(Object.fromEntries(['k','p','f','c'].map(k=>[k,m.nutrition[k]/m.readyGrams*100])))):'');}catch(err){out.textContent=err.message;}
   }
   const quickSearchTerms=['Говядина','Бургер','Свинина','Курица','Яйца','Гречка','Творог'];
-  function quickSearchHTML(context){const query=context==='products'?productQuery:browseQuery;return `<div class="mp-quick-search" aria-label="Быстрый поиск по продукту">${quickSearchTerms.map(value=>`<button class="btn tiny" data-mp="search-term" data-context="${context}" data-value="${value}" aria-pressed="${E.normalizeSearch(query)===E.normalizeSearch(value)}">${value}</button>`).join('')}</div>`;}
-  function updateSearchTerms(context,query){D.querySelectorAll(`[data-mp="search-term"][data-context="${context}"]`).forEach(b=>b.setAttribute('aria-pressed',String(E.normalizeSearch(query)===E.normalizeSearch(b.dataset.value))));}
+  function quickSearchHTML(context){
+    const query=context==='products'?productQuery:browseQuery;
+    const ingredients=`<div class="mp-quick-search" aria-label="Быстрый поиск по продукту">${quickSearchTerms.map(value=>`<button class="btn tiny" data-mp="search-term" data-context="${context}" data-value="${value}" aria-pressed="${E.normalizeSearch(query)===E.normalizeSearch(value)}">${value}</button>`).join('')}</div>`;
+    if(ingredientSlot)return ingredients;
+    return `<div class="mp-meal-categories" aria-label="Приём пищи">${mealCategories.map(([value,icon,label])=>`<button type="button" class="btn tiny" data-mp="meal-category" data-value="${value}" aria-pressed="${context==='recipes'&&browseType===value}">${label}</button>`).join('')}</div><details class="mp-ingredient-filters"><summary>По ингредиентам</summary>${ingredients}</details>`;
+  }
+  function updateSearchTerms(context,query){D.querySelectorAll('[data-mp="meal-category"]').forEach(b=>b.setAttribute('aria-pressed',String(context==='recipes'&&browseType===b.dataset.value)));D.querySelectorAll(`[data-mp="search-term"][data-context="${context}"]`).forEach(b=>b.setAttribute('aria-pressed',String(E.normalizeSearch(query)===E.normalizeSearch(b.dataset.value))));}
   const aliasTargets=new Set(Object.values(E.catalog.foods).map(f=>f.aliasOf).filter(Boolean));
   function productPool(){
     const rows=Object.entries(E.catalog.foods).filter(([id,f])=>!id.startsWith('ut-')&&!aliasTargets.has(id)).map(([id,f])=>({key:'base:'+id,id,name:f.name,raw:f,source:f.nutritionQuality==='label'?'Маркировка':f.nutritionQuality==='legacy-estimate'?'Оценка':'Справочник',sourceInfo:f.sourceInfo,aliases:E.foodText(id)}));
@@ -196,7 +201,7 @@
     const host=D.getElementById('mp-recipes'),d=day(),current=d.plan?.meals.find(m=>m.id===replacementSlot);if(!host||!current)return;
     const aim=replacementTarget(d,current),prefs={...db().preferences,maxTime:0,simpleOnly:false},q=browseQuery;
     const score=n=>E.loss(n,aim);
-    const list=E.searchItems(E.catalog.recipes.filter(r=>r.id!==current.recipeId&&r.slots.includes(current.type)&&E.allowed(r,prefs)),q,E.recipeSearchText).map(r=>({recipe:r,meal:E.fit(r,aim)})).sort((a,b)=>Number(!!a.recipe.source)-Number(!!b.recipe.source)||score(a.meal.nutrition)-score(b.meal.nutrition));
+    const list=E.searchItems(E.catalog.recipes.filter(r=>r.id!==current.recipeId&&r.slots.includes(browseType||current.type)&&E.allowed(r,prefs)),q,E.recipeSearchText).map(r=>({recipe:r,meal:E.fit(r,aim)})).sort((a,b)=>Number(!!a.recipe.source)-Number(!!b.recipe.source)||score(a.meal.nutrition)-score(b.meal.nutrition));
     updateSearchTerms('recipes',q);
     host.innerHTML=`<p class="mp-copy">${list.length} вариантов · сначала простые блюда, затем мировая кухня. Количество уже подобрано под этот приём.</p>${list.slice(0,browseLimit).map(({recipe:r,meal:m})=>`<article class="mp-recipe"><div class="mp-head"><span class="mp-tag">${esc(r.country||'Простой рецепт')}</span><div class="mp-recipe-tools"><small>${r.time} мин</small><button class="btn tiny mp-favorite" data-mp="favorite" data-id="${r.id}" aria-pressed="${(db().favorites||[]).includes(r.id)}" aria-label="${(db().favorites||[]).includes(r.id)?'Убрать из избранного':'В избранное'}: ${esc(r.name)}">${(db().favorites||[]).includes(r.id)?'♥':'♡'}</button></div></div><h3>${esc(r.name)}</h3>${weightHTML(m)}<b class="mp-macro">${macros(m.nutrition)}</b>${E.isLegacyMeal(m)||m.legacySnapshot?'<p class="mp-copy">КБЖУ сохранены по прежнему расчёту. Для новых справочных значений обнови состав или подбери меню заново. Прошлые записи сохранят свои значения.</p>':''}<details><summary>Рецепт и ингредиенты</summary>${ingredientsHTML(m)}</details><button class="btn full" data-mp="replace-choice" data-id="${r.id}">Выбрать это блюдо</button></article>`).join('')}${list.length>browseLimit?'<button class="btn full" data-mp="more">Показать ещё 24</button>':''}${!list.length?'<p class="mp-copy">Нет совпадений. Попробуй другой запрос или измени исключения.</p>':''}`;
   }
@@ -319,6 +324,12 @@
     try{
       const action=b.dataset.mp,d=day();
       if(action==='nutrition-view'){resetOnline();captureDrafts();captureViewPosition();catalogView=b.dataset.value==='recipes';productView=b.dataset.value==='products';ingredientSlot=null;replacementSlot=null;render(false);restoreViewPosition(b.dataset.value);return;}
+      if(action==='meal-category'){
+        resetOnline();captureDrafts();captureViewPosition();
+        browseType=b.dataset.value;browseQuery='';browseLimit=24;
+        catalogFilters={diet:'',collection:'',calories:'',country:'',favorite:false};
+        catalogView=true;productView=false;ingredientSlot=null;render(false);return;
+      }
       if(action==='search-term'){
         if(b.dataset.context==='products'){resetOnline();productQuery=b.dataset.value;productFilter='';productLimit=30;D.getElementById('mp-product-search').value=productQuery;browseProducts();}
         else{browseQuery=b.dataset.value;browseType='';catalogFilters={diet:'',collection:'',calories:'',country:'',favorite:false};browseLimit=24;D.getElementById('mp-search').value=browseQuery;browse();}
@@ -387,7 +398,7 @@
       }
       if(action==='swap'){
         const current=d.plan?.meals.find(m=>m.id===b.dataset.id);if(!current||d.eaten[current.id])return;
-        replacementSlot=current.id;browseQuery='';browseLimit=24;render();D.getElementById('sheet')?.scrollTo?.({top:0});return;
+        replacementSlot=current.id;browseType=current.type;browseQuery='';browseLimit=24;render();D.getElementById('sheet')?.scrollTo?.({top:0});return;
       }
       if(action==='eat'){
         if(D.querySelector(`.mp-composition[data-meal="${b.dataset.id}"]`)?.dataset.dirty==='true')throw Error('Сначала сохрани изменённый состав и готовый вес блюда');

@@ -2,6 +2,18 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const E=require('../meal-engine.js'),B=require('../recipe-builder.js'),S=require('../nutrition-state.js');
 const f=require('../nutrition-foods-data.js');
+test('uncooked dried fruit stays dry and undiluted concentrates are identified',()=>{
+ for(const food of Object.values(f)){
+  const source=food.sourceInfo.originalName.toLowerCase();
+  if(/uncooked/.test(source)&&/dried|dehydrated/.test(source)){
+   assert.equal(food.state,'dry');assert.doesNotMatch(food.name,/приготовлен|варён/);
+  }
+  if(/concentrate/.test(source)&&/undiluted/.test(source)){
+   assert.match(food.name,/концентрат/);assert.match(food.name,/неразбавленный/);
+  }
+ }
+ assert.equal(f['sr28-09274'].k,179);
+});
 test('reference import provides over 500 complete traceable distinct source foods',()=>{
  assert.ok(Object.keys(f).length>=500);assert.equal(new Set(Object.values(f).map(x=>x.name)).size,Object.keys(f).length);
  for(const [id,x] of Object.entries(f)){assert.equal(id,'sr28-'+x.sourceInfo.code);assert.equal(x.basisGrams,100);assert.equal(x.unit,'g');assert.ok(x.state);for(const k of ['k','p','f','c'])assert.ok(Number.isFinite(x[k])&&x[k]>=0);assert.ok(x.p+x.f+x.c<=100.5);}

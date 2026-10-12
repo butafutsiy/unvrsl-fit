@@ -1230,14 +1230,14 @@
     "vegetarian": true
   },
   "09005": {
-    "name": "Яблоко, сырой продукт, варёный, без кожуры",
+    "name": "Яблоко варёное без кожуры",
     "state": "cooked",
     "category": "fruit",
     "allergens": [],
     "vegetarian": true
   },
   "09006": {
-    "name": "Яблоко, сырой продукт, приготовленный, без кожуры",
+    "name": "Яблоко без кожуры, приготовленное в микроволновке",
     "state": "cooked",
     "category": "fruit",
     "allergens": [],
@@ -1251,8 +1251,8 @@
     "vegetarian": true
   },
   "09009": {
-    "name": "Яблоко, сырой продукт, сушёный, приготовленный",
-    "state": "cooked",
+    "name": "Яблоко сушёное, низкая влажность, обработано диоксидом серы",
+    "state": "dry",
     "category": "fruit",
     "allergens": [],
     "vegetarian": true
@@ -1314,8 +1314,8 @@
     "vegetarian": true
   },
   "09030": {
-    "name": "Абрикос, сырой продукт, сушёный, приготовленный",
-    "state": "cooked",
+    "name": "Абрикос сушёный, низкая влажность, обработан диоксидом серы",
+    "state": "dry",
     "category": "fruit",
     "allergens": [],
     "vegetarian": true
@@ -1531,8 +1531,8 @@
     "vegetarian": true
   },
   "09094": {
-    "name": "Инжир, сырой продукт, сушёный, приготовленный",
-    "state": "cooked",
+    "name": "Инжир сушёный",
+    "state": "dry",
     "category": "fruit",
     "allergens": [],
     "vegetarian": true
@@ -1594,8 +1594,8 @@
     "vegetarian": true
   },
   "09125": {
-    "name": "Грейпфрутовый сок, замороженный, без сахара",
-    "state": "ready",
+    "name": "Грейпфрутовый сок, замороженный концентрат, без сахара, неразбавленный",
+    "state": "frozen",
     "category": "fruit",
     "allergens": [],
     "vegetarian": true
@@ -1657,7 +1657,7 @@
     "vegetarian": true
   },
   "09153": {
-    "name": "Лимонный сок, консервированный",
+    "name": "Лимонный сок из концентрата, консервированный",
     "state": "canned",
     "category": "fruit",
     "allergens": [],
@@ -1762,14 +1762,14 @@
     "vegetarian": true
   },
   "09209": {
-    "name": "Апельсиновый сок, готовый продукт",
+    "name": "Апельсиновый сок охлаждённый, в том числе из концентрата",
     "state": "ready",
     "category": "fruit",
     "allergens": [],
     "vegetarian": true
   },
   "09212": {
-    "name": "Апельсиновый сок, замороженный, без сахара",
+    "name": "Апельсиновый сок из замороженного концентрата, разбавленный 1:3, с кальцием",
     "state": "ready",
     "category": "fruit",
     "allergens": [],
@@ -1825,8 +1825,8 @@
     "vegetarian": true
   },
   "09244": {
-    "name": "Персик, сырой продукт, сушёный, приготовленный",
-    "state": "cooked",
+    "name": "Персик сушёный, низкая влажность, обработан диоксидом серы",
+    "state": "dry",
     "category": "fruit",
     "allergens": [],
     "vegetarian": true
@@ -1874,8 +1874,8 @@
     "vegetarian": true
   },
   "09259": {
-    "name": "Груша, сырой продукт, сушёный, приготовленный",
-    "state": "cooked",
+    "name": "Груша сушёная, обработана диоксидом серы",
+    "state": "dry",
     "category": "fruit",
     "allergens": [],
     "vegetarian": true
@@ -1930,8 +1930,8 @@
     "vegetarian": true
   },
   "09274": {
-    "name": "Ананасовый сок, замороженный, без сахара",
-    "state": "ready",
+    "name": "Ананасовый сок, замороженный концентрат, без сахара, неразбавленный",
+    "state": "frozen",
     "category": "fruit",
     "allergens": [],
     "vegetarian": true
@@ -1979,8 +1979,8 @@
     "vegetarian": true
   },
   "09289": {
-    "name": "Чернослив, сырой продукт, сушёный, приготовленный",
-    "state": "cooked",
+    "name": "Чернослив сушёный, низкая влажность",
+    "state": "dry",
     "category": "fruit",
     "allergens": [],
     "vegetarian": true
@@ -1993,8 +1993,8 @@
     "vegetarian": true
   },
   "09291": {
-    "name": "Слива, сырой продукт, сушёный, приготовленный",
-    "state": "cooked",
+    "name": "Чернослив сушёный",
+    "state": "dry",
     "category": "fruit",
     "allergens": [],
     "vegetarian": true
@@ -2154,8 +2154,8 @@
     "vegetarian": true
   },
   "09410": {
-    "name": "Яблочный сок, замороженный, без сахара",
-    "state": "ready",
+    "name": "Яблочный сок, замороженный концентрат, без сахара, неразбавленный",
+    "state": "frozen",
     "category": "fruit",
     "allergens": [],
     "vegetarian": true
@@ -2189,7 +2189,7 @@
     "vegetarian": true
   },
   "09523": {
-    "name": "Лимонный сок, готовый продукт",
+    "name": "Лимонный сок из концентрата CONCORD, в бутылке",
     "state": "ready",
     "category": "fruit",
     "allergens": [],
@@ -3177,8 +3177,8 @@
     "vegetarian": true
   },
   "11361": {
-    "name": "Картофель, сырой продукт, замороженный, запечённый",
-    "state": "cooked",
+    "name": "Картофель запечённый, замороженный полуфабрикат, с солью",
+    "state": "frozen",
     "category": "vegetable",
     "allergens": [],
     "vegetarian": true

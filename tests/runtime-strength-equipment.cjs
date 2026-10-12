@@ -14,6 +14,8 @@ W.document.querySelector('main').innerHTML=W.profileStrengthOverviewHtml();
 const query=s=>W.document.querySelector(s),familyKey=query('[data-strength-key]').dataset.strengthKey;
 assert.equal(W.document.querySelectorAll('.strength-exercise').length,1);
 assert.equal(W.document.querySelectorAll('.strength-record').length,5);
+assert.deepEqual([...W.document.querySelectorAll('.strength-record')].map(b=>Number(b.getAttribute('onclick').match(/,(\d+)\)/)[1])),[0,1,2,3,4]);
+assert.equal(W.document.querySelector('.strength-record:last-child').getAttribute('aria-pressed'),'true');
 assert.match(query('.strength-average').textContent,/15.*%/);
 assert.match(query('.strength-average').textContent,/2 из 3/);
 assert.match(query('.strength-chart').textContent,/100% = старт/);

@@ -50,3 +50,23 @@ html body .nav{left:8px!important;right:8px!important;width:auto!important;max-w
 html body .btn{box-shadow:none!important;background-image:none!important}
 
 html body [hidden]{display:none!important}
+
+/* Settings controls keep a stable row and never split action labels. */
+html body .settings-card .setting>div:first-child{min-width:0;flex:1}
+html body .settings-card .setting>.btn,html body .settings-card .setting>label.btn{flex:0 0 auto;white-space:nowrap;overflow-wrap:normal}
+html body .settings-card .setting:has(.seg){display:grid;grid-template-columns:1fr;align-items:start;gap:10px}
+html body .settings-card .setting .seg{width:100%;display:flex;flex-wrap:nowrap;gap:3px}
+html body .settings-card .setting .seg button{flex:1;min-width:0;white-space:nowrap;padding:10px 6px;font-size:14px}
+html body .nav button:not(.active)::after{content:""!important}
+html body .nav button::after{height:12px!important;line-height:12px!important;font-size:10px!important}
+html body .mp-meal-categories{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:12px 0}
+html body .mp-meal-categories .btn{padding:10px 4px;font-size:13px;min-width:0}
+html body .mp-meal-categories [aria-pressed="true"]{background:var(--action)!important;color:var(--action-text)!important;border-color:var(--action)!important}
+html body .mp-ingredient-filters{margin:8px 0 12px;color:var(--muted)}
+html body .mp-ingredient-filters summary{font-size:13px;min-height:44px;display:flex;align-items:center;cursor:pointer}
+html body .strength-records{direction:ltr}
+/* iOS date controls must stay inside their grid cell. */
+html body .cj107-fields input,html body .measurement-grid input,html body .profile-edit-grid input,html body .progress-entry-grid input{width:100%;min-width:0}
+
+html body input[type="date"]{inline-size:100%;min-inline-size:0;box-sizing:border-box}
+@media(max-width:430px){html body .pp-form-grid label:has(input[type="date"]){grid-column:1/-1}}

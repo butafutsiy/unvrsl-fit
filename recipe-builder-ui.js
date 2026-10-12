@@ -3,7 +3,8 @@
   const D=W.document,E=W.UNVRSLMealEngine,B=W.UNVRSLRecipeBuilder;if(!D||!B)return;
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const number=v=>String(v??'').trim()===''?NaN:Number(String(v).trim().replace(',','.'));
-  const macro=n=>`${Math.round(n.k)} ккал · Б ${n.p.toFixed(1)} · Ж ${n.f.toFixed(1)} · У ${n.c.toFixed(1)} г`;
+  const format=n=>Number(n).toLocaleString('ru-RU',{maximumFractionDigits:1});
+  const macro=n=>`${format(n.k)} ккал · Б ${format(n.p)} · Ж ${format(n.f)} · У ${format(n.c)} г`;
   const state=()=>W.UNVRSLMealContext?.getState?.()||W.st;
   const owner=()=>String(state()?.accountOwnerId||W.cloud?.user?.id||'local');
   let draft=null,draftOwner=null,dirty=false,replaceIndex=null,busy=false;
@@ -17,7 +18,7 @@
   }
   function summary(){
     const out=D.getElementById('cook-totals');if(!out)return;
-    try{read();const recipe=B.create(draft),n=B.totals(recipe);out.textContent='Вся партия: '+macro(n.total)+'\nОдна порция: '+macro(n.portion)+(n.per100?'\nНа 100 г: '+macro(n.per100):'\nНа 100 г: укажи вес готовой партии. Выход пока неизвестен.');out.style.whiteSpace='pre-line';}
+    try{read();const recipe=B.create(draft),n=B.totals(recipe);out.textContent='Вся партия: '+macro(n.total)+'\nОдна порция'+(recipe.readyGrams?' ('+format(recipe.readyGrams)+' г)':'')+': '+macro(n.portion)+(n.per100?'\nНа 100 г: '+macro(n.per100):'\nНа 100 г: укажи вес готовой партии. Выход пока неизвестен.');out.style.whiteSpace='pre-line';}
     catch(err){out.textContent=err.message;}
   }
   function editor(recipeId){

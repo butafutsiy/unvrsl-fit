@@ -2,7 +2,7 @@
   "date": "2026-10-12",
   "baseline": "f897451c92481ca251ec3beb57711439025444ec",
   "contracts": {
-    "passed": 364,
+    "passed": 365,
     "failed": 0
   },
   "runtimeScenarios": [
@@ -111,5 +111,15 @@
     "No real-account sign-in in the browser",
     "No Safari/iPhone or physical screen keyboard",
     "Narrow layouts checked by CSS and DOM, not physical phones"
-  ]
+  ],
+  "finalRelease": "v504",
+  "manualChrome": {
+    "lightThemeReload": true,
+    "burgerRecipeSaveReload": true,
+    "immutableDiaryAfterRecipeEdit": true,
+    "browserBackPreservesSearch": true,
+    "testProfile": "anonymous local only",
+    "recordedGrams": 160,
+    "recordedCaloriesDisplayed": 287.7
+  }
 }
