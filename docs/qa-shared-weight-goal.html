@@ -48,7 +48,7 @@
     @media(max-width:430px){.pp-shell{padding:23px 14px calc(76px + env(safe-area-inset-bottom))}.pp-client-hero{grid-template-columns:54px minmax(0,1fr) auto;gap:12px;padding:30px 2px 18px}.pp-client-name .pp-eyebrow{font-size:11px;letter-spacing:.11em}.pp-client-name h1{font-size:30px}.pp-edit{grid-column:auto;width:auto;min-width:76px;min-height:40px;padding:8px 11px;border-radius:13px;font-size:12px}.pp-facts{gap:7px}.pp-main-actions{grid-template-columns:1fr 1fr;gap:8px}.pp-main-actions button{min-height:56px;padding:10px 8px;font-size:12px;line-height:1.18}.pp-profile-edit{padding:17px 15px 22px}.pp-profile-edit .pp-entry-head{align-items:flex-start}.pp-profile-edit .pp-entry-head h2{font-size:24px;line-height:1.05}.pp-profile-edit .pp-entry-head p{max-width:250px;line-height:1.4}.pp-profile-edit .pp-form-grid{grid-template-columns:1fr 1fr;gap:10px}.pp-profile-edit .pp-form-grid label:has(#ppProfileTargetWeight),.pp-profile-edit .pp-form-grid label:has(#ppProfileBirth){grid-column:1/-1}.pp-profile-edit input[type="date"]{min-width:0;width:100%;-webkit-appearance:none;appearance:none}.pp-profile-edit .pp-primary{min-height:54px;margin-top:16px}}
     @media(max-width:360px){.pp-main-actions{grid-template-columns:1fr}.pp-profile-edit .pp-form-grid{grid-template-columns:1fr}.pp-profile-edit .pp-form-grid label{grid-column:1/-1}}
   </style>
-<link rel="stylesheet" href="interface-system.css?v=510"><link rel="stylesheet" href="public-interface.css?v=510"><script src="public-appearance.js?v=510"></script></head>
+<link rel="stylesheet" href="interface-system.css?v=511"><link rel="stylesheet" href="public-interface.css?v=511"><script src="public-appearance.js?v=511"></script></head>
 <body><p style="max-width:700px;margin:20px auto;padding:12px;color:var(--text);text-align:center">Тестовый пример: вес 60–62 кг, цель 80 кг.</p>
   <main class="pp-shell">
     <div class="pp-brand">UNVRSL <i>FIT</i></div>
@@ -58,7 +58,7 @@
 
 
 
-  <link rel="stylesheet" href="meal-planner.css?v=510">
+  <link rel="stylesheet" href="meal-planner.css?v=511">
 
 
 
@@ -77,5 +77,5 @@
 history.replaceState(null,'',location.pathname+location.search+'#t='+('x'.repeat(44)));
 window.UNVRSL_CLOUD={url:'https://fixture.invalid',anonKey:'test-public'};
 window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:null}})},rpc:async name=>name==='get_offline_progress_share_v334'?{data:{data:{"client":{"name":"Тестовый профиль","height":177,"targetWeight":80},"measurements":[{"date":"2026-10-01","weight":60,"source":"client","measurements":{}},{"date":"2026-10-12","weight":62,"source":"client","measurements":{}}],"strengths":[]},viewer_source:'client'},error:null}:{error:{message:'Это тестовый просмотр. Записи не сохраняются.'}}})};
-</script><script src="public-progress.js?v=510"></script></body>
+</script><script src="public-progress.js?v=511"></script></body>
 </html>
