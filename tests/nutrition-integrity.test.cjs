@@ -58,3 +58,9 @@ test('legacy meal totals remain stable after reference corrections and new meals
  const old={recipeId:'pork-rice',ingredients:[{id:'pork',g:100}],nutrition:{k:128,p:20.65,f:3.53,c:0}};const half=E.scaleMeal(old,.5);assert.equal(half.nutrition.k,64);assert.equal(half.legacySnapshot,true);
  const recipe=E.catalog.recipes.find(r=>r.id==='pork-rice'),meal=E.fit(recipe,E.nutrition(recipe.ingredients)),value=meal.nutrition.k,f=E.catalog.foods.pork,initial=f.k;f.k+=40;try{assert.equal(E.scaleMeal(meal,1).nutrition.k,value);}finally{f.k=initial;}
 });
+
+test('fish diet covers source-ID fish and personal burgers remain filterable by dish type',()=>{
+ const r=E.catalog.recipes.find(x=>x.id==='daily-fish-burger');assert.ok(E.recipeInfo(r).pescatarian);assert.equal(E.recipeInfo(r).vegetarian,false);
+ assert.equal(E.matchesCatalog(E.catalog.recipes.find(x=>x.id==='daily-classic-burger'),{diet:'pescatarian'}),false);
+ const own=B.create({name:'Мой говяжий бургер',steps:'Приготовить мясо и собрать.',time:20,servings:1,ingredients:E.catalog.recipes.find(x=>x.id==='daily-classic-burger').ingredients,readyGrams:320});assert.equal(E.recipeInfo(own).kind,'sandwich');assert.equal(E.matchesCatalog(own,{kind:'sandwich'}),true);
+});

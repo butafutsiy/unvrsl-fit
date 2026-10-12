@@ -25,6 +25,14 @@ const recipes=w=>[...w.document.querySelectorAll('[data-mp="catalog-record"]')].
  click(w,'[data-mp="catalog-reset"]');
  filter(w,'collection','egg');assert.ok(recipes(w).length);assert.ok(recipes(w).every(r=>E.recipeInfo(r).collections.includes('egg')));
  filter(w,'type','breakfast');filter(w,'diet','vegetarian');assert.ok(recipes(w).every(r=>r.slots.includes('breakfast')&&E.recipeInfo(r).vegetarian));
+ click(w,'[data-mp="catalog-reset"]');
+ const kind=w.document.getElementById('mp-kind-filter');kind.value='soup';kind.dispatchEvent(new w.Event('change',{bubbles:true}));
+ const time=w.document.getElementById('mp-cook-time-filter');time.value='30';time.dispatchEvent(new w.Event('change',{bubbles:true}));
+ assert.ok(recipes(w).length);assert.ok(recipes(w).every(r=>E.recipeInfo(r).kind==='soup'&&r.time<=30));
+ click(w,'[data-mp="meal-category"][data-value="lunch"]');assert.equal(w.document.getElementById('mp-kind-filter').value,'soup');assert.equal(w.document.getElementById('mp-cook-time-filter').value,'30');assert.ok(recipes(w).every(r=>r.slots.includes('lunch')&&E.recipeInfo(r).kind==='soup'&&r.time<=30));
+ click(w,'[data-mp="catalog-reset"]');assert.equal(w.document.getElementById('mp-kind-filter').value,'');assert.equal(w.document.getElementById('mp-cook-time-filter').value,'0');
+ assert.match(w.document.getElementById('mp-filter-count').textContent,/Найдено 310 блюд/);
+ assert.ok(![...w.document.querySelectorAll('.mp-ingredient-filters button')].some(b=>b.textContent==='Бургер'));
  click(w,'[data-mp="catalog-reset"]');filter(w,'calories','400');assert.ok(recipes(w).length);assert.ok(recipes(w).every(r=>E.recipeInfo(r).nutrition.k>=400&&E.recipeInfo(r).nutrition.k<500));
  click(w,'[data-mp="catalog-reset"]');const country=w.document.getElementById('mp-country');country.value='Япония';country.dispatchEvent(new w.Event('change',{bubbles:true}));assert.ok(recipes(w).length);assert.ok(recipes(w).every(r=>r.country==='Япония'));
  const id=recipes(w)[0].id;click(w,`[data-mp="favorite"][data-id="${id}"]`);assert.ok(w.st.mealNutritionV1.favorites.includes(id));

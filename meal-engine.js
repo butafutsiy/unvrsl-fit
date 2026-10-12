@@ -193,9 +193,9 @@
   }
   function recipeInfo(recipe){
     const n=round(recipe.portionNutrition||nutrition(recipe.ingredients));
-    const kind=recipe.kind||(/суп|борщ|рассольник|уха|щи/i.test(recipe.name)?'soup':/салат|винегрет|оливье/i.test(recipe.name)?'salad':/бургер|бутерброд|сэндвич|шаурма|лаваш/i.test(recipe.name)?'sandwich':recipe.slots.length===1&&recipe.slots[0]==='breakfast'?'breakfast':'main');
+    const kind=(recipe.kind&&recipe.kind!=='custom'?recipe.kind:null)||(/суп|борщ|рассольник|уха|щи/i.test(recipe.name)?'soup':/салат|винегрет|оливье/i.test(recipe.name)?'salad':/бургер|бутерброд|сэндвич|шаурма|лаваш/i.test(recipe.name)?'sandwich':recipe.slots.length===1&&recipe.slots[0]==='breakfast'?'breakfast':'main');
     const vegetarian=allowed(recipe,{vegetarian:true});
-    const pescatarian=vegetarian||(recipe.source?(recipe.diets||[]).includes('pescatarian'):recipe.ingredients.every(i=>catalog.foods[i.id].vegetarian||['fish','salmon','tuna','shrimp'].includes(i.id)));
+    const pescatarian=vegetarian||(recipe.source?(recipe.diets||[]).includes('pescatarian'):recipe.ingredients.every(i=>{const f=catalog.foods[i.id]||{};return (i.vegetarian??f.vegetarian)===true||f.category==='fish'||['fish','salmon','tuna','shrimp'].includes(i.id);}));
     const collections=[];
     if(recipe.custom)collections.push('mine');
     if(!recipe.source&&recipe.slots.includes('breakfast'))collections.push('breakfast');

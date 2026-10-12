@@ -105,7 +105,7 @@
     const out=editor.querySelector('.mp-composition-preview');
     try{const m=compositionDraft(editor),weight=E.servingWeight(m);out.textContent='Всё блюдо: '+macros(m.nutrition)+(weight?' · '+(weight.estimated?'≈ ':'')+fmt(weight.grams)+' г':'')+(m.readyGrams?' · На 100 г: '+macros(E.round(Object.fromEntries(['k','p','f','c'].map(k=>[k,m.nutrition[k]/m.readyGrams*100])))):'');}catch(err){out.textContent=err.message;}
   }
-  const quickSearchTerms=['Говядина','Бургер','Свинина','Курица','Яйца','Гречка','Творог'];
+  const quickSearchTerms=['Свинина','Курица','Говядина','Индейка','Рыба','Рис','Гречка','Булгур','Картофель','Яйца','Творог','Овсянка','Фасоль'];
   function quickSearchHTML(context){
     const query=context==='products'?productQuery:browseQuery;
     const ingredients=`<div class="mp-quick-search" aria-label="Быстрый поиск по продукту">${quickSearchTerms.map(value=>`<button class="btn tiny" data-mp="search-term" data-context="${context}" data-value="${value}" aria-pressed="${E.normalizeSearch(query)===E.normalizeSearch(value)}">${value}</button>`).join('')}</div>`;
@@ -171,7 +171,7 @@
   function catalogHTML(){return `<details class="mp-library"${catalogOpen?' open':''}><summary><span>Рецепты и подборки</span><span class="mp-tag">${E.catalog.recipes.filter(r=>!r.source).length} рецептов</span></summary>
     <div class="mp-catalog-heading"><div><div class="mp-eyebrow">${E.catalog.recipes.filter(r=>!r.source).length} РЕЦЕПТОВ</div><h3>Что приготовим?</h3></div><button class="btn mp-favorites-toggle" data-mp="catalog-filter" data-key="favorite" aria-pressed="${catalogFilters.favorite}" aria-label="Показать избранные рецепты">${catalogFilters.favorite?'♥':'♡'} <span id="mp-favorite-count">${(db().favorites||[]).length}</span></button></div>
     <div class="mp-searchbar"><input id="mp-search" type="search" placeholder="Название или продукт" aria-label="Поиск рецептов" value="${esc(browseQuery)}"></div>${quickSearchHTML('recipes')}<div class="mp-actions"><button class="btn primary" data-cook="new">＋ Создать рецепт</button><button class="btn" data-cook="resume">Мой черновик</button></div><label class="mp-check"><input type="checkbox" id="mp-show-world"${catalogFilters.world?' checked':''}>Дополнительная мировая подборка · КБЖУ автора</label>
-    <details class="mp-catalog-options"${filtersOpen?' open':''}><summary>Подборки и фильтры</summary><div id="mp-catalog-filters">${catalogFiltersHTML()}</div><div class="mp-catalog-selects"><select id="mp-filter" aria-label="Фильтр приёма пищи">${[['','Все приёмы'],['breakfast','Завтраки'],['lunch','Обеды'],['dinner','Ужины'],['snack','Перекусы']].map(([v,n])=>`<option value="${v}"${v===browseType?' selected':''}>${n}</option>`).join('')}</select><select id="mp-country" aria-label="Кухня">${['','Повседневная кухня',...Array.from(new Set(E.catalog.recipes.map(r=>r.country).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'ru'))].map(v=>`<option value="${esc(v)}"${v===catalogFilters.country?' selected':''}>${esc(v||'Все кухни')}</option>`).join('')}</select></div></details>
+    <details class="mp-catalog-options"${filtersOpen?' open':''}><summary>Подборки и фильтры</summary><p id="mp-filter-count" class="mp-copy" role="status" aria-live="polite"></p><div id="mp-catalog-filters">${catalogFiltersHTML()}</div><div class="mp-catalog-selects"><select id="mp-filter" aria-label="Фильтр приёма пищи">${[['','Все приёмы'],['breakfast','Завтраки'],['lunch','Обеды'],['dinner','Ужины'],['snack','Перекусы']].map(([v,n])=>`<option value="${v}"${v===browseType?' selected':''}>${n}</option>`).join('')}</select><select id="mp-country" aria-label="Кухня">${['','Повседневная кухня',...Array.from(new Set(E.catalog.recipes.map(r=>r.country).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'ru'))].map(v=>`<option value="${esc(v)}"${v===catalogFilters.country?' selected':''}>${esc(v||'Все кухни')}</option>`).join('')}</select></div></details>
     <div class="mp-catalog-selects"><label>Тип блюда<select id="mp-kind-filter" aria-label="Тип блюда">${[['','Любой'],['main','Основное блюдо'],['soup','Суп'],['salad','Салат'],['sandwich','Бутерброд, бургер, шаурма'],['breakfast','Завтрак']].map(([key,label])=>`<option value="${key}"${catalogFilters.kind===key?' selected':''}>${label}</option>`).join('')}</select></label><label>Время готовки<select id="mp-cook-time-filter" aria-label="Время готовки">${[0,15,30,45,60,90,120].map(v=>`<option value="${v}"${Number(catalogFilters.maxTime||0)===v?' selected':''}>${v?'До '+v+' мин':'Любое'}</option>`).join('')}</select></label></div><div id="mp-active-filters">${activeFiltersHTML()}</div><div id="mp-recipes"></div></details>`;}
   const dateHTML=()=>`<div class="mp-datebar"><button data-mp="date-prev" aria-label="Предыдущий день">‹</button><input aria-label="Дата дневника" id="mp-date" type="date" value="${activeDate}" data-mp-date><button data-mp="date-next" aria-label="Следующий день">›</button></div>`;
   const planTotal=d=>E.round(E.sum((d.plan?.meals||[]).map(m=>(d.eaten[m.id]||m).nutrition)));
@@ -189,6 +189,10 @@
     const favoriteButton=D.querySelector('.mp-favorites-toggle');if(favoriteButton){favoriteButton.setAttribute('aria-pressed',String(catalogFilters.favorite));favoriteButton.innerHTML=(catalogFilters.favorite?'♥':'♡')+' <span id="mp-favorite-count">'+(db().favorites||[]).length+'</span>';}
     if(D.getElementById('mp-filter'))D.getElementById('mp-filter').value=browseType;
     if(D.getElementById('mp-country'))D.getElementById('mp-country').value=catalogFilters.country;
+    if(D.getElementById('mp-kind-filter'))D.getElementById('mp-kind-filter').value=catalogFilters.kind||'';
+    if(D.getElementById('mp-cook-time-filter'))D.getElementById('mp-cook-time-filter').value=String(catalogFilters.maxTime||0);
+    if(D.getElementById('mp-show-world'))D.getElementById('mp-show-world').checked=!!catalogFilters.world;
+    const status=D.getElementById('mp-filter-count');if(status)status.textContent='Найдено '+list.length+' блюд';
     host.innerHTML=`<div class="mp-copy" aria-live="polite">Найдено ${list.length} · с учётом предпочтений</div>${list.slice(0,browseLimit).map(r=>{
       const m=E.fit(r,r.portionNutrition||E.nutrition(r.ingredients));
       const available=(day().plan?.meals||[]).filter(x=>!day().eaten[x.id]&&r.slots.includes(x.type));
@@ -326,13 +330,13 @@
       if(action==='nutrition-view'){resetOnline();captureDrafts();captureViewPosition();catalogView=b.dataset.value==='recipes';productView=b.dataset.value==='products';ingredientSlot=null;replacementSlot=null;render(false);restoreViewPosition(b.dataset.value);return;}
       if(action==='meal-category'){
         resetOnline();captureDrafts();captureViewPosition();
-        browseType=b.dataset.value;browseQuery='';browseLimit=24;
-        catalogFilters={diet:'',collection:'',calories:'',country:'',favorite:false};
+        if(productView)browseQuery=productQuery;
+        browseType=b.dataset.value;browseLimit=24;
         catalogView=true;productView=false;ingredientSlot=null;render(false);return;
       }
       if(action==='search-term'){
         if(b.dataset.context==='products'){resetOnline();productQuery=b.dataset.value;productFilter='';productLimit=30;D.getElementById('mp-product-search').value=productQuery;browseProducts();}
-        else{browseQuery=b.dataset.value;browseType='';catalogFilters={diet:'',collection:'',calories:'',country:'',favorite:false};browseLimit=24;D.getElementById('mp-search').value=browseQuery;browse();}
+        else{browseQuery=b.dataset.value;browseLimit=24;D.getElementById('mp-search').value=browseQuery;browse();}
         return;
       }
       if(action==='catalog-filter'){

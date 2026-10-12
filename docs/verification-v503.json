@@ -2,7 +2,7 @@
   "date": "2026-10-12",
   "baseline": "f897451c92481ca251ec3beb57711439025444ec",
   "contracts": {
-    "passed": 365,
+    "passed": 366,
     "failed": 0
   },
   "runtimeScenarios": [
@@ -97,6 +97,10 @@
     {
       "test": "tests/runtime-cycle-settings.cjs",
       "exit": 0
+    },
+    {
+      "test": "tests/runtime-public-weight-goal.cjs",
+      "exit": 0
     }
   ],
   "reimport": {
@@ -112,7 +116,7 @@
     "No Safari/iPhone or physical screen keyboard",
     "Narrow layouts checked by CSS and DOM, not physical phones"
   ],
-  "finalRelease": "v506",
+  "finalRelease": "v508",
   "manualChrome": {
     "lightThemeReload": true,
     "burgerRecipeSaveReload": true,
@@ -126,6 +130,10 @@
     "strengthRecordsChronological": true,
     "fourMealCategories": true,
     "settingsNoSplitActionLabels": true,
-    "navigationCaption": "selected tab only"
+    "navigationCaption": "selected tab only",
+    "ingredientHintsContainOnlyFoods": true,
+    "combinedRecipeFiltersPreserved": true,
+    "filterResetSynchronizesFields": true,
+    "sharedWeightGoalLineAndDomain": true
   }
 }

@@ -43,6 +43,8 @@ jobs:
           node tests/runtime-nutrition-units.cjs
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
           node tests/runtime-client-save.cjs
+          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
+          node tests/runtime-public-weight-goal.cjs
       - name: Verify weight history after late sign-in
         run: |
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \

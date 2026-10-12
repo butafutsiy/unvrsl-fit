@@ -10,10 +10,10 @@ const input=(id,value)=>{const el=D.getElementById(id);assert.ok(el,id);el.value
 const quick=(context,term)=>click(`[data-mp="search-term"][data-context="${context}"][data-value="${term}"]`);
 const shown=()=>[...D.querySelectorAll('[data-mp="catalog-record"]')].map(el=>w.UNVRSLMealEngine.catalog.recipes.find(r=>r.id===el.dataset.id));
 w.openMealPlanner();tab('recipes');
-// A familiar shortcut clears view filters so it cannot appear that pork is missing.
+// Ingredient shortcuts preserve selected dietary filters; reset is explicit.
 click('[data-mp="catalog-filter"][data-key="diet"][data-value="vegetarian"]');quick('recipes','Свинина');
 assert.equal(D.getElementById('mp-search').value,'Свинина');assert.equal(D.querySelector('[data-mp="search-term"][data-value="Свинина"]').getAttribute('aria-pressed'),'true');
-assert.equal(shown().length,24);assert.ok(shown().every(r=>!r.source&&r.ingredients.some(i=>i.id==='pork')));
+assert.equal(shown().length,0);assert.equal(D.querySelector('[data-key="diet"][data-value="vegetarian"]').getAttribute('aria-pressed'),'true');click('[data-mp="catalog-reset"]');quick('recipes','Свинина');assert.equal(shown().length,24);assert.ok(shown().every(r=>!r.source&&r.ingredients.some(i=>i.id==='pork')));
 input('mp-search','гречка со свиина');assert.ok(shown().some(r=>r.id==='pork-buckwheat'));assert.ok(shown().every(r=>r.ingredients.some(i=>i.id==='buckwheat')));assert.ok(shown().every(r=>w.UNVRSLMealEngine.searchMatches(w.UNVRSLMealEngine.recipeSearchText(r),'гречка свинина')));
 input('mp-search','картошка свинина');assert.ok(shown().some(r=>r.id==='pork-potato'));
 input('mp-search','свинина абракадабра');assert.equal(shown().length,0);assert.match(D.querySelector('.mp-empty').textContent,/Ничего не найдено/);

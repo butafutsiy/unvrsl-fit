@@ -76,3 +76,11 @@ html[data-theme] body .seg button.on,html[data-theme] body .seg button[aria-pres
 html[data-theme="light"] body #home .weight-actions button{color:var(--action)!important}
 
 html[data-theme="light"] body .weekbtn.on,html[data-theme="light"] body .anatome-seg button.on{background:var(--action)!important;color:var(--action-text)!important}
+
+/* The current home uses the sd2/bw190 controls, in addition to legacy weight actions. */
+html body .sd2-weight-actions button,html body .bw190-all,html body .sd2-seg button{min-height:44px!important;min-width:44px}
+html body .sd2-weight-actions button,html body .bw190-all{padding:6px 8px;font-size:13px!important}
+html[data-theme="light"] body #home .sd2-weight-actions button,html[data-theme="light"] body #home .bw190-all{color:var(--action)!important}
+html[data-theme] body #home .sd2-seg button.on{background:var(--action)!important;color:var(--action-text)!important}
+
+html body .pp-weight-target-label{fill:var(--text,#f5f5f7);font-size:12px;font-weight:700;paint-order:stroke;stroke:var(--panel,#1c1c21);stroke-width:3px;stroke-linejoin:round}
