@@ -30,3 +30,6 @@ html body .pp-skeleton{background:var(--panel2)}
 html[data-theme="light"] body .pp-chart svg>line{stroke:var(--line)}
 html[data-theme="light"] body .pp-chart-dot{stroke:var(--panel)}
 @media(max-width:360px){.pp-theme-control{justify-content:space-between}.pp-theme-control select{max-width:70%}.pp-client-name h1{overflow-wrap:anywhere}}
+
+html body .pp-point-chip.on b{color:var(--text)}
+html body .pp-point-chip.on :is(span,small){color:var(--muted)}
