@@ -75,16 +75,17 @@ function programDayCard(p,w,d,di){return `<div class="card program-day"><div cla
 function programExerciseRow(p,d,e,ei){const method=e.method&&e.method!=='STANDARD'?e.method:'';return `<div class="program-ex" draggable="true" ondragstart="programDragStart(event,'${p.id}',${programUi.week},'${d.id}',${ei})" ondragover="event.preventDefault()" ondrop="programDrop(event,'${p.id}',${programUi.week},'${d.id}',${ei})"><div class="row between"><div class="grow"><b>${esc(e.n)}</b><div class="muted small">${programExerciseDetails(p.id,programUi.week,e)}${method?` · ${method}`:''}</div></div><button class="btn tiny" onclick="editProgramExercise('${p.id}',${programUi.week},'${d.id}',${ei})">Изм.</button></div>${window.cycleExercisePreview?.(p,d,e)||''}<div class="mini-actions"><button onclick="moveProgramExercise('${p.id}',${programUi.week},'${d.id}',${ei},-1)">↑</button><button onclick="moveProgramExercise('${p.id}',${programUi.week},'${d.id}',${ei},1)">↓</button><button class="danger-text" onclick="removeProgramExercise('${p.id}',${programUi.week},'${d.id}',${ei})">Удалить</button></div></div>`}
 function prescriptionText(e,pid=programUi?.pid,wi=programUi?.week){
  const s=e.sets||[];if(!s.length)return'—';
+ const load=x=>WorkoutDomain.weightText(e,x?.w??0,workoutRegistry,x||{});
  let resolved=null;try{if(pid&&typeof window.programResolveExerciseParametersV381==='function')resolved=window.programResolveExerciseParametersV381(pid,wi,e)}catch(_){}
- const range=resolved?.reps?.mode==='method'?null:(resolved?.reps||programModel.range(e)),repText=range?programModel.formatRange(range):'',rpe=resolved?.effort?programModel.formatRange({min:resolved.effort.rpeMin,max:resolved.effort.rpeMax}):(e.rpe||8),weight=resolved?.weight?.mode==='auto'?'Авто':`${s[0]?.w||0} кг`;
+ const range=resolved?.reps?.mode==='method'?null:(resolved?.reps||programModel.range(e)),repText=range?programModel.formatRange(range):'',rpe=resolved?.effort?programModel.formatRange({min:resolved.effort.rpeMin,max:resolved.effort.rpeMax}):(e.rpe||8),weight=resolved?.weight?.mode==='auto'?`Авто${WorkoutDomain.pairedLoad(e,workoutRegistry,s[0])?' · на каждую руку':''}`:`${load(s[0])} кг`;
  if(e.method==='STANDARD'){const preparation=s.filter(x=>x.role==='test_preparation'),attempts=s.filter(x=>x.role==='test_attempt');const reps=attempts.length?`${preparation.length}×2–4 + ${attempts.length}×1`:`${s.length}×${repText||s[0]?.r||'–'}`;return `${reps} · ${weight} · RPE ${attempts.length?'9–10':rpe}`;}
  if(e.method==='FST-7')return `7×${repText||s[0]?.r||'—'} · ${weight} · RPE ${rpe}`;
  if(e.method==='UNVRSL'){
   const heavy=s.find(x=>x.role==='heavy')||s[0],light=s.find(x=>x.role==='light')||s[1],middle=s.find(x=>x.role==='middle')||s[6],middleCount=s.filter(x=>x.role==='middle').length||(s.length>6?s.length-6:0);
-  return `3×(${heavy?.w||0}×${heavy?.r||3} + 30с + ${light?.w||0}×${light?.r||9})${middle&&middleCount?`, затем ${middleCount}×${middle.r||6} · ${middle.w||0} кг`:''}`
+  return `3×(${load(heavy)}×${heavy?.r||3} + 30с + ${load(light)}×${light?.r||9})${middle&&middleCount?`, затем ${middleCount}×${middle.r||6} · ${load(middle)} кг`:''}`
  }
- if(e.method==='SLDR')return s.map(x=>x.r||'—').join('/')+` · ${s[0]?.w||0} кг · 15с`;
- return s.map(x=>`${x.label||''} ${x.w||0}×${x.r||'—'}`.trim()).join(' → ')
+ if(e.method==='SLDR')return s.map(x=>x.r||'—').join('/')+` · ${load(s[0])} кг · 15с`;
+ return s.map(x=>`${x.label||''} ${load(x)}×${x.r||'—'}`.trim()).join(' → ')
 }
 function programExerciseDetails(pid,wi,e){
  const text=prescriptionText(e,pid,wi);

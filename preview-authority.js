@@ -78,7 +78,7 @@
     if(e?.sd){lo/=2;hi/=2}
     return lo===hi?String(lo):`${lo}–${hi}`;
   };
-  const fmtWeight=v=>Number.isFinite(Number(v))?(Number(v)%1?Number(v).toFixed(1):String(Number(v))):'';
+  const fmtWeight=(v,e)=>{const domain=window.WorkoutDomain||(typeof WorkoutDomain==='undefined'?null:WorkoutDomain);return domain?.weightText?domain.weightText(e,v,typeof workoutRegistry==='undefined'?null:workoutRegistry):Number.isFinite(Number(v))?String(Number(v)).replace('.',','):''};
   const tempo=r=>{try{return typeof tempoOnly==='function'?tempoOnly(r?.p||''):(String(r?.p||'').split('|')[0].trim()||'—')}catch(_){return'—'}};
   const rpe=r=>{try{return typeof RPE!=='undefined'?RPE[r.w]:(r.rpe||8)}catch(_){return r.rpe||8}};
   const routine=(w,c)=>{try{if(typeof rmap!=='undefined'&&rmap?.get)return rmap.get(`${w}-${c}`)}catch(_){ }return (window.UNVRSL_ROUTINES||[]).find(x=>Number(x?.w)===Number(w)&&String(x?.c)===String(c))||null};
@@ -96,14 +96,14 @@
   const prescription=(r,g)=>{
     const type=method(g),a=g.entries||[];
     if(type==='UNVRSL'&&a.length>=2){
-      const heavy=`${fmtWeight(a[0].w)||'—'}×${a[0].r||'—'}`,light=`${fmtWeight(a[1].w)||'—'}×${a[1].r||'—'}`;
-      const finish=a[2]?`, затем ${a[2].s||1}×${a[2].r||'—'} · ${fmtWeight(a[2].w)||'—'} кг`:'';
+      const heavy=`${fmtWeight(a[0].w,a[0])||'—'}×${a[0].r||'—'}`,light=`${fmtWeight(a[1].w,a[1])||'—'}×${a[1].r||'—'}`;
+      const finish=a[2]?`, затем ${a[2].s||1}×${a[2].r||'—'} · ${fmtWeight(a[2].w,a[2])||'—'} кг`:'';
       return`3×(${heavy} + 30с + ${light})${finish}`;
     }
-    if(type==='DS'||type==='SLDR'||type==='FST-7')return a.map(e=>`${fmtWeight(e.w)} кг × ${e.r||'—'}`).join(' → ');
+    if(type==='DS'||type==='SLDR'||type==='FST-7')return a.map(e=>`${fmtWeight(e.w,e)} кг × ${e.r||'—'}`).join(' → ');
     const e=a[0];if(!e)return'—';
     if(e.m)return`${e.m} мин`;
-    return`${e.s||1}×${rangeLabel(r.w,e)}${e.w?` · ${fmtWeight(e.w)} кг`:''}`;
+    return`${e.s||1}×${rangeLabel(r.w,e)}${e.w?` · ${fmtWeight(e.w,e)} кг`:''}`;
   };
   const rule=(r,g)=>{
     const type=method(g),sec=restSeconds(r,g),t=tempo(r),rp=rpe(r);

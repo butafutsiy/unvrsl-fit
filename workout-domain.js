@@ -442,6 +442,21 @@
     }
     return Math.round(volume);
   }
+  function pairedLoad(e, reg, s = {}) {
+    const recorded = s?.equipmentSnapshot ? { ...e, equipmentProfile: s.equipmentSnapshot } : e;
+    const type = loadType(recorded, reg);
+    const cable = /кроссовер|crossover|cable/.test(norm(e?.n || reg?.resolve(e)?.n)) ||
+      (e?.eq || reg?.resolve(e)?.eq) === "cable";
+    if (!["per_dumbbell", "machine_stack"].includes(type) && !(type === "per_side" && cable)) return false;
+    const zero = tonnageLoad(e, { ...s, w: 0 }, reg), one = tonnageLoad(e, { ...s, w: 1 }, reg);
+    return zero != null && one != null && Math.abs(one - zero - 2) < .000001;
+  }
+  function weightText(e, value, reg, s = {}) {
+    const w = number(value);
+    if (w == null) return "";
+    const text = String(w).replace(".", ",");
+    return pairedLoad(e, reg, s) ? `${text} / ${text}` : text;
+  }
   function setLabel(e, s, reg) {
     const type = loadType(e, reg),
       w = number(s.w) ?? 0,
@@ -1761,6 +1776,8 @@
     effectiveLoad,
     tonnageLoad,
     tonnage,
+    pairedLoad,
+    weightText,
     setLabel,
     e1rm,
     manualOneRepMax,

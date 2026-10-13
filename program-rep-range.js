@@ -44,8 +44,9 @@
     const wrapped=function(e){
       const s=e?.sets||[],method=String(e?.method||'STANDARD').toUpperCase();if(!s.length)return cur.apply(this,arguments);
       if(e.kind==='cardio'||e.workMode==='timer'||e.loadType==='time'||method==='STANDARD'||method==='FST-7')return cur.apply(this,arguments);
-      if(method==='DS'&&N(e.dsRepStart)!=null&&N(e.dsRepEnd)!=null)return `${s.length} ступеней · ${label(e.dsRepStart,e.dsRepEnd,true)} · ${s[0]?.w||0} кг`;
-      if(method==='SLDR'&&e.sldrPattern)return `${e.sldrPattern} · ${s[0]?.w||0} кг · 15 сек`;
+      const weight=W.WorkoutDomain?.weightText?W.WorkoutDomain.weightText(e,s[0]?.w??0,typeof workoutRegistry==='undefined'?null:workoutRegistry,s[0]||{}):s[0]?.w||0;
+      if(method==='DS'&&N(e.dsRepStart)!=null&&N(e.dsRepEnd)!=null)return `${s.length} ступеней · ${label(e.dsRepStart,e.dsRepEnd,true)} · ${weight} кг`;
+      if(method==='SLDR'&&e.sldrPattern)return `${e.sldrPattern} · ${weight} кг · 15 сек`;
       return cur.apply(this,arguments)
     };
     wrapped.__pr373=true;wrapped.__pr373Base=cur;W.prescriptionText=wrapped;try{prescriptionText=wrapped}catch(_){ }return true

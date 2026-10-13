@@ -37,6 +37,8 @@
     #start .exercise:not(.anton-superset):not(.anton-single) .setrow>*{min-width:0!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .setrow input{width:100%!important;min-width:0!important;min-height:38px!important;padding:7px 3px!important;border-radius:11px!important;font-size:14px!important;text-align:center!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .setrow input.rep-target-placeholder::placeholder{color:#8e8e93!important;opacity:.72!important;font-weight:650!important}
+    #start .exercise:not(.anton-superset):not(.anton-single):has(.paired-load-input) .sethead,#start .exercise:not(.anton-superset):not(.anton-single):has(.paired-load-input) .setrow{grid-template-columns:27px minmax(76px,1.35fr) minmax(43px,.8fr) 48px 42px 32px!important}
+    #start .exercise:not(.anton-superset):not(.anton-single) .setrow input.paired-load-input:not(:focus){font-size:12px!important;letter-spacing:-.3px}
     #start .exercise:not(.anton-superset):not(.anton-single) .u174-rir-input{font-size:13px!important;padding-left:1px!important;padding-right:1px!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .check{width:34px!important;height:34px!important;min-width:34px!important;border-radius:11px!important;font-size:15px!important;justify-self:end!important;grid-column:6!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .prev-set{font-size:10px!important;margin:3px 0 1px 32px!important;line-height:1.12!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
@@ -72,6 +74,7 @@
       #start .exercise:not(.anton-superset):not(.anton-single) .sethead,
       #start .exercise:not(.anton-superset):not(.anton-single) .setrow{grid-template-columns:23px minmax(41px,1fr) minmax(40px,.8fr) 46px 40px 30px!important;column-gap:3px!important}
       #start .exercise:not(.anton-superset):not(.anton-single) .setrow input{font-size:12.5px!important}
+      #start .exercise:not(.anton-superset):not(.anton-single):has(.paired-load-input) .sethead,#start .exercise:not(.anton-superset):not(.anton-single):has(.paired-load-input) .setrow{grid-template-columns:23px minmax(66px,1.25fr) minmax(36px,.8fr) 42px 36px 28px!important}
       #start .exercise:not(.anton-superset):not(.anton-single) .check{width:30px!important;height:30px!important;min-width:30px!important}
     }
   `;

@@ -174,7 +174,8 @@
     root.prescriptionText=function(e){
       if(e?.method!=='SLDR')return basePrescription.apply(this,arguments);
       const p=patternFromExercise(e),weight=e?.sets?.[0]?.w??0,rest=e?.rest??90;
-      return `3×(${p[0]}/${p[1]}/${p[2]}) · ${weight} кг · 15с внутри · отдых ${rest}с`
+      const display=root.WorkoutDomain?.weightText?root.WorkoutDomain.weightText(e,weight,typeof workoutRegistry==='undefined'?null:workoutRegistry,e?.sets?.[0]||{}):weight;
+      return `3×(${p[0]}/${p[1]}/${p[2]}) · ${display} кг · 15с внутри · отдых ${rest}с`
     };
     try{prescriptionText=root.prescriptionText}catch(_){ }
   }

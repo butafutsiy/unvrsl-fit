@@ -148,13 +148,13 @@
     modal(`<div class="tcv3-client-header"><div class="sheet-grabber"></div><div class="tcv3-head"><div><div class="tcv3-name">${E(d.profile?.display_name||'Клиент')}</div></div><button class="btn tiny tcv3-close" aria-label="Закрыть окно" onclick="closeModal()">✕</button></div></div><div class="metrics" style="margin-top:14px"><div class="metric"><span>Тренировок</span><b>${d.workouts.length}</b></div><div class="metric"><span>Средний RPE</span><b>${avg!=null?F(avg):'–'}</b></div></div><div class="tcv3-tabs"><button class="tcv3-tab ${state.tab==='workouts'?'on':''}" onclick="trainerClientTabV3('workouts')">Тренировки</button><button class="tcv3-tab ${state.tab==='measures'?'on':''}" onclick="trainerClientTabV3('measures')">Замеры</button></div><div id="trainerClientTabBodyV3">${bodyHtml()}</div><div class="tcv3-program-head"><div class="section">ПРОГРАММЫ</div><button class="btn tiny tcv3-add" onclick="trainerAssignProgramSheet('${E(id)}')">＋ Программа</button></div>${programsHtml(d,id)}`);
   }
 
-  function setSummary(s){
+  function setSummary(s,e){
     const a=A(s);
     if(!a.length)return 'Подходы не заданы';
     const reps=a.map(x=>Number(x?.r)).filter(Number.isFinite);
     const weights=a.map(x=>Number(x?.w)).filter(x=>Number.isFinite(x)&&x>0);
     const repText=reps.length?(Math.min(...reps)===Math.max(...reps)?`${reps[0]} повт.`:`${Math.min(...reps)}–${Math.max(...reps)} повт.`):'повторы не заданы';
-    return `${a.length} подх. · ${repText}${weights.length?' · '+F(Math.min(...weights))+(Math.min(...weights)!==Math.max(...weights)?'–'+F(Math.max(...weights)):'')+' кг':''}`;
+    return `${a.length} подх. · ${repText}${weights.length?' · '+window.WorkoutDomain.weightText(e,Math.min(...weights),typeof workoutRegistry==='undefined'?null:workoutRegistry)+(Math.min(...weights)!==Math.max(...weights)?'–'+window.WorkoutDomain.weightText(e,Math.max(...weights),typeof workoutRegistry==='undefined'?null:workoutRegistry):'')+' кг':''}`;
   }
 
   function renderPlanView(){
@@ -163,7 +163,7 @@
     if(!p)return modal(`<div class="sheet-grabber"></div><div class="tcv3-plan-head"><div><h2>${E(v.title||'Программа')}</h2><div class="muted">Версия ${E(v.version||1)}</div></div><button class="btn tiny" onclick="trainerClientDetail('${E(v.clientId)}')">Назад</button></div><div class="card muted">Снимок программы не найден.</div>`);
     const weeks=A(p.weeks);const wi=Math.max(0,Math.min(state.planWeek,weeks.length-1));state.planWeek=wi;const w=weeks[wi]||{n:1,days:[]};
     const weeksHtml=weeks.length>1?`<div class="tcv3-plan-weeks">${weeks.map((x,i)=>`<button class="tcv3-plan-week ${i===wi?'on':''}" onclick="trainerClientPlanWeekV3(${i})">${E(x.n||i+1)}</button>`).join('')}</div>`:'';
-    const daysHtml=A(w.days).length?`<div class="card" style="padding-top:0;padding-bottom:0">${A(w.days).map((d,di)=>`<div class="tcv3-plan-day"><div class="tcv3-plan-day-name">${E(d.name||`День ${di+1}`)}</div>${A(d.ex).map(ex=>`<div class="tcv3-plan-ex"><b>${E(ex.n||'Упражнение')}</b><div class="tcv3-plan-ex-meta">${E(setSummary(ex.sets))}${N(ex.rpe)?' · RPE '+E(ex.rpe):''}${N(ex.rest)?' · отдых '+E(ex.rest)+' сек':''}${ex.tempo?' · темп '+E(ex.tempo):''}</div>${ex.note?`<div class="tcv3-plan-ex-meta">${E(ex.note)}</div>`:''}</div>`).join('')||'<div class="muted small">Упражнений нет.</div>'}</div>`).join('')}</div>`:'<div class="card muted">В этой неделе нет тренировок.</div>';
+    const daysHtml=A(w.days).length?`<div class="card" style="padding-top:0;padding-bottom:0">${A(w.days).map((d,di)=>`<div class="tcv3-plan-day"><div class="tcv3-plan-day-name">${E(d.name||`День ${di+1}`)}</div>${A(d.ex).map(ex=>`<div class="tcv3-plan-ex"><b>${E(ex.n||'Упражнение')}</b><div class="tcv3-plan-ex-meta">${E(setSummary(ex.sets,ex))}${N(ex.rpe)?' · RPE '+E(ex.rpe):''}${N(ex.rest)?' · отдых '+E(ex.rest)+' сек':''}${ex.tempo?' · темп '+E(ex.tempo):''}</div>${ex.note?`<div class="tcv3-plan-ex-meta">${E(ex.note)}</div>`:''}</div>`).join('')||'<div class="muted small">Упражнений нет.</div>'}</div>`).join('')}</div>`:'<div class="card muted">В этой неделе нет тренировок.</div>';
     modal(`<div class="sheet-grabber"></div><div class="tcv3-plan-head"><div><h2>${E(p.name||v.title||'Программа')}</h2><div class="muted">Версия ${E(v.version||1)}${weeks.length?' · неделя '+E(w.n||wi+1):''}</div></div><div class="tcv3-plan-actions"><button class="btn tiny" onclick="trainerClientDetail('${E(v.clientId)}')">Назад</button><button class="btn tiny primary" onclick="trainerClientEditPlanV3('${E(v.clientId)}','${E(v.planId)}')">Редактировать</button></div></div>${weeksHtml}${daysHtml}`);
   }
 
