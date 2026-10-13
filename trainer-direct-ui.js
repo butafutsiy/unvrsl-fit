@@ -91,8 +91,7 @@
   }
   function workoutDuration(s){return Number(s?.finalDurationMs||s?.durationMs)||Math.max(0,Number(s?.ended||0)-Number(s?.started||0))}
   function workoutTonnage(s){
-    const saved=Number(s?.advancedMetrics?.tonnage);if(Number.isFinite(saved)&&saved>0)return saved;
-    return A(s?.ex).reduce((sum,e)=>sum+A(e?.set).filter(x=>x?.ok).reduce((q,x)=>q+(Number(x?.w)||0)*(Number(x?.r)||0),0),0);
+    return window.WorkoutDomain.tonnage(s,typeof workoutRegistry==='undefined'?null:workoutRegistry);
   }
   function setValues(x,e){
     const out=[],sec=Number(x?.workSeconds||e?.workSeconds||e?.timedSeconds||0),w=Number(x?.w),r=Number(x?.r);

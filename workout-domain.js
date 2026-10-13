@@ -228,8 +228,8 @@
     if (/гравитрон/.test(n) || eq === "assisted") return "bodyweight_assisted";
     if (/подтяг|отжиман|брусь/.test(n)) return "bodyweight_added";
     if (eq === "body weight") return "bodyweight_only";
-    if (eq === "dumbbell") return "per_dumbbell";
-    if (eq === "cable") return "machine_stack";
+    if (eq === "dumbbell" || /гантел|dumbbell/.test(n)) return "per_dumbbell";
+    if (eq === "cable" || /кроссовер|crossover/.test(n)) return "machine_stack";
     return "external_total";
   }
   function profile(e, reg, overrides = {}) {
@@ -398,6 +398,49 @@
       return count > 0 ? w * count : null;
     }
     return w;
+  }
+  // Tonnage is external load. Body mass and assistance belong to strength
+  // estimates, and must not change an otherwise identical workout's tonnage.
+  function tonnageLoad(e, s, reg) {
+    const snapshot = s?.equipmentSnapshot;
+    const differentEquipment = snapshot && snapshot.id &&
+      snapshot.id !== (e?.equipmentProfileId || e?.equipmentProfile?.id);
+    const recorded = snapshot ? { ...e, equipmentProfile: snapshot,
+      ...(differentEquipment ? { implementCount: undefined, stackCount: undefined, loadedSides: undefined, implementWeight: undefined } : {}) } : e;
+    const type = loadType(recorded, reg), row = reg?.resolve(e);
+    const w = number(s?.w ?? s?.weight) ?? 0;
+    if (type === "bodyweight_added") return w;
+    if (type === "bodyweight_only") return 0;
+    if (["bodyweight_assisted", "time", "distance", "repetitions_only"].includes(type)) return null;
+    if (type === "per_side") return effectiveLoad({ ...recorded,
+      loadedSides: s?.loadedSides ?? snapshot?.loadedSides ?? recorded?.loadedSides,
+      implementWeight: s?.implementWeight ?? snapshot?.implementWeight ?? recorded?.implementWeight }, s, {}, reg);
+    if (type === "per_dumbbell") {
+      const n = norm(row?.n || e?.n);
+      const explicit = number(s?.implementCount ?? snapshot?.implementCount ?? recorded?.implementCount ?? row?.implementCount);
+      const count = explicit ?? (/одной|одна |одноруч|one arm|single arm|гантелью/.test(n) ? 1 : /гантел|dumbbell/.test(n) ? 2 : null);
+      return count > 0 ? w * count : null;
+    }
+    if (type === "machine_stack") {
+      const n = norm(row?.n || e?.n);
+      const explicit = number(s?.stackCount ?? s?.implementCount ?? snapshot?.stackCount ?? snapshot?.implementCount ?? recorded?.stackCount ?? recorded?.implementCount ?? row?.stackCount);
+      const count = explicit ?? (/кроссовер|crossover|cable.*fly/.test(n) && !/одной|одна |одноруч|one arm|single arm/.test(n) ? 2 : 1);
+      return count > 0 ? w * count : null;
+    }
+    return w;
+  }
+  function tonnage(session, reg) {
+    if (!Array.isArray(session?.ex)) {
+      return Math.round(number(session?.advancedMetrics?.tonnage ?? session?.tonnage) ?? 0);
+    }
+    let volume = 0;
+    for (const e of session.ex) for (const s of e.set || []) {
+      const snapshot = s?.equipmentSnapshot;
+      if (!complete(snapshot ? { ...e, equipmentProfile: snapshot } : e, s, reg)) continue;
+      const load = tonnageLoad(e, s, reg);
+      if (load != null) volume += load * number(s.actualReps ?? s.r ?? s.reps);
+    }
+    return Math.round(volume);
   }
   function setLabel(e, s, reg) {
     const type = loadType(e, reg),
@@ -1463,9 +1506,9 @@
       const group = groups.get(id);
       for (const s of sets) {
         setCount++;
-        const load = effectiveLoad(e, s, session, reg, weights);
+        const load = tonnageLoad(e, s, reg);
         if (load == null) unknownVolumeSets++;
-        else volume += load * number(s.actualReps ?? s.r);
+        else volume += load * number(s.actualReps ?? s.r ?? s.reps);
         const entry = {
           exercise: e,
           set: s,
@@ -1606,7 +1649,7 @@
             point.best5 = Math.max(point.best5, number(s.w) || 0);
           point.sets++;
           point.volume +=
-            (effectiveLoad(e, s, session, reg, weights) || 0) *
+            (tonnageLoad(e, s, reg) || 0) *
             number(s.actualReps ?? s.r);
           per.set(key, point);
         }
@@ -1716,6 +1759,8 @@
     complete,
     bodyWeightAt,
     effectiveLoad,
+    tonnageLoad,
+    tonnage,
     setLabel,
     e1rm,
     manualOneRepMax,

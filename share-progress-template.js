@@ -30,7 +30,7 @@
       }))
     })
   }
-  const tonnage=s=>{const saved=N(s?.advancedMetrics?.tonnage);return saved!=null&&saved>0?Math.round(saved):Math.round(completedStrength(s).reduce((a,z)=>a+z.w*z.reps,0))};
+  const tonnage=s=>A.tonnage(s,workoutRegistry);
   const setCount=s=>completedStrength(s).length;
   const avgRpe=s=>{const a=completedStrength(s).map(z=>z.rpe).filter(Number.isFinite);return a.length?Math.round(a.reduce((q,x)=>q+x,0)/a.length*10)/10:null};
   const bestSet=s=>completedStrength(s).filter(z=>z.w>0&&z.reps>0).sort((a,b)=>e1rm(b)-e1rm(a))[0]||null;
@@ -40,7 +40,7 @@
     for(const z of completedStrength(s)){
       const k=z.key;
       if(!map.has(k))map.set(k,{key:k,name:z.name,sets:[],volume:0,best:null});
-      const row=map.get(k);row.sets.push(z);row.volume+=z.w*z.reps;
+      const row=map.get(k);row.sets.push(z);row.volume+=(A.tonnageLoad(z.e,z.x,workoutRegistry)||0)*z.reps;
       if(!row.best||e1rm(z)>e1rm(row.best))row.best=z;
     }
     return [...map.values()].map(r=>({

@@ -114,7 +114,7 @@
   }
   function sessionDay(session){const raw=session?.date||session?.workout_date||session?.started||session?.payload?.started;if(raw==null)return null;const date=new Date(raw);return Number.isNaN(date.getTime())?null:new Date(date.getFullYear(),date.getMonth(),date.getDate())}
   function legacySession(session){
-    return {...session,ex:exercises(session).map(ex=>({...ex,set:setRows(ex).map(set=>({...set,ok:completed(set),w:weightOf(set)??set?.w,r:repsOf(set)??set?.r}))}))};
+    return {...session,ex:exercises(session).map(ex=>({...ex,n:ex.n||ex.name,set:setRows(ex).map(set=>({...set,ok:completed(set),w:weightOf(set)??set?.w,r:repsOf(set)??set?.r}))}))};
   }
   function directVolume(session){
     let volume=0,unknown=0;
@@ -140,7 +140,7 @@
     try{
       if(window.WorkoutDomain&&typeof workoutRegistry!=='undefined'){
         const result=window.WorkoutDomain.summary(legacy,[],workoutRegistry,state()?.bw||[],{records:false,comparison:false});
-        if(Number(result?.volume)>0||Number(result?.unknownVolumeSets)>0)return {volume:Number(result.volume)||0,unknownVolumeSets:Number(result.unknownVolumeSets)||0};
+        if(typeof window.WorkoutDomain.tonnage==='function'||Number(result?.volume)>0||Number(result?.unknownVolumeSets)>0)return {volume:Number(result.volume)||0,unknownVolumeSets:Number(result.unknownVolumeSets)||0};
       }
     }catch(error){console.warn('Muscle map canonical tonnage calculation',error)}
     const saved=numeric(session?.advancedMetrics?.tonnage??session?.tonnage);

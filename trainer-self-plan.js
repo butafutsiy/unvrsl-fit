@@ -52,7 +52,7 @@
   const deleted=()=>new Set(A(window.st?.deletedSessionIds).map(String));
 
   function ton(s){
-    return Math.round(A(s?.ex).reduce((a,e)=>a+(cardio(e)?0:A(e?.set).reduce((q,x)=>q+(x?.ok&&N(x.w)&&N(x.r)?Number(x.w)*Number(x.r):0),0)),0));
+    return window.WorkoutDomain.tonnage(s,typeof workoutRegistry==='undefined'?null:workoutRegistry);
   }
   function rpe(s){
     const a=[];A(s?.ex).forEach(e=>A(e?.set).forEach(x=>{const n=Number(x?.rpe);if(x?.ok&&x?.rpe!==''&&Number.isFinite(n)&&n>0)a.push(n)}));

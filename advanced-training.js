@@ -11,7 +11,7 @@ if(!Array.isArray(st.prLog))st.prLog=[];
 function advRound(v,step=2.5){if(typeof roundLoad==='function')return roundLoad(v,step);return Math.max(0,Math.round(Number(v||0)/step)*step)}
 function advFmtDuration(ms){if(typeof unvrslDurationText==='function')return unvrslDurationText(ms);const t=Math.max(0,Math.floor((+ms||0)/1000)),h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60,p=n=>String(n).padStart(2,'0');return h?`${h}:${p(m)}:${p(s)}`:`${p(m)}:${p(s)}`}
 function advE1rm(w,r){return WorkoutDomain.e1rm({loadType:'external_total'},{w,r,ok:true},{},null)||0}
-function advSessionTonnage(s){return WorkoutDomain.summary(s,[],workoutRegistry,st.bw,{records:false,comparison:false}).volume}
+function advSessionTonnage(s){return WorkoutDomain.tonnage(s,workoutRegistry)}
 function advSessionRpe(s){const a=[];(s?.ex||[]).forEach(e=>(e.set||[]).forEach(x=>{if(x.ok&&x.rpe!==''&&Number.isFinite(+x.rpe))a.push(+x.rpe)}));return a.length?+(a.reduce((q,x)=>q+x,0)/a.length).toFixed(1):null}
 function advCompletedSets(s){return (s?.ex||[]).reduce((a,e)=>a+(e.set||[]).filter(x=>WorkoutDomain.complete(e,x,workoutRegistry)).length,0)}
 

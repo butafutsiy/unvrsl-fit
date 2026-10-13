@@ -44,7 +44,11 @@ const settle=async()=>{await new Promise(r=>setImmediate(r));for(let i=0;i<100&&
  win.shareProgressLayoutV471('exercises');await settle();assert.ok(drawn.some(t=>t==='Ещё 5 упражнений в журнале'));
  win.shareProgressLayoutV471('tonnage');await settle();
  const comparisons=[...els.sheet.innerHTML.matchAll(/<option value="([a-z0-9]+)"/g)].map(m=>m[1]);assert.equal(comparisons.length,30);assert.equal(new Set(comparisons).size,30);
- session.advancedMetrics={tonnage:10632};win.shareProgressDesignV472('graphic');await settle();
+ session.advancedMetrics={tonnage:10632};
+ const beforeRecalculation=drawn.length;win.shareProgressDesignV472('graphic');await settle();
+ assert.ok(drawn.slice(beforeRecalculation).includes('20 500'),'saved legacy tonnage cannot override completed sets');
+ // Summary-only fixtures exercise the comparison scale when raw sets are absent.
+ delete session.ex;win.shareProgressDesignV472('graphic');await settle();
  for(const kind of comparisons){
   win.shareProgressComparisonV473(kind);await settle();
   for(const mode of ['transparent','background']){
