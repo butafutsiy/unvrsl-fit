@@ -153,7 +153,7 @@
     if(!a.length)return 'Подходы не заданы';
     const reps=a.map(x=>Number(x?.r)).filter(Number.isFinite);
     const weights=a.map(x=>Number(x?.w)).filter(x=>Number.isFinite(x)&&x>0);
-    const repText=reps.length?(Math.min(...reps)===Math.max(...reps)?`${reps[0]} повт.`:`${Math.min(...reps)}–${Math.max(...reps)} повт.`):'повторы не заданы';
+    const divisor=window.WorkoutDomain.planRepDivisor(e),repText=reps.length?`${window.WorkoutDomain.repRangeText(e,{lo:Math.min(...reps)/divisor,hi:Math.max(...reps)/divisor})} повт.`:'повторы не заданы';
     return `${a.length} подх. · ${repText}${weights.length?' · '+window.WorkoutDomain.weightText(e,Math.min(...weights),typeof workoutRegistry==='undefined'?null:workoutRegistry)+(Math.min(...weights)!==Math.max(...weights)?'–'+window.WorkoutDomain.weightText(e,Math.max(...weights),typeof workoutRegistry==='undefined'?null:workoutRegistry):'')+' кг':''}`;
   }
 

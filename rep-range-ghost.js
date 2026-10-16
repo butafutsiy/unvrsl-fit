@@ -99,7 +99,7 @@
         const inputs=row.querySelectorAll('input'),inp=inputs?.[1];
         if(!inp)return;
 
-        inp.setAttribute('placeholder',m.t.label);
+        inp.setAttribute('placeholder',W.WorkoutDomain.legReps(m.src)?`${m.t.label} / ${m.t.label}`:m.t.label);
         inp.setAttribute('aria-label',`Повторы, цель ${m.t.label}`);
         inp.setAttribute('data-unvrsl-rep-range-ghost','288');
         inp.setAttribute('oninput',`unvrslRepManualV288(${Number(m.ei)},${Number(m.si)})`);
