@@ -30,7 +30,7 @@ test('rep target is rendered as translucent placeholder text',()=>{
   const context={result:null,programModel:require("../program-model.js")};
   vm.runInNewContext(`${code};result=workoutRepTargetText({targetRepMin:8,targetRepMax:15})`,context);
   assert.equal(context.result,'8–15');
-  assert.match(read('smart-training.js'),/rep-target-placeholder/);
+  assert.match(read('smart-training.js'),/workoutRepsInput/);assert.match(app,/rep-target-placeholder/);
   assert.match(styles,/input\.rep-target-placeholder::placeholder\{color:#8e8e93!important;opacity:\.72/);
 });
 

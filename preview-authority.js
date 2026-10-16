@@ -73,10 +73,10 @@
   };
   const rangeLabel=(week,e)=>{
     const t=target(week,e);
-    if(!t)return String(e?.r??e?.m??'—');
+    if(!t)return !e?.m&&window.WorkoutDomain?.legReps(e)?WorkoutDomain.repsText(e,e.r):String(e?.r??e?.m??'—');
     let [lo,hi]=t;
     if(e?.sd){lo/=2;hi/=2}
-    return lo===hi?String(lo):`${lo}–${hi}`;
+    return window.WorkoutDomain?.legReps(e)?WorkoutDomain.repRangeText(e,{lo,hi}):lo===hi?String(lo):`${lo}–${hi}`;
   };
   const fmtWeight=(v,e)=>{const domain=window.WorkoutDomain||(typeof WorkoutDomain==='undefined'?null:WorkoutDomain);return domain?.weightText?domain.weightText(e,v,typeof workoutRegistry==='undefined'?null:workoutRegistry):Number.isFinite(Number(v))?String(Number(v)).replace('.',','):''};
   const tempo=r=>{try{return typeof tempoOnly==='function'?tempoOnly(r?.p||''):(String(r?.p||'').split('|')[0].trim()||'—')}catch(_){return'—'}};

@@ -70,7 +70,7 @@
       }else{
         sets.forEach((src)=>{
           const e=current.ex?.[cursor++],set=e?.set?.[0];if(!set)return;
-          const r=Math.max(1,N(src?.r)||1);set.targetRepMin=N(src.targetRepMin)??r;set.targetRepMax=N(src.targetRepMax)??r;set.targetRepLabel=src.targetRepLabel||String(r);set.repMode=block.repMode||'method';
+          const r=Math.max(1,N(src?.r)||1)/WorkoutDomain.planRepDivisor(block);set.targetRepMin=N(src.targetRepMin)??r;set.targetRepMax=N(src.targetRepMax)??r;set.targetRepLabel=src.targetRepLabel||String(r);set.repMode=block.repMode||'method';
           if(rpeMin!=null&&rpeMax!=null){e.targetRpeMin=rpeMin;e.targetRpeMax=rpeMax;e.targetRirMin=Math.max(0,10-rpeMax);e.targetRirMax=Math.max(0,10-rpeMin);set.targetRpeMin=rpeMin;set.targetRpeMax=rpeMax;set.targetRirMin=Math.max(0,10-rpeMax);set.targetRirMax=Math.max(0,10-rpeMin)}
           if(!set.ok&&!set.manualFields?.r&&!set.repEntered)set.r=''
         })
@@ -99,7 +99,7 @@
   }
   function decorateWorkoutHtml(html,sets){
     if(!html||!sets?.length)return html;const t=D.createElement('template');t.innerHTML=html,rows=[...t.content.querySelectorAll('.setrow:not(.cardiorow)')];
-    rows.forEach((row,i)=>{const set=sets[i],lab=targetText(set);if(!set||!lab)return;const inp=row.querySelectorAll('input')?.[1];if(!inp)return;inp.placeholder=lab;inp.setAttribute('data-pr373-target','1');inp.setAttribute('aria-label',`Повторы, цель ${lab}`);inp.classList.add('pr373-target');if(!set.ok&&!set.manualFields?.r&&!set.repEntered)inp.value=''});
+    rows.forEach((row,i)=>{const set=sets[i],lab=targetText(set);if(!set||!lab)return;const inp=row.querySelectorAll('input')?.[1];if(!inp)return;inp.placeholder=inp.dataset.repSide==='leg'?`${lab} / ${lab}`:lab;inp.setAttribute('data-pr373-target','1');inp.setAttribute('aria-label',`Повторы, цель ${lab}`);inp.classList.add('pr373-target');if(!set.ok&&!set.manualFields?.r&&!set.repEntered)inp.value=''});
     t.content.querySelectorAll('.unvrsl-active-rep-range-v282,.unvrsl-program-rep-target-v371').forEach(n=>n.remove());return t.innerHTML
   }
   function installGroupCard(){

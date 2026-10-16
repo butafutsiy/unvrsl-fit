@@ -77,7 +77,7 @@ function prescriptionText(e,pid=programUi?.pid,wi=programUi?.week){
  const s=e.sets||[];if(!s.length)return'—';
  const load=x=>WorkoutDomain.weightText(e,x?.w??0,workoutRegistry,x||{});
  let resolved=null;try{if(pid&&typeof window.programResolveExerciseParametersV381==='function')resolved=window.programResolveExerciseParametersV381(pid,wi,e)}catch(_){}
- const range=resolved?.reps?.mode==='method'?null:(resolved?.reps||programModel.range(e)),repText=range?programModel.formatRange(range):'',rpe=resolved?.effort?programModel.formatRange({min:resolved.effort.rpeMin,max:resolved.effort.rpeMax}):(e.rpe||8),weight=resolved?.weight?.mode==='auto'?`Авто${WorkoutDomain.pairedLoad(e,workoutRegistry,s[0])?' · на каждую руку':''}`:`${load(s[0])} кг`;
+ const range=resolved?.reps?.mode==='method'?null:(resolved?.reps||programModel.range(e)),repText=range?WorkoutDomain.repRangeText(e,{lo:range.min/(resolved?1:WorkoutDomain.planRepDivisor(e)),hi:range.max/(resolved?1:WorkoutDomain.planRepDivisor(e))}):'',rpe=resolved?.effort?programModel.formatRange({min:resolved.effort.rpeMin,max:resolved.effort.rpeMax}):(e.rpe||8),weight=resolved?.weight?.mode==='auto'?`Авто${WorkoutDomain.pairedLoad(e,workoutRegistry,s[0])?' · на каждую руку':''}`:`${load(s[0])} кг`;
  if(e.method==='STANDARD'){const preparation=s.filter(x=>x.role==='test_preparation'),attempts=s.filter(x=>x.role==='test_attempt');const reps=attempts.length?`${preparation.length}×2–4 + ${attempts.length}×1`:`${s.length}×${repText||s[0]?.r||'–'}`;return `${reps} · ${weight} · RPE ${attempts.length?'9–10':rpe}`;}
  if(e.method==='FST-7')return `7×${repText||s[0]?.r||'—'} · ${weight} · RPE ${rpe}`;
  if(e.method==='UNVRSL'){
@@ -119,8 +119,8 @@ let dragProgram=null;function programDragStart(ev,pid,wi,dayId,ei){dragProgram={
 function programDrop(ev,pid,wi,dayId,ei){ev.preventDefault();if(!dragProgram||dragProgram.pid!==pid||dragProgram.wi!==wi||dragProgram.dayId!==dayId)return;const p=programById(pid),d=p?.weeks?.[wi]?.days?.find(x=>x.id===dayId);if(!d)return;const [item]=d.ex.splice(dragProgram.ei,1);d.ex.splice(ei,0,item);dragProgram=null;p.updated=Date.now();save();renderProgramEditor()}
 function programWorkoutRepTarget(b,q,x){
  const n=v=>{if(v===''||v==null)return null;const z=Number(v);return Number.isFinite(z)&&z>0?z:null},method=String(b?.method||'STANDARD').toUpperCase(),mode=q?.reps?.mode||b?.reps?.mode||(method==='UNVRSL'||method==='SLDR'?'method':'auto'),planned=n(x?.r);
- const pair=b.cycleManaged&&mode==='auto'&&n(x?.targetRepMin)!=null?{min:n(x.targetRepMin),max:n(x.targetRepMax)??n(x.targetRepMin)}:mode==='method'?{min:planned??1,max:planned??1}:{min:n(q?.reps?.min)??planned??1,max:n(q?.reps?.max)??n(q?.reps?.min)??planned??1},min=Math.min(pair.min,pair.max),max=Math.max(pair.min,pair.max);
- return{r:'',programR:planned??min,...(mode==='method'?{plannedReps:planned??min}:{}),targetRepMin:min,targetRepMax:max,targetRepLabel:programModel.formatRange({min,max}),repMode:mode}
+ const pair=b.cycleManaged&&mode==='auto'&&n(x?.targetRepMin)!=null?{min:n(x.targetRepMin),max:n(x.targetRepMax)??n(x.targetRepMin)}:mode==='method'?{min:(planned??1)/WorkoutDomain.planRepDivisor(b),max:(planned??1)/WorkoutDomain.planRepDivisor(b)}:{min:n(q?.reps?.min)??planned??1,max:n(q?.reps?.max)??n(q?.reps?.min)??planned??1},min=Math.min(pair.min,pair.max),max=Math.max(pair.min,pair.max);
+ return{r:'',programR:planned??min,...(mode==='method'?{plannedReps:(planned??min)/WorkoutDomain.planRepDivisor(b)}:{}),targetRepMin:min,targetRepMax:max,targetRepLabel:programModel.formatRange({min,max}),repMode:mode}
 }
 function programCycleSetTargets(b,q,x){
  if(!b.cycleManaged)return {};
