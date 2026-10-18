@@ -932,7 +932,13 @@ window.UNVRSL_EXERCISES=[
     "aliases": [
       "Гакк-присед",
       "sled hack squat",
-      "Приседания в гакк-машине"
+      "Приседания в гакк-машине",
+      "Гак-присед",
+      "Гакк приседания",
+      "Гак приседания",
+      "Приседания в гаке",
+      "Приседания в гакке",
+      "Присед в гакк-тренажёре"
     ],
     "loadType": "external_total",
     "implementCount": 1,
@@ -11903,7 +11909,9 @@ window.UNVRSL_EXERCISES=[
     "sourceName": "",
     "aliases": [
       "Ягодичный мост в Смите",
-      ""
+      "",
+      "Ягодичный мостик в Смите",
+      "Хип-траст в Смите"
     ],
     "loadType": "external_total",
     "implementCount": 1,
@@ -11968,7 +11976,9 @@ window.UNVRSL_EXERCISES=[
     "sourceName": "",
     "aliases": [
       "Ягодичный мост в тренажёре",
-      ""
+      "",
+      "Ягодичный мостик в тренажёре",
+      "Хип-траст в тренажёре"
     ],
     "loadType": "machine_stack",
     "implementCount": 1,
@@ -12103,7 +12113,9 @@ window.UNVRSL_EXERCISES=[
       "Хип-траст со штангой",
       "Ягодичный мост",
       "Хип траст",
-      "Хип-траст"
+      "Хип-траст",
+      "Ягодичный мостик",
+      "Ягодичный мостик со штангой"
     ],
     "loadType": "external_total",
     "implementCount": 1,
@@ -12215,7 +12227,7 @@ window.UNVRSL_EXERCISES=[
   },
   {
     "id": "og:0749",
-    "n": "Good Morning в Смите",
+    "n": "Наклоны в Смите (гудморнинг)",
     "bp": "upper legs",
     "tg": "glutes",
     "eq": "smith machine",
@@ -12230,11 +12242,13 @@ window.UNVRSL_EXERCISES=[
     "gif": "videos/0749-1bQkKZK.gif",
     "custom": false,
     "rawId": "0749",
-    "strictName": "Good Morning в Смите",
+    "strictName": "Наклоны в Смите (гудморнинг)",
     "sourceName": "smith bent knee good morning",
     "aliases": [
       "Good Morning в Смите",
-      "smith bent knee good morning"
+      "smith bent knee good morning",
+      "Наклоны в Смите (гудморнинг)",
+      "Наклоны в Смите"
     ],
     "loadType": "external_total",
     "implementCount": 1,
@@ -12277,7 +12291,7 @@ window.UNVRSL_EXERCISES=[
   },
   {
     "id": "og:0044",
-    "n": "Good Morning со штангой",
+    "n": "Наклоны со штангой (гудморнинг)",
     "bp": "upper legs",
     "tg": "hamstrings",
     "eq": "barbell",
@@ -12291,11 +12305,13 @@ window.UNVRSL_EXERCISES=[
     "gif": "videos/0044-XlZ4lAC.gif",
     "custom": false,
     "rawId": "0044",
-    "strictName": "Good Morning со штангой",
+    "strictName": "Наклоны со штангой (гудморнинг)",
     "sourceName": "barbell good morning",
     "aliases": [
       "Good Morning со штангой",
-      "barbell good morning"
+      "barbell good morning",
+      "Наклоны со штангой (гудморнинг)",
+      "Наклоны со штангой"
     ],
     "loadType": "external_total",
     "implementCount": 1,

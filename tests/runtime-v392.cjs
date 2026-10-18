@@ -159,7 +159,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 module.exports = { make, wait, errors };
 if (require.main === module) (async () => {
   const dom = make();
-  await wait(2600);
+  const deadline=Date.now()+10000;
+  while(!dom.window.__unvrslStartupComplete&&Date.now()<deadline)await wait(50);
   const w = dom.window,
     result = {
       kind: "DOM integration simulation, not a browser or iPhone",

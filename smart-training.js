@@ -47,9 +47,100 @@ function exerciseGroupCard(s,group){
  return `<div class="exercise ${method?'method':''}">${head}${method?'<div class="method-strip"></div>':''}${body}</div>`
 }
 
-function replaceExerciseSheet(indices,baseToken,sourceId=''){const base=decodeURIComponent(baseToken),meta=sourceId?ogLibrary.find(x=>String(x.id)===String(sourceId)):null,im=meta||inferCustomMeta(base),candidates=catalogRecords().filter(e=>{if(e.custom&&baseExerciseName(e.n)===baseExerciseName(base))return false;const sameTarget=im.tg&&e.tg===im.tg,sameBody=im.bp&&e.bp===im.bp;return sameTarget||sameBody}).slice(0,50);modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>Заменить упражнение</h2><div class="muted">${esc(displayExerciseName(base))}</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div><input id="repSearch" class="search" placeholder="Поиск замены" oninput="filterReplacement(this.value)"><div id="replacementList">${candidates.map(e=>replacementRow(e,indices,base)).join('')}</div>`);window.__replacement={indices,base,candidates}}
-function replacementRow(e,indices,base){const n=e.custom?e.n:ruExerciseName(e.n),id=e.custom?'':(e.rawId||String(e.id).replace(/^og:/,''));return `<button class="card exlib exlib-btn replacement-item" data-search="${esc(`${n} ${ruTarget(e.tg)} ${BP_RU[e.bp]||''}`.toLowerCase())}" onclick="applyReplacement([${indices.join(',')}],'${encodeURIComponent(base)}','${encodeURIComponent(n)}','${id}')"><div class="row between"><div><b>${esc(n)}</b><div class="catalog-meta">${esc(BP_RU[e.bp]||'')} · ${esc(ruTarget(e.tg))}</div></div><span class="chev">›</span></div></button>`}
-function filterReplacement(q){q=(q||'').toLowerCase();$$('.replacement-item').forEach(x=>x.classList.toggle('hidden',q&&!x.dataset.search.includes(q)))}
-function applyReplacement(indices,oldToken,newToken,sourceId){if(!st.current)return;if(indices.some(i=>st.current.ex[i]?.set?.some(s=>s.ok)))return toast('Нельзя заменить упражнение с выполненными подходами');const oldBase=decodeURIComponent(oldToken),newName=decodeURIComponent(newToken);indices.forEach(ei=>{const e=st.current.ex[ei],suffix=e.n.startsWith(oldBase)?e.n.slice(oldBase.length):e.n.includes(' — ')?' — '+e.n.split(' — ').slice(1).join(' — '):'';e.n=newName+suffix;e.sourceId=sourceId||null;const row=workoutRegistry.resolve({n:newName,sourceId});delete e.exerciseId;delete e.loadType;delete e.weightProfile;if(row){e.exerciseId=row.id;e.loadType=row.loadType;e.implementCount=row.implementCount}});save();closeModal();startPage();toast(`Замена: ${newName}`)}
+// Replacement uses canonical catalog IDs and aliases, never the legacy arm fallback.
+function replacementNorm(value){return WorkoutDomain.norm(value).replace(/[()]/g,' ').replace(/\s+/g,' ').trim()}
+function replacementTitle(e){return e.strictName||e.n||''}
+function replacementProfile(e){
+ const name=replacementNorm(replacementTitle(e)),primary=e.tg||'',secondary=new Set((e.secondary||[]).map(x=>({quadriceps:'quads',shoulders:'delts',chest:'pectorals','latissimus dorsi':'lats',trapezius:'traps'}[x]||x)));
+ let movement='';
+ if(/ягодич.*мост|хип траст|hip thrust|glute bridge/.test(name))movement='bridge';
+ else if(/румын|становая тяга|прямых ног|гудморнинг|good morning|наклоны.*штанг/.test(name))movement='hinge';
+ else if(/гиперэкст/.test(name))movement='back_extension';
+ else if(/присед|жим ногами|выпад|зашаг/.test(name))movement='squat';
+ else if(/сгибание.*ног/.test(name))movement='leg_curl';
+ else if(/разгибание.*ног/.test(name))movement='leg_extension';
+ else if(/разведение ног|отведение ноги/.test(name))movement='abduction';
+ else if(/сведение ног|приведение ноги/.test(name))movement='adduction';
+ else if(/подъем.*носк/.test(name))movement='calf_raise';
+ else if(/тяга верхнего|подтягив/.test(name))movement='vertical_pull';
+ else if(/тяга.*наклоне|горизонтальная тяга|тяга т грифа|тяга гантели.*поясу/.test(name))movement='horizontal_pull';
+ else if(/французский|разгибание.*рук|разгибание.*гантел/.test(name))movement='arm_extension';
+ else if(/жим|отжиман/.test(name))movement='press';
+ else if(/сведение рук|разведение гантелей лежа|кроссовер/.test(name))movement='fly';
+ else if(/сгибание.*рук|сгибание гантел|молотков|бицепс/.test(name))movement='arm_curl';
+ // Some source rows omit glutes from compound hip/knee extension.
+ if(['hinge','squat','back_extension'].includes(movement))secondary.add('glutes');
+ if(['hinge','bridge','back_extension'].includes(movement))secondary.add('hamstrings');
+ const variation=/румын/.test(name)?'romanian':/прямых ног/.test(name)?'stiff_leg':'';
+ return {primary,secondary,movement,variation,bp:e.bp||'',eq:e.eq||'',goodMorning:/гудморнинг|good morning|наклоны.*штанг/.test(name)}
+}
+function replacementRelation(e,base){
+ const p=replacementProfile(e),samePrimary=!!base.primary&&p.primary===base.primary,
+  sharedPrimary=!!base.primary&&p.secondary.has(base.primary),sameMovement=!!base.movement&&p.movement===base.movement;
+ const supportingMovement=['bridge','hinge','back_extension','squat','abduction'].includes(p.movement);
+ const related=!!base.bp&&p.bp===base.bp&&(samePrimary||sameMovement||(sharedPrimary&&supportingMovement));
+ const recommend=related&&(!p.goodMorning||base.goodMorning);
+ // Equipment cannot independently qualify a recommendation.
+ const score=(samePrimary?100:0)+(sharedPrimary?45:0)+(sameMovement?90:0)+(base.variation&&base.variation===p.variation?60:0)+(base.eq&&p.eq===base.eq?4:0);
+ return {recommend,score,samePrimary,sharedPrimary,sameMovement}
+}
+function replaceExerciseSheet(indices,baseToken,sourceId=''){
+ if(!st.current||st.current.pendingCompletion)return;
+ const base=decodeURIComponent(baseToken),entry=st.current.ex?.[indices[0]],rows=catalogRecords(),
+  current=workoutRegistry.resolve(base)||workoutRegistry.resolve(entry)||workoutRegistry.resolve(String(sourceId)),
+  inferred=inferCustomMeta(base),meta=current||(inferred.tg?{...inferred,n:base}:{n:base}),profile=replacementProfile(meta),currentName=replacementNorm(base);
+ const candidates=rows.filter(e=>e.id!==current?.id&&replacementNorm(replacementTitle(e))!==currentName)
+  .map(e=>({e,...replacementRelation(e,profile)})).sort((a,b)=>b.score-a.score||replacementTitle(a.e).localeCompare(replacementTitle(b.e),'ru'));
+ window.__replacement={indices:indices.slice(),base,sessionId:st.current.id,candidates,mode:'similar',query:'',limit:24};
+ modal(`<div class="sheet-grabber"></div><div class="row between"><div class="grow"><h2>Заменить упражнение</h2><div class="muted">${esc(replacementTitle(meta)||displayExerciseName(base))}</div></div><button class="btn tiny" aria-label="Закрыть" onclick="closeModal()">✕</button></div><p class="muted small">Подходы, повторы, RPE и темп сохранятся. Вес подбирается для нового упражнения.</p><div class="filterbar" role="group" aria-label="Список упражнений"><button class="filterchip on" data-replacement-mode="similar" aria-pressed="true" onclick="setReplacementMode('similar')">Похожие</button><button class="filterchip" data-replacement-mode="all" aria-pressed="false" onclick="setReplacementMode('all')">Все упражнения</button></div><input id="repSearch" class="search" aria-label="Поиск по всем упражнениям" placeholder="Поиск по всем упражнениям" oninput="filterReplacement(this.value)"><p id="replacementCount" class="muted small" role="status" aria-live="polite"></p><div id="replacementList"></div>`);
+ renderReplacementList();
+}
+function replacementRow(item,index){
+ const {e,samePrimary,sharedPrimary,sameMovement}=item,n=replacementTitle(e);
+ const tags=samePrimary?'<span class="chip green">Та же основная мышца</span>':sharedPrimary?'<span class="chip">Целевая мышца участвует</span>':'';
+ return `<button class="card exlib exlib-btn replacement-item" data-exercise-id="${esc(e.id)}" onclick="selectReplacement(${index})"><div class="row between"><div class="grow"><b>${esc(n)}</b><div class="catalog-meta">${esc(BP_RU[e.bp]||e.bp||'')} · ${esc(ruTarget(e.tg))} · ${esc(EQ_RU[e.eq]||e.eq||'')}</div><div class="replacement-score">${tags}${sameMovement?'<span class="chip">Похожее движение</span>':''}</div></div><span class="chev">›</span></div></button>`
+}
+function renderReplacementList(){
+ const state=window.__replacement,root=$('#replacementList');if(!state||!root)return;
+ const q=replacementNorm(state.query),tokens=q.split(' ').filter(Boolean),searching=!!q;
+ const matched=state.candidates.filter(({e,recommend})=>{
+  if(!searching)return state.mode==='all'||recommend;
+  const hay=replacementNorm([replacementTitle(e),e.sourceName,...(e.aliases||[]),BP_RU[e.bp],ruTarget(e.tg),EQ_RU[e.eq]].join(' '));
+  return tokens.every(token=>hay.includes(token));
+ });
+ if(searching||state.mode==='all')matched.sort((a,b)=>replacementTitle(a.e).localeCompare(replacementTitle(b.e),'ru'));
+ state.visible=matched.slice(0,state.limit);
+ root.innerHTML=state.visible.map(replacementRow).join('')+(matched.length>state.limit?'<button class="btn full" onclick="showMoreReplacements()">Показать ещё</button>':'')+
+  (!matched.length?`<div class="card muted">${searching?'Ничего не найдено. Попробуй другое название.':'Похожих упражнений пока нет. Можно выбрать любое из каталога.'}</div>`:'')+
+  (!searching&&state.mode==='similar'?`<button class="btn full" onclick="setReplacementMode('all')">Выбрать из всех упражнений</button>`:'');
+ const count=$('#replacementCount');if(count)count.textContent=`${searching?'Поиск по всему каталогу':state.mode==='all'?'Все упражнения':'Похожие по мышцам и движению'} · ${matched.length}`;
+ document.querySelectorAll('[data-replacement-mode]').forEach(b=>{const on=!searching&&b.dataset.replacementMode===state.mode;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
+}
+function filterReplacement(q){if(!window.__replacement)return;window.__replacement.query=String(q||'');window.__replacement.limit=24;renderReplacementList()}
+function setReplacementMode(mode){if(!window.__replacement)return;window.__replacement.mode=mode==='all'?'all':'similar';window.__replacement.query='';window.__replacement.limit=24;const input=$('#repSearch');if(input)input.value='';renderReplacementList()}
+function showMoreReplacements(){if(window.__replacement){window.__replacement.limit+=24;renderReplacementList()}}
+function selectReplacement(index){
+ const state=window.__replacement,item=state?.visible?.[index];if(!item||st.current?.id!==state.sessionId)return;
+ applyReplacement(state.indices,encodeURIComponent(state.base),encodeURIComponent(replacementTitle(item.e)),item.e.id);
+}
+function applyReplacement(indices,oldToken,newToken,sourceId){
+ if(!st.current||st.current.pendingCompletion)return;
+ if(!indices.length||indices.some(i=>!st.current.ex[i]))return;
+ if(indices.some(i=>st.current.ex[i].set?.some(s=>s.ok)))return toast('Нельзя заменить упражнение с выполненными подходами');
+ const oldBase=decodeURIComponent(oldToken),newName=decodeURIComponent(newToken),row=workoutRegistry.resolve(String(sourceId))||workoutRegistry.resolve(newName);
+ indices.forEach(ei=>{
+  const e=st.current.ex[ei],suffix=e.n.startsWith(oldBase)?e.n.slice(oldBase.length):e.n.includes(' — ')?' — '+e.n.split(' — ').slice(1).join(' — '):'';
+  e.n=newName+suffix;e.sourceId=row?.rawId||row?.id||sourceId||null;
+  for(const key of ['exerciseId','loadType','weightProfile','implementCount','loadedSides','implementWeight','equipmentProfile','equipmentProfileId','trainingProgression292','trainingEstimate200','recommendation194','engine196Recommendation','progression187'])delete e[key];
+  if(row){e.exerciseId=row.id;e.loadType=row.loadType;e.implementCount=row.implementCount;e.bp=row.bp;e.tg=row.tg;e.eq=row.eq;e.type=row.type}
+  e.programWeightMode='adaptive';e.weightDecision='calibration';
+  // Kilograms, equipment and recommendations from another movement do not transfer.
+  for(const set of e.set||[]){
+   for(const key of ['programW','plannedW','baselineW','baselineSource','launchW','recommendedW','recommendation','recommendationRestore','recommendationDecision','dismissedRecommendation','trainingIntensity292','equipmentProfile','equipmentProfileId','equipmentSnapshot','loadType','implementCount','loadedSides','implementWeight'])delete set[key];
+   set.w='';set.manualOverride=false;set.weightSource='replacement';set.launchWeightCaptured206=true;
+  }
+ });
+ save();closeModal();window.__replacement=null;startPage();window.trainingLoadModel292?.run?.(true);toast(`Замена: ${newName}`)
+}
 
 save();setTimeout(()=>{renderBodyFilters();renderExerciseResults()},0);
