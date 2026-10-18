@@ -61,6 +61,8 @@ jobs:
         run: |
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
           node tests/runtime-exercise-replacement.cjs
+          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
+          node tests/runtime-weight-rounding.cjs
       - name: Verify six story layouts and native PNG sharing
         run: |
           UNVRSL_CANVAS="$RUNNER_TEMP/unvrsl-tests/node_modules/@napi-rs/canvas" \

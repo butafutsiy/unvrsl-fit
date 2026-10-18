@@ -294,6 +294,35 @@
   function recommendationWeight(result) {
     return result.weeklyCalculated ? number(result.calculatedWeight) : number(result.nextSetSuggestion?.weight??result.weight);
   }
+  // Repair only pending generated loads. Recorded history and manual inputs are
+  // authoritative, including deliberately entered fractional weights.
+  function normalizePendingWeights(session, reg, overrides = {}) {
+    if (!session || session.ended || session.pendingCompletion) return false;
+    let changed = false;
+    for (const e of session.ex || []) for (const s of e.set || []) {
+      if (s.ok || s.skipped || s.manualOverride || s.weightSource === 'manual') continue;
+      const recorded = s.equipmentSnapshot ? {...e, equipmentProfile:s.equipmentSnapshot} : e;
+      const p = profile(recorded, reg, overrides);
+      if (!(p.step > 0) && !p.available?.length) continue;
+      const generated = ['auto','recommendation'].includes(s.weightSource);
+      const repair = (obj, keys) => {
+        if (!obj) return;
+        for (const key of keys) {
+          const n = number(obj[key]);
+          if (n == null || (!generated && Math.abs(n - Number(n.toFixed(6))) < 1e-9)) continue;
+          const rounded = roundWeight(n, p);
+          if (Math.abs(n - rounded) > 1e-9) { obj[key] = rounded; changed = true; }
+        }
+      };
+      repair(s, ['w','plannedW','baselineW','programW','launchW','recommendedW']);
+      repair(s.recommendationDecision, ['weight']);
+      // Restore is also used by “dismiss recommendation”; do not restore an
+      // old floating-point calculation on the next render.
+      if (!s.recommendationRestore?.manualOverride && s.recommendationRestore?.weightSource !== 'manual')
+        repair(s.recommendationRestore, ['w','plannedW']);
+    }
+    return changed;
+  }
   function moveWeight(value, delta, p) {
     if (p.available?.length) {
       const current = roundWeight(value, p),
@@ -834,7 +863,7 @@
       (last.length<priorBlock.length||last.length<current.length||last.some(x=>effortRpe(x.set)==null)))raw=easier(raw,reference);
     if(raw==null||!Number.isFinite(raw)||raw<0)return null;
     if(!strength.source&&!last.length&&!live)return null;
-    return {weight:live?raw:roundWeight(raw,p,p.loadType==='bodyweight_assisted'?'up':'down'),raw,reference,reason,live,role,
+    return {weight:roundWeight(raw,p,p.loadType==='bodyweight_assisted'?'up':live?undefined:'down'),raw,reference,reason,live,role,
       sessionIds:[...new Set([...last,...strength.points].map(x=>x.session.id).filter(x=>x!=null))]};
   }
   function sessionTime(s) {
@@ -1816,6 +1845,7 @@
     loadType,
     profile,
     roundWeight,
+    normalizePendingWeights,
     moveWeight,
     method,
     warmup,

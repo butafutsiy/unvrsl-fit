@@ -179,7 +179,11 @@
  function assignStart(name,fn){W[name]=fn;try{if(name==='begin')begin=fn;else if(name==='beginProgramDay')beginProgramDay=fn;else if(name==='beginRemotePlan')beginRemotePlan=fn}catch(_){}}
  function installStart(name){const fn=W[name];if(typeof fn!=='function'||fn.__te205PreStart)return;const wrapped=function(){if(W.st?.current){W.nav?.('start');W.toast?.('У вас есть незавершённая тренировка');return}if(startingAfterReadiness)return fn.apply(this,arguments);askBeforeStart(fn,arguments,this)};wrapped.__te205PreStart=true;wrapped.__te205Base=fn;assignStart(name,wrapped)}
  function installStartHooks(){['begin','beginProgramDay','beginRemotePlan'].forEach(installStart)}
- async function tick(){installStartHooks();const cur=W.st?.current;if(!cur?.id||cur.ended)return;lockLegacy(cur);const id=String(cur.id);if(id!==last){last=id;busy=false;const root=document.getElementById('start');if(root)delete root.dataset.te200Sig}if(busy)return;busy=true;try{if(cur.trainingEngineRevision!==REV){const ok=await prepare(cur);if(!ok)return}else if(!W.trainingLoadModel292?.run){await ensureLoadModel()}enhanceDom()}finally{busy=false}}
+ async function tick(){installStartHooks();const cur=W.st?.current;if(!cur?.id||cur.ended)return;lockLegacy(cur);const id=String(cur.id);if(id!==last){last=id;busy=false;const root=document.getElementById('start');if(root)delete root.dataset.te200Sig}if(busy)return;busy=true;try{if(cur.trainingEngineRevision!==REV){const ok=await prepare(cur);if(!ok)return}else if(!W.trainingLoadModel292?.run){await ensureLoadModel()}
+   if(WorkoutDomain.normalizePendingWeights(cur,workoutRegistry,st.exerciseWeightProfiles||{})){
+    W.save?.({draftOnly:true});await W.trainingLoadModel292?.run?.(true);W.startPage?.();
+   }
+   enhanceDom()}finally{busy=false}}
  W.trainingApplyRecommendation200=applyRecommendation;W.trainingRestoreProgram200=restoreProgram;W.trainingShowReadiness200=showReadiness;W.trainingConfirmReadiness200=confirm;W.trainingUpdateReadiness200=updateReadiness;W.trainingRequestProgramStartV382=requestProgramStart;W.trainingEngine200Tick=tick;
  let tickQueued=false;const scheduleTick=()=>{if(tickQueued)return;tickQueued=true;queueMicrotask(()=>{tickQueued=false;tick()})};
  installStartHooks();['unvrsl:workout-rendered','unvrsl:workout-set-changed','unvrsl:readiness-ready','pageshow'].forEach(ev=>W.addEventListener?.(ev,scheduleTick,{passive:true}));[0,120,500].forEach(t=>setTimeout(scheduleTick,t));
