@@ -1,5 +1,13 @@
 /* Semantic surfaces shared by both themes. Kept after legacy theme rules. */
 :root{--surface:var(--panel);--surface-raised:var(--panel2);--border:var(--line);--text-primary:var(--text);--text-secondary:var(--muted);--action:color-mix(in srgb,var(--accent) 65%,#29123e);--action-text:#fff;--success:#3eaf78;--warning:#e0a34e;--error:#ff6961;--focus:var(--accent);--shadow:0 12px 40px rgb(0 0 0 / .2);--control-height:44px;--space:8px}
+/* iOS zooms focused controls below 16px. Layered !important takes priority
+   over the compact modules' unlayered !important rules, including late loads.
+   Keep native pinch zoom and compact paired/per-leg labels outside editing. */
+@layer input-focus-safety{
+  @media (hover:none), (pointer:coarse){
+    :is(input,textarea,select):focus{font-size:16px!important}
+  }
+}
 html[data-theme="light"]{--bg:#f4f5f8;--panel:#fff;--panel2:#eef0f5;--line:#d2d6df;--text:#1b2030;--muted:#596274;--success:#167744;--warning:#925408;--error:#b4232d;--shadow:0 12px 32px rgb(22 31 51 / .12)}
 html body button,html body summary{touch-action:manipulation}
 html body .btn,html body .check,html body .arrow,html body .nav button,html body .mp-datebar button,html body .mp-quick-search button,html body .mp-product-filters button,html body .seg button{min-height:44px}

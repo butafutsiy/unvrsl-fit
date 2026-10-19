@@ -35,11 +35,11 @@
     #start .exercise:not(.anton-superset):not(.anton-single) .sethead{margin:10px 0 0!important;font-size:10px!important;line-height:1!important;text-align:center!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .setrow{margin-top:6px!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .setrow>*{min-width:0!important}
-    #start .exercise:not(.anton-superset):not(.anton-single) .setrow input{width:100%!important;min-width:0!important;min-height:38px!important;padding:7px 3px!important;border-radius:11px!important;font-size:14px!important;text-align:center!important}
+    #start .exercise:not(.anton-superset):not(.anton-single) .setrow input{width:100%!important;min-width:0!important;min-height:38px!important;padding:7px 3px!important;border-radius:11px!important;font-size:16px!important;text-align:center!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .setrow input.rep-target-placeholder::placeholder{color:#8e8e93!important;opacity:.72!important;font-weight:650!important}
     #start .exercise:not(.anton-superset):not(.anton-single):has(.paired-load-input) .sethead,#start .exercise:not(.anton-superset):not(.anton-single):has(.paired-load-input) .setrow{grid-template-columns:27px minmax(76px,1.35fr) minmax(43px,.8fr) 48px 42px 32px!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .setrow input.paired-load-input:not(:focus){font-size:12px!important;letter-spacing:-.3px}
-    #start .exercise:not(.anton-superset):not(.anton-single) .u174-rir-input{font-size:13px!important;padding-left:1px!important;padding-right:1px!important}
+    #start .exercise:not(.anton-superset):not(.anton-single) .u174-rir-input{font-size:16px!important;padding-left:1px!important;padding-right:1px!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .check{width:34px!important;height:34px!important;min-width:34px!important;border-radius:11px!important;font-size:15px!important;justify-self:end!important;grid-column:6!important}
     #start .exercise:not(.anton-superset):not(.anton-single) .prev-set{font-size:10px!important;margin:3px 0 1px 32px!important;line-height:1.12!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
     #start .workout-finish-card{position:relative!important;z-index:2!important;margin-bottom:calc(28px + env(safe-area-inset-bottom))!important}
@@ -64,7 +64,7 @@
       #start .exercise:not(.anton-superset):not(.anton-single) .head-actions .btn.tiny[onclick*="openAutoWarmup"]{min-width:60px!important;height:32px!important;min-height:32px!important;padding:0 6px!important;font-size:9.8px!important}
       #start .exercise:not(.anton-superset):not(.anton-single) .sethead,
       #start .exercise:not(.anton-superset):not(.anton-single) .setrow{grid-template-columns:25px minmax(45px,1fr) minmax(43px,.82fr) 50px 43px 32px!important;column-gap:4px!important}
-      #start .exercise:not(.anton-superset):not(.anton-single) .setrow input{min-height:37px!important;padding:6px 2px!important;font-size:13.5px!important}
+      #start .exercise:not(.anton-superset):not(.anton-single) .setrow input{min-height:37px!important;padding:6px 2px!important;font-size:16px!important}
       #start .exercise:not(.anton-superset):not(.anton-single) .check{width:32px!important;height:32px!important;min-width:32px!important}
     }
     @media(max-width:365px){
@@ -73,17 +73,17 @@
       #start .exercise:not(.anton-superset):not(.anton-single) .chips.compact{overflow:visible!important}
       #start .exercise:not(.anton-superset):not(.anton-single) .sethead,
       #start .exercise:not(.anton-superset):not(.anton-single) .setrow{grid-template-columns:23px minmax(41px,1fr) minmax(40px,.8fr) 46px 40px 30px!important;column-gap:3px!important}
-      #start .exercise:not(.anton-superset):not(.anton-single) .setrow input{font-size:12.5px!important}
+      #start .exercise:not(.anton-superset):not(.anton-single) .setrow input{font-size:16px!important}
       #start .exercise:not(.anton-superset):not(.anton-single):has(.paired-load-input) .sethead,#start .exercise:not(.anton-superset):not(.anton-single):has(.paired-load-input) .setrow{grid-template-columns:23px minmax(66px,1.25fr) minmax(36px,.8fr) 42px 36px 28px!important}
       #start .exercise:not(.anton-superset):not(.anton-single) .check{width:30px!important;height:30px!important;min-width:30px!important}
     }
     #start .exercise:not(.anton-superset):not(.anton-single):has(.per-leg-reps) .sethead,
     #start .exercise:not(.anton-superset):not(.anton-single):has(.per-leg-reps) .setrow{grid-template-columns:23px minmax(58px,1fr) minmax(76px,1.25fr) 40px 34px 28px!important;column-gap:3px!important}
-    #start .exercise .setrow input.per-leg-reps{font-size:11px!important;letter-spacing:-.4px}
+    #start .exercise .setrow input.per-leg-reps:not(:focus){font-size:11px!important;letter-spacing:-.4px}
     @media(max-width:359px){
       #start .exercise:not(.anton-superset):not(.anton-single):has(.per-leg-reps) .sethead,
       #start .exercise:not(.anton-superset):not(.anton-single):has(.per-leg-reps) .setrow{grid-template-columns:21px minmax(50px,1fr) minmax(68px,1.2fr) 34px 28px 26px!important}
-      #start .exercise .setrow input.per-leg-reps{font-size:10px!important}
+      #start .exercise .setrow input.per-leg-reps:not(:focus){font-size:10px!important}
     }
   `;
   document.head.appendChild(s);
