@@ -13,7 +13,7 @@
   const LEGACY_WEIGHT_DATE='2026-08-25';
   const LEGACY_WEIGHT_VALUE=97.5;
   const loaded=new Set();
-  let clientReady=false,clientBooting=null;
+  let clientReady=false,clientReadyUid=null,clientBooting=null;
   let legacyCleanup=null;
 
   if(!document.getElementById('client-runtime-v257-style')){
@@ -82,12 +82,12 @@
   function script(src){
     if(loaded.has(src)||document.querySelector(`script[src="${src}"],script[src="./${src}"]`))return Promise.resolve();
     loaded.add(src);
-    return new Promise(resolve=>{const s=document.createElement('script');s.src=src;s.async=false;s.dataset.clientFinal='1';s.onload=resolve;s.onerror=resolve;document.body.appendChild(s)});
+    return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.async=false;s.dataset.clientFinal='1';s.onload=resolve;s.onerror=()=>{loaded.delete(src);s.remove();reject(new Error('Failed to load '+src))};document.body.appendChild(s)});
   }
 
   async function hydrateAssignments(){
     const c=cloudState(),s=state();
-    if(!isClient()||!c?.client||!s)return;
+    if(!isClient()||!c?.client||!s)return false;
     try{
       const r=await c.client.from('plan_assignments').select('plan_id,trainer_id,version,snapshot,status,updated_at').eq('client_id',c.user.id).eq('status','active').order('updated_at',{ascending:false});
       if(r.error)throw r.error;
@@ -111,9 +111,17 @@
       // A client may keep local history, but only active trainer assignments are eligible for Plan/Start.
       s.programs.forEach(p=>{if(p?.cloudPlanId&&p?.trainerId)p.clientAssignmentActive=active.has(String(p.cloudPlanId))});
       cleanClientCalendarPlans(s);
+      window.__unvrslClientAssignmentsErrorV519=false;
       saveState();
-    }catch(e){console.warn('client assignment hydrate v222',e)}
+      return true;
+    }catch(e){window.__unvrslClientAssignmentsErrorV519=true;console.warn('client assignment hydrate v519',e);return false}
   }
+  window.unvrslRetryClientAssignmentsV519=async()=>{
+    const ok=await hydrateAssignments();
+    if(ok){try{window.clientCleanPlanPage?.()}catch(_){ }try{window.openClientStartProgramPicker?.()}catch(_){ }}
+    else window.toast?.('Не удалось загрузить план. Проверь соединение и попробуй ещё раз.');
+    return ok;
+  };
 
   function assigned(){
     const c=cloudState(),s=state();if(!c?.user||!s)return[];
@@ -234,7 +242,10 @@
   window.clientMeasuresV255=window.clientFinalMeasuresV222;
 
   async function bootClient(){
-    if(clientReady||!isClient())return clientBooting;
+    if(!isClient())return clientBooting;
+    const uid=String(cloudState()?.user?.id||'');
+    if(clientReady&&clientReadyUid!==uid)clientReady=false;
+    if(clientReady)return clientBooting;
     if(clientBooting)return clientBooting;
     // Claim both client routes before any network wait so the built-in trainer
     // cycle can never flash while assignments are loading.
@@ -242,19 +253,28 @@
     clientBooting=(async()=>{
       await cleanupLegacyClientWeight();
       await hydrateAssignments();
-      await script('client-program-picker.js?v=401');
+      await script('client-program-picker.js?v=519');
       await script('client-journal-profile.js?v=401');
       installPlanGuard();installSettings();installCanonicalClientHome();
       if(document.getElementById('plan')?.classList.contains('active'))canonicalClientPlan();
       if(document.getElementById('home')?.classList.contains('active'))renderCanonicalClientHome();
       await settleClientHome();
-      clientReady=true;document.body?.classList.add('client-runtime-ready-v255','client-runtime-ready-v256','client-runtime-ready-v257','client-runtime-ready-v260');
+      clientReady=true;clientReadyUid=uid;window.__unvrslClientRuntimeUserIdV519=uid;document.body?.classList.add('client-runtime-ready-v255','client-runtime-ready-v256','client-runtime-ready-v257','client-runtime-ready-v260');
       setTimeout(()=>window.clientPlanHistoryRefresh107?.(),0);
       window.dispatchEvent(new CustomEvent('unvrsl:client-ready',{detail:{release:260}}));
       return true;
-    })().catch(e=>{console.warn('client runtime v260',e);return false}).finally(()=>{window.__unvrslClientRuntimeSettledV257=true;window.__unvrslClientRuntimeSettledV260=true;window.dispatchEvent(new CustomEvent('unvrsl:client-settled',{detail:{ready:clientReady,release:260}}));clientBooting=null});
+    })().catch(e=>{console.warn('client runtime v519',e);window.__unvrslClientRuntimeUserIdV519=null;return false}).finally(()=>{document.body?.classList.add('client-runtime-ready-v260');window.__unvrslClientRuntimeSettledV257=true;window.__unvrslClientRuntimeSettledV260=true;window.dispatchEvent(new CustomEvent('unvrsl:client-settled',{detail:{ready:clientReady,release:260}}));clientBooting=null});
     return clientBooting;
   }
+
+  window.unvrslRetryClientBootV519=()=>bootClient();
+  window.addEventListener('unvrsl:auth-changed',()=>{
+    if(!isClient()){
+      clientReady=false;clientReadyUid=null;window.__unvrslClientRuntimeUserIdV519=null;
+      return;
+    }
+    setTimeout(()=>bootClient(),0);
+  });
 
   // Prevent the built-in 8-week trainer cycle from remaining visible once a client session is known.
   document.addEventListener('click',e=>{
