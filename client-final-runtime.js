@@ -92,6 +92,7 @@
       const r=await c.client.from('plan_assignments').select('plan_id,trainer_id,version,snapshot,status,updated_at').eq('client_id',c.user.id).eq('status','active').order('updated_at',{ascending:false});
       if(r.error)throw r.error;
       const rows=r.data||[];
+      if(String(cloudState()?.user?.id||'')!==String(c.user.id))return false;
       s.clientAssignedUserId=String(c.user.id);
       s.clientAssignedPlanIds=rows.map(x=>String(x.plan_id));
       s.clientAssignmentsLoaded=true;
@@ -259,6 +260,7 @@
       if(document.getElementById('plan')?.classList.contains('active'))canonicalClientPlan();
       if(document.getElementById('home')?.classList.contains('active'))renderCanonicalClientHome();
       await settleClientHome();
+      if(String(cloudState()?.user?.id||'')!==uid)return false;
       clientReady=true;clientReadyUid=uid;window.__unvrslClientRuntimeUserIdV519=uid;document.body?.classList.add('client-runtime-ready-v255','client-runtime-ready-v256','client-runtime-ready-v257','client-runtime-ready-v260');
       setTimeout(()=>window.clientPlanHistoryRefresh107?.(),0);
       window.dispatchEvent(new CustomEvent('unvrsl:client-ready',{detail:{release:260}}));
