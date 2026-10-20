@@ -52,6 +52,7 @@
       W.__unvrslClientRuntimeUserIdV519 === uid &&
       typeof W.openClientStartProgramPicker === 'function';
     if (!pickerReady()) {
+      try { W.unvrslRetryClientBootV519?.(); } catch (error) { console.warn('UNVRSL retry client boot',error); }
       tell('Загружаем назначенную программу…');
       const ok = await waitFor(pickerReady,
         ['unvrsl:client-ready', 'unvrsl:client-settled', 'unvrsl:auth-changed'], 12000);
