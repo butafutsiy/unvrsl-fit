@@ -164,7 +164,8 @@
     const profile='<div id="clientPlanProfileV255">'+planProfileMarkup()+'</div>';
     const ps=orderedPrograms();
     if(!ps.length){
-      root.innerHTML=profile+'<div class="section">МОЯ ПРОГРАММА</div><div class="card"><div class="title">План пока не назначен</div><div class="muted" style="margin-top:7px">Когда тренер назначит программу, она появится здесь.</div></div>';
+      const failed=!!window.__unvrslClientAssignmentsErrorV519;
+      root.innerHTML=profile+'<div class="section">МОЯ ПРОГРАММА</div>'+(failed?'<div class="card"><div class="title">Не удалось загрузить программу</div><div class="muted" style="margin-top:7px">Проверь интернет и повтори загрузку. Заново входить в аккаунт не нужно.</div><button class="btn primary full" style="margin-top:14px" onclick="unvrslRetryClientAssignmentsV519()">Повторить загрузку</button></div>':'<div class="card"><div class="title">План пока не назначен</div><div class="muted" style="margin-top:7px">Когда тренер назначит программу, она появится здесь.</div></div>');
       finishPlanRender(root);
       return
     }
