@@ -120,7 +120,8 @@
   function renderStartPicker(){
     const ps=orderedPrograms();
     if(!ps.length){
-      modal('<div class="sheet-grabber"></div><div class="row between"><h2>Выбрать тренировку</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="card muted">Тренер пока не назначил программу.</div>');
+      const failed=!!window.__unvrslClientAssignmentsErrorV519;
+      modal('<div class="sheet-grabber"></div><div class="row between"><h2>Выбрать тренировку</h2><button class="btn tiny" onclick="closeModal()">✕</button></div>'+(failed?'<div class="card"><b>Не удалось загрузить программу</b><p class="muted">Проверь соединение. Повторный вход не нужен.</p><button class="btn primary full" onclick="unvrslRetryClientAssignmentsV519()">Повторить загрузку</button></div>':'<div class="card muted">Тренер пока не назначил программу.</div>'));
       return
     }
     const primary=ensurePrimary();let p=findProgram(picker.key)||primary;if(!p)p=ps[0];picker.key=p.key;
@@ -163,7 +164,8 @@
     const profile='<div id="clientPlanProfileV255">'+planProfileMarkup()+'</div>';
     const ps=orderedPrograms();
     if(!ps.length){
-      root.innerHTML=profile+'<div class="section">МОЯ ПРОГРАММА</div><div class="card"><div class="title">План пока не назначен</div><div class="muted" style="margin-top:7px">Когда тренер назначит программу, она появится здесь.</div></div>';
+      const failed=!!window.__unvrslClientAssignmentsErrorV519;
+      root.innerHTML=profile+'<div class="section">МОЯ ПРОГРАММА</div>'+(failed?'<div class="card"><div class="title">Не удалось загрузить программу</div><div class="muted" style="margin-top:7px">Проверь интернет и повтори загрузку. Заново входить в аккаунт не нужно.</div><button class="btn primary full" style="margin-top:14px" onclick="unvrslRetryClientAssignmentsV519()">Повторить загрузку</button></div>':'<div class="card"><div class="title">План пока не назначен</div><div class="muted" style="margin-top:7px">Когда тренер назначит программу, она появится здесь.</div></div>');
       finishPlanRender(root);
       return
     }

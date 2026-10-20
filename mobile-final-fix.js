@@ -13,6 +13,12 @@
     .nav .start .ico{width:46px!important;height:46px!important;margin:-24px auto 2px!important;box-shadow:0 0 0 5px rgba(13,14,16,.97),0 7px 20px color-mix(in srgb,var(--green),transparent 70%)!important}
     .nav .start .ico svg{width:23px!important;height:23px!important}
 
+    /* iOS input focus should not put the floating nav behind the keyboard. */
+    @media(max-width:760px){
+      input:not([type="checkbox"]):not([type="radio"]),textarea,select{font-size:16px!important}
+      body:has(input:focus) .nav,body:has(textarea:focus) .nav,body:has(select:focus) .nav{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+    }
+
     /* Workout content always remains scrollable above fixed controls. */
     #start.page.active{padding-bottom:calc(132px + env(safe-area-inset-bottom))!important}
     body:has(#timer.show) #start.page.active{padding-bottom:calc(260px + env(safe-area-inset-bottom))!important}

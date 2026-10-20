@@ -26,11 +26,12 @@ async function cloudInit(){
       if(event==='SIGNED_OUT'){
         cloud.user=null;cloud.profile=null;cloudMarkHealthy();
       }else if(session?.user){
-        cloud.user=session.user;cloud.profile=null;cloudMarkHealthy();cloudDeferProfile(event||'auth-change');
-      }else if(event==='INITIAL_SESSION'){
-        cloud.user=null;cloud.profile=null;
+        const changedUser=String(cloud.user?.id||'')!==String(session.user.id);cloud.user=session.user;if(changedUser)cloud.profile=null;cloudMarkHealthy();cloudDeferProfile(event||'auth-change');
+      }else if(event==='INITIAL_SESSION'&&!cloud.user){
+        cloud.profile=null;
       }
       renderCloudAffordances();
+      window.dispatchEvent(new CustomEvent('unvrsl:auth-changed',{detail:{signedIn:!!cloud.user,event}}));
       if(cloud.invite)setTimeout(()=>showInviteSheet(),0)
     });
     try{
