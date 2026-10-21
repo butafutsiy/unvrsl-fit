@@ -97,13 +97,14 @@ async function trainerCloudPlanForProgram(p,weightMode){
   return{planId:p.cloudPlanId,version,snapshot}
 }
 
-async function trainerAssignProgram(clientId,pid,weightMode){
-  if(!weightMode&&window.chooseProgramWeights)return window.chooseProgramWeights(mode=>trainerAssignProgram(clientId,pid,mode));
+async function trainerAssignProgram(clientId,pid,weightMode,clientTitle){
   const p=programById(pid);if(!p||!cloud?.user)return;
+  if(!weightMode&&window.chooseProgramWeights)return window.chooseProgramWeights((mode,title)=>trainerAssignProgram(clientId,pid,mode,title),{name:p.name});
   toast('Назначаю программу…');
   try{
     const cp=await trainerCloudPlanForProgram(p,weightMode);
-    const r=await cloud.client.from('plan_assignments').upsert({plan_id:cp.planId,trainer_id:cloud.user.id,client_id:clientId,version:cp.version,snapshot:cp.snapshot,status:'active',updated_at:new Date().toISOString()},{onConflict:'plan_id,client_id'}).select().single();
+    const snapshot=clientTitle&&window.assignmentSnapshotTitle521?window.assignmentSnapshotTitle521(cp.snapshot,{},clientTitle):cp.snapshot;
+    const r=await cloud.client.from('plan_assignments').upsert({plan_id:cp.planId,trainer_id:cloud.user.id,client_id:clientId,version:cp.version,snapshot,status:'active',updated_at:new Date().toISOString()},{onConflict:'plan_id,client_id'}).select().single();
     if(r.error)throw r.error;
     programActionResult('Программа назначена','Назначение сохранено в облаке. Клиент получит программу при синхронизации приложения.');
   }catch(e){alert('Не удалось назначить программу: '+(e.message||e))}

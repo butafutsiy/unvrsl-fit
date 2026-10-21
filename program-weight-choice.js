@@ -15,12 +15,12 @@
     return copy;
   };
   let pending=null;
-  root.chooseProgramWeights=function(action){
+  root.chooseProgramWeights=function(action,options={}){
     pending=action;
-    root.modal(`<div class="row between"><h2>Веса в программе</h2><button class="btn tiny" onclick="cancelProgramWeightChoice()" aria-label="Закрыть">✕</button></div><p class="muted">Выбери веса для копии или получателя. Исходная программа сохранится.</p><button class="btn full" style="margin-top:12px" onclick="applyProgramWeightChoice('keep')">Сохранить веса</button><p class="muted small">Оставить все заданные рабочие веса.</p><button class="btn primary full" style="margin-top:16px" onclick="applyProgramWeightChoice('auto')">Автовес</button><p class="muted small">Очистить веса. Рассчитывать по истории человека, неделе и выбранному тренажёру. Без истории нужно задать стартовый вес.</p>`);
+    root.modal(`<div class="row between"><h2>Веса в программе</h2><button class="btn tiny" onclick="cancelProgramWeightChoice()" aria-label="Закрыть">✕</button></div><p class="muted">Выбери веса для копии или получателя. Исходная программа сохранится.</p>${options.name!=null?`<label class="field">Название у клиента<input id="pwcTitle521" maxlength="100" value="${String(options.name).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}" autocomplete="off"></label>`:''}<button class="btn full" style="margin-top:12px" onclick="applyProgramWeightChoice('keep')">Сохранить веса</button><p class="muted small">Оставить все заданные рабочие веса.</p><button class="btn primary full" style="margin-top:16px" onclick="applyProgramWeightChoice('auto')">Автовес</button><p class="muted small">Очистить веса. Рассчитывать по истории человека, неделе и выбранному тренажёру. Без истории нужно задать стартовый вес.</p>`);
   };
   root.cancelProgramWeightChoice=()=>{pending=null;root.closeModal?.()};
-  root.applyProgramWeightChoice=mode=>{if(!['keep','auto'].includes(mode)||!pending)return;const action=pending;pending=null;root.closeModal?.();return action(mode)};
+  root.applyProgramWeightChoice=mode=>{if(!['keep','auto'].includes(mode)||!pending)return;const input=root.document?.getElementById?.('pwcTitle521'),title=input?.value.trim();if(input&&!title){root.toast?.('Укажи название программы');return}const action=pending;pending=null;root.closeModal?.();return action(mode,title)};
 })(typeof window!=='undefined'?window:null,function(){
   function prepareProgramWeights(program,mode='keep'){
     const copy=JSON.parse(JSON.stringify(program));

@@ -64,7 +64,7 @@ function cloudRuntime(){
    if(table==='plans'){
     if(op==='insert'){data={...value,id:'plan-'+(++serial)};plans.set(data.id,data)}
     else{data=plans.get(filters.id)||null;if(op==='update'&&data){data={...data,...value};plans.set(filters.id,data)}}
-   }else if(table==='plan_assignments'){writes.push(JSON.parse(JSON.stringify(value)));data=op==='update'?[{client_id:'client'}]:value}
+   }else if(table==='plan_assignments'){if(op==='select')data=[{client_id:'client',snapshot:{}}];else{writes.push(JSON.parse(JSON.stringify(value)));data=op==='update'?[{client_id:'client'}]:value}}
    else if(table==='plan_invites'){invites.push(value);data=value}
    resolve({data,error:null});
   }};return q;

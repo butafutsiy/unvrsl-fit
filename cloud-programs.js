@@ -127,8 +127,15 @@ async function cloudPushProgramUpdate(id){
       const up=await cloud.client.from('plans').update({title:p.name,version,snapshot,updated_at:new Date().toISOString()}).eq('id',variant.planId).eq('trainer_id',cloud.user.id).select('id').single();if(up.error)throw up.error;
       published=true;p[variant.versionField]=version;save();
       const history=await cloud.client.from('plan_versions').insert({plan_id:variant.planId,trainer_id:cloud.user.id,version,snapshot});if(history.error)throw history.error;
-      const assignments=await cloud.client.from('plan_assignments').update({version,snapshot,updated_at:new Date().toISOString()}).eq('plan_id',variant.planId).eq('trainer_id',cloud.user.id).eq('status','active').select('client_id');if(assignments.error)throw assignments.error;
-      count+=assignments.data?.length||0;
+      const assignments=await cloud.client.from('plan_assignments').select('client_id,snapshot,updated_at').eq('plan_id',variant.planId).eq('trainer_id',cloud.user.id).eq('status','active');if(assignments.error)throw assignments.error;
+      for(const assignment of assignments.data||[]){
+        const personal=window.assignmentSnapshotTitle521?window.assignmentSnapshotTitle521(snapshot,assignment.snapshot):snapshot;
+        let update=cloud.client.from('plan_assignments').update({version,snapshot:personal,updated_at:new Date().toISOString()}).eq('plan_id',variant.planId).eq('trainer_id',cloud.user.id).eq('client_id',assignment.client_id).eq('status','active');
+        if(assignment.updated_at)update=update.eq('updated_at',assignment.updated_at);
+        const result=await update.select('client_id');if(result.error)throw result.error;
+        if(!result.data?.length)throw Error('Назначение клиента изменилось. Повтори обновление.');
+        count+=result.data.length;
+      }
     }
     programActionResult('Программа обновлена',`Версия ${version} сохранена в облаке. ${count?`Обновлено назначений: ${count}. Клиенты получат её при синхронизации приложения.`:'Активных назначений нет. Клиентам обновление не отправлялось.'}`,id);
   }catch(error){programActionResult('Обновление не завершено',(published?`Версия ${version} сохранена в облаке, но обновление назначений не завершено. `:'Новая версия не сохранена в облаке. ')+(error.message||error),id)}
@@ -167,6 +174,8 @@ async function cloudLoadAssignments(){
       if(typeof ensureProgramShape==='function')ensureProgramShape(n);
       n.weeks?.forEach(w=>w.days?.forEach(d=>d.id=typeof uid==='function'?uid('day'):'day-'+Math.random()));
       st.programs.push(n);changed=true
+    }else if((p.cloudVersion||1)===a.version&&a.snapshot.clientTitle&&p.name!==a.snapshot.clientTitle){
+      p.name=a.snapshot.clientTitle;changed=true;
     }else if((p.cloudVersion||1)<a.version){
       p.pendingCloudUpdate={version:a.version,snapshot:a.snapshot};changed=true
     }
