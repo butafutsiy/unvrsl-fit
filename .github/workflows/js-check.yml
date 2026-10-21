@@ -96,6 +96,8 @@ jobs:
           node tests/runtime-weekly-calculated-weight.cjs
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
           node tests/runtime-equipment-steps.cjs
+          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
+          node tests/runtime-equipment-delivery-v520.cjs
       - name: Verify canonical cycle editor and training launch
         run: |
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \

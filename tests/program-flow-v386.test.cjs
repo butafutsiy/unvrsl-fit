@@ -76,7 +76,7 @@ test('only the canonical program flow owns creation, ranges and preparation',()=
   assert.match(startup,/__unvrslStorageHydrationSettledV386/);
   assert.match(startup,/__unvrslReadinessStackReadyV386/);
   assert.match(readiness,/<h2>Подготовка тренировки<\/h2>/);
-  assert.ok(index.indexOf('program-model.js?v=519')<index.indexOf('coach-programs.js?v=519'));
-  assert.ok(index.indexOf('training-engine.js?v=519')<index.indexOf('readiness-autoregulation.js?v=519'));
+  assert.ok(index.indexOf('program-model.js?v=520')<index.indexOf('coach-programs.js?v=520'));
+  assert.ok(index.indexOf('training-engine.js?v=520')<index.indexOf('readiness-autoregulation.js?v=520'));
   assert.doesNotMatch(index,/v=385/)
 });

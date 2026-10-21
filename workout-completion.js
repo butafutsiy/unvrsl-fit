@@ -5,8 +5,10 @@
     D = document;
   const report = (s) =>
     A.summary(s, st.sessions || [], workoutRegistry, st.bw || []);
-  const duration = (ms) =>
-    `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
+  const duration = (ms) => {
+    const seconds=Math.max(0,Math.floor(Number(ms)/1000)||0),minutes=Math.floor(seconds/60),tail=String(seconds%60).padStart(2,"0");
+    return minutes>=60?`${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,"0")}:${tail}`:`${minutes}:${tail}`;
+  };
   const nextWeight=(s,entry)=>{
     const ex=entry.best.exercise,set=entry.best.set;
     if(ex.mode==='cardio')return null;

@@ -608,8 +608,8 @@
     return !!(canonicalA && canonicalA === canonicalB);
   }
   function loadComparable(a, b, reg, sa = {}, sb = {}) {
-    const equipmentA=String(sa?.equipmentProfileId||a?.equipmentProfileId||a?.equipmentProfile?.id||a?.machineId||"");
-    const equipmentB=String(sb?.equipmentProfileId||b?.equipmentProfileId||b?.equipmentProfile?.id||b?.machineId||"");
+    const equipmentA=String(sa?.equipmentSnapshot?.id??(sa?.equipmentProfileId||a?.equipmentProfileId||a?.equipmentProfile?.id||a?.machineId||""));
+    const equipmentB=String(sb?.equipmentSnapshot?.id??(sb?.equipmentProfileId||b?.equipmentProfileId||b?.equipmentProfile?.id||b?.machineId||""));
     const typeA=loadType(a,reg),typeB=loadType(b,reg);
     const matchingExercise=sameExercise(a,b,reg);
     return (

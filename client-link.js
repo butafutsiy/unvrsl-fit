@@ -64,7 +64,15 @@ function trainerAssignProgramSheet(clientId){
   modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>Назначить программу</h2><div class="muted">Выбери программу для клиента</div></div><button class="btn tiny" onclick="trainerClientDetail('${clientId}')">←</button></div>${programs.length?programs.map(p=>`<button class="card exlib-btn" onclick="trainerAssignProgram('${clientId}','${p.id}')"><div class="row between"><div class="grow"><b>${esc(p.name||'Программа')}</b><div class="muted small">${p.weeks?.length||0} нед. · ${(p.weeks||[]).reduce((n,w)=>n+(w.days?.length||0),0)} тренировок</div></div><span class="chev">›</span></div></button>`).join(''):'<div class="card"><div class="title">Нет программ</div><div class="muted" style="margin-top:6px">Создай программу или добавь шаблон, затем вернись сюда.</div><button class="btn primary full" style="margin-top:14px" onclick="closeModal();nav(\'programs\')">Открыть программы</button></div>'}`)
 }
 
-async function trainerCloudPlanForProgram(p){
+async function trainerCloudPlanForProgram(p,weightMode){
+  if(weightMode==='auto'){
+    const delivery=window.prepareProgramWeights(p,'auto');
+    delivery.cloudPlanId=p.autoWeightCloudPlanId||null;
+    delivery.cloudVersion=p.autoWeightCloudVersion||null;
+    const result=await trainerCloudPlanForProgram(delivery);
+    p.autoWeightCloudPlanId=result.planId;p.autoWeightCloudVersion=result.version;p.updated=Date.now();save();
+    return result;
+  }
   if(p?.intakeDraft?.status==='review')throw new Error('Сначала проверь и утверди черновик программы');
   const snapshot=cloudProgramSnapshot(p);
   if(!p.cloudPlanId){
@@ -89,11 +97,12 @@ async function trainerCloudPlanForProgram(p){
   return{planId:p.cloudPlanId,version,snapshot}
 }
 
-async function trainerAssignProgram(clientId,pid){
+async function trainerAssignProgram(clientId,pid,weightMode){
+  if(!weightMode&&window.chooseProgramWeights)return window.chooseProgramWeights(mode=>trainerAssignProgram(clientId,pid,mode));
   const p=programById(pid);if(!p||!cloud?.user)return;
   toast('Назначаю программу…');
   try{
-    const cp=await trainerCloudPlanForProgram(p);
+    const cp=await trainerCloudPlanForProgram(p,weightMode);
     const r=await cloud.client.from('plan_assignments').upsert({plan_id:cp.planId,trainer_id:cloud.user.id,client_id:clientId,version:cp.version,snapshot:cp.snapshot,status:'active',updated_at:new Date().toISOString()},{onConflict:'plan_id,client_id'}).select().single();
     if(r.error)throw r.error;
     programActionResult('Программа назначена','Назначение сохранено в облаке. Клиент получит программу при синхронизации приложения.');

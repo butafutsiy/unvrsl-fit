@@ -245,7 +245,7 @@ test("equipment controls remain available for cardio and strength after a workou
  assert.equal(root.cards[0].control?.textContent,"＋ Оборудование");
  ctx.equipmentEdit405(encodeURIComponent("legacy:аэробайк@0"),"");
  assert.match(ctx.markup,/<option value="NONE" selected>/);
- assert.match(ctx.markup,/Matrix Leg Extension/);
+ assert.doesNotMatch(ctx.markup,/Leg Extension/);
 });
 test("muscle labels are translated and settings retain only backup controls",()=>{
  const ctx={window:{}};vm.runInNewContext(read("og-db.js").split("function ruExerciseName")[0]+";this.translate=ruTarget;",ctx);

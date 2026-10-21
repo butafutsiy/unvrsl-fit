@@ -2,7 +2,7 @@
 
 function cloudProgramSnapshot(p){
   const clean=JSON.parse(JSON.stringify(p));
-  delete clean.intakeDraft;delete clean.intakeSourceKey;
+  delete clean.intakeDraft;delete clean.intakeSourceKey;delete clean.autoWeightCloudPlanId;delete clean.autoWeightCloudVersion;
   delete clean.id;delete clean.cloudPlanId;delete clean.cloudVersion;delete clean.trainerId;delete clean.pendingCloudUpdate;
   return{kind:'coach-program',schema:1,program:clean}
 }
@@ -41,16 +41,17 @@ function allowAcceptedClientPlan(planId){
 window.clientAssignmentAccess=clientAssignmentAccess;
 window.clientHasActivePlan=clientHasActivePlan;
 
-async function cloudShareProgram(id){
+async function cloudShareProgram(id,weightMode){
+  if(!weightMode&&window.chooseProgramWeights)return window.chooseProgramWeights(mode=>cloudShareProgram(id,mode));
   const p=typeof programById==='function'?programById(id):null;
   if(!p||window.intakeDraftBlocked?.(p))return;
-  if(!cloudConfigured())return _cloudLocalShareProgram(id);
+  if(!cloudConfigured())return _cloudLocalShareProgram(id,weightMode);
   if(!cloud.user)return cloudAccountSheet();
   if(!trainerIsTrainer())return alert('Включи роль «Тренер» в аккаунте.');
   toast('Создаю ссылку…');
   try{
     // Assignment and link sharing must publish the same current snapshot.
-    const {planId}=await trainerCloudPlanForProgram(p);
+    const {planId}=await trainerCloudPlanForProgram(p,weightMode);
     const token=(crypto.randomUUID?.()||('t'+Date.now()+Math.random())).replaceAll('-','');
     const inv=await cloud.client.from('plan_invites').insert({token,trainer_id:cloud.user.id,plan_id:planId,max_uses:1}).select().single();
     if(inv.error)throw inv.error;
@@ -61,11 +62,11 @@ async function cloudShareProgram(id){
   }
 }
 const _cloudLocalShareProgram=window.shareProgram;
-if(typeof _cloudLocalShareProgram==='function')window.shareProgram=async function(id){
-  if(!cloudConfigured())return _cloudLocalShareProgram(id);
+if(typeof _cloudLocalShareProgram==='function')window.shareProgram=async function(id,weightMode){
+  if(!cloudConfigured())return _cloudLocalShareProgram(id,weightMode);
   if(!cloud.user)return cloudAccountSheet();
   if(!trainerIsTrainer())return alert('В аккаунте включи роль «Тренер», чтобы отправлять программы клиентам.');
-  return cloudShareProgram(id)
+  return cloudShareProgram(id,weightMode)
 };
 
 let acceptingProgramInvite=false;
@@ -112,19 +113,23 @@ const cloudProgramUpdatesInFlight=new Set();
 function programActionResult(title,message,id){modal(`<h2>${esc(title)}</h2><p role="status">${esc(message)}</p>${id?`<button class="btn primary full" onclick="openProgramEditor('${esc(id)}')">Вернуться в редактор</button>`:'<button class="btn primary full" onclick="closeModal()">Понятно</button>'}`)}
 async function cloudPushProgramUpdate(id){
   const p=programById(id);
-  if(!p?.cloudPlanId||!cloud.user||!trainerIsTrainer())return programActionResult('Обновление не отправлено','Открой аккаунт тренера и проверь облачную программу.',id);
+  if(!(p?.cloudPlanId||p?.autoWeightCloudPlanId)||!cloud.user||!trainerIsTrainer())return programActionResult('Обновление не отправлено','Открой аккаунт тренера и проверь облачную программу.',id);
   if(cloudProgramUpdatesInFlight.has(id))return;
   cloudProgramUpdatesInFlight.add(id);let published=false,version=null;
   programActionResult('Обновляю программу','Сохраняю новую версию и обновляю назначения клиентов…');
   try{
-    const snapshot=cloudProgramSnapshot(p);
-    const q=await cloud.client.from('plans').select('version').eq('id',p.cloudPlanId).single();if(q.error)throw q.error;
-    version=(q.data.version||1)+1;
-    const up=await cloud.client.from('plans').update({title:p.name,version,snapshot,updated_at:new Date().toISOString()}).eq('id',p.cloudPlanId).eq('trainer_id',cloud.user.id).select('id').single();if(up.error)throw up.error;
-    published=true;p.cloudVersion=version;save();
-    const history=await cloud.client.from('plan_versions').insert({plan_id:p.cloudPlanId,trainer_id:cloud.user.id,version,snapshot});if(history.error)throw history.error;
-    const assignments=await cloud.client.from('plan_assignments').update({version,snapshot,updated_at:new Date().toISOString()}).eq('plan_id',p.cloudPlanId).eq('trainer_id',cloud.user.id).eq('status','active').select('client_id');if(assignments.error)throw assignments.error;
-    const count=assignments.data?.length||0;
+    let count=0;
+    const variants=[{planId:p.cloudPlanId,versionField:'cloudVersion',auto:false},{planId:p.autoWeightCloudPlanId,versionField:'autoWeightCloudVersion',auto:true}].filter(x=>x.planId);
+    for(const variant of variants){
+      const snapshot=cloudProgramSnapshot(variant.auto?window.prepareProgramWeights(p,'auto'):p);
+      const q=await cloud.client.from('plans').select('version').eq('id',variant.planId).single();if(q.error)throw q.error;
+      version=(q.data.version||1)+1;
+      const up=await cloud.client.from('plans').update({title:p.name,version,snapshot,updated_at:new Date().toISOString()}).eq('id',variant.planId).eq('trainer_id',cloud.user.id).select('id').single();if(up.error)throw up.error;
+      published=true;p[variant.versionField]=version;save();
+      const history=await cloud.client.from('plan_versions').insert({plan_id:variant.planId,trainer_id:cloud.user.id,version,snapshot});if(history.error)throw history.error;
+      const assignments=await cloud.client.from('plan_assignments').update({version,snapshot,updated_at:new Date().toISOString()}).eq('plan_id',variant.planId).eq('trainer_id',cloud.user.id).eq('status','active').select('client_id');if(assignments.error)throw assignments.error;
+      count+=assignments.data?.length||0;
+    }
     programActionResult('Программа обновлена',`Версия ${version} сохранена в облаке. ${count?`Обновлено назначений: ${count}. Клиенты получат её при синхронизации приложения.`:'Активных назначений нет. Клиентам обновление не отправлялось.'}`,id);
   }catch(error){programActionResult('Обновление не завершено',(published?`Версия ${version} сохранена в облаке, но обновление назначений не завершено. `:'Новая версия не сохранена в облаке. ')+(error.message||error),id)}
   finally{cloudProgramUpdatesInFlight.delete(id)}
@@ -133,10 +138,10 @@ const _cloudRenderProgramEditor=window.renderProgramEditor;
 if(typeof _cloudRenderProgramEditor==='function')window.renderProgramEditor=function(){
   _cloudRenderProgramEditor();
   const p=programById(programUi.pid),sh=$('#sheet');
-  if(p?.cloudPlanId&&trainerIsTrainer()&&sh&&!sh.querySelector('.cloud-update-program')){
+  if((p?.cloudPlanId||p?.autoWeightCloudPlanId)&&trainerIsTrainer()&&sh&&!sh.querySelector('.cloud-update-program')){
     const b=document.createElement('button');
     b.className='btn primary full cloud-update-program';b.style.marginTop='12px';
-    b.textContent=`Обновить клиентам · версия ${p.cloudVersion||1}`;
+    b.textContent=`Обновить клиентам · версия ${p.cloudVersion||p.autoWeightCloudVersion||1}`;
     b.onclick=()=>cloudPushProgramUpdate(p.id);sh.appendChild(b)
   }
 };

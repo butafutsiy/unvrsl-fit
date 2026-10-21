@@ -12,9 +12,10 @@ function refreshTrainerNav(){
  if(trainerIsTrainer()&&page.classList.contains('active'))window.clientsPage?.();
 }
 function trainerSnapshot(){return{kind:'unvrsl-plan',schema:1,title:'UNVRSL FIT · 8 недель',createdAt:new Date().toISOString(),weeks:8,routines:ROUTINES.map(r=>({w:r.w,c:r.c,t:r.t,p:r.p||'',e:routineEntries(r).map(e=>({...e}))}))}}
-async function trainerShareCurrent(){
+async function trainerShareCurrent(weightMode){
+ if(!weightMode&&window.chooseProgramWeights)return window.chooseProgramWeights(mode=>trainerShareCurrent(mode));
  if(!cloudConfigured())return cloudSetupSheet();if(!cloud.user)return cloudAccountSheet();if(!trainerIsTrainer())return alert('В аккаунте включи роль «Тренер».');
- const title=prompt('Название программы','UNVRSL FIT · 8 недель');if(!title)return;const snapshot=trainerSnapshot();snapshot.title=title;toast('Создаю ссылку…');
+ const title=prompt('Название программы','UNVRSL FIT · 8 недель');if(!title)return;const snapshot=window.prepareProgramWeights?window.prepareProgramWeights(trainerSnapshot(),weightMode):trainerSnapshot();snapshot.title=title;toast('Создаю ссылку…');
  const p=await cloud.client.from('plans').insert({trainer_id:cloud.user.id,title,version:1,snapshot}).select().single();if(p.error)return alert(p.error.message);await cloud.client.from('plan_versions').insert({plan_id:p.data.id,trainer_id:cloud.user.id,version:1,snapshot});
  const token=(crypto.randomUUID?.()||('t'+Date.now()+Math.random())).replaceAll('-','');const inv=await cloud.client.from('plan_invites').insert({token,trainer_id:cloud.user.id,plan_id:p.data.id,max_uses:1}).select().single();if(inv.error)return alert(inv.error.message);const link=`${location.origin}${location.pathname}?invite=${encodeURIComponent(token)}`;trainerShareSheet(title,link)
 }
