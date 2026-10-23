@@ -2,12 +2,14 @@
 const assert=require('node:assert/strict');
 const {make,wait,errors}=require('./runtime-v392.cjs');
 const {memoryIndexedDB}=require('./storage-fixture.cjs');
+async function ready(dom){const deadline=Date.now()+15000;while(!dom.window.__unvrslStartupComplete||typeof dom.window.applyAutoWarmup!=='function'){assert.ok(Date.now()<deadline,'workout modules must finish loading');await wait(50);}}
 (async()=>{
  const indexedDB=memoryIndexedDB(),state={bw:[],sessions:[],current:null,week:1,theme:'dark',accent:'#bf5af2',storageRevision:1};
  indexedDB.stores.set('state',new Map([['latest',{state:{...state,theme:'light',storageRevision:2}}]]));
- const dom=make({'unvrsl-fit-v3':JSON.stringify(state)},{trackObservers:true,indexedDB});await wait(2700);
+ const dom=make({'unvrsl-fit-v3':JSON.stringify(state)},{trackObservers:true,indexedDB});
  let seed;
  try{
+  await ready(dom);
   assert.equal(dom.window.document.documentElement.dataset.theme,'light','durable light theme must survive the default dark boot');
   const result=dom.window.eval(`(()=>{
    const target=()=>({w:150,r:'',ok:false,targetRepMin:8,targetRepMax:12,targetRpeMin:7,targetRpeMax:8});
@@ -40,8 +42,9 @@ const {memoryIndexedDB}=require('./storage-fixture.cjs');
   for(const x of result.work){assert.equal(x.ok,false);assert.equal(x.w,150);assert.equal(x.actualReps,undefined);}
   assert.equal(result.header,1);assert.equal(result.inline,0);seed=result.seed;
  }finally{dom.window.eval('stopTimer();st.current=null');await wait(100);dom.window.__disconnectTestObservers();dom.window.close();}
- const restored=make(seed,{trackObservers:true});await wait(2700);
+ const restored=make(seed,{trackObservers:true});
  try{
+  await ready(restored);
   const data=restored.window.eval(`(()=>{nav('start');workoutFocus.open();return {warmup:st.current.ex[0].warmup,work:st.current.ex[0].set,rows:document.querySelectorAll('[data-wf-warmup-row]').length}})()`);
   assert.equal(data.rows,6);assert.equal(data.warmup[0].w,25);assert.equal(data.warmup[0].actualReps,8);assert.equal(data.warmup[5].ok,true);assert.equal(data.work[0].ok,false);
   assert.deepEqual(errors,[]);

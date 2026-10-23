@@ -3,7 +3,7 @@
   const W=window,D=document,A=W.WorkoutDomain,F=W.WorkoutFocusFlow;
   if(!A||!F||W.workoutFocus)return;
   const reg=workoutRegistry,N=A.number;
-  let view=null,openedBy=null,writing=false;
+  let view=null,openedBy=null,writing=false,panel=null;
   const state=()=>W.st,cur=()=>state()?.current;
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt=n=>n==null?'–':Number(n).toLocaleString('ru-RU',{maximumFractionDigits:6});
@@ -104,6 +104,96 @@
     .wf-launch{display:flex;align-items:center;text-align:left;gap:12px;background:color-mix(in srgb,var(--action) 7%,var(--panel));border-color:color-mix(in srgb,var(--action) 28%,var(--line));padding:14px;border-radius:18px}
     .wf-launch-icon{display:grid;place-items:center;flex:0 0 40px;height:40px;background:var(--action);color:var(--action-text);border-radius:13px;font-size:26px}
     .wf-launch-copy{flex:1;min-width:0}.wf-launch-copy strong{display:block;font-size:15px;color:var(--text)}.wf-launch-copy small{display:block;margin-top:3px;font-size:11px;line-height:1.4;font-weight:450;color:var(--muted)}
+    /* The current set fits the viewport; secondary content owns its own panel. */
+    body.workout-focus-open #timer.timer{display:none!important}
+    body.workout-focus-open #workout-focus{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+    body.workout-focus-open #workout-focus[data-compact=true]{height:var(--visible-height,100dvh);bottom:auto;padding:calc(6px + env(safe-area-inset-top)) 12px calc(6px + env(safe-area-inset-bottom));overflow:hidden}
+    #workout-focus[data-compact=true] .wf-shell{height:100%;padding:0;display:flex;flex-direction:column;gap:6px;max-width:480px}
+    #workout-focus[data-compact=true] .wf-head{position:static;min-height:44px;flex:0 0 44px;padding:0;border:0;gap:8px}
+    #workout-focus[data-compact=true] .wf-brand{font-size:14px;line-height:18px;min-width:0}
+    #workout-focus .wf-head-progress{margin-left:8px;font-size:11px;font-weight:600}
+    #workout-focus[data-compact=true] .wf-brand .wf-badge{font-size:9px;line-height:12px;letter-spacing:0;margin:0;white-space:nowrap}
+    #workout-focus .wf-live{display:flex;align-items:center;gap:6px;margin-left:auto;background:var(--panel2);border-radius:10px;padding-left:8px;font-size:12px;font-variant-numeric:tabular-nums}
+    #workout-focus .wf-live button{min-height:32px;min-width:28px;padding:0;font-size:18px}
+    #workout-focus[data-compact=true] .wf-stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;overflow:auto;overscroll-behavior:contain}
+    #workout-focus[data-compact=true] .wf-current{flex:0 0 auto}
+    #workout-focus[data-compact=true] h2{font-size:clamp(22px,5.8vw,28px);line-height:1.12;margin:0;letter-spacing:-.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    #workout-focus[data-compact=true] .wf-current .wf-meta{margin:4px 0 0;font-size:11px;line-height:16px;gap:6px}
+    #workout-focus[data-compact=true] .wf-current .wf-pill{font-size:10px;padding:2px 6px}
+    #workout-focus[data-compact=true] .wf-current .wf-progress{margin-top:5px}
+    #workout-focus[data-compact=true] .wf-progress i{height:3px}
+    #workout-focus[data-compact=true] .wf-stage>.wf-load{display:flex;align-items:center;gap:8px;flex:0 0 auto;margin:0;padding:10px 12px;border-radius:18px;min-height:70px}
+    #workout-focus[data-compact=true] .wf-load-main{flex:1;min-width:0}
+    #workout-focus[data-compact=true] .wf-stage>.wf-load .wf-sub{font-size:10px;line-height:1.3;margin:0}
+    #workout-focus[data-compact=true] .wf-stage>.wf-load .wf-number{font-size:34px;line-height:1.1;letter-spacing:-1px;margin:3px 0 0}
+    #workout-focus[data-compact=true] .wf-stage>.wf-load .wf-number.wf-unset{font-size:24px}
+    #workout-focus[data-compact=true] .wf-stage>.wf-load .wf-number small{font-size:12px;letter-spacing:0}
+    #workout-focus[data-compact=true] .wf-stage>.wf-load .wf-secondary{flex:0 0 auto;width:auto;max-width:88px;margin:0;min-height:44px;padding:8px 12px;font-size:12px}
+    #workout-focus .wf-load-info{width:36px;min-height:44px;font-weight:800;font-size:16px;color:var(--wf-accent)}
+    #workout-focus[data-compact=true] .wf-stage>.wf-entry{flex:0 0 auto;min-height:max-content;margin:0;padding:12px;display:flex;flex-direction:column;gap:6px;border-radius:20px}
+    #workout-focus[data-compact=true] .wf-section-heading{display:none}
+    #workout-focus[data-compact=true] .wf-entry label>span{font-size:11px;line-height:13px;margin-bottom:4px}
+    #workout-focus[data-compact=true] .wf-entry input:not([type=checkbox]){min-height:44px;padding:8px;font-size:17px!important}
+    #workout-focus[data-compact=true] .wf-entry .wf-grid{gap:8px}
+    #workout-focus[data-compact=true] .wf-stepper{grid-template-columns:32px minmax(0,1fr) 32px;border-radius:12px}
+    #workout-focus[data-compact=true] .wf-entry .wf-meta{margin:0;min-height:30px;gap:6px;font-size:11px;line-height:14px}
+    #workout-focus[data-compact=true] .wf-entry .wf-meta strong{flex:1}
+    #workout-focus[data-compact=true] .wf-entry .wf-pill{font-size:10px;padding:3px 6px}
+    #workout-focus[data-compact=true] .wf-unknown{width:auto;min-height:30px;margin:0;padding:4px 7px;font-size:10px;white-space:nowrap}
+    #workout-focus[data-compact=true] .wf-rir{grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:0}
+    #workout-focus[data-compact=true] .wf-rir button{min-height:44px;font-size:14px;border-radius:10px}
+    #workout-focus[data-compact=true] .wf-submit-row{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,.75fr) minmax(94px,1.2fr);gap:6px;align-items:center;margin-top:auto}
+    #workout-focus[data-compact=true] .wf-check{min-height:44px;gap:4px;font-size:11px;line-height:1.15;min-width:0}
+    #workout-focus[data-compact=true] .wf-check input{flex:0 0 17px;width:17px;height:17px;margin:0}
+    #workout-focus[data-compact=true] .wf-save{min-height:48px;padding:8px;font-size:12px;margin:0;border-radius:12px;white-space:nowrap}
+    #workout-focus .wf-toolbar{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px;flex:0 0 auto}
+    #workout-focus .wf-toolbar button{width:100%;margin:0;min-height:44px;padding:6px 2px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font-size:11px;font-weight:700}
+    #workout-focus[data-compact=true] .wf-error{flex:0 0 auto;min-height:0;margin:0;font-size:11px;line-height:1.3}
+    #workout-focus[data-compact=true] .wf-error:empty{display:none}
+    #workout-focus .wf-panel{position:absolute;inset:0;z-index:6;background:var(--bg);display:flex;flex-direction:column;padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));gap:12px}
+    #workout-focus .wf-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;flex:0 0 auto}
+    #workout-focus .wf-panel-head h3{margin:0;font-size:18px;color:var(--text)}
+    #workout-focus .wf-panel-body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 2px 12px}
+    #workout-focus .wf-panel-body h3{margin:12px 0;font-size:18px}
+    #workout-focus .wf-panel[data-wf-panel=warmup] .wf-warmup{margin:0}
+    #workout-focus .wf-panel[data-wf-panel=warmup] .wf-warmup>summary,#workout-focus .wf-panel[data-wf-panel=navigation] details>summary{display:none}
+    #workout-focus[data-compact=true] .wf-stage{justify-content:center}
+    #workout-focus .wf-focus-mark{display:inline-flex;align-items:center;vertical-align:middle;margin-right:7px;color:var(--action)}
+    #workout-focus[data-compact=true] .wf-head-progress{display:inline-block;background:var(--panel2);color:var(--muted);padding:3px 7px;border-radius:8px;font-size:10px;line-height:14px}
+    #workout-focus .wf-load-info{border:1px solid color-mix(in srgb,var(--action) 20%,var(--line));border-radius:12px;background:var(--panel);font-size:13px}
+    #workout-focus .wf-toolbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);font-size:10px;font-weight:650}
+    #workout-focus .wf-toolbar svg{color:var(--wf-accent)}
+    @media(min-height:701px){
+      #workout-focus[data-compact=true] .wf-stage{gap:12px}
+      #workout-focus[data-compact=true] .wf-stage>.wf-load{padding:14px 16px;min-height:88px;border-radius:22px}
+      #workout-focus[data-compact=true] .wf-stage>.wf-load .wf-number{font-size:42px;letter-spacing:-1.5px}
+      #workout-focus[data-compact=true] .wf-stage>.wf-load .wf-number.wf-unset{font-size:26px}
+      #workout-focus[data-compact=true] .wf-stage>.wf-entry{padding:16px;gap:8px;border-radius:22px}
+      #workout-focus[data-compact=true] .wf-section-heading{display:block;margin:0 0 4px;font-size:10px;line-height:13px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+      #workout-focus[data-compact=true] .wf-check{padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+      #workout-focus[data-compact=true] .wf-check:has(input:checked){border-color:color-mix(in srgb,var(--action) 25%,var(--line));background:color-mix(in srgb,var(--action) 6%,var(--panel))}
+      #workout-focus[data-compact=true] .wf-check:has([name=pain]:checked){border-color:var(--error);color:var(--error)}
+      #workout-focus[data-compact=true] .wf-save{min-height:50px;font-weight:800}
+      #workout-focus .wf-toolbar button{min-height:52px;border-radius:15px;gap:5px}
+    }
+    @media(min-height:701px){
+      #workout-focus[data-compact=true] .wf-submit-row{grid-template-columns:1fr 1fr;margin-top:6px}
+      #workout-focus[data-compact=true] .wf-check{font-size:12px;min-height:36px}
+      #workout-focus[data-compact=true] .wf-save{grid-column:1/-1;font-size:14px}
+    }
+    @media(max-height:700px){
+      #workout-focus[data-compact=true] .wf-stage{gap:6px}
+      #workout-focus[data-compact=true] h2{font-size:22px;line-height:1.1}
+      #workout-focus[data-compact=true] .wf-stage>.wf-load{padding:8px 10px;min-height:62px}
+      #workout-focus[data-compact=true] .wf-stage>.wf-load .wf-number{font-size:28px}
+      #workout-focus[data-compact=true] .wf-stage>.wf-load .wf-number.wf-unset{font-size:22px}
+      #workout-focus[data-compact=true] .wf-stage>.wf-entry{padding:8px;gap:2px}
+      #workout-focus[data-compact=true] .wf-entry label>span{font-size:10px;line-height:12px;margin-bottom:3px}
+      #workout-focus[data-compact=true] .wf-entry .wf-meta{min-height:28px}
+      #workout-focus[data-compact=true] .wf-unknown{min-height:28px}
+      #workout-focus[data-compact=true] .wf-save{min-height:44px}
+      #workout-focus[data-compact=true] .wf-check{font-size:10px}
+    }
     @media(max-width:370px){#workout-focus .wf-rir{grid-template-columns:repeat(4,minmax(0,1fr))}}
     @media(max-width:335px){#workout-focus .wf-steps{grid-template-columns:repeat(3,minmax(0,1fr))}}
     @media(min-width:760px){#workout-focus{padding-left:30px;padding-right:30px}}@media(prefers-reduced-motion:reduce){#workout-focus *{scroll-behavior:auto!important}}
@@ -114,8 +204,8 @@
     return F.queue(s).find(r=>F.token(r)===f.token&&!s.ex[r.ei].set[r.si].ok&&!s.ex[r.ei].set[r.si].skipped)||F.next(s);
   }
   function background(hidden){for(const el of D.querySelectorAll('body>.app,body>.nav')){el.inert=hidden;if(hidden)el.setAttribute('aria-hidden','true');else el.removeAttribute('aria-hidden');}}
-  function show(mode){openedBy=root.hidden?D.activeElement:openedBy;view=mode;root.hidden=false;D.body.classList.add('workout-focus-open');D.documentElement.classList.add('workout-focus-open');background(true);render();root.querySelector('[data-wf-close]')?.focus({preventScroll:true})}
-  function close(){const s=cur();if(s?.focusState)s.focusState.enabled=false;save();view=null;root.hidden=true;D.body.classList.remove('workout-focus-open');D.documentElement.classList.remove('workout-focus-open');background(false);openedBy?.focus?.({preventScroll:true});W.startPage?.()}
+  function show(mode){panel=null;openedBy=root.hidden?D.activeElement:openedBy;view=mode;root.hidden=false;D.body.classList.add('workout-focus-open');D.documentElement.classList.add('workout-focus-open');background(true);render();root.querySelector('[data-wf-close]')?.focus({preventScroll:true})}
+  function close(){panel=null;const s=cur();if(s?.focusState)s.focusState.enabled=false;save();view=null;root.hidden=true;D.body.classList.remove('workout-focus-open');D.documentElement.classList.remove('workout-focus-open');background(false);openedBy?.focus?.({preventScroll:true});W.startPage?.()}
   function open(ei){const s=session();if(!s)return W.toast?.('Сначала открой активную тренировку');
     const existing=s.focusState||{},rows=F.queue(s),row=Number.isInteger(ei)?rows.find(r=>r.ei===ei&&!s.ex[r.ei].set[r.si].ok&&!s.ex[r.ei].set[r.si].skipped):null;
     s.focusState={...existing,enabled:true,token:row?F.token(row):existing.token,workoutId:s.id};if(row)delete s.focusState.rest;
@@ -149,7 +239,7 @@
       ${rows.length?`<div class="wf-warmup-columns"><span>№</span><span>${weighted?'кг':'Нагрузка'}</span><span>${A.legReps(e)?'Л / П':'повт.'}</span><span></span></div>${rows.map((x,i)=>{const d=f.warmupInputs?.[`${ei}:${i}`]||{};return `<div class="wf-warmup-row ${x.ok?'is-done':''}" data-wf-warmup-row="${i}" data-ei="${ei}"><span class="wf-warmup-index">${i+1}</span>${weighted?`<input name="warmup-weight" data-wf-warmup-field="weight" inputmode="decimal" aria-label="Вес разминки ${i+1}, кг" placeholder="Вес" value="${esc(d.weight??x.w??'')}" ${x.ok?'disabled':''}>`:'<span class="wf-sub">Свой вес</span>'}<input name="warmup-reps" data-wf-warmup-field="reps" inputmode="${A.legReps(e)?'text':'numeric'}" aria-label="Повторы разминки ${i+1}" placeholder="Повт." value="${esc(d.reps??(x.r?A.repsText(e,x.actualReps??x.r,false,x):''))}" ${x.ok?'disabled':''}><button type="button" data-wf-warmup-save="${i}" aria-label="${x.ok?'Изменить':'Записать'} разминку ${i+1}" title="${x.ok?'Изменить':'Записать'}">${x.ok?'✓':'＋'}</button></div>`;}).join('')}`:plan.length?`<div class="wf-warmup-preview">${plan.map((x,i)=>`<div><span>${i+1}</span><strong>${fmt(x.w)} <small>кг</small></strong><span>${x.r} повт.</span></div>`).join('')}</div><button type="button" class="wf-secondary" data-wf-action="warmup-plan">Добавить эти подходы</button>`:'<p class="wf-sub">Для авторазминки нужен рабочий вес. Можно добавить свой подход и указать фактическую нагрузку.</p>'}
       <button type="button" class="wf-warmup-add" data-wf-action="warmup-add">＋ Добавить свой подход</button><p class="wf-sub">Укажи фактические вес и повторы, затем нажми «＋». Записанный подход отмечается галочкой.</p></div></details>`;
   }
-  function refreshWarmup(){const top=root.scrollTop;W.startPage?.();render();root.scrollTop=top;}
+  function refreshWarmup(){const top=root.querySelector('.wf-panel-body')?.scrollTop||0;W.startPage?.();render();const body=root.querySelector('[data-wf-panel=warmup] .wf-panel-body');if(body)body.scrollTop=top;}
   function changeWarmup(action,index){const ctx=warmupContext();if(!ctx||measured(ctx.type))return;
     const {e,ei,weighted}=ctx,s=session(),f=s.focusState,before=JSON.parse(JSON.stringify(e.warmup||[]));
     if(action==='plan'){if(e.warmup?.length)return;e.warmup=F.warmupPlan(e,ctx.target,A,reg,state().exerciseWeightProfiles||{});if(!e.warmup.length)return message('Нет доступных разминочных весов ниже рабочего. Добавь свой подход.');}
@@ -229,9 +319,62 @@
       ${estimate?.estimate>0?`<div class="wf-help"><strong>Предварительный e1RM: ${fmt(Number(estimate.estimate.toFixed(1)))} кг</strong><p>${count} пригодных проб, одна сессия. Уверенность низкая. Другие диапазоны повторений уточнятся по рабочим тренировкам.</p></div>`:''}
       ${W.workoutTimerSnapshot?.().end>Date.now()?'<button class="wf-secondary" data-wf-action="skip-cal-rest">Закончить отдых</button>':''}<button class="wf-secondary" data-wf-action="back-focus">Вернуться к тренировке</button>`;
   }
+  function compactLayout(){
+    const shell=root.querySelector('.wf-shell'),form=shell.querySelector('[data-wf-form="work"]');
+    if(!form){root.dataset.compact='false';return;}
+    root.dataset.compact='true';
+    const row=activeRow(),s=session(),all=F.queue(s),done=all.filter(r=>s.ex[r.ei].set[r.si].ok||s.ex[r.ei].set[r.si].skipped).length;
+    shell.querySelector('.wf-brand').innerHTML=`<span class="wf-focus-mark" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><circle cx="12" cy="12" r="3"/></svg></span>Фокус <span class="wf-head-progress">${done} / ${all.length}</span>`;
+    const stage=D.createElement('div');stage.className='wf-stage';
+    const current=D.createElement('div');current.className='wf-current';
+    const help=D.createElement('div'),navigation=D.createElement('div'),warmup=D.createElement('div');const fullName=D.createElement('h3');fullName.textContent=s.ex[row.ei].n;help.appendChild(fullName);
+    const heading=shell.querySelector('.wf-heading'),intro=shell.querySelector(':scope>.wf-sub'),badge=shell.querySelector('.wf-badge');
+    if(heading)help.appendChild(heading);if(intro)help.appendChild(intro);
+    if(badge)(row.group?shell.querySelector('.wf-brand'):help).appendChild(badge);
+    for(const el of [shell.querySelector('#focus-title'),shell.querySelector(':scope>.wf-meta'),shell.querySelector('.wf-progress')])if(el)current.appendChild(el);
+    stage.appendChild(current);
+    const load=shell.querySelector('.wf-load'),loadMain=D.createElement('div');loadMain.className='wf-load-main';
+    const title=load.querySelector('.wf-sub'),number=load.querySelector('.wf-number'),calibrate=load.querySelector('[data-wf-action="calibrate"]');
+    for(const el of [...load.children])if(el!==title&&el!==number&&el!==calibrate)help.appendChild(el);
+    if(calibrate){const description=D.createElement('p');description.textContent=title.textContent;help.prepend(description);title.textContent='Первый рабочий вес';calibrate.textContent='Начать';}
+    loadMain.append(title,number);load.prepend(loadMain);
+    if(!calibrate){const info=D.createElement('button');info.type='button';info.className='wf-load-info';info.dataset.wfOpenPanel='help';info.setAttribute('aria-label','Подробности нагрузки');info.textContent='?';load.appendChild(info);}
+    stage.appendChild(load);
+    const warmupDetails=shell.querySelector('[data-wf-warmup]');if(warmupDetails)warmup.appendChild(warmupDetails);
+    const nav=shell.querySelector(':scope>details:not([data-wf-warmup])');if(nav){nav.open=true;navigation.appendChild(nav);}
+    for(const el of [...shell.querySelectorAll(':scope>.wf-banner')])help.appendChild(el);
+    for(const el of [...form.querySelectorAll(':scope>.wf-sub'),...form.querySelectorAll('.wf-help,.wf-effort')])help.appendChild(el);
+    const unknown=form.querySelector('.wf-unknown'),rirMeta=form.querySelector('.wf-meta');
+    if(unknown&&rirMeta){unknown.textContent='Не знаю';rirMeta.appendChild(unknown);}
+    const footer=D.createElement('div');footer.className='wf-submit-row';
+    const submit=form.querySelector('[type="submit"]');submit.setAttribute('aria-label',submit.textContent);submit.textContent='Записать ✓';
+    for(const el of [...form.querySelectorAll('.wf-check')])footer.appendChild(el);
+    footer.appendChild(submit);form.appendChild(footer);stage.appendChild(form);
+    const toolbar=D.createElement('div');toolbar.className='wf-toolbar';
+    const icons={warmup:'<path d="M4 18l6-6 4 3 6-11M14 4h6v6"/>',rest:'<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/>',navigation:'<path d="M8 6h12M8 12h12M8 18h12M3 6h.01M3 12h.01M3 18h.01"/>',help:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'};
+    const decorate=(b,label,icon)=>{b.innerHTML=`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[icon]||icons.rest}</svg><span>${label}</span>`;};
+    const tool=(label,attrs)=>{const b=D.createElement('button');b.type='button';decorate(b,label,attrs.wfOpenPanel);for(const [key,value] of Object.entries(attrs))b.dataset[key]=value;toolbar.appendChild(b);return b;};
+    if(warmupDetails)tool('Разминка',{wfOpenPanel:'warmup'});
+    const workTimer=shell.querySelector('[data-wf-work-seconds]');if(workTimer){decorate(workTimer,'Таймер','rest');toolbar.appendChild(workTimer);}
+    const rest=shell.querySelector('[data-wf-action="rest"]');if(rest){decorate(rest,'Отдых','rest');toolbar.appendChild(rest);}
+    tool('Упражнения',{wfOpenPanel:'navigation'});tool('Детали',{wfOpenPanel:'help'});stage.appendChild(toolbar);
+    const status=shell.querySelector('[data-wf-status]');shell.insertBefore(stage,status);
+    for(const [name,title,content] of [['warmup','Разминочные подходы',warmup],['navigation','Упражнения и подходы',navigation],['help','Нагрузка и усилие',help]]){
+      const sheet=D.createElement('section');sheet.className='wf-panel';sheet.dataset.wfPanel=name;sheet.hidden=panel!==name;sheet.setAttribute('role','dialog');sheet.setAttribute('aria-modal','true');sheet.setAttribute('aria-label',title);
+      sheet.innerHTML=`<div class="wf-panel-head"><h3>${title}</h3><button type="button" class="wf-close" data-wf-close-panel aria-label="Вернуться к подходу">×</button></div><div class="wf-panel-body"></div>`;
+      sheet.querySelector('.wf-panel-body').appendChild(content);shell.appendChild(sheet);
+    }
+    if(panel==='warmup'&&warmupDetails)warmupDetails.open=true;
+    for(const el of [stage,shell.querySelector('.wf-head')]){el.inert=!!panel;if(panel)el.setAttribute('inert','');else el.removeAttribute('inert');}
+    if(panel)shell.querySelector(`[data-wf-panel="${panel}"] [data-wf-close-panel]`)?.focus({preventScroll:true});
+  }
+  function openPanel(name){panel=name;render();}
+  function closePanel(){const previous=panel;panel=null;render();root.querySelector(`[data-wf-open-panel="${previous}"]`)?.focus({preventScroll:true});}
   function render(){if(!session()){view=null;root.hidden=true;D.body.classList.remove('workout-focus-open');D.documentElement.classList.remove('workout-focus-open');background(false);return}if(!view)return;
     if(view==='calibration'&&!cur().loadCalibrationDraft)view='focus';
-    root.innerHTML=`<div class="wf-shell"><div class="wf-head"><div class="wf-brand">UNVRSL <span>FIT</span></div><button class="wf-close" data-wf-close aria-label="Закрыть режим фокуса">×</button></div>${view==='calibration'?calibrationMarkup():focusMarkup()}<p class="wf-error" data-wf-status role="status" aria-live="polite"></p></div>`;
+    root.dataset.view=view;
+    root.innerHTML=`<div class="wf-shell"><div class="wf-head"><div class="wf-brand">UNVRSL <span>FIT</span></div><div class="wf-live" hidden><span data-wf-countdown></span><button type="button" data-wf-action="stop-timer" aria-label="Остановить таймер">×</button></div><button class="wf-close" data-wf-close aria-label="Закрыть режим фокуса">×</button></div>${view==='calibration'?calibrationMarkup():focusMarkup()}<p class="wf-error" data-wf-status role="status" aria-live="polite"></p></div>`;
+    if(view==='focus')compactLayout();else root.dataset.compact='false';
     root.scrollTop=0;tickTimer();
   }
   function readForm(form){return {weight:form.elements.weight?.value??'',reps:form.elements.reps.value,rir:form.querySelector('[data-wf-rir]')?(view==='calibration'?cur().loadCalibrationDraft.form:cur().focusState.inputs).rir:'unknown',technique:form.elements.technique.checked,pain:form.elements.pain.checked}}
@@ -308,9 +451,11 @@
   root.addEventListener('toggle',event=>{if(!event.target.matches?.('[data-wf-warmup]')||!session())return;const f=session().focusState;if(f.warmupOpen!==event.target.open){f.warmupOpen=event.target.open;save();}},true);
   root.addEventListener('submit',event=>{event.preventDefault();if(event.target.dataset.wfForm==='work')record(event.target);else if(event.target.dataset.wfForm==='calibration')recordCalibration(event.target)});
   root.addEventListener('input',event=>{if(!session()||!event.target.name)return;if(event.target.dataset.wfWarmupField){const el=event.target.closest('[data-wf-warmup-row]'),f=session().focusState,key=`${el.dataset.ei}:${el.dataset.wfWarmupRow}`;((f.warmupInputs||={})[key]||={})[event.target.dataset.wfWarmupField]=event.target.value;save();return;}const form=event.target.form;if(!form?.dataset.wfForm)return;const d=readForm(form);if(view==='calibration')cur().loadCalibrationDraft.form=d;else cur().focusState.inputs={...cur().focusState.inputs,...d};save()});
-  root.addEventListener('change',event=>{if(!event.target.matches('[data-wf-select]'))return;cur().focusState.token=event.target.value;delete cur().focusState.inputs;save();render()});
+  root.addEventListener('change',event=>{if(!event.target.matches('[data-wf-select]'))return;cur().focusState.token=event.target.value;delete cur().focusState.inputs;panel=null;save();render()});
   root.addEventListener('click',event=>{
     const b=event.target.closest('button');if(!b||b.disabled)return;
+    if(b.hasAttribute('data-wf-close-panel'))return closePanel();
+    if(b.dataset.wfOpenPanel)return openPanel(b.dataset.wfOpenPanel);
     if(b.hasAttribute('data-wf-close'))return close();
     if(!session())return close();
     const s=session(),row=activeRow();
@@ -325,6 +470,7 @@
     if(b.dataset.wfMode){s.loadCalibrationDraft.mode=b.dataset.wfMode;if(b.dataset.wfMode==='advanced'&&!s.loadCalibrationDraft.step)s.loadCalibrationDraft.step=12;save();render();return;}
     if(b.dataset.wfWorkSeconds){const sec=Number(b.dataset.wfWorkSeconds);if(sec>0)W.timer?.(sec,'Работа · '+s.ex[row.ei].n);return;}
     switch(b.dataset.wfAction){
+      case 'stop-timer':W.stopTimer?.();return tickTimer();
       case 'warmup-plan':return changeWarmup('plan');
       case 'warmup-add':return changeWarmup('add');
       case 'calibrate':return beginCalibration(row.ei);
@@ -340,9 +486,9 @@
       case 'finish-workout':close();return W.finish?.();
     }
   });
-  root.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();close();return;}if(event.key!=='Tab')return;const items=[...root.querySelectorAll('button:not(:disabled),input,select,summary')].filter(e=>!e.closest('details:not([open])')||e.tagName==='SUMMARY');const first=items[0],last=items.at(-1);if(event.shiftKey&&D.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&D.activeElement===last){event.preventDefault();first?.focus();}});
+  root.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();if(panel)closePanel();else close();return;}if(event.key!=='Tab')return;const items=[...root.querySelectorAll('button:not(:disabled),input,select,summary')].filter(e=>!e.disabled&&!e.closest('[hidden],[inert]')&&(!e.closest('details:not([open])')||e.tagName==='SUMMARY'));const first=items[0],last=items.at(-1);if(event.shiftKey&&D.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&D.activeElement===last){event.preventDefault();first?.focus();}});
   function tickTimer(){if(root.hidden)return;const timer=W.workoutTimerSnapshot?.(),sec=timer?.workoutId===String(cur()?.id)?Math.max(0,Math.ceil((timer.end-Date.now())/1000)):0;
-    const out=root.querySelector('[data-wf-countdown]');if(out)out.textContent=clock(sec);
+    root.querySelectorAll('[data-wf-countdown]').forEach(out=>out.textContent=clock(sec));const live=root.querySelector('.wf-live');if(live)live.hidden=sec<=0;
     const note=root.querySelector('[data-wf-cal-rest]'),button=root.querySelector('[data-wf-cal-save]');if(note)note.textContent=sec?`Отдых ${clock(sec)}`:'';if(button)button.disabled=sec>0;
   }
   function timerEnded(event){const s=session();if(!s||root.hidden||event.detail?.workoutId!==String(s.id))return;if(view==='focus'&&s.focusState?.rest){delete s.focusState.rest;save();render();}else if(view==='calibration')render();}

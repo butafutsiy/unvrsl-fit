@@ -29,7 +29,7 @@ const contrast=require('../theme-contrast.js');
    };focusFixture();
   });
   const root=page.locator('#workout-focus');
-  assert.match(await root.locator('.wf-load').innerText(),/Без истории нельзя рассчитать/);
+  assert.match(await root.locator('[data-wf-panel=help]').textContent(),/Без истории нельзя рассчитать/);
   assert.equal(await root.locator('[name=weight]').inputValue(),'');
   for(const theme of ['light','dark'])for(const accent of ['#bf5af2','#30d158','#0a84ff','#ff9f0a','#ff375f','#ff453a','#64d2ff','#ffd60a']){
    await page.evaluate(({theme,accent})=>{st.theme=theme;st.accent=accent;applyTheme();applyAccent();rememberAppearance();},{theme,accent});
@@ -75,7 +75,7 @@ const contrast=require('../theme-contrast.js');
   assert.doesNotMatch(await root.locator('.wf-load').innerText(),/e1RM|Рекомендованный вес|Подобрать вес/);
   assert.equal(await root.locator('[data-wf-rir="2"]').count(),1);
   await page.evaluate(()=>{st.theme='light';st.accent='#bf5af2';applyTheme();applyAccent();rememberAppearance();focusFixture('external_total',{w:150});});
-  await root.locator('[data-wf-warmup]>summary').click();
+  await root.locator('[data-wf-open-panel=warmup]').click();
   assert.equal(await root.locator('.wf-warmup-preview>div').count(),5);
   await root.locator('[data-wf-action="warmup-plan"]').click();
   const firstWarmup=root.locator('[data-wf-warmup-row="0"]');
@@ -105,7 +105,24 @@ const contrast=require('../theme-contrast.js');
   await page.evaluate(()=>closeModal());await page.locator('[data-focus-open]').click();
   assert.ok((await page.evaluate(()=>window.focusThemeHistory)).every(theme=>theme==='light'));
   await page.evaluate(()=>window.focusThemeObserver.disconnect());
+  for(const [width,height] of [[320,568],[375,667],[390,844],[430,932]]){
+   await page.setViewportSize({width,height});
+   for(const [type,w] of [['external_total',150],['external_total',0],['time',0],['distance',0]]){
+    await page.evaluate(({type,w})=>{focusFixture(type,{w,seconds:type==='time'?120:undefined,distance:type==='distance'?2.5:undefined});if(type==='external_total'){st.current.ex[0].n='Присед со штангой high-bar с паузой в нижней точке';workoutFocus.render();}},{type,w});
+    const layout=await root.evaluate(el=>{const stage=el.querySelector('.wf-stage'),save=el.querySelector('.wf-save');return {rootOverflow:el.scrollHeight-el.clientHeight,stageOverflow:stage.scrollHeight-stage.clientHeight,saveBottom:save.getBoundingClientRect().bottom,height:innerHeight};});
+    assert.ok(layout.rootOverflow<=1&&layout.stageOverflow<=1&&layout.saveBottom<=layout.height,JSON.stringify({width,height,type,w,layout}));
+   }
+  }
+  await page.setViewportSize({width:390,height:844});
+  await page.evaluate(()=>focusFixture('external_total',{w:150}));
+  await root.locator('[name=reps]').fill('10');
+  await root.locator('[data-wf-open-panel=warmup]').click();
+  assert.equal(await root.locator('.wf-stage').getAttribute('inert'),'');
+  await root.locator('[data-wf-panel=warmup] [data-wf-close-panel]').click();
+  assert.equal(await root.locator('[name=reps]').inputValue(),'10');
+  assert.equal(await root.locator('.wf-stage').getAttribute('inert'),null);
+  if(process.env.UNVRSL_SCREENSHOTS)await page.screenshot({path:path.join(process.env.UNVRSL_SCREENSHOTS,'focus-compact-light.png')});
   assert.deepEqual(errors,[]);
-  console.log('PASS: 16 theme/accent contrast combinations, metric work, editable warmups, 320/390px layout, light auto-warmup, stable theme and one header launch.');
+  console.log('PASS: 16 theme/accent contrast combinations, metric work, editable warmups, 320/390px layout, light auto-warmup, stable theme, one header launch and no main-screen scrolling from 320x568 to 430x932.');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
