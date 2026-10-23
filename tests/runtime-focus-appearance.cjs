@@ -39,7 +39,7 @@ const contrast=require('../theme-contrast.js');
     const hex=value=>{const c=document.createElement('canvas');c.width=c.height=1;const x=c.getContext('2d');x.fillStyle=value;x.fillRect(0,0,1,1);return '#'+[...x.getImageData(0,0,1,1).data].slice(0,3).map(n=>n.toString(16).padStart(2,'0')).join('');};
     const pair=selector=>{const el=root.querySelector(selector),s=getComputedStyle(el);return {text:hex(s.color),background:hex(s.backgroundColor)};};
     const card=root.querySelector('.wf-load'),text=card.querySelector('.wf-number'),sub=card.querySelector('.wf-sub');
-    return {bg:css.backgroundColor,expectedBg:html.getPropertyValue('--bg').trim(),inheritedBg:css.getPropertyValue('--bg').trim(),accent:css.getPropertyValue('--green').trim(),action:hex(css.getPropertyValue('--action').trim()),card:{text:hex(getComputedStyle(text).color),background:hex(getComputedStyle(card).backgroundColor)},sub:hex(getComputedStyle(sub).color),primary:pair('.wf-primary'),selected:pair('[data-wf-rir="2"]'),input:pair('[name=weight]'),overflow:root.scrollWidth>root.clientWidth};
+    return {bg:css.backgroundColor,expectedBg:html.getPropertyValue('--bg').trim(),inheritedBg:css.getPropertyValue('--bg').trim(),accent:css.getPropertyValue('--green').trim(),action:hex(css.getPropertyValue('--action').trim()),card:{text:hex(getComputedStyle(text).color),background:hex(getComputedStyle(card).backgroundImage.match(/color\([^)]*\)|rgba?\([^)]*\)/)?.[0]||getComputedStyle(card).backgroundColor)},sub:hex(getComputedStyle(sub).color),primary:pair('.wf-primary'),selected:pair('[data-wf-rir="2"]'),input:pair('[name=weight]'),overflow:root.scrollWidth>root.clientWidth};
    });
    assert.equal(styles.inheritedBg,styles.expectedBg,theme);
    assert.equal(styles.accent,accent);
@@ -74,7 +74,38 @@ const contrast=require('../theme-contrast.js');
   await page.evaluate(()=>focusFixture('bodyweight_only'));
   assert.doesNotMatch(await root.locator('.wf-load').innerText(),/e1RM|Рекомендованный вес|Подобрать вес/);
   assert.equal(await root.locator('[data-wf-rir="2"]').count(),1);
+  await page.evaluate(()=>{st.theme='light';st.accent='#bf5af2';applyTheme();applyAccent();rememberAppearance();focusFixture('external_total',{w:150});});
+  await root.locator('[data-wf-warmup]>summary').click();
+  assert.equal(await root.locator('.wf-warmup-preview>div').count(),5);
+  await root.locator('[data-wf-action="warmup-plan"]').click();
+  const firstWarmup=root.locator('[data-wf-warmup-row="0"]');
+  await firstWarmup.locator('[data-wf-warmup-field="weight"]').fill('25');
+  await firstWarmup.locator('[data-wf-warmup-field="reps"]').fill('8');
+  await firstWarmup.locator('button').click();
+  assert.equal(await firstWarmup.locator('[data-wf-warmup-field="weight"]').isDisabled(),true);
+  assert.deepEqual(await page.evaluate(()=>({warmup:st.current.ex[0].warmup[0].actualReps,work:st.current.ex[0].set[0].ok})),{warmup:8,work:false});
+  for(const theme of ['light','dark'])for(const width of [320,390]){
+   await page.setViewportSize({width,height:844});
+   await page.evaluate(theme=>{st.theme=theme;applyTheme();rememberAppearance();},theme);
+   assert.equal(await root.evaluate(el=>el.scrollWidth>el.clientWidth),false,`${theme}, ${width}px`);
+   if(process.env.UNVRSL_SCREENSHOTS&&width===390){await root.evaluate(el=>el.scrollTop=0);await page.screenshot({path:path.join(process.env.UNVRSL_SCREENSHOTS,`focus-warmup-${theme}.png`)});}
+  }
+  await page.evaluate(()=>{st.theme='light';applyTheme();rememberAppearance();workoutFocus.close();nav('start');});
+  assert.equal(await page.locator('#start .workout-head [data-focus-open]').count(),1);
+  assert.equal(await page.locator('[data-focus-exercise]').count(),0);
+  const stableTheme=await page.evaluate(()=>{
+   const themes=[],observer=new MutationObserver(records=>records.forEach(()=>themes.push(document.documentElement.dataset.theme)));
+   observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});window.focusThemeHistory=themes;window.focusThemeObserver=observer;
+   openAutoWarmup([0],encodeURIComponent(st.current.ex[0].n));return document.documentElement.dataset.theme;
+  });
+  assert.equal(stableTheme,'light');
+  const warmupPalette=await page.locator('#sheet .warmup-box').evaluate(el=>({background:getComputedStyle(el).backgroundColor,text:getComputedStyle(el).color}));
+  assert.notEqual(warmupPalette.background,'rgb(23, 23, 25)');assert.notEqual(warmupPalette.text,'rgb(245, 245, 247)');
+  if(process.env.UNVRSL_SCREENSHOTS)await page.screenshot({path:path.join(process.env.UNVRSL_SCREENSHOTS,'auto-warmup-light.png')});
+  await page.evaluate(()=>closeModal());await page.locator('[data-focus-open]').click();
+  assert.ok((await page.evaluate(()=>window.focusThemeHistory)).every(theme=>theme==='light'));
+  await page.evaluate(()=>window.focusThemeObserver.disconnect());
   assert.deepEqual(errors,[]);
-  console.log('PASS: live theme/accent inheritance, 16 contrast combinations, mobile layout, first-load guidance, time/distance recording without RIR, correct metric history and bodyweight card.');
+  console.log('PASS: 16 theme/accent contrast combinations, metric work, editable warmups, 320/390px layout, light auto-warmup, stable theme and one header launch.');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -48,7 +48,6 @@
     #workout-focus table{width:100%;border-collapse:collapse;font-size:12px}#workout-focus td,#workout-focus th{text-align:left;padding:9px;border-bottom:1px solid var(--line)}
     #workout-focus .wf-mode{display:grid;grid-template-columns:1fr 1fr;gap:8px}#workout-focus .wf-mode button[aria-pressed=true]{border-color:var(--wf-accent);color:var(--wf-accent)}
     .wf-launch{min-height:44px;width:100%;margin:10px 0;padding:12px;border-radius:15px;background:var(--panel2);border:1px solid var(--line);font-weight:800;color:var(--action)}
-    .wf-inline{min-height:44px;padding:8px 14px;margin:7px 0;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-weight:750;color:var(--action)}
     body.workout-focus-open #timer.timer.show{z-index:3200!important}body.workout-focus-open #timer.timer{bottom:calc(12px + env(safe-area-inset-bottom))!important}body.workout-focus-open #workout-focus{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
     #workout-focus .wf-stepper{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;background:var(--panel2);border:1px solid var(--line);border-radius:13px;overflow:hidden}
     #workout-focus .wf-stepper input{border:0!important;border-radius:0!important;text-align:center;padding:8px 0!important;font-weight:800}
@@ -63,6 +62,48 @@
     #workout-focus .wf-heading{display:flex;justify-content:space-between;align-items:center;margin-top:16px}#workout-focus .wf-heading h3{margin:0}
     #workout-focus .wf-unknown{padding:0 8px;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:10px;font-size:12px}
     #workout-focus .wf-unknown[aria-pressed=true]{border-color:var(--wf-accent);color:var(--wf-accent)}
+    #workout-focus .wf-shell{padding-top:4px}
+    #workout-focus .wf-head{padding-bottom:12px}
+    #workout-focus .wf-brand{font-size:13px;letter-spacing:-.3px}
+    #workout-focus .wf-heading{margin-top:20px}#workout-focus .wf-heading h3{font-size:13px;font-weight:650;color:var(--muted)}
+    #workout-focus h2{font-size:30px;letter-spacing:-.8px;margin:14px 0 8px}
+    #workout-focus .wf-badge{font-size:10px;letter-spacing:1px}
+    #workout-focus .wf-card{border-radius:24px;padding:20px}
+    html body #workout-focus .wf-load{background:linear-gradient(135deg,color-mix(in srgb,var(--action) 10%,var(--panel)),var(--panel))!important}
+    #workout-focus .wf-load>.wf-sub:first-child{margin-top:0}
+    #workout-focus .wf-load>.wf-sub:last-child{margin-bottom:0}
+    #workout-focus .wf-number{font-size:48px;letter-spacing:-2px;margin:12px 0}
+    #workout-focus .wf-progress{gap:6px}#workout-focus .wf-progress i{height:4px}
+    #workout-focus .wf-entry{padding:18px 16px;border:1px solid var(--line);border-radius:24px;background:var(--panel);margin:16px 0}
+    #workout-focus .wf-section-heading{font-size:15px;font-weight:800;letter-spacing:-.2px;margin-bottom:18px}
+    #workout-focus .wf-rir{gap:5px}#workout-focus .wf-rir button{min-height:46px;border-radius:12px}
+    #workout-focus .wf-primary{min-height:54px;border-radius:16px;letter-spacing:-.1px}
+    #workout-focus .wf-unknown{margin-top:8px;width:100%;border-style:dashed}
+    #workout-focus .wf-help{padding:0 12px;background:var(--panel2);border-radius:14px;margin:12px 0}
+    #workout-focus .wf-help summary{display:flex;justify-content:space-between;gap:12px;min-height:48px}
+    #workout-focus .wf-help strong{font-size:12px}#workout-focus .wf-help p{padding-bottom:14px;margin:0}
+    #workout-focus .wf-warmup{border:1px solid var(--line);border-radius:20px;background:var(--panel);margin:14px 0;overflow:hidden;color:var(--text)}
+    #workout-focus .wf-warmup>summary{list-style:none;padding:14px;display:flex;gap:12px;align-items:center}
+    #workout-focus .wf-warmup>summary::-webkit-details-marker{display:none}
+    #workout-focus .wf-warmup strong{font-size:14px;font-weight:750}
+    #workout-focus .wf-warmup summary small{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+    #workout-focus .wf-warmup-symbol{display:grid;place-items:center;flex:0 0 36px;height:36px;border-radius:12px;background:color-mix(in srgb,var(--action) 10%,var(--panel));color:var(--wf-accent);font-size:22px}
+    #workout-focus .wf-chevron{margin-left:auto;color:var(--muted);font-size:20px}#workout-focus .wf-warmup[open] .wf-chevron{transform:rotate(180deg)}
+    #workout-focus .wf-warmup-body{border-top:1px solid var(--line);padding:4px 14px 12px}
+    #workout-focus .wf-warmup-row,#workout-focus .wf-warmup-columns{display:grid;grid-template-columns:22px minmax(0,1fr) minmax(0,1fr) 44px;gap:7px;align-items:center}
+    #workout-focus .wf-warmup-columns{color:var(--muted);font-size:11px;margin-bottom:5px}
+    #workout-focus .wf-warmup-row{padding:8px 0;border-bottom:1px solid var(--line)}
+    #workout-focus .wf-warmup-index{color:var(--muted);font-size:12px}
+    #workout-focus .wf-warmup-row input{padding:10px 6px;text-align:center;min-height:44px;font-size:16px!important;border-radius:11px;font-variant-numeric:tabular-nums}
+    #workout-focus .wf-warmup-row button{border:1px solid var(--line);border-radius:12px;background:var(--panel2);font-size:20px}
+    #workout-focus .wf-warmup-row.is-done button{background:var(--action);color:var(--action-text);border-color:var(--action)}
+    #workout-focus .wf-warmup-row input:disabled{opacity:1;color:var(--muted);-webkit-text-fill-color:var(--muted)}
+    #workout-focus .wf-warmup-add{width:100%;color:var(--wf-accent);font-size:13px;font-weight:750;margin-top:8px}
+    #workout-focus .wf-warmup-preview>div{display:grid;grid-template-columns:24px 1fr 1fr;gap:8px;padding:12px 2px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+    #workout-focus .wf-warmup-preview small{font-weight:400;color:var(--muted)}
+    .wf-launch{display:flex;align-items:center;text-align:left;gap:12px;background:color-mix(in srgb,var(--action) 7%,var(--panel));border-color:color-mix(in srgb,var(--action) 28%,var(--line));padding:14px;border-radius:18px}
+    .wf-launch-icon{display:grid;place-items:center;flex:0 0 40px;height:40px;background:var(--action);color:var(--action-text);border-radius:13px;font-size:26px}
+    .wf-launch-copy{flex:1;min-width:0}.wf-launch-copy strong{display:block;font-size:15px;color:var(--text)}.wf-launch-copy small{display:block;margin-top:3px;font-size:11px;line-height:1.4;font-weight:450;color:var(--muted)}
     @media(max-width:370px){#workout-focus .wf-rir{grid-template-columns:repeat(4,minmax(0,1fr))}}
     @media(max-width:335px){#workout-focus .wf-steps{grid-template-columns:repeat(3,minmax(0,1fr))}}
     @media(min-width:760px){#workout-focus{padding-left:30px;padding-right:30px}}@media(prefers-reduced-motion:reduce){#workout-focus *{scroll-behavior:auto!important}}
@@ -97,10 +138,36 @@
     const numeric=value.match(/^(.*?) кг(.*)$/);
     return `<div class="wf-card wf-load"><div class="wf-sub">${title}</div><div class="wf-number ${unknown||metric||body?'wf-unset':''}">${numeric?`${esc(numeric[1])}<small> кг${esc(numeric[2])}</small>`:esc(value)}</div><div class="wf-sub">${detail}${e.equipmentProfile?.name&&!metric?` · ${esc(e.equipmentProfile.name)}`:''}</div>${set.recommendation?.conflict?`<div class="wf-banner wf-warning">${esc(set.recommendation.conflict)}</div>`:''}${unknown?'<button class="wf-secondary" data-wf-action="calibrate">Подобрать первый вес</button><div class="wf-sub">Если запас пока непонятен, выбери «Пока не могу оценить». По такой пробе вес автоматически не повышается.</div>':''}</div>`;
   }
+  function warmupContext(row=activeRow()){
+    const s=session();if(!s||!row)return null;
+    const group=W.groupIndexedEntries?.(s.ex).find(g=>g.indices.includes(row.ei)),ei=group?.indices[0]??row.ei,e=s.ex[ei],type=A.loadType(e,reg);
+    return {ei,e,type,weighted:!['bodyweight_only','repetitions_only','time','distance'].includes(type),target:Math.max(0,...(e.set||[]).map(x=>N(x.w)||0))};
+  }
+  function warmupMarkup(row){const ctx=warmupContext(row);if(!ctx||measured(ctx.type))return '';
+    const {ei,e,weighted,target}=ctx,rows=e.warmup||[],plan=rows.length?[]:F.warmupPlan(e,target,A,reg,state().exerciseWeightProfiles||{}),done=rows.filter(x=>x.ok).length,f=session().focusState;
+    return `<details class="wf-warmup" data-wf-warmup ${f.warmupOpen?'open':''}><summary><span class="wf-warmup-symbol" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l6-6 4 3 6-11M14 4h6v6"/></svg></span><span><strong>Разминочные подходы</strong><small>${rows.length?`${done} из ${rows.length} записано`:'Посмотреть и записать разминку'}</small></span><span class="wf-chevron" aria-hidden="true">⌄</span></summary><div class="wf-warmup-body"><p class="wf-sub">${ctx.type==='per_dumbbell'?'Вес указан на одну гантель. ':ctx.type==='per_side'?'Вес указан на одну сторону. ':ctx.type==='bodyweight_added'?'Указан только дополнительный вес. ':ctx.type==='bodyweight_assisted'?'Укажи вес помощи тренажёра. ':''}Разминка сохраняется отдельно и не влияет на рабочий объём, рекорды и автовес.</p>
+      ${rows.length?`<div class="wf-warmup-columns"><span>№</span><span>${weighted?'кг':'Нагрузка'}</span><span>${A.legReps(e)?'Л / П':'повт.'}</span><span></span></div>${rows.map((x,i)=>{const d=f.warmupInputs?.[`${ei}:${i}`]||{};return `<div class="wf-warmup-row ${x.ok?'is-done':''}" data-wf-warmup-row="${i}" data-ei="${ei}"><span class="wf-warmup-index">${i+1}</span>${weighted?`<input name="warmup-weight" data-wf-warmup-field="weight" inputmode="decimal" aria-label="Вес разминки ${i+1}, кг" placeholder="Вес" value="${esc(d.weight??x.w??'')}" ${x.ok?'disabled':''}>`:'<span class="wf-sub">Свой вес</span>'}<input name="warmup-reps" data-wf-warmup-field="reps" inputmode="${A.legReps(e)?'text':'numeric'}" aria-label="Повторы разминки ${i+1}" placeholder="Повт." value="${esc(d.reps??(x.r?A.repsText(e,x.actualReps??x.r,false,x):''))}" ${x.ok?'disabled':''}><button type="button" data-wf-warmup-save="${i}" aria-label="${x.ok?'Изменить':'Записать'} разминку ${i+1}" title="${x.ok?'Изменить':'Записать'}">${x.ok?'✓':'＋'}</button></div>`;}).join('')}`:plan.length?`<div class="wf-warmup-preview">${plan.map((x,i)=>`<div><span>${i+1}</span><strong>${fmt(x.w)} <small>кг</small></strong><span>${x.r} повт.</span></div>`).join('')}</div><button type="button" class="wf-secondary" data-wf-action="warmup-plan">Добавить эти подходы</button>`:'<p class="wf-sub">Для авторазминки нужен рабочий вес. Можно добавить свой подход и указать фактическую нагрузку.</p>'}
+      <button type="button" class="wf-warmup-add" data-wf-action="warmup-add">＋ Добавить свой подход</button><p class="wf-sub">Укажи фактические вес и повторы, затем нажми «＋». Записанный подход отмечается галочкой.</p></div></details>`;
+  }
+  function refreshWarmup(){const top=root.scrollTop;W.startPage?.();render();root.scrollTop=top;}
+  function changeWarmup(action,index){const ctx=warmupContext();if(!ctx||measured(ctx.type))return;
+    const {e,ei,weighted}=ctx,s=session(),f=s.focusState,before=JSON.parse(JSON.stringify(e.warmup||[]));
+    if(action==='plan'){if(e.warmup?.length)return;e.warmup=F.warmupPlan(e,ctx.target,A,reg,state().exerciseWeightProfiles||{});if(!e.warmup.length)return message('Нет доступных разминочных весов ниже рабочего. Добавь свой подход.');}
+    if(action==='add'){if((e.warmup?.length||0)>=20)return message('Уже добавлено 20 разминочных подходов.');(e.warmup||(e.warmup=[])).push({w:weighted?null:0,r:null,ok:false,warmup:true});}
+    if(action==='record'){
+      const x=e.warmup?.[index];if(!x)return;
+      if(x.ok)x.ok=false;
+      else{const el=root.querySelector(`[data-wf-warmup-row="${index}"]`),weight=weighted?F.parseWeight(el.querySelector('[data-wf-warmup-field="weight"]').value):0,raw=el.querySelector('[data-wf-warmup-field="reps"]').value,reps=A.parseReps(e,raw);
+        if(weight==null||!reps||!A.validSet(e,{w:weight,r:reps.total,actualReps:reps.total},reg))return message('Проверь фактический вес и целое положительное число повторений разминки.');
+        Object.assign(x,{plannedW:x.plannedW??x.w,plannedR:x.plannedR??x.r,w:weight,r:reps.total,actualReps:reps.total,ok:true,warmup:true,recordedAt:Date.now(),...(A.legReps(e)?{repsLeft:reps.left,repsRight:reps.right,repCounting:'total'}:{})});
+      }
+    }
+    f.warmupOpen=true;if(!save()){e.warmup=before;return;}if(action==='record'&&f.warmupInputs)delete f.warmupInputs[`${ei}:${index}`];refreshWarmup();
+  }
   function effortLabel(value){return value==='unknown'?'Запас пока не оценён':value===''?'Выбери запас после подхода':Number(value)===6?'Ещё 6+ повторений. Приблизительная оценка.':`Ещё ${value} повт. · около RPE ${10-Number(value)}`;}
   function effortWord(value){return value==='unknown'?'Не уверен':value===''?'Оцени усилие':Number(value)>=4?'Легко':Number(value)>=2?'Умеренно':Number(value)===1?'Тяжело':'Предельное усилие';}
   function rirMarkup(value){const badge=value===''||value==='unknown'?'RPE –':Number(value)===6?'RPE ≲4':`RPE ${10-Number(value)}`;
-    return `<div class="wf-meta"><strong>Осталось повторений (RIR)</strong><span class="wf-pill" data-wf-rpe>${badge}</span></div><div class="wf-rir">${[0,1,2,3,4,5,6].map(n=>`<button type="button" data-wf-rir="${n}" aria-label="RIR ${n===6?'6 и больше':n}" aria-pressed="${value!==''&&value!=='unknown'&&Number(value)===n}">${n===6?'6+':n}</button>`).join('')}</div><div class="wf-effort"><strong data-wf-effort-word>${effortWord(value)}</strong><span data-wf-effort>${effortLabel(value)}</span></div><button type="button" class="wf-unknown" data-wf-rir="unknown" aria-pressed="${value==='unknown'}">Пока не могу оценить запас</button><div class="wf-help"><span class="wf-pill" data-wf-help-rpe>${badge}</span><strong>Как оценивать усилие?</strong><p>RIR показывает, сколько качественных повторений осталось бы до отказа. RPE оценивает субъективную трудность. Для RIR 0–5 здесь используется ориентировочное RPE = 10 − RIR.</p></div>`;
+    return `<div class="wf-meta"><strong>Осталось повторений (RIR)</strong><span class="wf-pill" data-wf-rpe>${badge}</span></div><div class="wf-rir">${[0,1,2,3,4,5,6].map(n=>`<button type="button" data-wf-rir="${n}" aria-label="RIR ${n===6?'6 и больше':n}" aria-pressed="${value!==''&&value!=='unknown'&&Number(value)===n}">${n===6?'6+':n}</button>`).join('')}</div><div class="wf-effort"><strong data-wf-effort-word>${effortWord(value)}</strong><span data-wf-effort>${effortLabel(value)}</span></div><button type="button" class="wf-unknown" data-wf-rir="unknown" aria-pressed="${value==='unknown'}">Пока не могу оценить запас</button><details class="wf-help"><summary><strong>Как оценивать усилие?</strong><span class="wf-pill" data-wf-help-rpe>${badge}</span></summary><p>RIR показывает, сколько качественных повторений осталось бы до отказа. RPE оценивает субъективную трудность. Для RIR 0–5 здесь используется ориентировочное RPE = 10 − RIR.</p></details>`;
   }
   function fields(d,e,{calibration=false,type='reps',set={}}={}){
     const metric=type==='time'?'Время, сек':type==='distance'?'Дистанция, км':A.legReps(e)?'Повторы: левая / правая':'Повторы';
@@ -126,9 +193,10 @@
       <div class="wf-meta"><span>Подход ${row.si+1} из ${e.set.length}</span><span class="wf-pill">${['time','distance'].includes(type)?esc(e.repLabel||'По программе'):`${A.repRangeText(e,range)} повт. · RIR ${fmt(10-effort.hi)}–${fmt(10-effort.lo)}`}</span></div>
       <div class="wf-progress">${e.set.map(x=>`<i class="${x.ok||x.skipped?'done':''}"></i>`).join('')}</div>
       ${loadCard(e,set,s,unknown)}
+      ${warmupMarkup(row)}
       ${unknownMember&&!unknown?`<div class="wf-banner">Перед первым кругом подбери вес для ${esc(s.ex[unknownMember.ei].n)}.<button class="wf-secondary" data-wf-calibrate-index="${unknownMember.ei}">Подобрать вес до начала связки</button></div>`:''}
       ${f.notice?`<div class="wf-banner">${esc(f.notice)}</div>`:''}
-      <form data-wf-form="work" data-token="${F.token(row)}">${fields(d,e,{type,set})}
+      <form class="wf-entry" data-wf-form="work" data-token="${F.token(row)}"><div class="wf-section-heading">Запиши результат</div>${fields(d,e,{type,set})}
       <div class="wf-sub">${row.group&&rest.kind==='transition'?'После записи – следующее упражнение связки.':`После записи – отдых ${rest.seconds} сек.`}${next?` Далее: ${esc(s.ex[next.ei].n)}.`:''}</div>
       <button type="submit" class="wf-primary wf-save" ${rec?.action==='stop'?'disabled':''}>${`Записать подход ${row.si+1} ✓`}</button></form>
       ${type==='time'&&workSeconds(e,set)>0?`<button class="wf-secondary" data-wf-work-seconds="${workSeconds(e,set)}">Запустить рабочий таймер · ${fmt(workSeconds(e,set))} сек</button>`:''}
@@ -156,7 +224,7 @@
       ${canCredit&&!d.halted?'<button class="wf-primary" data-wf-action="credit-calibration">Зачесть подход и продолжить ✓</button><div class="wf-sub">Он станет первым рабочим подходом и будет учтён один раз.</div>':''}
       ${count&&!d.halted?`<button class="wf-secondary" data-wf-action="save-calibration">Сохранить предварительный вес${canCredit?' без зачёта подхода':''}</button>`:''}
       ${canUseUnconfirmed&&!d.halted?'<button class="wf-secondary" data-wf-action="use-unconfirmed">Использовать вес без силовой оценки</button>':''}
-      ${d.halted?'<div class="wf-banner wf-warning">Подбор остановлен после боли. Не продолжай это упражнение.</div>':d.attempts.length<3?`<form data-wf-form="calibration">${fields(d.form,e,{calibration:true,set:d.targetSet})}<div class="wf-sub" data-wf-cal-rest></div><button type="submit" class="wf-primary" data-wf-cal-save>Записать пробу и отдыхать</button></form>`:'<div class="wf-banner">Три пробы записаны. Если вес ещё не подошёл, уточни его на следующей тренировке. Все записанные результаты сохранены в черновике.</div>'}
+      ${d.halted?'<div class="wf-banner wf-warning">Подбор остановлен после боли. Не продолжай это упражнение.</div>':d.attempts.length<3?`<form class="wf-entry" data-wf-form="calibration">${fields(d.form,e,{calibration:true,set:d.targetSet})}<div class="wf-sub" data-wf-cal-rest></div><button type="submit" class="wf-primary" data-wf-cal-save>Записать пробу и отдыхать</button></form>`:'<div class="wf-banner">Три пробы записаны. Если вес ещё не подошёл, уточни его на следующей тренировке. Все записанные результаты сохранены в черновике.</div>'}
       ${d.attempts.map((a,i)=>`<div class="wf-row"><span>${i+1}. ${esc(a.weight)} кг × ${esc(a.reps)}</span><span>${a.rir==='unknown'?'RIR не оценён':`RIR ${esc(a.rir)}`}${a.pain?' · боль':!a.technique?' · техника':''}</span></div>`).join('')}
       ${estimate?.estimate>0?`<div class="wf-help"><strong>Предварительный e1RM: ${fmt(Number(estimate.estimate.toFixed(1)))} кг</strong><p>${count} пригодных проб, одна сессия. Уверенность низкая. Другие диапазоны повторений уточнятся по рабочим тренировкам.</p></div>`:''}
       ${W.workoutTimerSnapshot?.().end>Date.now()?'<button class="wf-secondary" data-wf-action="skip-cal-rest">Закончить отдых</button>':''}<button class="wf-secondary" data-wf-action="back-focus">Вернуться к тренировке</button>`;
@@ -237,14 +305,16 @@
     }
     d.committed=true;save();W.startPage?.();render();
   }
+  root.addEventListener('toggle',event=>{if(!event.target.matches?.('[data-wf-warmup]')||!session())return;const f=session().focusState;if(f.warmupOpen!==event.target.open){f.warmupOpen=event.target.open;save();}},true);
   root.addEventListener('submit',event=>{event.preventDefault();if(event.target.dataset.wfForm==='work')record(event.target);else if(event.target.dataset.wfForm==='calibration')recordCalibration(event.target)});
-  root.addEventListener('input',event=>{if(!session()||!event.target.name)return;const form=event.target.form;if(!form?.dataset.wfForm)return;const d=readForm(form);if(view==='calibration')cur().loadCalibrationDraft.form=d;else cur().focusState.inputs={...cur().focusState.inputs,...d};save()});
+  root.addEventListener('input',event=>{if(!session()||!event.target.name)return;if(event.target.dataset.wfWarmupField){const el=event.target.closest('[data-wf-warmup-row]'),f=session().focusState,key=`${el.dataset.ei}:${el.dataset.wfWarmupRow}`;((f.warmupInputs||={})[key]||={})[event.target.dataset.wfWarmupField]=event.target.value;save();return;}const form=event.target.form;if(!form?.dataset.wfForm)return;const d=readForm(form);if(view==='calibration')cur().loadCalibrationDraft.form=d;else cur().focusState.inputs={...cur().focusState.inputs,...d};save()});
   root.addEventListener('change',event=>{if(!event.target.matches('[data-wf-select]'))return;cur().focusState.token=event.target.value;delete cur().focusState.inputs;save();render()});
   root.addEventListener('click',event=>{
     const b=event.target.closest('button');if(!b||b.disabled)return;
     if(b.hasAttribute('data-wf-close'))return close();
     if(!session())return close();
     const s=session(),row=activeRow();
+    if(b.dataset.wfWarmupSave!=null)return changeWarmup('record',Number(b.dataset.wfWarmupSave));
     if(b.dataset.wfCalibrateIndex!=null)return beginCalibration(Number(b.dataset.wfCalibrateIndex));
     if(b.dataset.wfWeight){const d=view==='calibration'?s.loadCalibrationDraft.form:inputDraft(row),e=view==='calibration'?s.ex[s.loadCalibrationDraft.ei]:s.ex[row.ei],input=b.form?.elements.weight;
       const current=F.parseWeight(input?.value??d.weight);if(current==null)return message('Сначала введи исходный вес.');
@@ -255,6 +325,8 @@
     if(b.dataset.wfMode){s.loadCalibrationDraft.mode=b.dataset.wfMode;if(b.dataset.wfMode==='advanced'&&!s.loadCalibrationDraft.step)s.loadCalibrationDraft.step=12;save();render();return;}
     if(b.dataset.wfWorkSeconds){const sec=Number(b.dataset.wfWorkSeconds);if(sec>0)W.timer?.(sec,'Работа · '+s.ex[row.ei].n);return;}
     switch(b.dataset.wfAction){
+      case 'warmup-plan':return changeWarmup('plan');
+      case 'warmup-add':return changeWarmup('add');
       case 'calibrate':return beginCalibration(row.ei);
       case 'save-calibration':return finishCalibration();
       case 'credit-calibration':return finishCalibration(true);
@@ -277,13 +349,8 @@
   W.addEventListener('unvrsl:rest-finished',timerEnded);W.addEventListener('unvrsl:rest-stopped',timerEnded);
   const timerInterval=setInterval(tickTimer,250);W.addEventListener('pagehide',()=>{if(!root.hidden)save()});
   W.addEventListener('unload',()=>clearInterval(timerInterval),{once:true});
-  function mount(){const s=session(),head=D.querySelector('#start .workout-head');if(s&&head&&!head.querySelector('[data-focus-open]')){const b=D.createElement('button');b.type='button';b.className='wf-launch';b.dataset.focusOpen='1';b.textContent='◎ Режим «Фокус»';b.onclick=()=>open();head.appendChild(b);}
+  function mount(){D.querySelectorAll('[data-focus-exercise]').forEach(el=>el.remove());const s=session(),head=D.querySelector('#start .workout-head');if(s&&head&&!head.querySelector('[data-focus-open]')){const b=D.createElement('button');b.type='button';b.className='wf-launch';b.dataset.focusOpen='1';b.innerHTML='<span class="wf-launch-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><circle cx="12" cy="12" r="3"/></svg></span><span class="wf-launch-copy"><strong>Режим «Фокус»</strong><small>Один подход за раз · разминка и отдых</small></span><span aria-hidden="true">→</span>';b.onclick=()=>open();head.appendChild(b);}
     if(!s){if(view){root.hidden=true;view=null;D.body.classList.remove('workout-focus-open');D.documentElement.classList.remove('workout-focus-open');background(false);}return;}
-    for(const card of D.querySelectorAll('#start .exercise')){
-      if(card.querySelector('[data-focus-exercise]'))continue;
-      const ei=[...card.querySelectorAll('[onclick*="toggleSet("]')].map(b=>Number(b.getAttribute('onclick').match(/toggleSet\((\d+),/)?.[1])).find(i=>s.ex[i]?.set?.some(x=>!x.ok&&!x.skipped));
-      if(ei==null)continue;const b=D.createElement('button');b.type='button';b.className='wf-inline';b.dataset.focusExercise=String(ei);b.textContent='Фокус на упражнении';b.onclick=()=>open(ei);card.querySelector('.row')?.insertAdjacentElement('afterend',b);
-    }
     if(s.focusState?.enabled&&D.querySelector('#start.active')&&root.hidden)show('focus');
   }
   W.addEventListener('unvrsl:workout-rendered',mount);

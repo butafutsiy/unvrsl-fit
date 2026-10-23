@@ -91,3 +91,23 @@ test('green selected after migration survives reload and account refresh', () =>
   vm.runInContext("restoreAppearance('user-a')", reopened);
   assert.equal(reopened.st.accent, '#30d158');
 });
+
+test('boot defaults do not overwrite the theme waiting in durable recovery', () => {
+  const values = new Map(), storage = {getItem: k => values.get(k) || null, setItem: (k,v) => values.set(k,v)};
+  const ctx = appearance(storage);
+  vm.runInContext("restoreAppearance('user-a')", ctx);
+  assert.equal(values.has('unvrsl-appearance-v1'), false);
+  ctx.st = {accountOwnerId:'user-a',theme:'light',accent:'#bf5af2'};
+  vm.runInContext("restoreAppearance('user-a')", ctx);
+  assert.equal(ctx.st.theme, 'light');
+});
+
+test('an explicit choice survives delayed hydration when preference writes are denied', () => {
+  const storage = {getItem: () => JSON.stringify({'user-a':{theme:'dark',accent:'#bf5af2',defaultAccentVersion:2}}), setItem() {throw Error('Quota exceeded');}};
+  const ctx = appearance(storage);ctx.console={warn(){}};
+  ctx.st.theme='light';ctx.st.accent='#0a84ff';
+  vm.runInContext('rememberAppearance()',ctx);
+  ctx.st={accountOwnerId:'user-a',theme:'dark',accent:'#bf5af2'};
+  vm.runInContext("restoreAppearance('user-a')",ctx);
+  assert.equal(ctx.st.theme,'light');assert.equal(ctx.st.accent,'#0a84ff');
+});

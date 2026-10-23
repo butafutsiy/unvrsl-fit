@@ -100,5 +100,14 @@
       action:direction<0?'down':direction>0?'up':'hold',
       reason:attempt.pain?'Подбор остановлен после боли.':!known?'Запас не оценён. Вес не повышаем; уточни RIR в следующем подходе.':hard?'Снизь вес на один доступный шаг.':easy?'Можно добавить один доступный шаг.':fits?'Вес подходит под сегодняшнее задание.':'Сохрани вес и проверь его на целевом числе повторений.'};
   }
-  return {steps,programEntries,queue,next,token,restAfter,parseWeight,calibrationAllowed,needsCalibration,groupCalibration,probeTarget,probeDecision};
+  function warmupPlan(e,target,A,reg,overrides={}){
+    const type=A.loadType(e,reg),weight=A.number(target);
+    if(!(weight>0)||!['external_total','per_dumbbell','machine_stack','per_side','bodyweight_added'].includes(type))return [];
+    const profile=A.profile(e,reg,overrides),meta=reg?.resolve(e),bar=(e.eq||meta?.eq)==='barbell'||/штанг|barbell/i.test(e.n||'');
+    if(bar&&!profile.available?.length)profile.min=Math.max(profile.min||0,A.number(e.equipmentProfile?.implementWeight)??20);
+    const raw=bar&&weight>=45?[[profile.min||20,10],[weight*.35,5],[weight*.55,3],[weight*.725,2],[weight*.875,1]]:[[weight*.4,10],[weight*.6,5],[weight*.75,3],[weight*.88,1]],out=[];
+    for(const [value,reps] of raw){const w=A.roundWeight(Math.min(value,weight*.94),profile,'down');if(w>0&&w<weight&&!out.some(x=>x.w===w))out.push({w,r:reps,ok:false,warmup:true});}
+    return out.sort((a,b)=>a.w-b.w);
+  }
+  return {steps,programEntries,queue,next,token,restAfter,parseWeight,calibrationAllowed,needsCalibration,groupCalibration,probeTarget,probeDecision,warmupPlan};
 });
