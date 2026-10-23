@@ -557,7 +557,7 @@
   function e1rm(e, s, session, reg, weights = []) {
     if (
       !complete(e, s, reg) ||
-      !strengthEligible(e,s) || s.partial === true || s.fullROM === false || s.incomplete === true || s.techniqueFailed === true ||
+      !strengthEligible(e,s) || s.effortUncertain === true || s.effortCensored === true || s.partial === true || s.fullROM === false || s.incomplete === true || s.techniqueFailed === true ||
       reg?.resolve(e)?.resultRule?.e1rm === false
     )
       return null;
@@ -661,7 +661,8 @@
     return value;
   }
   function strengthEstimate(e,rows,reg,weights=[],set={}) {
-    const compatible=rows.filter(x=>loadComparable(e,x.exercise,reg,set,x.set)&&method(e,set)===method(x.exercise,x.set));
+    // Fatigued superset results must not raise an isolated exercise's baseline.
+    const compatible=rows.filter(x=>(!x.exercise.superGroup||!!e.superGroup)&&loadComparable(e,x.exercise,reg,set,x.set)&&method(e,set)===method(x.exercise,x.set));
     const points=[];
     const newest=Math.max(0,...compatible.map(x=>sessionTime(x.session)));
     for(const x of compatible) {
@@ -679,7 +680,7 @@
     points.sort((a,b)=>sessionTime(b.session)-sessionTime(a.session));
     // One workout is one observation, regardless of its number of mini-sets.
     const groups=new Map();
-    for(const x of points){const key=x.session.id??x.session;const group=groups.get(key)||[];group.push(x);groups.set(key,group)}
+    for(const x of points){const key=x.session.calibrationParentId??x.session.id??x.session;const group=groups.get(key)||[];group.push(x);groups.set(key,group)}
     const sessions=[...groups.values()].map(group=>{
       if(group.length>=3){
         const mid=median(group.map(x=>x.value));
@@ -899,11 +900,12 @@
     const sets = [];
     for (const attempt of (attempts || []).slice(0,5)) {
       const rir = number(attempt.rir), reps = parseReps(e,attempt.reps), w = number(attempt.weight);
-      if (!reps || !(w > 0) || rir == null || rir < 0 || rir > 4 || attempt.pain || attempt.technique !== true) continue;
+      if (!reps || !(w > 0) || rir == null || rir < 0 || rir > 4 || attempt.pain || attempt.credited || attempt.technique !== true) continue;
       const set = {n:sets.length+1,w,r:reps.total,actualReps:reps.total,
         rpe:10-rir,rir,actualRpe:10-rir,actualRir:rir,ok:true,
         method:method(e,targetSet),setRole:setRole(e,targetSet),
-        targetRepMin:number(attempt.targetReps),targetRepMax:number(attempt.targetReps),
+        targetRepMin:number(attempt.targetRepMin??attempt.targetReps),targetRepMax:number(attempt.targetRepMax??attempt.targetReps),
+        calibrationAttemptId:attempt.id,loadContext:'isolated_probe',
         equipmentProfileId:targetSet?.equipmentProfileId || e.equipmentProfileId,
         equipmentSnapshot:targetSet?.equipmentSnapshot || e.equipmentProfile,
         techniqueId:targetSet?.techniqueId || e.techniqueId,source:'load_calibration'};
@@ -974,6 +976,7 @@
     return range;
   }
   function effortRpe(s) {
+    if(s?.effortUncertain||s?.effortCensored)return null;
     const rpe = number(s?.actualRpe ?? s?.rpe);
     if (rpe != null && rpe>=1 && rpe<=10) return rpe;
     const rir = number(s?.actualRir ?? s?.rir);
@@ -1010,6 +1013,7 @@
       .some(v=>v!=null&&String(v).trim()!=='');
   }
   function sameTarget(e,s,old,session) {
+    if(!!e.superGroup!==!!old.exercise.superGroup||e.superGroup&&(e.superPos??0)!==(old.exercise.superPos??0))return false;
     if(session.dayRole&&old.session?.dayRole&&session.dayRole!==old.session.dayRole)return false;
     const range=repRange(e,s),previous=repRange(old.exercise,old.set);
     const reps=performedReps(old.exercise,old.set);
@@ -1020,7 +1024,7 @@
   }
   function seriesEvidence(e,s,current,previous,reg) {
     if(!previous||previous.isLoadCalibration||method(e,s)!=='STANDARD')return null;
-    const role=setRole(e,s),matches=(ex,x)=>loadComparable(e,ex,reg,s,x)&&method(ex,x)==='STANDARD'&&setRole(ex,x)===role&&!warmup(x);
+    const role=setRole(e,s),matches=(ex,x)=>!!e.superGroup===!!ex.superGroup&&(!e.superGroup||(e.superPos??0)===(ex.superPos??0))&&loadComparable(e,ex,reg,s,x)&&method(ex,x)==='STANDARD'&&setRole(ex,x)===role&&!warmup(x);
     const rows=(previous.ex||[]).flatMap(ex=>(ex.set||[]).filter(x=>matches(ex,x)).map(set=>({exercise:ex,set,session:previous})));
     if(!rows.length)return null;
     const expected=(current.ex||[]).flatMap(ex=>(ex.set||[]).filter(x=>matches(ex,x))).length||1;

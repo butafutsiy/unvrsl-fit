@@ -74,7 +74,31 @@
   function needsCalibration(e,s,A,reg){
     return calibrationAllowed(e,s,A,reg)&&!['bodyweight_added'].includes(A.loadType(e,reg))&&
       e.programWeightMode==='adaptive'&&!s.manualOverride&&s.weightSource!=='manual'&&!(A.number(s.w)>0)&&
-      !(s.recommendation?.strength?.estimate>0);
+      !(s.recommendation?.strength?.estimate>0)&&!(A.number(s.recommendation?.nextSetSuggestion?.weight)>0);
   }
-  return {steps,programEntries,queue,next,token,restAfter,parseWeight,calibrationAllowed,needsCalibration};
+  function groupCalibration(session,row,A,reg){
+    const seen=new Set();
+    return queue(session).find(r=>{
+      if(!row.group||r.group!==row.group||r.blockStart!==row.blockStart||complete(session.ex[r.ei].set[r.si])||seen.has(r.ei))return false;
+      seen.add(r.ei);return needsCalibration(session.ex[r.ei],session.ex[r.ei].set[r.si],A,reg);
+    })||null;
+  }
+  function probeTarget(e,set,session,A,step=null){
+    const range=step?{lo:step,hi:step}:A.repRange(e,set),effort=A.effortTarget(e,set,session);
+    return {range,rir:{lo:10-effort.hi,hi:10-effort.lo}};
+  }
+  function probeDecision(e,set,attempt,session,A,reg,overrides={},step=null){
+    const target=probeTarget(e,set,session,A,step),parsed=A.parseReps(e,attempt.reps);
+    const reps=parsed?A.performedReps(e,{r:parsed.total,repsLeft:parsed.left,repsRight:parsed.right}):null;
+    const rir=A.number(attempt.rir),weight=parseWeight(attempt.weight),known=rir!=null&&rir>=0&&rir<=6;
+    const fits=reps>=target.range.lo&&reps<=target.range.hi&&known&&rir<6&&rir>=target.rir.lo&&rir<=target.rir.hi&&attempt.technique&&!attempt.pain;
+    const hard=!attempt.technique||reps<target.range.lo||known&&rir<target.rir.lo;
+    const easy=!hard&&known&&reps>=target.range.hi&&rir>target.rir.hi;
+    const direction=attempt.pain||!known?0:hard?-1:easy?1:0;
+    const p=A.profile(e,reg,overrides),nextWeight=weight==null?null:direction?A.moveWeight(weight,direction,p):weight;
+    return {target,reps,known,fits,credit:!!fits&&!e.superGroup&&!step,nextWeight,
+      action:direction<0?'down':direction>0?'up':'hold',
+      reason:attempt.pain?'Подбор остановлен после боли.':!known?'Запас не оценён. Вес не повышаем; уточни RIR в следующем подходе.':hard?'Снизь вес на один доступный шаг.':easy?'Можно добавить один доступный шаг.':fits?'Вес подходит под сегодняшнее задание.':'Сохрани вес и проверь его на целевом числе повторений.'};
+  }
+  return {steps,programEntries,queue,next,token,restAfter,parseWeight,calibrationAllowed,needsCalibration,groupCalibration,probeTarget,probeDecision};
 });

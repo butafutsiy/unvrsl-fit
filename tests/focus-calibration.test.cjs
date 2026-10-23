@@ -95,3 +95,49 @@ test('autoweight leaves completed, manually edited and dismissed weights intact'
   const before=clone(original);assert.equal(A.applyAuto(original,result),false);assert.deepEqual(original,before);
  }
 });
+test('default probe uses the current rep and RIR targets; the ladder is optional',()=>{
+ const {e,target,current}=fixture();target.targetRepMin=15;target.targetRepMax=20;target.targetRpeMin=5;target.targetRpeMax=6;
+ assert.deepEqual(F.probeTarget(e,target,current,A),{range:{lo:15,hi:20},rir:{lo:4,hi:5}});
+ assert.deepEqual(F.probeTarget(e,target,current,A,8).range,{lo:8,hi:8});
+});
+test('probe adjustments use one available equipment step and conservative unknown effort',()=>{
+ const {e,target,current}=fixture();e.equipmentProfile.availableLoads=[20,35,50];
+ const decide=a=>F.probeDecision(e,target,a,current,A,reg);
+ assert.equal(decide(sample(35,12,5)).nextWeight,50);
+ assert.equal(decide(sample(35,6,0)).nextWeight,20);
+ assert.equal(decide(sample(35,10,'unknown')).nextWeight,35);
+ assert.equal(decide(sample(35,10,'unknown')).credit,false);
+ assert.equal(decide(sample(35,10,2)).credit,true);
+ assert.equal(F.probeDecision(e,target,sample(35,8,2),current,A,reg,{},8).credit,false);
+ e.superGroup='pair';assert.equal(decide(sample(35,10,2)).credit,false);
+});
+test('credited probes cannot contribute a second strength sample',()=>{
+ const {e,target,current}=fixture();const credited={...sample(),id:'probe-2',credited:true};
+ const ev=A.calibrationSession(e,target,[{...sample(45),id:'probe-1'},credited],current,reg,{id:'cal',now:1000000001000});
+ assert.equal(ev.ex[0].set.length,1);assert.equal(ev.ex[0].set[0].calibrationAttemptId,'probe-1');
+ e.set[0]={...target,w:50,r:10,actualReps:10,rir:2,rpe:8,ok:true,calibrationAttemptId:'probe-2'};
+ current.ended=1000000002000;current.calibrationSessions=[ev];
+ const strength=A.strengthEstimate(e,A.history(e,[current],reg),reg,[],target);
+ assert.equal(strength.setCount,2);assert.equal(strength.sessionCount,1);
+});
+test('unknown effort is retained as a completed result without a strength anchor or increase',()=>{
+ const {e,target,current}=fixture(),actual={...target,w:50,r:10,actualReps:10,ok:true,rir:'',rpe:'',actualRir:null,actualRpe:null,effortUncertain:true};
+ assert.equal(A.validSet(e,actual,reg),true);assert.equal(A.e1rm(e,actual,current,reg),null);
+ assert.equal(A.setDecision(e,actual,current,A.profile(e,reg),target).action,'hold');
+ const censored={...actual,effortUncertain:false,effortCensored:true,rir:6,rpe:4};
+ assert.equal(A.effortRpe(censored),null);assert.equal(A.e1rm(e,censored,current,reg),null);
+ assert.equal(A.setDecision(e,censored,current,A.profile(e,reg),target).action,'hold');
+});
+test('superset history does not raise isolated strength or count as a matching isolated series',()=>{
+ const {e,target,current}=fixture(),paired={...e,superGroup:'pair',superPos:1,set:[{...target,w:100,r:10,ok:true,rir:2,rpe:8}]};
+ const old={id:'pair-old',ended:1000000000000,started:999999900000,ex:[paired]};
+ const rec=A.recommend(e,target,current,[old],reg);
+ assert.equal(rec.strength.estimate,null);assert.equal(rec.series?.sameTarget??false,false);
+});
+test('superset preflight checks the first pending set, allowing later live suggestions',()=>{
+ const a={...exercise('A'),superGroup:'p'},b={...exercise('B'),superGroup:'p'},s={ex:[a,b]},row=F.queue(s)[0];
+ a.set[0].w=40;assert.equal(F.groupCalibration(s,row,A,reg).ei,1);
+ b.set[0].recommendation={nextSetSuggestion:{weight:30}};assert.equal(F.groupCalibration(s,row,A,reg),null);
+ a.set[0].ok=true;a.set[1].recommendation={nextSetSuggestion:{weight:40}};
+ assert.equal(F.groupCalibration(s,row,A,reg),null);
+});
