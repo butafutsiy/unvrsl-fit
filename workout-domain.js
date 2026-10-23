@@ -876,13 +876,55 @@
     }
     return 0;
   }
+  // Keep calibration in the parent workout payload, rather than adding fake
+  // workouts to the journal. Consumers deduplicate these evidence sessions.
+  function recommendationSessions(sessions, current = null) {
+    const out = [], seen = new Set();
+    const add = s => {
+      if (!s || seen.has(s.id ? String(s.id) : s)) return;
+      seen.add(s.id ? String(s.id) : s); out.push(s);
+    };
+    for (const parent of sessions || []) {
+      add(parent);
+      for (const child of parent.calibrationSessions || [])
+        if (child.isLoadCalibration) add({...child, userId:parent.userId || child.userId});
+    }
+    for (const child of current?.calibrationSessions || [])
+      if (child.isLoadCalibration) add({...child, userId:current.userId || child.userId});
+    return out;
+  }
+  function calibrationSession(e, targetSet, attempts, current, reg, {id, now = Date.now()} = {}) {
+    if (!id || !current?.id || !['external_total','per_dumbbell','machine_stack','per_side','bodyweight_added'].includes(loadType(e,reg)) || !strengthEligible(e,targetSet))
+      return null;
+    const sets = [];
+    for (const attempt of (attempts || []).slice(0,5)) {
+      const rir = number(attempt.rir), reps = parseReps(e,attempt.reps), w = number(attempt.weight);
+      if (!reps || !(w > 0) || rir == null || rir < 0 || rir > 4 || attempt.pain || attempt.technique !== true) continue;
+      const set = {n:sets.length+1,w,r:reps.total,actualReps:reps.total,
+        rpe:10-rir,rir,actualRpe:10-rir,actualRir:rir,ok:true,
+        method:method(e,targetSet),setRole:setRole(e,targetSet),
+        targetRepMin:number(attempt.targetReps),targetRepMax:number(attempt.targetReps),
+        equipmentProfileId:targetSet?.equipmentProfileId || e.equipmentProfileId,
+        equipmentSnapshot:targetSet?.equipmentSnapshot || e.equipmentProfile,
+        techniqueId:targetSet?.techniqueId || e.techniqueId,source:'load_calibration'};
+      if (legReps(e)) Object.assign(set,{repsLeft:reps.left,repsRight:reps.right,repCounting:'total'});
+      if (!(performedReps(e,set)>=1 && performedReps(e,set)<=20)) continue;
+      sets.push(set);
+    }
+    if (!sets.length) return null;
+    return {id,calibrationParentId:current.id,isLoadCalibration:true,
+      userId:current.userId,date:current.date,started:now,ended:now+1,
+      calibrationAttempts:JSON.parse(JSON.stringify(attempts)),
+      ex:[{...JSON.parse(JSON.stringify(e)),set:sets}]};
+  }
   function history(e, sessions, reg, { userId, excludeId, before } = {}) {
     const out = [],
       seen = new Set();
-    for (const session of [...sessions].sort((a, b) => sessionTime(b) - sessionTime(a))) {
+    for (const session of recommendationSessions(sessions).sort((a, b) => sessionTime(b) - sessionTime(a))) {
       if (
         before != null &&
-        sessionTime(session) >= before
+        sessionTime(session) >= before &&
+        !(session.isLoadCalibration && session.calibrationParentId === excludeId)
       )
         continue;
       if (
@@ -977,7 +1019,7 @@
     return sameReps&&a.lo===b.lo&&a.hi===b.hi;
   }
   function seriesEvidence(e,s,current,previous,reg) {
-    if(!previous||method(e,s)!=='STANDARD')return null;
+    if(!previous||previous.isLoadCalibration||method(e,s)!=='STANDARD')return null;
     const role=setRole(e,s),matches=(ex,x)=>loadComparable(e,ex,reg,s,x)&&method(ex,x)==='STANDARD'&&setRole(ex,x)===role&&!warmup(x);
     const rows=(previous.ex||[]).flatMap(ex=>(ex.set||[]).filter(x=>matches(ex,x)).map(set=>({exercise:ex,set,session:previous})));
     if(!rows.length)return null;
@@ -1868,6 +1910,7 @@
     e1rm,
     manualOneRepMax,
     history,
+    recommendationSessions,calibrationSession,
     repRange,
     effortRpe,
     estimateMaxFromSet,

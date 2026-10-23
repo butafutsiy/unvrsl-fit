@@ -18,6 +18,8 @@
   }
   function exerciseLoads(exercise){
     if(!exercise||cardio(exercise))return[];
+    if(exercise.method==='SUPERSET')return (exercise.items||[]).flatMap((item,i)=>exerciseLoads({...item,weightMode:exercise.weightMode,
+      sets:Array.from({length:Math.max(1,Number(exercise.rounds)||3)},()=>({w:exercise.itemSettings?.[i]?.w}))}));
     const mode=exercise.parameterOverrides?.weight?.mode||exercise.weightMode;
     const bodyweight=/^bodyweight_|^repetitions_only$/.test(exercise.loadType||'');
     const prescribed=set=>{
