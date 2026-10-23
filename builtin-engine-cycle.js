@@ -175,4 +175,47 @@
       toast('Создан цикл по новому движку');return program;
     }catch(error){toast(error.message);return null;}
   };
+  // Opt-in recovery link for the personal five-day cycle authored on Oct 11.
+  const linkedId='semen-five-day-8-oct11';
+  let addingLinked=false,linkedShown=false;
+  W.addOctober11Cycle=async function(){
+    if(addingLinked)return null;
+    addingLinked=true;
+    const backup=copy(st),deletedKey='unvrsl-fit-deleted-programs-v2',deletedBackup=localStorage.getItem(deletedKey);
+    try{
+      st.programs=Array.isArray(st.programs)?st.programs:[];
+      let program=st.programs.find(p=>p.seedId===linkedId);
+      if(!program){
+        const trashed=(st.programTrash||[]).find(x=>x.program?.seedId===linkedId);
+        program=trashed?copy(trashed.program):ensureProgramShape(W.buildBuiltinEngineCycle(iso(),null,true,8));
+        program.seedId=linkedId;program.archived=false;
+        program.name='Мой цикл · 8 недель · новый движок';
+        st.programs.push(program);
+      }
+      program.importedFromLink=true;program.updated=program.updatedAt=Date.now();
+      W.unvrslRestoreProgramKeys?.(program);
+      st.primaryProgramId=program.id;st.startProgramId=program.id;
+      st.startProgramWeeks=st.startProgramWeeks||{};
+      if(st.startProgramWeeks[program.id]==null)st.startProgramWeeks[program.id]=0;
+      const client=typeof W.unvrslTrainerMode==='function'&&!W.unvrslTrainerMode();
+      if(client)st.clientPrimaryProgramKey=st.clientPlanViewKey='coach:'+program.id;
+      const ok=W.persistWorkoutState?await W.persistWorkoutState():save();
+      if(ok===false)throw Error('Не удалось сохранить план. Повтори добавление.');
+      W.accountSyncNow?.({quiet:true});
+      if(client){closeModal();W.nav?.('plan');W.clientCleanPlanPage?.();}
+      else openProgramEditor(program.id,st.startProgramWeeks[program.id],0);
+      const url=new URL(W.location.href);url.searchParams.delete('addPlan');W.history.replaceState(null,'',url);
+      toast('План от 11 октября добавлен');return program;
+    }catch(error){
+      Object.keys(st).forEach(key=>delete st[key]);Object.assign(st,backup);
+      if(deletedBackup==null)localStorage.removeItem(deletedKey);else localStorage.setItem(deletedKey,deletedBackup);
+      toast(error.message);return null;
+    }finally{addingLinked=false;}
+  };
+  W.showOctober11CycleLink=function(){
+    if(linkedShown||new URL(W.location.href).searchParams.get('addPlan')!==linkedId||typeof modal!=='function')return;
+    linkedShown=true;
+    modal(`<div class="sheet-grabber"></div><h2>Твой план от 11 октября</h2><div class="card"><b>Мой цикл · 8 недель · новый движок</b><p class="muted">Пять тренировок: A1 / B / C / A2 / D. Разные нагрузки для базы и изоляции, UNVRSL и дроп-сеты. Разгрузка на 4-й и 6-й неделях, тест на 8-й.</p><button class="btn primary full" onclick="addOctober11Cycle()">Добавить в мои программы</button></div><p class="muted small">Добавь в нужном аккаунте. История и текущая тренировка сохранятся. Повторное нажатие откроет уже добавленный план.</p>`);
+  };
+  W.addEventListener('unvrsl:app-ready',W.showOctober11CycleLink);
 })();
