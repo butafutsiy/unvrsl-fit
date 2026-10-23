@@ -40,10 +40,11 @@
     }catch(error){Object.keys(state).forEach(key=>delete state[key]);Object.assign(state,backup);try{if(deletedBackup==null)root.localStorage?.removeItem(deletedKey);else root.localStorage?.setItem(deletedKey,deletedBackup)}catch(_){}root.toast?.(error.message);return null}
     finally{adding=false}
   };
-  const card=()=>`<div class="card" id="semen-training-plan"><b>${api.NAME}</b><div class="muted small" style="margin-top:8px">Два исходных смешанных дня · 10 упражнений в каждом · 8 недель. Грудь и квадрицепс / спина и задняя поверхность бедра. Разгрузка на 4-й и 6-й неделях. Веса подбираются по истории и RPE.</div><button class="btn primary" style="margin-top:12px" onclick="addSemenTrainingPlan()">Добавить в мои программы</button></div>`;
+  const card=(canHide=false)=>canHide&&root.renderTemplateCard?root.renderTemplateCard({title:api.NAME,description:'Два смешанных дня: грудь и квадрицепс / спина и задняя поверхность бедра. Разгрузка на 4-й и 6-й неделях.',weeks:8,frequency:2,key:'personal:'+api.ID,action:'addSemenTrainingPlan()'}):`<div class="card" id="semen-training-plan"><b>${api.NAME}</b><div class="muted small" style="margin-top:8px">Два исходных смешанных дня · 10 упражнений в каждом · 8 недель. Грудь и квадрицепс / спина и задняя поверхность бедра. Разгрузка на 4-й и 6-й неделях. Веса подбираются по истории и RPE.</div><button class="btn primary" style="margin-top:12px" onclick="addSemenTrainingPlan()">Добавить в мои программы</button>${canHide?(root.templateHideButton?.('personal:'+api.ID)||''):''}</div>`;
   const original=root.templatesSheet;
+  root.registerTemplateOption?.('personal:'+api.ID,api.NAME);
   if(typeof original==='function'){
-    root.templatesSheet=function(){const result=original.apply(this,arguments);const sheet=document.getElementById('sheet');if(sheet&&!document.getElementById('semen-training-plan'))sheet.insertAdjacentHTML('afterbegin',card());return result;};
+    root.templatesSheet=function(){const result=original.apply(this,arguments);const sheet=document.getElementById('sheet');if(sheet&&!root.templateIsHidden?.('personal:'+api.ID)&&!document.getElementById('semen-training-plan'))sheet.insertAdjacentHTML('beforeend',card(true));return result;};
   }
   let shown=false;
   function showLinkedPlan(){

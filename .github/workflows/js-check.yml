@@ -125,6 +125,10 @@ jobs:
           node tests/runtime-program-recovery.cjs
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
           node tests/runtime-program-modes.cjs
+          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
+          node tests/runtime-template-visibility.cjs
+          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
+          node tests/runtime-load-policy-audit.cjs
       - name: Audit traceable nutrition catalog
         run: node scripts/audit-nutrition.cjs
       - name: Audit catalog fields

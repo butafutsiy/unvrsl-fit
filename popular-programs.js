@@ -49,7 +49,8 @@ const POPULAR_PROGRAMS={
  }
 };
 
-function createPopularProgram(id){const spec=POPULAR_PROGRAMS[id];if(!spec)return;const p=spec.build();st.programs.push(p);save();openProgramEditor(p.id,0,0);toast('Шаблон добавлен в мои программы')}
-function popularProgramsHtml(){return `<div class="section">ПОПУЛЯРНЫЕ ПРОГРАММЫ ИЗ ИНТЕРНЕТА</div><div class="muted small" style="margin:0 8px 10px">Адаптированы под UNVRSL FIT. Рабочие веса оставлены пустыми — выставь их под себя.</div>${Object.entries(POPULAR_PROGRAMS).map(([id,p])=>`<div class="card"><div class="row between"><div class="grow"><b>${esc(p.title)}</b><div class="muted small" style="margin-top:4px">${esc(p.meta)}</div></div><button class="btn tiny primary" onclick="createPopularProgram('${id}')">Добавить</button></div><a href="${p.source}" target="_blank" rel="noopener" class="muted small" style="display:inline-block;margin-top:10px">Источник: ${esc(p.sourceName)} ↗</a></div>`).join('')}`}
+function createPopularProgram(id){const spec=POPULAR_PROGRAMS[id];if(!spec)return;return window.addIndependentTemplate('popular:'+id,()=>spec.build())}
+function popularProgramsHtml(){return `<div class="section">ПОПУЛЯРНЫЕ ПРОГРАММЫ ИЗ ИНТЕРНЕТА</div><p class="muted small">Рабочие веса подбираются по вашей истории.</p>${Object.entries(POPULAR_PROGRAMS).map(([id,p])=>window.renderTemplateCard({title:p.title,description:p.meta,weeks:Number(p.meta.match(/(\d+) недель?/)?.[1])||(id==='ppl6'?6:8),frequency:p.meta.match(/(\d+) дн/)?.[1],action:`createPopularProgram('${id}')`,source:p.source,sourceName:p.sourceName})).join('')}`}
+
 const _templatesSheetPopular=templatesSheet;
 templatesSheet=function(){_templatesSheetPopular();const sh=$('#sheet');if(!sh)return;const wrap=document.createElement('div');wrap.innerHTML=popularProgramsHtml();sh.append(...wrap.childNodes)};

@@ -171,17 +171,98 @@ function beginProgramDay(pid,wi,di){
  st.current={id:uid('s'),date:iso(),w:wi+1,c:d.name,name:p.name,...firstEffort,tempo:'',started:Date.now(),ended:null,programId:String(p.id),programDayId:String(d.id),programName:p.name,programSchemaVersion:programModel.SCHEMA_VERSION,dayRole:d.role||'Middle',weeklyLoadProfile:p.weeks[wi].weeklyLoadProfile,deload:!!p.weeks[wi].deload,testWeek:!!p.weeks[wi].testWeek,ex,conditioning};save();closeModal();nav('start')
 }
 window.programBeginDayCoreV382=beginProgramDay;
-function saveProgramAsTemplate(id){const p=programById(id);if(!p||window.intakeDraftBlocked?.(p))return;const t=clone(p);delete t.intakeDraft;delete t.intakeSourceKey;t.id=uid('tpl');t.sourceProgramId=p.id;t.created=Date.now();st.programTemplates.push(t);save();toast('Шаблон сохранён')}
-function templatesSheet(){modal(`<div class="sheet-grabber"></div><div class="row between"><h2>Шаблоны</h2><button class="btn tiny" onclick="closeModal()">✕</button></div>${st.programTemplates.map(t=>`<div class="card"><div class="row between"><div><b>${esc(t.name)}</b><div class="muted small">${t.weeks.length} нед.</div></div><button class="btn tiny primary" onclick="createFromTemplate('${t.id}')">Использовать</button></div><button class="btn tiny danger" style="margin-top:10px" onclick="deleteTemplate('${t.id}')">Удалить шаблон</button></div>`).join('')||'<div class="card muted">Сохрани любую программу как шаблон.</div>'}<div class="card"><b>Мой 8-недельный цикл</b><div class="muted small">Можно сделать редактируемую копию встроенного цикла.</div><button class="btn primary" style="margin-top:12px" onclick="cloneBuiltInCycle()">Создать копию</button></div>`)}
-function createFromTemplate(id,weightMode){if(!weightMode&&window.chooseProgramWeights)return window.chooseProgramWeights(mode=>createFromTemplate(id,mode));const t=templateById(id);if(!t)return;const p=window.prepareProgramWeights?window.prepareProgramWeights(t,weightMode):clone(t);delete p.cloudPlanId;delete p.cloudVersion;delete p.trainerId;p.id=uid('prog');p.name=`${t.name} — копия`;p.created=Date.now();p.updated=Date.now();p.weeks.forEach(w=>w.days.forEach(d=>d.id=uid('day')));st.programs.push(p);save();openProgramEditor(p.id)}
+function programActionSource(id){if(id!=='__builtin_cycle__')return programById(id);const p=buildBuiltInTemplate();p.id=id;p.name=window.unvrslBuiltInProgramName?.()||st.builtinProgramName||'Мой 8-недельный цикл';return p}
+const savingTemplates=new Set();
+async function saveProgramAsTemplate(id){
+ const p=programActionSource(id);if(!p||window.intakeDraftBlocked?.(p)||savingTemplates.has(id))return;
+ savingTemplates.add(id);const t=clone(p);delete t.intakeDraft;delete t.intakeSourceKey;t.id=uid('tpl');t.sourceProgramId=p.id;t.created=Date.now();
+ st.programTemplates.push(t);st.templateVisibility={...(st.templateVisibility||{}),['saved:'+t.id]:{hidden:false,at:Math.max(Date.now(),Number(st.templateVisibility?.['catalog:custom']?.at||0)+1)}};
+ try{const ok=window.persistWorkoutState?await window.persistWorkoutState():save();if(ok===false)throw Error('Не удалось сохранить шаблон');toast('Шаблон сохранён');return t}
+ catch(error){st.programTemplates=st.programTemplates.filter(x=>x.id!==t.id);delete st.templateVisibility['saved:'+t.id];toast(error.message);return null}
+ finally{setTimeout(()=>savingTemplates.delete(id),800)}
+}
+
+const templateOptions=new Map([['builtin:cycle','Мой 8-недельный цикл']]);
+window.renderTemplateCard=function({title,description='',weeks,frequency,action,key,source,sourceName}){
+ const shortDescription=description.length>140?description.slice(0,137).trim()+'…':description;
+ const info=[weeks?`${weeks} нед.`:'',frequency?`${frequency} тренировок/нед.`:''].filter(Boolean).join(' · ');
+ return `<div class="card program-template-card"><div class="title">${esc(title)}</div>${info?`<p class="muted small">${esc(info)}</p>`:''}${description?`<p class="muted small">${esc(shortDescription)}</p>${description.length>140?`<details class="template-description"><summary>Полное описание</summary><p class="muted small">${esc(description)}</p></details>`:''}`:''}${source?`<a class="muted small" href="${esc(source)}" target="_blank" rel="noopener">Источник: ${esc(sourceName||'Программа')}</a>`:''}<button class="btn primary full" onclick="${action}">Добавить в мои программы</button>${key?window.templateHideButton(key):''}</div>`;
+};
+const templateAdds=new Set();
+window.addIndependentTemplate=async function(key,factory){
+ if(templateAdds.has(key))return null;templateAdds.add(key);let p;
+ try{
+  p=window.prepareProgramWeights(factory(),'auto');
+  for(const field of ['cloudPlanId','cloudVersion','trainerId','trainerName','seedId','isMasterPlan','templateKey','sessions','history','current','calibrationSessions','intakeDraft'])delete p[field];
+  p.id=uid('prog');p.independentCopy=true;p.created=p.updated=p.updatedAt=Date.now();
+  for(const w of p.weeks||[])for(const d of w.days||[]){d.id=uid('day');for(const e of d.ex||[])e.id=uid('pex')}
+  st.programs.push(p);const ok=window.persistWorkoutState?await window.persistWorkoutState():save();
+  if(ok===false)throw Error('Не удалось сохранить программу. Повтори добавление.');
+  openProgramEditor(p.id);toast('Программа добавлена');return p;
+ }catch(error){if(p)st.programs=st.programs.filter(x=>x!==p);toast(error.message);return null}
+ finally{setTimeout(()=>templateAdds.delete(key),800)}
+};
+window.registerTemplateOption=(key,title)=>templateOptions.set(String(key),String(title));
+window.templateIsHidden=key=>{
+ const value=st.templateVisibility?.[key],all=st.templateVisibility?.['catalog:custom'];
+ return value&&Number(value.at||0)>=Number(all?.at||0)?value.hidden===true:all?.hidden===true;
+};
+const templateToken=key=>encodeURIComponent(key).replace(/'/g,'%27');
+window.templateHideButton=key=>`<button class="btn tiny" style="margin-top:10px" onclick="hideTemplateOption('${templateToken(key)}')">Убрать из шаблонов</button>`;
+function allTemplateOptions(){return new Map([...templateOptions,...(st.programTemplates||[]).map(t=>['saved:'+t.id,t.name||'Шаблон'])])}
+let templateVisibilityBusy=false;
+async function changeTemplateVisibility(keys,hidden){
+ if(templateVisibilityBusy)return false;
+ const catalog=allTemplateOptions(),valid=keys.filter(key=>catalog.has(key)||key==='catalog:custom');if(!valid.length)return false;
+ templateVisibilityBusy=true;const previous=st.templateVisibility||{},next={...previous};
+ const at=Math.max(Date.now(),...Object.values(previous).map(value=>Number(value?.at||0)+1));
+ for(const key of valid)next[key]={hidden,at};
+ st.templateVisibility=next;
+ try{
+  const ok=window.persistWorkoutState?await window.persistWorkoutState():save();
+  if(ok===false)throw Error('Не удалось сохранить список шаблонов. Повтори попытку.');
+  templatesSheet();toast(hidden?'Шаблоны убраны. Их можно вернуть через «Скрытые».':'Шаблон возвращён');return true;
+ }catch(error){st.templateVisibility=previous;toast(error.message);return false}
+ finally{templateVisibilityBusy=false}
+}
+window.hideTemplateOption=token=>changeTemplateVisibility([decodeURIComponent(token)],true);
+window.restoreTemplateOption=token=>changeTemplateVisibility([decodeURIComponent(token)],false);
+window.keepOnlyPopularTemplates=()=>changeTemplateVisibility([...allTemplateOptions().keys(),'catalog:custom'],true);
+window.hiddenTemplateOptionsSheet=function(){
+ const hidden=[...allTemplateOptions()].filter(([key])=>window.templateIsHidden(key));
+ modal(`<div class="row between"><h2>Скрытые шаблоны</h2><button class="btn tiny" onclick="templatesSheet()">Назад</button></div><p class="muted small">Скрытие не удаляет добавленные программы.</p>${hidden.map(([key,title])=>`<div class="card"><b>${esc(title)}</b><button class="btn full" style="margin-top:10px" onclick="restoreTemplateOption('${templateToken(key)}')">Вернуть в шаблоны</button></div>`).join('')||'<p class="muted">Скрытых шаблонов нет.</p>'}`);
+};
+function templatesSheet(){
+ const visible=(st.programTemplates||[]).filter(t=>!window.templateIsHidden('saved:'+t.id)),hidden=[...allTemplateOptions().keys()].filter(window.templateIsHidden).length;
+ const cards=visible.map(t=>window.renderTemplateCard({title:t.name,description:t.description||'Ваш сохранённый шаблон',weeks:t.weeks.length,frequency:t.weeks[0]?.days?.length,key:'saved:'+t.id,action:`createFromTemplate('${t.id}')`})).join('');
+ const builtin=window.templateIsHidden('builtin:cycle')?'':window.renderTemplateCard({title:'Мой 8-недельный цикл',description:'Редактируемая копия встроенного цикла.',weeks:8,frequency:5,key:'builtin:cycle',action:"addIndependentTemplate('builtin:cycle',buildBuiltInTemplate)"});
+ modal(`<div class="sheet-grabber"></div><div class="row between"><h2>Шаблоны</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="coach-actions" data-template-catalog><button class="btn" onclick="keepOnlyPopularTemplates()">Оставить только популярные</button><button class="btn" onclick="hiddenTemplateOptionsSheet()">Скрытые · ${hidden}</button></div>${cards}${builtin}`);
+ if(!window.__unvrslDeferredModulesReadyV320&&!window.__templateCatalogLoading){
+  window.__templateCatalogLoading=true;
+  Promise.resolve(window.unvrslWarmDeferredModulesV320?.()).then(()=>{
+   if(document.querySelector('#modal.show [data-template-catalog]'))window.templatesSheet();
+  }).finally(()=>{window.__templateCatalogLoading=false});
+ }
+}
+function createFromTemplate(id){const t=templateById(id);if(!t)return;return window.addIndependentTemplate('saved:'+id,()=>t)}
+
 function deleteTemplate(id){st.programTemplates=st.programTemplates.filter(x=>x.id!==id);save();templatesSheet()}
-function cloneBuiltInCycle(weightMode){if(!weightMode&&window.chooseProgramWeights)return window.chooseProgramWeights(mode=>cloneBuiltInCycle(mode));const weeks=[];for(let wi=1;wi<=8;wi++){const rs=ROUTINES.filter(r=>r.w===wi);weeks.push({n:wi,days:rs.map(r=>({id:uid('day'),name:`${r.c} · ${r.t}`,ex:groupIndexedEntries(routineEntries(r)).map(g=>builtInGroupToProgramExercise(r,g))}))})}const p={id:uid('prog'),name:'Мой 8-недельный цикл — копия',created:Date.now(),updated:Date.now(),weeks};st.programs.push(window.prepareProgramWeights?window.prepareProgramWeights(p,weightMode):p);save();closeModal();openProgramEditor(p.id);toast('Создана редактируемая копия')}
+function buildBuiltInTemplate(){const weeks=[];for(let wi=1;wi<=8;wi++){const rs=ROUTINES.filter(r=>r.w===wi);weeks.push({n:wi,days:rs.map(r=>({id:uid('day'),name:`${r.c} · ${r.t}`,ex:groupIndexedEntries(routineEntries(r)).map(g=>builtInGroupToProgramExercise(r,g))}))})}const p={id:uid('prog'),name:'Мой 8-недельный цикл — копия',created:Date.now(),updated:Date.now(),weeks};return p}
+let builtinCopyBusy=false;
+async function cloneBuiltInCycle(weightMode){
+ if(!weightMode&&window.chooseProgramWeights)return window.chooseProgramWeights(mode=>cloneBuiltInCycle(mode));
+ if(builtinCopyBusy)return;builtinCopyBusy=true;
+ const p=window.prepareProgramWeights?window.prepareProgramWeights(buildBuiltInTemplate(),weightMode):buildBuiltInTemplate();p.independentCopy=true;st.programs.push(p);
+ try{const ok=window.persistWorkoutState?await window.persistWorkoutState():save();if(ok===false)throw Error('Не удалось сохранить копию');closeModal();openProgramEditor(p.id);toast('Создана редактируемая копия');return p}
+ catch(error){st.programs=st.programs.filter(x=>x.id!==p.id);toast(error.message);return null}
+ finally{setTimeout(()=>builtinCopyBusy=false,800)}
+}
 function builtInGroupToProgramExercise(r,g){const method=methodType(g.entries)||'STANDARD',sets=[];g.entries.forEach((e,li)=>{const cnt=Math.max(1,e.s||1);for(let i=0;i<cnt;i++)sets.push({label:variantLabel(e.n,i),w:+e.w||0,r:+e.r||0,rest:rest(r,routineEntries(r)[g.indices[li]],g.indices[li])})});const meta=inferCustomMeta(g.base);return{id:uid('pex'),n:displayExerciseName(g.base),sourceId:g.entries[0]?.sourceId||null,bp:meta.bp,tg:meta.tg,eq:meta.eq,method,rpe:RPE[r.w],tempo:tempoOnly(r.p||''),rest:sets.at(-1)?.rest||90,note:g.entries.map(e=>e.d||'').filter(Boolean).join(' · '),sets}}
 async function encodeSharedPayload(obj){const text=JSON.stringify(obj),bytes=new TextEncoder().encode(text);if('CompressionStream'in window){const cs=new CompressionStream('deflate-raw'),writer=cs.writable.getWriter();writer.write(bytes);writer.close();const buf=await new Response(cs.readable).arrayBuffer();return'c.'+bytesToBase64Url(new Uint8Array(buf))}return'u.'+bytesToBase64Url(bytes)}
 async function decodeSharedPayload(s){const [kind,data]=s.split('.',2);let bytes=base64UrlToBytes(data||kind);if(kind==='c'&&'DecompressionStream'in window){const ds=new DecompressionStream('deflate-raw'),writer=ds.writable.getWriter();writer.write(bytes);writer.close();bytes=new Uint8Array(await new Response(ds.readable).arrayBuffer())}return JSON.parse(new TextDecoder().decode(bytes))}
 function bytesToBase64Url(bytes){let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function base64UrlToBytes(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const bin=atob(s);return Uint8Array.from(bin,c=>c.charCodeAt(0))}
-async function shareProgram(id,weightMode){if(!weightMode&&window.chooseProgramWeights)return window.chooseProgramWeights(mode=>shareProgram(id,mode));const p=programById(id);if(!p||window.intakeDraftBlocked?.(p))return;const clean=window.prepareProgramWeights?window.prepareProgramWeights(p,weightMode):clone(p);delete clean.id;delete clean.cloudPlanId;delete clean.cloudVersion;delete clean.trainerId;delete clean.intakeDraft;delete clean.intakeSourceKey;const payload=await encodeSharedPayload({type:'unvrsl-program',v:1,program:clean});const url=`${location.origin}${location.pathname}#plan=${payload}`;try{if(navigator.share)await navigator.share({title:`UNVRSL FIT · ${p.name}`,text:`Программа «${p.name}»`,url});else{await navigator.clipboard.writeText(url);toast('Ссылка скопирована')}}catch(e){if(e.name!=='AbortError')prompt('Скопируй ссылку',url)}}
+async function shareProgram(id,weightMode){if(!weightMode&&window.chooseProgramWeights)return window.chooseProgramWeights(mode=>shareProgram(id,mode));const p=programActionSource(id);if(!p||window.intakeDraftBlocked?.(p))return;const clean=window.prepareProgramWeights?window.prepareProgramWeights(p,weightMode):clone(p);delete clean.id;delete clean.cloudPlanId;delete clean.cloudVersion;delete clean.trainerId;delete clean.intakeDraft;delete clean.intakeSourceKey;const payload=await encodeSharedPayload({type:'unvrsl-program',v:1,program:clean});const url=`${location.origin}${location.pathname}#plan=${payload}`;try{if(navigator.share)await navigator.share({title:`UNVRSL FIT · ${p.name}`,text:`Программа «${p.name}»`,url});else{await navigator.clipboard.writeText(url);toast('Ссылка скопирована')}}catch(e){if(e.name!=='AbortError')prompt('Скопируй ссылку',url)}}
 async function handleSharedProgram(){
  if(!window.__unvrslStartupComplete)return;
  const hash=location.hash||'',preset=new URLSearchParams(location.search).get('program');

@@ -66,6 +66,7 @@
     let changed = false, weightsChanged = false;
     try {
       W.equipmentAttachDefaults405?.(cur);
+      W.trainingInitializeSetWeights?.(cur);
       for (const ex of cur.ex || []) {
         if (["time","distance"].includes(A.loadType(ex,workoutRegistry))) {
           for (const set of ex.set || []) {
@@ -108,13 +109,16 @@
           }
           // Auto mode fills pending loads; prescribed and manually edited loads
           // still require the explicit recommendation button.
-          if (ex.programWeightMode === "adaptive" &&
+          if ((set.weightMode==='auto'||(!set.weightMode&&ex.programWeightMode === "adaptive")) &&
               suggested > 0 && (rec.sessionIds.length > 0 || rec.nextSetSuggestion || rec.strength?.estimate > 0) &&
               set.recommendationDecision?.status !== 'applied' &&
-              !set.dismissedRecommendation && !rec.planPreserved) {
+              !set.dismissedRecommendation && !rec.planPreserved && !set.autoInitialApplied) {
             const before = set.w;
-            if (A.applyAuto(set, rec)) {
+            const initialBase=rec.nextSetSuggestion?(ex.set||[]).filter(s=>s.ok&&!s.warmup).at(-1)?.w:null;
+            const initialRec=rec.nextSetSuggestion?{...rec,weeklyCalculated:false,nextSetSuggestion:null,weight:initialBase}:rec;
+            if ((!rec.nextSetSuggestion||A.number(initialBase)>0)&&A.applyAuto(set, initialRec)) {
               set.plannedW = set.w;
+              set.selectedW=set.w;set.autoInitialWeight=set.w;set.autoInitialApplied=true;
               if (before !== set.w) changed = weightsChanged = true;
             }
           }

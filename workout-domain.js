@@ -314,7 +314,7 @@
           if (Math.abs(n - rounded) > 1e-9) { obj[key] = rounded; changed = true; }
         }
       };
-      repair(s, ['w','plannedW','baselineW','programW','launchW','recommendedW']);
+      repair(s, ['w','selectedW','plannedW','baselineW','launchW','recommendedW']);
       repair(s.recommendationDecision, ['weight']);
       // Restore is also used by “dismiss recommendation”; do not restore an
       // old floating-point calculation on the next render.
@@ -1198,7 +1198,7 @@
     }
     const reference=projected??prior;
     const changedRepBand=top?!sameTarget(e,set,top,session):false;
-    let anomalous=seed>0&&reference>0&&Math.abs(seed-reference)>Math.max(2*p.step,seed*(projected!=null&&changedRepBand?.25:.1));
+    let anomalous=!set.weightMode&&e.programWeightMode!=='adaptive'&&seed>0&&reference>0&&Math.abs(seed-reference)>Math.max(2*p.step,seed*(projected!=null&&changedRepBand?.25:.1));
     if(seed===prior&&series?.full&&series.effortKnown)anomalous=false;
     // Week eight offers an updated weight for every base exercise with
     // comparable history. A stale prescribed seed is not a reason to hide it.
@@ -1461,12 +1461,16 @@
           : ids.length >= 2 && effortKnown
             ? "средняя"
             : latestOneRepMax!=null?"средняя":"низкая";
+    // Some isolation machines intentionally do not expose an e1RM. Their
+    // completed working sets and effort still provide valid load evidence.
+    const reliable=effortKnown>0&&recent.length>0||!!lastToday&&effortRpe(lastToday.set)!=null||testWeekSuggestion&&ids.length>0;
     return {
       weight,
       series,calibration,reasonCodes,repetitionGoal,
       analogousSessionId:analogous?.[0]?.session.id??null,
       calculationVersion:469,
-      canApply:(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
+      reliable,
+      canApply:(!set.weightMode||reliable)&&(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
       allowedWeightRange:corridor?{min:Math.min(...corridor),max:Math.max(...corridor)}:null,
       calculatedWeight:weeklyCalculated?weight:projected,
       weeklyCalculated:!!weeklyCalculated,
@@ -1507,7 +1511,7 @@
         estimatedMax:weeklyCorridor?Number(weeklyCorridor.max.toFixed(1)):null,
         applied:weeklyApplied
       }:null,
-      strength: {stableMean:strength.stableMean,best:strength.best,lastPerformed:strength.lastPerformed,lastWorkingSets:strength.lastWorkingSets,protocols:strength.protocols,sessionCount:strength.sessionCount,setCount:strength.setCount,estimate:strength.estimate==null?null:Number(strength.estimate.toFixed(1)),confirmed:strength.confirmed,
+      strength: {stableMean:strength.stableMean,best:strength.best,lastPerformed:strength.lastPerformed,lastWorkingSets:strength.lastWorkingSets,protocols:strength.protocols,sessionCount:strength.sessionCount||ids.length,setCount:strength.setCount||recent.length,estimate:strength.estimate==null?null:Number(strength.estimate.toFixed(1)),confirmed:strength.confirmed,
         confidenceLow:strength.confidenceLow,confidenceHigh:strength.confidenceHigh,confidence:strength.confidence,sources:strength.points.slice(0,12).map(x=>({date:sessionDate(x.session),method:method(x.exercise,x.set),role:setRole(x.exercise,x.set),weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effortRpe(x.set)}))},
       methodStage:methodRec?.role??setRole(e,set),
       targetEffort:effortBand,
@@ -1525,8 +1529,8 @@
   function acceptRecommendation(set,result) {
     const weight=recommendationWeight(result);
     if(set.ok||set.skipped||result.canApply===false||result.action==='stop'||weight==null)return false;
-    if(!set.recommendationRestore)set.recommendationRestore={w:set.w,plannedW:set.plannedW,weightSource:set.weightSource,manualOverride:set.manualOverride};
-    set.w=weight;set.plannedW=weight;set.weightSource='recommendation';set.manualOverride=false;
+    if(!set.recommendationRestore)set.recommendationRestore={w:set.w,selectedW:set.selectedW,plannedW:set.plannedW,weightSource:set.weightSource,manualOverride:set.manualOverride};
+    set.w=weight;set.selectedW=weight;set.plannedW=weight;set.weightSource='recommendation';set.manualOverride=false;
     set.recommendationDecision={status:'applied',proposalKey:result.proposalKey,weight,at:Date.now()};
     delete set.dismissedRecommendation;return true;
   }
@@ -1534,6 +1538,7 @@
     if(set.ok||set.skipped)return false;
     if(set.recommendationRestore&&set.weightSource==='recommendation'&&set.w===set.recommendationDecision?.weight)Object.assign(set,set.recommendationRestore);
     delete set.recommendationRestore;
+    set.selectedW=set.w;
     set.dismissedRecommendation=result.proposalKey;
     set.recommendationDecision={status:'dismissed',proposalKey:result.proposalKey,at:Date.now()};return true;
   }
@@ -1544,6 +1549,7 @@
     const weight=recommendationWeight(result);
     if(weight==null)return false;
     set.w = weight;
+    set.selectedW=weight;
     set.weightSource = "auto";
     return true;
   }

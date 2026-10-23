@@ -53,9 +53,10 @@
         for(const s of e.set||[])if(s.ok&&!s.equipmentSnapshot){s.equipmentSnapshot={...(e.equipmentProfile||{}),id:profileId(e)||''};s.equipmentProfileId=profileId(e)||'';}
         for(const s of e.set||[])if(!s.ok&&!s.skipped){
           for(const field of ['recommendation','recommendedW','recommendationOriginalWeight','launchW','plannedW','machineRecommendedW','manualOverride','weightSource','autoWeightSource'])delete s[field];
-          s.w='';s.programW=0;
+          s.w='';s.selectedW='';delete s.autoInitialApplied;delete s.autoInitialWeight;
+          s.programW=s.assignedW??0;
         }
-        e.programWeightMode='adaptive';
+        e.programWeightMode=(e.set||[]).some(s=>s.assignedW!=null)?'mixed':'adaptive';
       }
       choose(e,p);
     });defaults()[g.exerciseKey]=id;W.trainingLoadModel292?.run?.();W.save?.();W.closeModal?.();W.startPage?.();W.toast?.("Оборудование сохранено")}

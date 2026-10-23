@@ -36,7 +36,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
     const controls=await w.eval(`(async()=>{
       startPage();await trainingEngine200Tick();
       const card=document.querySelector('#start .te200-rec');
-      const apply=[...card.querySelectorAll('button')].find(b=>b.textContent==='Применить рекомендацию');
+      const apply=[...card.querySelectorAll('button')].find(b=>b.textContent==='Применить');
       const cancel=[...card.querySelectorAll('button')].find(b=>b.textContent==='Отменить');
       const ex=st.current.ex.find(e=>/Жим (?:штанги )?л[её]жа.*тест/i.test(e.n)),set=ex.set[0];
       const weight=set.w;cancel.click();await trainingLoadModel292.run(true);await trainingEngine200Tick();

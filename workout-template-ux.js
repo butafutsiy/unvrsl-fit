@@ -68,15 +68,13 @@
 
   window.createFromTemplate=function(id){
     const t=typeof templateById==='function'?templateById(id):null;if(!t)return;
-    const p=typeof clone==='function'?clone(t):JSON.parse(JSON.stringify(t));
-    p.id=uid('prog');p.name=t.name||'Программа из шаблона';p.created=Date.now();p.updated=Date.now();delete p.sourceProgramId;
-    (p.weeks||[]).forEach(w=>(w.days||[]).forEach(d=>d.id=uid('day')));
-    st.programs=Array.isArray(st.programs)?st.programs:[];st.programs.push(p);save();showProgramsAfterAdd();
+    return window.addIndependentTemplate('saved:'+id,()=>t);
   };
+
   try{createFromTemplate=window.createFromTemplate}catch(e){}
 
   if(typeof POPULAR_PROGRAMS!=='undefined'){
-    window.createPopularProgram=function(id){const spec=POPULAR_PROGRAMS[id];if(!spec)return;const p=spec.build();st.programs=Array.isArray(st.programs)?st.programs:[];st.programs.push(p);save();showProgramsAfterAdd()};
+    window.createPopularProgram=function(id){const spec=POPULAR_PROGRAMS[id];if(!spec)return;return window.addIndependentTemplate('popular:'+id,()=>spec.build())};
     try{createPopularProgram=window.createPopularProgram}catch(e){}
   }
 

@@ -141,9 +141,12 @@
   window.clientSelectStartProgram=function(token){picker.key=decodeURIComponent(token);picker.week=null;renderStartPicker()};
   window.clientSelectStartWeek=function(n){const p=findProgram(picker.key);if(!p)return;picker.week=Math.max(1,Math.min(weekCount(p),Number(n)||1));setSavedWeek(p,picker.week);renderStartPicker()};
 
-  window.setClientPrimaryProgram=function(token){
+  window.setClientPrimaryProgram=async function(token){
     const key=decodeURIComponent(token),p=findProgram(key);if(!p)return;
-    st.clientPrimaryProgramKey=p.key;st.clientPlanViewKey=p.key;try{save()}catch(e){}
+    const previous={clientPrimaryProgramKey:st.clientPrimaryProgramKey,clientPrimaryProgramSelectedAt:st.clientPrimaryProgramSelectedAt,clientPlanViewKey:st.clientPlanViewKey};
+    st.clientPrimaryProgramKey=p.key;st.clientPrimaryProgramSelectedAt=Date.now();st.clientPlanViewKey=p.key;
+    try{const ok=window.persistWorkoutState?await window.persistWorkoutState():save();if(ok===false)throw Error('save failed')}
+    catch(error){Object.assign(st,previous);toast('Не удалось сохранить основную программу');return false}
     if(typeof toast==='function')toast('Основная программа изменена');
     try{clientCleanPlanPage()}catch(e){}
   };

@@ -12,9 +12,6 @@ if(typeof canonicalSettingsSheet==='function'){
     account.innerHTML=`<div class="section">АККАУНТ И ОБЛАКО</div><div class="settings-card"><div class="setting"><div><b>UNVRSL Cloud</b><div class="muted small">${esc(cloudSettingsLabel())}</div></div><button class="btn tiny" onclick="openCloudAccount()">${window.cloud?.user?'Открыть':'Войти'}</button></div>${window.cloud?.user?`<div class="setting"><div><b>Облачная копия</b><div class="muted small">Тренировки, прогресс, вес, программы и настройки</div></div><button class="btn tiny" onclick="accountSyncNow?.()">Синхронизировать</button></div>`:''}</div>`;
     const firstSection=sheet.querySelector('.section');if(firstSection)firstSection.before(account);else sheet.append(account);
     const sync=document.createElement('p');sync.className='muted small';sync.dataset.accountSyncStatus='1';sync.textContent=window.accountSyncStatusText?.()||'Проверяем состояние синхронизации…';account.append(sync);
-    const version=document.createElement('div');version.className='setting';
-    const label=document.createElement('div');label.textContent='Версия приложения · '+String(window.__unvrslRelease||'');
-    const update=document.createElement('button');update.className='btn tiny';update.textContent='Проверить обновление';update.onclick=()=>window.checkAppUpdate?.(true);version.append(label,update);account.append(version);
     window.dispatchEvent(new CustomEvent('unvrsl:settings-opened'));
     return result;
   };

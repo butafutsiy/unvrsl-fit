@@ -391,7 +391,7 @@
     if(measured(type)&&!(reps>0))return message(type==='time'?'Укажи фактическое время больше нуля в секундах.':'Укажи фактическую дистанцию больше нуля в километрах.');
     if(!reps||weighted&&weight==null||d.rir!=='unknown'&&(rir==null||rir<0||rir>6))return message('Запиши фактический результат, вес и выбери RIR.');
     if(F.needsCalibration(e,set,A,reg)&&weight===0)return message('Рабочий вес пока неизвестен. Подбери его или введи фактическую нагрузку.');
-    const actual={...set,w:weight,techniqueFailed:!d.technique,pain:false,effortUncertain:d.rir==='unknown',effortCensored:d.rir==='6',rpe:rir==null?'':10-rir,rir:rir??'',actualRpe:rir==null?null:10-rir,actualRir:rir};
+    const actual={...set,w:weight,selectedW:weight,actualWeight:weight,techniqueFailed:!d.technique,pain:false,effortUncertain:d.rir==='unknown',effortCensored:d.rir==='6',rpe:rir==null?'':10-rir,rir:rir??'',actualRpe:rir==null?null:10-rir,actualRir:rir};
     if(type==='time')actual.seconds=reps;else if(type==='distance')actual.distance=reps;else Object.assign(actual,{r:reps.total,actualReps:reps.total,repEntered:true,manualFields:{...set.manualFields,r:true},...(A.legReps(e)?{repsLeft:reps.left,repsRight:reps.right,repCounting:'total'}:{})});
     if(!A.validSet(e,actual,reg))return message('Проверь фактически выполненные повторения, время или дистанцию.');
     if(calibrationAttempt){actual.calibrationAttemptId=calibrationAttempt.id;actual.weightSource='calibrated';actual.manualOverride=false;}

@@ -14,6 +14,31 @@
       return null;
     }
   };
+  function mergeProgramLifecycle(target,local){
+    if(!target||!local||target.accountOwnerId&&local.accountOwnerId&&target.accountOwnerId!==local.accountOwnerId)return target;
+    for(const field of ['programDeletedAt','programRestoredAt']){
+      target[field]={...(target[field]||{})};
+      for(const [key,value] of Object.entries(local[field]||{}))target[field][key]=Math.max(Number(value)||0,Number(target[field][key])||0);
+    }
+    target.deletedProgramKeys=[...new Set([...(target.deletedProgramKeys||[]),...(local.deletedProgramKeys||[]),...Object.keys(target.programDeletedAt)])].filter(key=>Number(target.programRestoredAt[key]||0)<=Number(target.programDeletedAt[key]||0));
+    const deleted=new Set(target.deletedProgramKeys),keys=p=>[p.id&&'id:'+p.id,!p.independentCopy&&p.seedId&&'seed:'+p.seedId,p.cloudPlanId&&'cloud:'+p.cloudPlanId,!p.independentCopy&&p.templateKey&&'template:'+p.templateKey,!p.independentCopy&&p.isMasterPlan&&'seed:master-trainer-plan',!p.independentCopy&&(p.seedId||p.internetTemplate||p.femaleTemplate||p.templateKey)&&p.name&&'name:'+String(p.name).toLowerCase().replace(/[·•]/g,' ').replace(/\s+/g,' ').trim()].filter(Boolean);
+    const programs=new Map(),trash=new Map();
+    for(const entry of [...(target.programTrash||[]),...(local.programTrash||[])])if(!trash.has(String(entry.id))||entry.deletedAt>trash.get(String(entry.id)).deletedAt)trash.set(String(entry.id),clone(entry));
+    for(const p of [...(target.programs||[]),...(local.programs||[])]){
+      if(keys(p).some(key=>deleted.has(key))){if(!trash.has(String(p.id)))trash.set(String(p.id),{id:String(p.id),program:clone(p),deletedAt:Math.max(1,...keys(p).map(key=>Number(target.programDeletedAt[key]||0)))});continue}
+      const old=programs.get(String(p.id)),stamp=x=>Math.max(Number(x.updated||0),Number(x.updatedAt||0),Number(x.created||0));
+      if(!old||stamp(p)>stamp(old))programs.set(String(p.id),clone(p));
+    }
+    target.programs=[...programs.values()];target.programTrash=[...trash.values()].filter(entry=>keys(entry.program).some(key=>deleted.has(key)));
+    target.templateVisibility={...(target.templateVisibility||{})};
+    for(const [key,value] of Object.entries(local.templateVisibility||{}))if(!target.templateVisibility[key]||Number(value.at||0)>Number(target.templateVisibility[key].at||0))target.templateVisibility[key]=clone(value);
+    for(const field of ['primaryProgram','clientPrimaryProgram']){
+      const stamp=field+'SelectedAt',key=field==='primaryProgram'?'primaryProgramId':'clientPrimaryProgramKey';
+      if(Number(local[stamp]||0)>Number(target[stamp]||0)){target[stamp]=local[stamp];target[key]=local[key]}
+    }
+    if(Number(local.builtinProgramVisibilityUpdatedAt||0)>Number(target.builtinProgramVisibilityUpdatedAt||0)){target.builtinProgramHidden=local.builtinProgramHidden;target.builtinProgramVisibilityUpdatedAt=local.builtinProgramVisibilityUpdatedAt}
+    return target;
+  }
   function create(
     storage,
     {
@@ -189,5 +214,5 @@
       activateAccount,
     };
   }
-  return { create, PRIMARY, DRAFT };
+  return { create, PRIMARY, DRAFT, mergeProgramLifecycle };
 });

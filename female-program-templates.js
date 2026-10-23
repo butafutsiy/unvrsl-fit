@@ -109,15 +109,15 @@
 
   function add(idKey){
     const spec=T[idKey];if(!spec)return;
-    const p=spec.build();
-    st.programs=Array.isArray(st.programs)?st.programs:[];st.programs.push(p);save();
-    if(typeof toast==='function')toast('Программа добавлена в «Мои программы»');
-    if(typeof openProgramEditor==='function')openProgramEditor(p.id,0,0)
+    return window.addIndependentTemplate('female:'+idKey,()=>spec.build());
   }
   window.createFemaleTemplateProgram=add;
 
+  Object.entries(T).forEach(([key,spec])=>window.registerTemplateOption?.('female:'+key,spec.title));
   function html(){
-    return `<div class="female-template-section"><div class="section">ДЛЯ ДЕВУШЕК · НОВАЯ ПОДБОРКА</div><div class="muted small" style="margin:0 8px 10px">Старые ягодичные шаблоны убраны. Здесь программы, собранные по открытым тренировочным материалам и адаптированные под RPE. Вес на первой тренировке вводится вручную.</div>${Object.entries(T).map(([k,p])=>`<div class="card"><div class="row between"><div class="grow"><b>${esc(p.title)}</b><div class="muted small" style="margin-top:4px">${esc(p.meta)}</div><div class="muted small" style="margin-top:5px">Источник: ${esc(p.sourceName)}</div></div><button class="btn tiny primary" onclick="createFemaleTemplateProgram('${k}')">Добавить</button></div></div>`).join('')}</div>`
+    const visible=Object.entries(T).filter(([key])=>!window.templateIsHidden?.('female:'+key));
+    if(!visible.length)return '';
+    return `<div class="female-template-section"><div class="section">ДЛЯ ДЕВУШЕК · НОВАЯ ПОДБОРКА</div><div class="muted small" style="margin:0 8px 10px">Старые ягодичные шаблоны убраны. Здесь программы, собранные по открытым тренировочным материалам и адаптированные под RPE. Вес на первой тренировке вводится вручную.</div>${visible.map(([k,p])=>window.renderTemplateCard({title:p.title,description:p.meta,weeks:Number(p.meta.match(/(\d+) нед/)?.[1])||undefined,frequency:p.title.match(/(\d+) д/)?.[1],key:'female:'+k,action:`createFemaleTemplateProgram('${k}')`,source:p.source,sourceName:p.sourceName})).join('')}</div>`
   }
 
   function patch(){

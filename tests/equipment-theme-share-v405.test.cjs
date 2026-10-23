@@ -73,7 +73,7 @@ test("autoweight uses the completed set for the next set and refreshes after a n
  const listeners={},ctx={WorkoutDomain:A,workoutRegistry:reg,st:{current:cur,sessions:past,exerciseWeightProfiles:{}},save(){},window:{addEventListener:(name,fn)=>{listeners[name]=fn}}};
  vm.runInNewContext(read('training-load-model.js'),ctx);
  ctx.window.trainingLoadModel292.run();
- assert.equal(completed.w,70);assert.equal(pending.w,67.5);
+ assert.equal(completed.w,70);assert.equal(pending.w,70);
  assert.equal(pending.recommendedW,67.5);
  pending.targetRepLabel='6–8';listeners['unvrsl:prescription-updated']();
  assert.deepEqual(JSON.parse(JSON.stringify(pending.recommendation.repRange)),{lo:6,hi:8});

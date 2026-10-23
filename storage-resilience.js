@@ -85,7 +85,7 @@
               JSON.stringify(draftRecord.state),
             );
           } catch (_) {}
-        st = record.state;
+        st = WorkoutStore.mergeProgramLifecycle(record.state,st);
         WorkoutDomain.migrate(st, workoutRegistry);
         workoutStore.restore(st);
         restoreAppearance(st.accountOwnerId);

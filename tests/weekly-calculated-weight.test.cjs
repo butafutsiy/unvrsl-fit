@@ -69,3 +69,8 @@ test('day role cannot bias the requested arithmetic midpoint',()=>{
   assert.ok(Math.abs(rec.raw-153*.725)<1e-8);assert.equal(rec.calculatedWeight,110);
  }
 });
+test('rounding generated loads never mutates the original trainer assignment',()=>{
+ const {e,cur,reg}=fixture(95.1,{availableLoads:[81.5,86,90.5,95.1]});
+ Object.assign(e.set[0],{assignedW:95.1,programW:95.1,w:86.00001,selectedW:86.00001,weightSource:'recommendation'});
+ A.normalizePendingWeights(cur,reg);assert.equal(e.set[0].w,86);assert.equal(e.set[0].assignedW,95.1);assert.equal(e.set[0].programW,95.1);
+});

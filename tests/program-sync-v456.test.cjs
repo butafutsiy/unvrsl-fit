@@ -45,3 +45,14 @@ test('restoring built-in visibility survives stale hidden cloud state',()=>{
  const out=merge({builtinProgramHidden:false,builtinProgramVisibilityUpdatedAt:200},{builtinProgramHidden:true,builtinProgramVisibilityUpdatedAt:100});
  assert.equal(out.builtinProgramHidden,false);assert.equal(out.builtinProgramVisibilityUpdatedAt,200);
 });
+test('template visibility sync keeps independent choices and honors the newest restore',()=>{
+ const local={templateVisibility:{'builtin:cycle':{hidden:false,at:300},'personal:semen-upper-lower-8':{hidden:true,at:100}}};
+ const remote={templateVisibility:{'builtin:cycle':{hidden:true,at:200},'female:stern3':{hidden:true,at:250}}};
+ for(const [a,b] of [[local,remote],[remote,local]]){
+  const out=merge(a,b);assert.equal(out.templateVisibility['builtin:cycle'].hidden,false);assert.equal(out.templateVisibility['personal:semen-upper-lower-8'].hidden,true);assert.equal(out.templateVisibility['female:stern3'].hidden,true);
+ }
+});
+test('a newer primary-program choice survives a later unrelated cloud snapshot',()=>{
+ const out=merge({primaryProgramId:'chosen',primaryProgramSelectedAt:300,programs:[{id:'chosen'},{id:'other'}]},{primaryProgramId:'other',primaryProgramSelectedAt:100,programs:[{id:'chosen'},{id:'other'}]},10000);
+ assert.equal(out.primaryProgramId,'chosen');assert.equal(out.primaryProgramSelectedAt,300);
+});

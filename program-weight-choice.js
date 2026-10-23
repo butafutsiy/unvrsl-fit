@@ -4,15 +4,19 @@
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(!root)return;
   root.prepareProgramWeights=api.prepareProgramWeights;
-  root.duplicateProgram=function(id,mode){
+  const copying=new Set();
+  root.duplicateProgram=async function(id,mode){
     const source=root.programById?.(id);if(!source||root.intakeDraftBlocked?.(source))return;
     if(!mode)return root.chooseProgramWeights(choice=>root.duplicateProgram(id,choice));
+    if(copying.has(id))return;copying.add(id);
     const copy=api.prepareProgramWeights(source,mode);
-    for(const field of ['cloudPlanId','cloudVersion','trainerId','trainerName','intakeDraft','intakeSourceKey'])delete copy[field];
-    copy.id=root.uid('prog');copy.name=`${source.name} · копия`;copy.created=Date.now();copy.updated=Date.now();
-    for(const week of copy.weeks||[])for(const day of week.days||[])day.id=root.uid('day');
-    root.st.programs.push(copy);root.save();root.closeModal?.();root.openProgramEditor(copy.id);
-    return copy;
+    for(const field of ['cloudPlanId','cloudVersion','trainerId','trainerName','intakeDraft','intakeSourceKey','seedId','isMasterPlan','templateKey','sessions','history','current'])delete copy[field];
+    copy.independentCopy=true;copy.id=root.uid('prog');copy.name=`${source.name} · копия`;copy.created=Date.now();copy.updated=Date.now();
+    for(const week of copy.weeks||[])for(const day of week.days||[]){day.id=root.uid('day');for(const exercise of day.ex||[])exercise.id=root.uid('pex')}
+    root.st.programs.push(copy);
+    try{const ok=root.persistWorkoutState?await root.persistWorkoutState():root.save();if(ok===false)throw Error('Не удалось сохранить копию');root.closeModal?.();root.openProgramEditor(copy.id);root.toast?.('Копия сохранена');return copy}
+    catch(error){root.st.programs=root.st.programs.filter(x=>x.id!==copy.id);root.toast?.(error.message);return null}
+    finally{if(typeof setTimeout==='function')setTimeout(()=>copying.delete(id),800);else copying.delete(id)}
   };
   let pending=null;
   root.chooseProgramWeights=function(action,options={}){
@@ -29,8 +33,8 @@
     delete copy.previousCycle;
     for(const field of ['assignedUserId','clientId','userId'])delete copy[field];
     const clearWeights=object=>{
-      for(const field of ['w','weight','programW','plannedW','launchW','recommendedW','recommendationOriginalWeight','machineRecommendedW','lightWeight','middleWeight','heavyWeight'])if(field in object)object[field]='';
-      for(const field of ['recommendation','manualOverride','weightDecision','equipmentCalibration','trainingProgression292','autoWeightSource','weightSource','trainingIntensity292'])delete object[field];
+      for(const field of ['w','weight','programW','plannedW','launchW','recommendedW','recommendationOriginalWeight','machineRecommendedW','assignedW','selectedW','actualWeight','autoInitialWeight','lightWeight','middleWeight','heavyWeight'])if(field in object)object[field]='';
+      for(const field of ['recommendation','manualOverride','weightDecision','equipmentCalibration','trainingProgression292','autoWeightSource','weightSource','trainingIntensity292','autoInitialApplied','weightPolicyRevision','recommendationDecision','recommendationRestore','actualReps','actualRpe','actualRir','ok','recordedAt'])delete object[field];
     };
     const visit=node=>{
       if(!node||typeof node!=='object')return;

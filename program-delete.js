@@ -39,11 +39,11 @@
     if(!p)return[];
     return [
       p.id&&`id:${p.id}`,
-      p.isMasterPlan&&'seed:master-trainer-plan',
-      p.seedId&&`seed:${p.seedId}`,
+      !p.independentCopy&&p.isMasterPlan&&'seed:master-trainer-plan',
+      !p.independentCopy&&p.seedId&&`seed:${p.seedId}`,
       p.cloudPlanId&&`cloud:${p.cloudPlanId}`,
-      p.templateKey&&`template:${p.templateKey}`,
-      (p.seedId||p.internetTemplate||p.femaleTemplate||p.templateKey)&&p.name&&`name:${normalizedName(p.name)}`
+      !p.independentCopy&&p.templateKey&&`template:${p.templateKey}`,
+      !p.independentCopy&&(p.seedId||p.internetTemplate||p.femaleTemplate||p.templateKey)&&p.name&&`name:${normalizedName(p.name)}`
     ].filter(Boolean).map(String);
   }
   function isDeleted(p,set=readDeleted()){return keysFor(p).some(k=>set.has(k))}
@@ -126,7 +126,7 @@
     const set=readDeleted();keysFor(p).forEach(k=>{set.add(k);st.programDeletedAt[k]=Math.max(at,Number(st.programRestoredAt?.[k]||0)+1)});writeDeleted(set);
     if(p.seedId){st.seededPrograms=st.seededPrograms&&typeof st.seededPrograms==='object'?st.seededPrograms:{};st.seededPrograms[p.seedId]=true}
     st.programs=(st.programs||[]).filter(x=>String(x?.id)!==id);
-    normalizePrimary();
+    normalizePrimary();if(backup.primaryProgramId!==st.primaryProgramId)st.primaryProgramSelectedAt=Date.now();
     try{await persist()}catch(e){Object.keys(st).forEach(key=>delete st[key]);Object.assign(st,backup);writeDeleted(previousDeleted);toast('Не удалось сохранить удаление. Повтори попытку');refreshViews();return}finally{deleteBusy=false}
     if(typeof closeModal==='function')try{closeModal()}catch(e){}
     if(typeof toast==='function')toast('Программа перемещена в корзину');
@@ -137,17 +137,20 @@
   window.deleteProgram=function(id){return window.trainerDeleteOwnProgram(id)};
   try{deleteProgram=window.deleteProgram}catch(e){}
 
-  window.deleteBuiltinProgram=function(){
-    if(st.builtinProgramHidden)return;
+  window.deleteBuiltinProgram=async function(){
+    if(st.builtinProgramHidden||deleteBusy)return;
     const name=typeof window.unvrslBuiltInProgramName==='function'?window.unvrslBuiltInProgramName():(st.builtinProgramName||'Встроенный цикл · 8 недель');
     if(!confirm(`Удалить программу «${name}» из «Моих программ»?\n\nСам тренировочный код останется в приложении, но программа больше не будет отображаться и выбираться для старта.`))return;
+    deleteBusy=true;
+    const previous={builtinProgramHidden:st.builtinProgramHidden,builtinProgramVisibilityUpdatedAt:st.builtinProgramVisibilityUpdatedAt,primaryProgramSelectedAt:st.primaryProgramSelectedAt,primaryProgramId:st.primaryProgramId,startProgramId:st.startProgramId};
     st.builtinProgramHidden=true;
     st.builtinProgramVisibilityUpdatedAt=Date.now();
+    st.primaryProgramSelectedAt=Date.now();
     try{localStorage.setItem(BUILTIN_STORE,'1')}catch(e){}
     if(String(st.primaryProgramId)===BUILTIN)st.primaryProgramId=fallbackId();
     if(String(st.startProgramId)===BUILTIN)st.startProgramId=st.primaryProgramId||fallbackId();
-    try{save()}catch(e){}
-    if(typeof toast==='function')toast('Встроенная программа удалена');
+    try{await persist()}catch(error){Object.assign(st,previous);try{localStorage.removeItem(BUILTIN_STORE)}catch(_){}toast('Не удалось сохранить удаление');return}finally{deleteBusy=false}
+    if(typeof toast==='function')toast('Встроенная программа перемещена в корзину');
     refreshViews();
   };
 
@@ -168,23 +171,25 @@
     window.setPrimaryProgram=wrapped;try{setPrimaryProgram=wrapped}catch(e){}
   }
 
-  function programCard(p){
+  function programCard(p,builtin=false){
     const id=String(p.id),primary=String(st.primaryProgramId)===id;
-    return `<div class="card coach-program ${primary?'program-card-primary':''}"><div class="row between"><div class="grow"><div class="title">${esc(p.name||'Программа')}</div><div class="muted small">${p.weeks?.length||0} нед. · ${(p.weeks||[]).reduce((a,w)=>a+(w.days?.length||0),0)} тренировок</div>${primary?'<span class="chip green program-primary-badge">Основная</span>':''}</div><button class="btn tiny primary" onclick="openProgramEditor('${id}')">Открыть</button></div>${programLoadGrid(p.weeks)}<div class="coach-actions"><button class="btn tiny" onclick="shareProgram('${id}')">Поделиться</button><button class="btn tiny" onclick="duplicateProgram('${id}')">Сделать копию</button><button class="btn tiny" onclick="saveProgramAsTemplate('${id}')">В шаблоны</button><button class="btn tiny" onclick="renameProgramSheet('${id}')">Переименовать</button><button class="btn tiny ${primary?'primary':''}" ${primary?'disabled':''} onclick="setPrimaryProgram('${id}')">${primary?'Основная':'Сделать основной'}</button><button class="btn tiny danger" onclick="trainerDeleteOwnProgram('${id}')">Удалить</button></div></div>`;
+    const weeks=builtin?8:p.weeks?.length||0,days=builtin?40:(p.weeks||[]).reduce((a,w)=>a+(w.days?.length||0),0);
+    const type=builtin?'Встроенная':p.cloudPlanId&&p.trainerId?'Тренерская':p.internetTemplate?'Из шаблона':'Личная';
+    const open=builtin?"openBuiltinProgramViewer(1)":`openProgramEditor('${id}')`;
+    const more=builtin?`<button class="btn" onclick="shareProgram('__builtin_cycle__')">Поделиться</button><button class="btn" onclick="saveProgramAsTemplate('__builtin_cycle__')">В шаблоны</button><button class="btn" onclick="renameBuiltInProgramSheet()">Переименовать</button><button class="btn" onclick="cloneBuiltInCycle()">Сделать копию</button><button class="btn danger" onclick="deleteBuiltinProgram()">Удалить</button>`:`<button class="btn" onclick="shareProgram('${id}')">Поделиться</button><button class="btn" onclick="duplicateProgram('${id}')">Сделать копию</button><button class="btn" onclick="saveProgramAsTemplate('${id}')">В шаблоны</button><button class="btn" onclick="renameProgramSheet('${id}')">Переименовать</button><button class="btn danger" onclick="trainerDeleteOwnProgram('${id}')">Удалить</button>`;
+    const grid=builtin?window.unvrslBuiltinLoadGridHtmlV296?.()||'':programLoadGrid(p.weeks);
+    return `<div class="card coach-program program-unified-card"><div class="row between"><div class="grow"><div class="title">${esc(p.name||'Программа')}</div><p class="muted small">${weeks} нед. · ${days} тренировок · ${type}</p>${primary?'<span class="chip program-primary-badge">Основная</span>':''}</div><button class="btn primary" onclick="${open}">Открыть</button></div>${grid}<div class="program-card-footer">${primary?'':`<button class="btn" onclick="setPrimaryProgram('${id}')">Сделать основной</button>`}<details class="program-more"><summary class="btn">Ещё</summary><div class="program-card-actions">${more}</div></details></div></div>`;
   }
   function builtinCard(){
-    if(st.builtinProgramHidden)return'';
-    const name=typeof window.unvrslBuiltInProgramName==='function'?window.unvrslBuiltInProgramName():(st.builtinProgramName||'Встроенный цикл · 8 недель');
-    const primary=String(st.primaryProgramId||'')===BUILTIN;
-    const loadGrid=typeof window.unvrslBuiltinLoadGridHtmlV296==='function'?window.unvrslBuiltinLoadGridHtmlV296():'';
-    return `<div class="card coach-program ${primary?'program-card-primary':''}"><div class="row between"><div class="grow"><div class="title">${esc(name)}</div><div class="muted small">8 нед. · 40 тренировок · встроенная</div>${primary?'<span class="chip green program-primary-badge">Основная</span>':''}</div><button class="btn tiny primary" onclick="openBuiltinProgramViewer(1)">Открыть</button></div>${loadGrid}<div class="coach-actions"><button class="btn tiny" onclick="renameBuiltInProgramSheet()">Переименовать</button><button class="btn tiny ${primary?'primary':''}" ${primary?'disabled':''} onclick="setPrimaryProgram('${BUILTIN}')">${primary?'Основная':'Сделать основной'}</button><button class="btn tiny" onclick="cloneBuiltInCycle()">Сделать копию</button><button class="btn tiny danger" onclick="deleteBuiltinProgram()">Удалить</button></div></div>`;
+    if(st.builtinProgramHidden)return '';
+    return programCard({id:BUILTIN,name:window.unvrslBuiltInProgramName?.()||st.builtinProgramName||'Встроенный цикл · 8 недель'},true);
   }
 
   window.trainerProgramsPage=function(){
     const el=document.querySelector('#programs');if(!el)return;
     if(typeof trainerIsTrainer==='function'&&!trainerIsTrainer()){el.innerHTML='<div class="card"><div class="title">Раздел тренера</div></div>';return}
     applyTombstones(false);
-    const list=builtinCard()+visiblePrograms().map(programCard).join('');
+    const list=builtinCard()+visiblePrograms().map(p=>programCard(p)).join('');
     el.innerHTML=`<div class="card"><div class="row between"><div><div class="title">Программы</div><div class="muted">Создание, шаблоны и отправка клиентам</div></div><button class="btn primary" onclick="newProgramSheet()">＋</button></div><p class="muted small" data-account-sync-status>${esc(window.accountSyncStatusText?.()||'Состояние синхронизации ещё загружается')}</p><div class="coach-actions"><button class="btn" onclick="accountSyncNow?.()">Синхронизировать программы</button><button class="btn" onclick="templatesSheet()">Шаблоны</button><button class="btn" onclick="openProgramTrash()">Корзина · ${(st.programTrash||[]).length+(st.builtinProgramHidden?1:0)}</button></div></div><div class="section">МОИ ПРОГРАММЫ</div>${list||'<div class="card muted">Пока нет программ. Создай новую или выбери шаблон.</div>'}`;
   };
   try{trainerProgramsPage=window.trainerProgramsPage}catch(e){}

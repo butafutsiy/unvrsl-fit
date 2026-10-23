@@ -55,6 +55,29 @@
  function method(src,ex){return String(src?.method||ex?.method||'STANDARD').trim().toUpperCase()||'STANDARD'}
  function occurrenceIndex(ex,cur){const a=(cur.ex||[]).filter(x=>same(x,ex.n,ex.sourceId));const i=a.indexOf(ex);return i<0?0:i}
  function sourceWeight(src,ex,setIndex,cur){const sets=src?.sets||[];if(!sets.length)return 0;if((ex.set||[]).length>1)return num(sets[setIndex]?.w??sets.at(-1)?.w);const i=occurrenceIndex(ex,cur),m=method(src,ex),count=(cur.ex||[]).filter(x=>same(x,ex.n,ex.sourceId)).length;if(m==='UNVRSL'&&count>sets.length){const map=sets.length>=3?[0,1,0,1,0,1,2,2]:sets.length===2?[0,1,0,1,0,1,1,1]:[0,0,0,0,0,0,0,0];return num(sets[map[i]??map.at(-1)]?.w)}return num(sets[i]?.w??sets.at(-1)?.w)}
+ function initializeSetWeights(cur){
+  if(!cur||cur.ended)return;
+  for(const ex of cur.ex||[]){
+   if(['time','distance'].includes(WorkoutDomain.loadType(ex,workoutRegistry)))continue;
+   const src=source(ex,cur),declared=src?.parameterOverrides?.weight?.mode||src?.weightMode;
+   for(const [i,s] of (ex.set||[]).entries()){
+    if(s.weightPolicyRevision===528)continue;
+    const original=src?sourceWeight(src,ex,i,cur):N(s.assignedW??s.programW);
+    const zeroAssigned=declared==='manual'&&['bodyweight_added','bodyweight_assisted','bodyweight_only','repetitions_only'].includes(WorkoutDomain.loadType(ex,workoutRegistry));
+    const auto=declared==='auto'||(!src&&ex.programWeightMode==='adaptive')||!(original>0)&&!zeroAssigned;
+    s.assignedW=auto?null:original??0;s.programW=auto?0:s.assignedW;s.weightMode=auto?'auto':'prescribed';
+    if(!s.ok&&!s.skipped&&!s.manualOverride&&s.weightSource!=='manual'&&!s.dismissedRecommendation&&s.recommendationDecision?.status!=='applied'){
+     if(auto&&(src||s.weightSource==='auto')){s.w='';s.plannedW='';s.launchW=0;s.recommendationOriginalWeight=0;delete s.autoInitialApplied;delete s.recommendationRestore;delete s.recommendationDecision}
+     else if(!auto&&s.weightSource!=='recommendation'){s.w=s.assignedW;s.plannedW=s.assignedW;}
+    }
+    if(auto&&!src&&num(s.w)>0){s.autoInitialApplied=true;s.autoInitialWeight=s.w}
+    s.selectedW=s.w;s.weightPolicyRevision=528;
+   }
+   const modes=new Set((ex.set||[]).map(s=>s.weightMode));
+   ex.programWeightMode=modes.size>1?'mixed':modes.has('auto')?'adaptive':'prescribed';
+  }
+ }
+ W.trainingInitializeSetWeights=initializeSetWeights;
  async function ensureLoadModel(){
   if(W.trainingLoadModel292?.run)return true;
   if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=443';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
@@ -81,16 +104,17 @@
    const activeMethod=method(src,ex);
    if(mode==='adaptive'){
     adaptive++;
-    sets.forEach((s,i)=>{s.programW=0;if(!s.ok&&!s.manualOverride){const start=num(seeds[i]);s.w=start;s.plannedW=start;s.baselineW=start;s.baselineSource=start>0?'autoweight_seed':'adaptive_pending'}});
+    sets.forEach((s,i)=>{s.programW=0;if(!s.ok&&!s.manualOverride&&s.weightSource!=='manual'&&s.recommendationDecision?.status!=='applied'){const start=num(seeds[i]);s.w=start;s.plannedW=start;s.baselineW=start;s.baselineSource=start>0?'autoweight_seed':'adaptive_pending'}});
     ex.weightDecision=sets.some(s=>num(s.plannedW)>0)?'adaptive_seed':'calibration'
    }else{
     prescribed++;
-    sets.forEach((s,i)=>{s.programW=num(seeds[i]);if(!s.ok&&!s.manualOverride){s.w=num(s.programW);s.plannedW=s.w;s.baselineW=s.w;s.baselineSource='program'}});
+    sets.forEach((s,i)=>{s.programW=num(seeds[i]);if(!s.ok&&!s.manualOverride&&s.weightSource!=='manual'&&s.recommendationDecision?.status!=='applied'){s.w=num(s.programW);s.plannedW=s.w;s.baselineW=s.w;s.baselineSource='program'}});
     ex.weightDecision='program'
    }
    ex.trainingEstimate200={...(ex.trainingEstimate200||{}),mode,method:activeMethod,mathOwner:MATH_OWNER}
   }
   if(unresolved)return false;
+  initializeSetWeights(cur);
   if(cur.trainingReadinessDone)(cur.ex||[]).forEach(ex=>(ex.set||[]).forEach(s=>{if(!s.ok&&!s.manualOverride&&num(s.plannedW)>0)s.w=todayWeight(s.plannedW,ex,cur)}));
   cur.trainingWeightPolicy214=adaptive&&prescribed?'mixed':prescribed?'recommendation':'autoweight';
   cur.trainingEngineRevision=REV;cur.trainingEngineVersion=REV;cur.trainingPreparedAt=new Date().toISOString();cur.trainingMathOwner=MATH_OWNER;cur.trainingTrace200={adaptive,prescribed,policy:cur.trainingWeightPolicy214,mathOwner:MATH_OWNER};
@@ -152,14 +176,14 @@
    const rec=item.s.recommendation;if(rec.proposalKey&&item.s.dismissedRecommendation===rec.proposalKey)return;
    const liveHint=item.s.recommendation?.nextSetSuggestion;
    const el=document.createElement('div');el.className='te200-rec';el.dataset.recommendationOwner=MATH_OWNER;
-   const showHint=()=>{if(!liveHint)return;const hint=document.createElement('div');hint.className='te405-next';hint.style.cssText='padding:9px 11px;color:var(--muted);font-size:12px';hint.textContent=`Следующий подход: ${WorkoutDomain.weightText(ex,liveHint.weight,workoutRegistry,item.s)} кг · ${liveHint.reason}. Нажми «Применить рекомендацию», чтобы изменить вес.`;el.insertAdjacentElement('afterend',hint)};
+   const showHint=()=>{};
    if(!rec.sessionIds?.length&&!rec.nextSetSuggestion&&!rec.testWeekSuggestion){el.textContent=rec.excludedHistory?`Тренировка ${rec.excludedHistory.date} не объединена с текущей: ${rec.excludedHistory.reason}. Проверь оборудование или тип нагрузки.`:group.entries.some(e=>e.programWeightMode==='prescribed')?'Плановый вес сохранён. После первого выполненного подхода запиши повторы и RPE – следующая тренировка получит рекомендацию.':'С этим оборудованием пока нет истории – укажи комфортный вес, затем фактические повторы и RPE. После тренировки появится рекомендация.';if(W.WorkoutFocusFlow?.needsCalibration(item.e,item.s,WorkoutDomain,workoutRegistry)){const button=document.createElement('button');button.type='button';button.className='wf-launch';button.textContent='Подобрать первый вес';button.onclick=()=>W.openLoadCalibration?.(cur.ex.indexOf(item.e));el.appendChild(button)}card.querySelector('.row')?.insertAdjacentElement('afterend',el);showHint();return}
    const fmt=(v,digits=1)=>v!=null&&Number.isFinite(Number(v))?Number(v).toLocaleString('ru-RU',{maximumFractionDigits:digits}):'—',range=rec.repRange,repText=WorkoutDomain.repRangeText(item.e,range);
    const type=WorkoutDomain.loadType(ex,workoutRegistry),suggested=WorkoutDomain.recommendationWeight(rec),weightText=WorkoutDomain.pairedLoad(ex,workoutRegistry,item.s)?`${WorkoutDomain.weightText(ex,suggested,workoutRegistry,item.s)} кг`:type==='bodyweight_only'?'свой вес':type==='per_dumbbell'?`${fmt(suggested,6)} кг на гантель`:type==='per_side'?`${fmt(suggested,6)} кг на сторону`:type==='bodyweight_assisted'?`${fmt(suggested,6)} кг помощи`:`${fmt(suggested,6)} кг`;
-   const title=document.createElement('div');title.className='te200-rec-main';const b=document.createElement('b');b.textContent=`${rec.action==='stop'?'Тест завершён':rec.planPreserved?'План сохранён, нужна проверка':rec.nextSetSuggestion?'Следующий подход':rec.methodStage==='test_attempt'?'Тестовая попытка':rec.methodStage==='isolation_test'?'Проверка рабочего веса':rec.backoffPreview?'Back-off после теста, предварительно':'Рекомендация на подход'}: ${weightText} · ${repText} повт.`;title.append(b);
-   const planned=N(item.s.plannedW??item.s.w);
-   if(suggested!=null&&planned!=null&&Math.abs(planned-suggested)>1e-6){const comparison=document.createElement('div');comparison.className='te406-plan-comparison';const plan=document.createElement('div'),calculated=document.createElement('div');plan.textContent=`Вес в плане: ${WorkoutDomain.weightText(ex,planned,workoutRegistry,item.s)} кг`;calculated.textContent=`Расчётная рекомендация: ${weightText}`;comparison.append(plan,calculated);title.append(comparison)}
-   if(rec.basis){const basis=document.createElement('div');basis.className='te406-basis';basis.textContent=`История: ${rec.strength?.sessionCount||rec.sessionIds.length} тренировок · ${rec.strength?.setCount||0} подходов${(rec.strength?.estimate??rec.basis.estimatedOneRepMax)?` · расчётный 1ПМ ≈ ${fmt(rec.strength?.estimate??rec.basis.estimatedOneRepMax)} кг`:''}${rec.basis.planned?` · план ${WorkoutDomain.weightText(ex,rec.basis.planned,workoutRegistry,item.s)} кг`:''}`;title.append(basis)}
+   const title=document.createElement('div');title.className='te200-rec-main';const b=document.createElement('b');b.textContent=`${rec.action==='stop'?'Тест завершён':item.s.weightMode==='auto'&&!rec.nextSetSuggestion?'Автовес':rec.planPreserved?'План сохранён, нужна проверка':rec.nextSetSuggestion?'Следующий подход':rec.methodStage==='test_attempt'?'Тестовая попытка':rec.methodStage==='isolation_test'?'Проверка рабочего веса':rec.backoffPreview?'Back-off после теста, предварительно':'Рекомендация на подход'}: ${weightText} · ${repText} повт.`;title.append(b);
+   const planned=N(item.s.assignedW??(item.s.weightMode==='auto'?null:item.s.programW??item.s.plannedW??item.s.w));
+   if(suggested!=null&&planned!=null&&Math.abs(planned-suggested)>1e-6){const comparison=document.createElement('div');comparison.className='te406-plan-comparison';const plan=document.createElement('div'),calculated=document.createElement('div');plan.textContent=`Назначено тренером: ${WorkoutDomain.weightText(ex,planned,workoutRegistry,item.s)} кг`;calculated.textContent=`Расчётная рекомендация: ${weightText}`;comparison.append(plan,calculated);title.append(comparison)}
+   if(rec.basis){const basis=document.createElement('div');basis.className='te406-basis';basis.textContent=`История: ${rec.strength?.sessionCount||rec.sessionIds.length} тренировок · ${rec.strength?.setCount||0} подходов${(rec.strength?.estimate??rec.basis.estimatedOneRepMax)?` · расчётный 1ПМ ≈ ${fmt(rec.strength?.estimate??rec.basis.estimatedOneRepMax)} кг`:''}${item.s.assignedW!=null?` · назначено ${WorkoutDomain.weightText(ex,rec.basis.planned,workoutRegistry,item.s)} кг`:''}`;title.append(basis)}
    if(rec.excludedHistory){const skip=document.createElement('div');skip.className='te410-week';skip.textContent=`Есть более новая тренировка ${rec.excludedHistory.date}, но она не объединена с этой: ${rec.excludedHistory.reason}. Проверь настройки упражнения и оборудования.`;title.append(skip)}
    if(rec.weeklyIntensity){const week=document.createElement('div');week.className='te410-week';const wi=rec.weeklyIntensity;week.textContent=`Неделя: ${fmt(wi.min)}–${fmt(wi.max)}%${wi.estimatedMin!=null?` · коридор ≈ ${fmt(wi.estimatedMin)}–${fmt(wi.estimatedMax)} кг`:''}${(rec.testWeekSuggestion||wi.applied)?' · учтено в весе':' · диапазон повторений имеет приоритет'}`;title.append(week)}
    if(rec.series){const series=document.createElement('div');series.className='te410-week';series.textContent=`Прошлая серия: ${rec.series.reps.join(' / ')} · ${rec.series.completed} из ${rec.series.planned} подходов${rec.repetitionGoal!=null?` · цель следующей серии: ${rec.repetitionGoal} повторений суммарно при заданном усилии`:''}`;title.append(series)}
@@ -170,7 +194,31 @@
    if(rec.equipmentName){const equipment=document.createElement('div');equipment.className='te410-equipment';equipment.textContent=`Оборудование: ${rec.equipmentName} · история считается отдельно`;title.append(equipment)}
    const context=document.createElement('div');context.className='te410-week';context.textContent=`W${cur.programWeekNumber||cur.w||1} · ${cur.dayRole||'Middle'} · ${cur.weeklyLoadProfile?.focus||cur.programWeekFocus||''} · ${ex.set?.length||0} подходов · RPE ${fmt(rec.targetEffort.lo)}–${fmt(rec.targetEffort.hi)}, RIR ${fmt(10-rec.targetEffort.hi)}–${fmt(10-rec.targetEffort.lo)}${rec.allowedWeightRange?` · допустимо ≈ ${fmt(rec.allowedWeightRange.min)}–${fmt(rec.allowedWeightRange.max)} кг`:''}${rec.calculatedWeight!=null?` · расчёт ${fmt(rec.calculatedWeight,6)} кг`:''}`;title.append(context);
    const detail=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Почему этот вес?';detail.append(summary);const text=document.createElement('p');text.className='small muted';text.textContent=`${rec.reason}. Цель: ${repText} повт., RPE ${fmt(rec.targetEffort.lo)}–${fmt(rec.targetEffort.hi)}. ${rec.nextSetSuggestion?`После подхода сегодня: ${rec.nextSetSuggestion.reason}, ${fmt(rec.nextSetSuggestion.weight,6)} кг. `:''}${rec.previous==null?'Нет прошлой сопоставимой нагрузки':`Изменение: ${rec.delta>0?'+':''}${fmt(rec.delta,6)} кг`}. Шаг: ${fmt(rec.step,6)} кг. Уверенность: ${rec.confidence}. ${rec.rounding}. Прошлые подходы: ${rec.evidence.join('; ')||'нет'}`;detail.append(text);if(rec.strength?.sources?.length){const source=document.createElement('div');source.className='te410-equipment';source.textContent=`Учтены: ${rec.strength.sources.map(x=>`${String(x.date).slice(0,10)} · ${x.method} · ${fmt(x.weight,6)} × ${x.reps}${x.rpe!=null?` @${fmt(x.rpe)}`:''}`).join('; ')}`;detail.append(source)}if(rec.strength?.protocols){const means=document.createElement('div');means.className='small muted';means.textContent='Оценки по протоколам: '+Object.entries(rec.strength.protocols).map(([name,p])=>`${name}: ${fmt(Number(p.estimate.toFixed(1)))} кг (${p.sets} подходов)`).join('; ');detail.append(means)}title.append(detail);el.append(title);
-   if(!rec.planPreserved&&rec.canApply!==false&&rec.action!=='stop'){const actions=document.createElement('div');actions.className='te200-rec-actions';const button=document.createElement('button');button.type='button';button.className='te200-rec-apply';button.textContent='Применить рекомендацию';button.onclick=()=>{for(const {e,s} of pending){if(s.recommendation?.canApply===false||s.recommendation?.planPreserved||N(s.recommendedW)==null)continue;WorkoutDomain.acceptRecommendation(s,s.recommendation);e.weightDecision='recommendation'}W.save();W.startPage()};actions.append(button);const cancel=document.createElement('button');cancel.type='button';cancel.className='btn';cancel.textContent='Отменить';cancel.onclick=()=>{for(const {s} of pending){if(s.recommendation)WorkoutDomain.dismissRecommendation(s,s.recommendation);}W.save();W.startPage();};actions.append(cancel);el.append(actions)}
+   if(!rec.planPreserved&&rec.canApply!==false&&rec.action!=='stop'){
+    const actions=document.createElement('div');actions.className='te200-rec-actions';
+    const target=document.createElement('select');target.className='te-rec-target';target.setAttribute('aria-label','К каким подходам применить рекомендацию');
+    target.innerHTML='<option value="next">Следующий подход</option><option value="remaining">Все оставшиеся подходы</option><option value="range">Выбрать диапазон подходов</option>';
+    const rangeControls=document.createElement('div');rangeControls.className='te-rec-range';rangeControls.hidden=true;
+    rangeControls.innerHTML=`<label>Из оставшихся, с<input type="number" min="1" max="${pending.length}" value="1" aria-label="Первый подход диапазона"></label><label>По<input type="number" min="1" max="${pending.length}" value="${pending.length}" aria-label="Последний подход диапазона"></label>`;
+    target.onchange=()=>{rangeControls.hidden=target.value!=='range'};
+    const button=document.createElement('button');button.type='button';button.className='te200-rec-apply';button.textContent='Применить';
+    button.onclick=()=>{
+     const bounds=[...rangeControls.querySelectorAll('input')].map(input=>Number(input.value));
+     if(target.value==='range'&&(!bounds.every(Number.isInteger)||bounds[0]<1||bounds[1]<bounds[0]||bounds[1]>pending.length)){W.toast?.('Проверь диапазон оставшихся подходов');return}
+     const targets=target.value==='remaining'?pending:target.value==='range'?pending.slice(bounds[0]-1,bounds[1]):pending.slice(0,1);let count=0;
+     for(const {e,s} of targets){
+      if(s.ok||s.skipped)continue;
+      const latest=WorkoutDomain.recommend(e,s,cur,W.trainingLoadModel292?.history?.()||st.sessions||[],workoutRegistry,st.exerciseWeightProfiles||{});
+      if(latest.canApply===false||latest.planPreserved||WorkoutDomain.recommendationWeight(latest)==null)continue;
+      if(WorkoutDomain.acceptRecommendation(s,latest)){s.recommendation=latest;s.recommendedW=WorkoutDomain.recommendationWeight(latest);e.weightDecision='recommendation';count++;}
+     }
+     if(count){W.save();W.startPage()}else W.toast?.('Недостаточно данных для применения рекомендации');
+    };
+    actions.append(target,rangeControls,button);
+    const cancel=document.createElement('button');cancel.type='button';cancel.className='btn';cancel.textContent='Отменить';
+    cancel.onclick=()=>{for(const {s} of pending)if(s.recommendation)WorkoutDomain.dismissRecommendation(s,s.recommendation);W.save();W.startPage()};
+    actions.append(cancel);el.append(actions);
+   }
    card.querySelector('.row')?.insertAdjacentElement('afterend',el);
    showHint();
   });

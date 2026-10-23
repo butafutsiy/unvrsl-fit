@@ -35,12 +35,15 @@
   function validPrimary(id){return String(id)===BUILTIN||!!customProgram(id)}
   function primaryId(){if(!validPrimary(st.primaryProgramId))st.primaryProgramId=BUILTIN;return String(st.primaryProgramId||BUILTIN)}
 
-  window.setPrimaryProgram=function(id){
+  window.setPrimaryProgram=async function(id){
     id=String(id);
     if(!validPrimary(id))return typeof toast==='function'?toast('Программа не найдена'):undefined;
+    const previous={primaryProgramId:st.primaryProgramId,primaryProgramSelectedAt:st.primaryProgramSelectedAt,startProgramId:st.startProgramId};
     st.primaryProgramId=id;
+    st.primaryProgramSelectedAt=Date.now();
     st.startProgramId=id;
-    try{save()}catch(e){}
+    try{const ok=window.persistWorkoutState?await window.persistWorkoutState():save();if(ok===false)throw Error('save failed')}
+    catch(error){Object.assign(st,previous);toast('Не удалось сохранить основную программу. Повтори попытку');return false}
     if(typeof toast==='function')toast(id===BUILTIN?'Встроенный цикл выбран основным':'Программа выбрана основной');
     try{if(typeof trainerProgramsPage==='function')trainerProgramsPage()}catch(e){}
     try{planPage()}catch(e){}
