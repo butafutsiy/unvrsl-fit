@@ -11,7 +11,7 @@
   function recommendationHistory() {
     const userId = W.cloud?.user?.id;
     const local = Array.isArray(st.sessions) ? st.sessions : [];
-    if (!userId || cloudHistory.userId !== userId) return local;
+    if (!userId || cloudHistory.userId !== userId) return A.recommendationSessions(local,st.current);
     const deleted = new Set((st.deletedSessionIds || []).map(String));
     const byId = new Map();
     for (const session of cloudHistory.sessions) {
@@ -23,7 +23,7 @@
       if (!previous || (session.userId === userId || !session.userId) && completedCount(session) > completedCount(previous))
         byId.set(String(session.id), session);
     }
-    return [...byId.values()];
+    return A.recommendationSessions([...byId.values()],st.current);
   }
   async function refreshOwnedHistory(force = false) {
     const userId = W.cloud?.user?.id, client = W.cloud?.client;
@@ -90,7 +90,7 @@
             workoutRegistry,
             st.exerciseWeightProfiles || {},
           );
-          const observations=recommendationHistory().filter(x=>x.id!==cur.id&&!x.pendingCompletion&&(!cur.userId||!x.userId||x.userId===cur.userId)&&(!cur.date||!x.date||x.date<=cur.date)).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).flatMap(old=>{
+          const observations=recommendationHistory().filter(x=>!x.isLoadCalibration&&x.id!==cur.id&&!x.pendingCompletion&&(!cur.userId||!x.userId||x.userId===cur.userId)&&(!cur.date||!x.date||x.date<=cur.date)).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).flatMap(old=>{
             const match=(old.ex||[]).find(x=>A.loadComparable(ex,x,workoutRegistry,set,x.set?.[0]||{})&&A.method(ex,set)===A.method(x,x.set?.[0]||{}));if(!match)return [];
             const done=(match.set||[]).filter(x=>A.complete(match,x,workoutRegistry)),target=A.effortTarget(match,done[0]||{},old),range=A.repRange(match,done[0]||{});
             const estimate=A.strengthEstimate(ex,A.history(ex,[old],workoutRegistry),workoutRegistry,[],set).estimate;

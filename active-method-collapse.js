@@ -185,7 +185,7 @@
       const before=!!state()?.current?.ex?.[ei]?.set?.[si]?.ok;
       const out=cur.apply(this,arguments);
       const after=!!state()?.current?.ex?.[ei]?.set?.[si]?.ok;
-      if(!before&&after){const sec=setSpecificRest(ei,si);if(sec>0)try{W.timer?.(sec,sec<=30?'Отдых внутри метода':'Отдых между рабочими подходами')}catch(_){ }}
+      if(!before&&after&&arguments[2]?.timer!==false){const sec=setSpecificRest(ei,si);if(sec>0)try{W.timer?.(sec,sec<=30?'Отдых внутри метода':'Отдых между рабочими подходами')}catch(_){ }}
       return out
     };
     wrapped.__activeMethodCollapseV369=true;wrapped.__activeMethodCollapseBase=cur;

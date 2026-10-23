@@ -139,12 +139,13 @@ function make(seed, options = {}) {
       if (options.indexedDB) w.indexedDB = options.indexedDB;
       if (seed)
         for (const [k, v] of Object.entries(seed)) w.localStorage.setItem(k, v);
-      if (options.quota) {
+      if (options.quota || options.trackObservers) {
         const observers = [], NativeObserver = w.MutationObserver;
         w.MutationObserver = class extends NativeObserver {
           constructor(callback) { super(callback); observers.push(this); }
         };
         w.__disconnectTestObservers = () => observers.forEach(o => o.disconnect());
+        if (!options.quota) return;
         const original = w.Storage.prototype.setItem;
         w.Storage.prototype.setItem = function (key, value) {
           if (this === w.localStorage && /^(unvrsl-fit-v3|unvrsl-active-workout-v4)$/.test(key))

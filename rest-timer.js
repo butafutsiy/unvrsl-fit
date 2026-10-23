@@ -30,7 +30,7 @@
   function timerEl(){return document.getElementById('timer')}
   function state(){try{if(typeof st!=='undefined')return st}catch(e){}return window.st||null}
   function currentWorkoutId(){return String(state()?.current?.id||'')}
-  function isWork(){return /^Работа\b/i.test(currentLabel)}
+  function isWork(){return /^Работа(?:\s|·|$)/i.test(currentLabel)}
   function secondsLeft(){return Math.max(0,Math.ceil((end-Date.now())/1000))}
   function text(sec){sec=Math.max(0,Math.floor(Number(sec)||0));const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;return h?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
   function snapshot(){return {end,label:currentLabel,totalMs,activeStarted,workoutId:trackedWorkoutId}}
@@ -77,7 +77,8 @@
     const b=row.querySelector('[data-rest-live]'),value=text(Math.floor(totalRestMs()/1000));if(b&&b.textContent!==value)b.textContent=value;
   }
   function done(){
-    const work=isWork();stop(false);
+    const work=isWork(),finished=snapshot();stop(false);
+    window.dispatchEvent(new CustomEvent('unvrsl:rest-finished',{detail:{...finished,work}}));
     try{if(typeof beep==='function')beep()}catch(e){}
     try{if(navigator.vibrate)navigator.vibrate([120,70,120])}catch(e){}
     try{if(typeof toast==='function')toast(work?'Рабочий интервал закончен':'Отдых закончен')}catch(e){}
@@ -95,8 +96,10 @@
   }
   function add(sec){if(!end||secondsLeft()<=0)return start(sec,currentLabel);end+=sec*1000;sessionStorage.setItem(KEY,String(end));saveTotals();tickV2()}
   function stop(clear=true){
+    const stopped=snapshot();
     if(id)clearInterval(id);id=null;if(activeStarted)commitActiveRest(Math.min(Date.now(),end||Date.now()));
     end=0;sessionStorage.removeItem(KEY);sessionStorage.removeItem(LABEL_KEY);build()?.classList.remove('show');currentLabel='Отдых между подходами';saveTotals();headTotal();
+    if(clear&&stopped.end>0)window.dispatchEvent(new CustomEvent('unvrsl:rest-stopped',{detail:stopped}));
   }
 
   window.timer=start;window.add30=()=>add(30);window.stopTimer=stop;

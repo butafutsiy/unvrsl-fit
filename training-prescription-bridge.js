@@ -53,7 +53,7 @@
   function programWeekTarget(cur){const ctx=programWeek(cur),w=ctx?.w,a=N(cur?.programWeekRpeMin??w?.rpeMin??w?.weekRpeMin),b=N(cur?.programWeekRpeMax??w?.rpeMax??w?.weekRpeMax);if(!(a>0)||!(b>0))return null;return Math.round(((Math.min(a,b)+Math.max(a,b))/2)*2)/2}
   function sourceBlock(cur,ex){
     const ctx=programWeek(cur),w=ctx?.w;if(!w)return null;let days=w.days||[],day=days.find(d=>String(d?.name||'')===String(cur?.c||''));if(day)days=[day,...days.filter(d=>d!==day)];const id=String(ex?.sourceId||''),bn=base(ex?.n).toLowerCase();
-    for(const d of days){const list=d?.ex||[],hit=list.find(x=>(id&&String(x?.sourceId||'')===id)||base(x?.n).toLowerCase()===bn);if(hit)return hit}return null
+    for(const d of days){const list=W.WorkoutFocusFlow?.programEntries(d?.ex)||d?.ex||[],hit=list.find(x=>ex.programExerciseId&&String(x.id)===String(ex.programExerciseId))||list.find(x=>(id&&String(x?.sourceId||'')===id)||base(x?.n).toLowerCase()===bn);if(hit)return hit}return null
   }
   function repsAreManual(set){return !!(set?.ok||set?.manualFields?.r||set?.actualReps!=null||set?.repEntered||set?.__repManualV272||set?.__repManualV283||set?.__repManualV287)}
 

@@ -133,7 +133,7 @@ function beginProgramDay(pid,wi,di){
  let conditioning=[];try{conditioning=(d.conditioning||[]).map(x=>window.ConditioningClock.create(x))}catch(e){toast(e.message);return}
  const ex=[],resolved=b=>typeof window.programResolveExerciseParametersV381==='function'?window.programResolveExerciseParametersV381(pid,wi,b):null;
  const effort=(b,q)=>{const min=q?.effort?.rpeMin??b.rpeMin??b.rpe??8,max=q?.effort?.rpeMax??b.rpeMax??b.rpe??8;return{target:Math.round(((min+max)/2)*2)/2,targetRpeMin:min,targetRpeMax:max,targetRirMin:Math.max(0,10-max),targetRirMax:Math.max(0,10-min)}};
- d.ex.forEach(b=>{
+ (window.WorkoutFocusFlow?.programEntries(d.ex)||d.ex).forEach(b=>{
   if(b.kind==='cardio'){
     const seconds=Number(b.durationSec||b.workSeconds||b.sets?.[0]?.workSeconds)||0;
     ex.push({n:b.n,d:b.note||'',kind:'cardio',mode:'timer',loadType:'time',sourceId:b.sourceId||null,
@@ -141,7 +141,7 @@ function beginProgramDay(pid,wi,di){
       set:(b.sets||[{workSeconds:seconds}]).map((s,i)=>({n:i+1,workSeconds:Number(s.workSeconds)||seconds,rpe:'',ok:false}))});
     return;
   }
-  const group=uid('g'),q=resolved(b),ef=effort(b,q),rest=q?.rest?.value??b.rest??90,tempo=(q?.tempo?.value??b.tempo)||'',equipment={exerciseId:b.exerciseId||null,techniqueId:b.techniqueId||null,kind:b.kind||null,loadType:b.loadType||null,cycleManaged:b.cycleManaged||false,targetIntensityMin:b.targetIntensityMin,targetIntensityMax:b.targetIntensityMax,equipmentProfileId:b.equipmentProfileId||null,equipmentProfile:b.equipmentProfile||null};
+  const group=uid('g'),q=resolved(b),ef=effort(b,q),rest=q?.rest?.value??b.rest??90,tempo=(q?.tempo?.value??b.tempo)||'',equipment={programExerciseId:b.id||null,superGroup:b.superGroup||null,superPos:b.superPos,superSize:b.superSize,transitionSec:b.transitionSec,afterGroupRestSec:b.afterGroupRestSec,exerciseId:b.exerciseId||null,techniqueId:b.techniqueId||null,kind:b.kind||null,loadType:b.loadType||null,cycleManaged:b.cycleManaged||false,targetIntensityMin:b.targetIntensityMin,targetIntensityMax:b.targetIntensityMax,equipmentProfileId:b.equipmentProfileId||null,equipmentProfile:b.equipmentProfile||null};
   if(b.method==='STANDARD')ex.push({n:b.n,d:b.note||'',rest,g:null,sourceId:b.sourceId||null,...equipment,...ef,tempo,method:'STANDARD',mode:'reps',set:(b.sets||[]).map((x,i)=>({n:i+1,w:+x.w||0,...programWorkoutRepTarget(b,q,x),rpe:'',...ef,...programCycleSetTargets(b,q,x),ok:false}))});
   else if(b.method==='FST-7')ex.push({n:`${b.n} — FST-7`,d:b.note||'',rest:30,fullRest:rest,g:group,sourceId:b.sourceId||null,...equipment,...ef,tempo,method:b.method,mode:'reps',set:(b.sets||[]).map((x,i)=>({n:i+1,w:+x.w||0,...programWorkoutRepTarget(b,q,x),rpe:'',...ef,...programCycleSetTargets(b,q,x),ok:false}))});
   else (b.sets||[]).forEach((x,i)=>{const suffix=b.method==='DS'?`DS DS${i+1}`:`${b.method} ${i+1}/${b.sets.length}`;ex.push({n:`${b.n} — ${suffix}`,phaseLabel:x.label||`${i+1}/${b.sets.length}`,phaseRole:x.role||null,d:b.note||'',rest:+x.rest||0,fullRest:rest,g:group,sourceId:b.sourceId||null,...equipment,...ef,tempo:x.tempo||tempo,method:b.method,mode:'reps',set:[{n:1,role:x.role,w:+x.w||0,...programWorkoutRepTarget(b,q,x),rpe:'',...ef,...programCycleSetTargets(b,q,x),ok:false}]})})

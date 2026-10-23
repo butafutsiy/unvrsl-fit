@@ -55,7 +55,7 @@
 
   function bindCurrentToProgram(p,w,d,wi){
     const cur=state()?.current;if(!cur||String(cur.programId||'')!==String(p?.id||''))return;const b=weekBand(w);cur.programWeekNumber=wi+1;cur.programWeekIntensityMin=b?b[0]*100:null;cur.programWeekIntensityMax=b?b[1]*100:null;cur.programWeekUseIntensity=useWeekIntensity(w);cur.programIntensityRevision=REV;
-    const blocks=d?.ex||[];(cur.ex||[]).forEach(ex=>{const bn=base(ex?.n).toLowerCase(),src=blocks.find(b=>(ex?.sourceId&&b?.sourceId&&String(ex.sourceId)===String(b.sourceId))||base(b?.n).toLowerCase()===bn)||blocks.find(b=>bn.startsWith(base(b?.n).toLowerCase())),mode=weightMode(src);ex.programWeightMode=mode==='auto'?'adaptive':'prescribed';(ex.set||[]).forEach(s=>{if(mode==='auto')s.programW=0;else if(!(num(s.programW)>0)&&num(s.w)>0)s.programW=num(s.w)})});saveState()
+    const blocks=W.WorkoutFocusFlow?.programEntries(d?.ex)||d?.ex||[];(cur.ex||[]).forEach(ex=>{const bn=base(ex?.n).toLowerCase(),src=blocks.find(b=>(ex?.sourceId&&b?.sourceId&&String(ex.sourceId)===String(b.sourceId))||base(b?.n).toLowerCase()===bn)||blocks.find(b=>bn.startsWith(base(b?.n).toLowerCase())),mode=weightMode(src);ex.programWeightMode=mode==='auto'?'adaptive':'prescribed';(ex.set||[]).forEach(s=>{if(mode==='auto')s.programW=0;else if(!(num(s.programW)>0)&&num(s.w)>0)s.programW=num(s.w)})});saveState()
   }
   W.programIntensityApplyV261=()=>recalc(true);
 

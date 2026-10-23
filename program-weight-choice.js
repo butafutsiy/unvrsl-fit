@@ -34,6 +34,10 @@
     };
     const visit=node=>{
       if(!node||typeof node!=='object')return;
+      if(node.method==='SUPERSET'){
+        node.weightMode='auto';node.programWeightMode='adaptive';
+        for(const settings of node.itemSettings||[])clearWeights(settings);
+      }
       if(!Array.isArray(node)&&(Array.isArray(node.sets)||Array.isArray(node.set)||(node.n&&Object.prototype.hasOwnProperty.call(node,'w')))){
         clearWeights(node);node.weightMode='auto';node.programWeightMode='adaptive';
         node.parameterOverrides={...node.parameterOverrides,weight:{mode:'auto',value:null}};
