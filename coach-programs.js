@@ -63,11 +63,32 @@ function programEditorCloseV386(){
  if(target==='programs'&&typeof window.trainerProgramsPage==='function')window.trainerProgramsPage();else planPage()
 }
 window.programEditorCloseV386=programEditorCloseV386;window.programEditorCloseV385=programEditorCloseV386
+let programSaveBusy=false;
+async function saveProgram(id){
+ const p=programById(id);if(!p||programSaveBusy)return false;
+ programSaveBusy=true;
+ const button=document.getElementById('saveProgramButton');if(button)button.disabled=true;
+ const status=document.getElementById('saveProgramStatus');
+ try{
+  p.updated=p.updatedAt=Date.now();
+  const ok=window.persistWorkoutState?await window.persistWorkoutState():save();
+  if(ok===false)throw Error('Не удалось сохранить программу на устройстве. Повтори попытку.');
+  if(status)status.textContent='Программа сохранена на устройстве';
+  toast('Программа сохранена');
+  if(window.cloud?.user&&window.accountSyncNow){
+   if(status)status.textContent='Сохранено на устройстве · синхронизация…';
+   const synced=await window.accountSyncNow({quiet:true});
+   if(status)status.textContent=synced?'Программа сохранена и синхронизирована':'Сохранено на устройстве. Облачная синхронизация не завершена — повтори при подключении к сети.';
+  }
+  return true;
+ }catch(error){if(status)status.textContent=error.message;else toast(error.message);return false}
+ finally{programSaveBusy=false;if(button)button.disabled=false}
+}
 function renderProgramEditor(){
  const p=programById(programUi.pid);if(!p)return false;ensureProgramShape(p);
  const w=p.weeks[programUi.week]||p.weeks[0];if(!w)return false;
  const sheet=document.getElementById('sheet'),key=`${p.id}|${programUi.week}`,keep=sheet?.dataset?.programEditorKey===key&&document.getElementById('modal')?.classList.contains('show'),scroll=keep?sheet.scrollTop:0;
- modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${esc(p.name)}</h2><div class="muted">Конструктор программы</div></div><button class="btn tiny" onclick="programEditorCloseV386()">✕</button></div><div class="weekbar">${p.weeks.map((x,i)=>`<button class="weekbtn ${i===programUi.week?'on':''}" onclick="programUi.week=${i};renderProgramEditor()">W${i+1}</button>`).join('')}</div><div class="coach-actions"><button class="btn tiny" onclick="renameProgramSheet('${p.id}')">Переименовать</button><button class="btn tiny" onclick="copyProgramWeek('${p.id}',${programUi.week})">Копировать неделю</button><button class="btn tiny" onclick="addProgramWeek('${p.id}')">＋ Неделя</button></div>${window.cycleEditorHtml?.(p,programUi.week)||''}${window.intakeReviewBanner?.(p)||''}<div class="section">НЕДЕЛЯ ${programUi.week+1}</div>${w.days.map((d,di)=>programDayCard(p,w,d,di)).join('')}<button class="btn full" onclick="addProgramDay('${p.id}',${programUi.week})">＋ Добавить тренировку</button><div class="coach-actions"><button class="btn primary" onclick="shareProgram('${p.id}')">Поделиться программой</button><button class="btn" onclick="saveProgramAsTemplate('${p.id}')">Сохранить как шаблон</button></div>`);
+ modal(`<div class="sheet-grabber"></div><div class="row between"><div><h2>${esc(p.name)}</h2><div class="muted">Конструктор программы</div></div><button class="btn tiny" onclick="programEditorCloseV386()">✕</button></div><div class="weekbar">${p.weeks.map((x,i)=>`<button class="weekbtn ${i===programUi.week?'on':''}" onclick="programUi.week=${i};renderProgramEditor()">W${i+1}</button>`).join('')}</div><div class="coach-actions"><button class="btn tiny" onclick="renameProgramSheet('${p.id}')">Переименовать</button><button class="btn tiny" onclick="copyProgramWeek('${p.id}',${programUi.week})">Копировать неделю</button><button class="btn tiny" onclick="addProgramWeek('${p.id}')">＋ Неделя</button></div>${window.cycleEditorHtml?.(p,programUi.week)||''}${window.intakeReviewBanner?.(p)||''}<div class="section">НЕДЕЛЯ ${programUi.week+1}</div>${w.days.map((d,di)=>programDayCard(p,w,d,di)).join('')}<button class="btn full" onclick="addProgramDay('${p.id}',${programUi.week})">＋ Добавить тренировку</button><button id="saveProgramButton" class="btn primary full" style="margin-top:12px" onclick="saveProgram('${p.id}')">Сохранить программу</button><p id="saveProgramStatus" class="muted small" role="status">Изменения сохраняются автоматически на этом устройстве.</p><div class="coach-actions"><button class="btn primary" onclick="shareProgram('${p.id}')">Поделиться программой</button><button class="btn" onclick="saveProgramAsTemplate('${p.id}')">Сохранить как шаблон</button></div>`);
  const next=document.getElementById('sheet');if(next){next.dataset.programEditorKey=key;next.scrollTop=keep?scroll:0}document.getElementById('modal')?.classList.add('px-program-modal');
  window.dispatchEvent(new CustomEvent('unvrsl:program-editor-rendered',{detail:{key}}));return true
 }
@@ -178,15 +199,28 @@ let programImportBusy=false;
 async function importSharedProgram(){
  const payload=window.__sharedProgram;if(!payload?.program||programImportBusy)return;
  programImportBusy=true;
+ const backup=clone(st),deletedKey='unvrsl-fit-deleted-programs-v2',deletedBackup=localStorage.getItem(deletedKey);
  try{
   const incoming=clone(payload.program),rawId=String(incoming.id||''),stableId=/^[a-zA-Z0-9_-]{1,100}$/.test(rawId)?rawId:'';
-  let p=stableId?st.programs.find(x=>String(x.id)===stableId):null;
-  if(!p){p=incoming;p.id=stableId||uid('prog');p.name=p.name||'Полученная программа';p.created=p.updated=p.createdAt=p.updatedAt=Date.now();ensureProgramShape(p);p.weeks.forEach(w=>w.days.forEach(d=>d.id=uid('day')));st.programs.push(p)}
+  incoming.id=stableId;
+  let p=stableId?st.programs.find(x=>String(x.id)===stableId&&!x.cloudPlanId):null;
+  if(!p&&st.programs.some(x=>String(x.id)===stableId))incoming.id=uid('prog');
+  if(!p){p=incoming;p.id=incoming.id||stableId||uid('prog');p.name=p.name||'Полученная программа';p.created=p.updated=p.createdAt=p.updatedAt=Date.now();ensureProgramShape(p);p.weeks.forEach(w=>w.days.forEach(d=>d.id=uid('day')));st.programs.push(p)}
+  // A standalone link imports a personal copy, with no trainer assignment.
+  for(const field of ['cloudPlanId','cloudVersion','autoWeightCloudPlanId','autoWeightCloudVersion','trainerId','pendingCloudUpdate'])delete p[field];
+  p.importedFromLink=true;
+  window.unvrslRestoreProgramKeys?.(p);
   st.deletedProgramKeys=(st.deletedProgramKeys||[]).filter(k=>k!==`id:${p.id}`);
   try{const key='unvrsl-fit-deleted-programs-v2';const keys=JSON.parse(localStorage.getItem(key)||'[]');localStorage.setItem(key,JSON.stringify(keys.filter(k=>k!==`id:${p.id}`)))}catch(_){}
+  const client=typeof window.unvrslTrainerMode==='function'&&!window.unvrslTrainerMode();
+  if(client)st.clientPrimaryProgramKey=st.clientPlanViewKey='coach:'+p.id;
   const ok=window.persistWorkoutState?await window.persistWorkoutState():save();if(ok===false)throw Error('Не удалось сохранить. Повтори добавление.');
-  clearSharedProgramUrl();window.__sharedProgram=null;closeModal();nav('programs');window.trainerProgramsPage?.();openProgramEditor(p.id,0,0);toast('Программа сохранена')
- }catch(e){const status=document.getElementById('programImportStatus');if(status)status.textContent=e.message||'Не удалось сохранить программу';else toast('Не удалось сохранить программу')}
+  clearSharedProgramUrl();window.__sharedProgram=null;closeModal();
+  if(client){nav('plan');window.clientCleanPlanPage?.()}
+  else{nav('programs');window.trainerProgramsPage?.();openProgramEditor(p.id,0,0)}
+  toast('Программа сохранена');
+  if(window.cloud?.user)window.accountSyncNow?.({quiet:true});
+ }catch(e){Object.keys(st).forEach(key=>delete st[key]);Object.assign(st,backup);try{if(deletedBackup==null)localStorage.removeItem(deletedKey);else localStorage.setItem(deletedKey,deletedBackup)}catch(_){}const status=document.getElementById('programImportStatus');if(status)status.textContent=e.message||'Не удалось сохранить программу';else toast('Не удалось сохранить программу')}
  finally{programImportBusy=false}
 }
 function clearSharedProgramUrl(){const u=new URL(location.href);u.searchParams.delete('program');u.hash='';history.replaceState(null,'',u.pathname+u.search)}

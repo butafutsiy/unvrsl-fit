@@ -48,12 +48,23 @@
     base.deletedSessionIds=[...new Set([...arr(local.deletedSessionIds),...arr(remote.deletedSessionIds)])];
     const deletedSessions=new Set(base.deletedSessionIds.map(String));base.sessions=base.sessions.filter(x=>!deletedSessions.has(String(x.id)));
     base.mealNutritionV1=(typeof window!=='undefined'?window.UNVRSLNutritionState:null)?.merge(local.mealNutritionV1,remote.mealNutritionV1,preferRemote)||base.mealNutritionV1;
-    base.deletedProgramKeys=[...new Set([...arr(local.deletedProgramKeys),...arr(remote.deletedProgramKeys)])];
+    for(const field of ['programDeletedAt','programRestoredAt']){
+      base[field]={...local[field]};
+      for(const [key,stamp] of Object.entries(remote[field]||{}))base[field][key]=Math.max(Number(stamp)||0,Number(base[field][key])||0);
+    }
+    base.deletedProgramKeys=[...new Set([...arr(local.deletedProgramKeys),...arr(remote.deletedProgramKeys),...Object.keys(base.programDeletedAt)])]
+      .filter(key=>Number(base.programRestoredAt[key]||0)<=Number(base.programDeletedAt[key]||0));
     const deletedPrograms=new Set(base.deletedProgramKeys);
     const programKeys=p=>[p.id&&`id:${p.id}`,p.isMasterPlan&&'seed:master-trainer-plan',p.seedId&&`seed:${p.seedId}`,p.cloudPlanId&&`cloud:${p.cloudPlanId}`,p.templateKey&&`template:${p.templateKey}`,(p.seedId||p.internetTemplate||p.femaleTemplate||p.templateKey)&&p.name&&`name:${String(p.name).toLowerCase().replace(/[·•]/g,' ').replace(/\s+/g,' ').trim()}`].filter(Boolean);
     base.programs=mergeByKey(first.programs,second.programs,x=>String(x.id||x.title||x.name||''),x=>Math.max(Number(x.updated||0),Number(x.updatedAt||0),Number(x.created||0),Number(x.createdAt||0))).filter(p=>!programKeys(p).some(k=>deletedPrograms.has(k)));
+    const recovered=[...arr(local.programs),...arr(remote.programs)].filter(p=>programKeys(p).some(k=>deletedPrograms.has(k)))
+      .map(p=>({id:String(p.id),program:p,deletedAt:Math.max(1,...programKeys(p).map(k=>Number(base.programDeletedAt[k]||0)))}));
+    base.programTrash=mergeByKey([...arr(first.programTrash),...recovered],second.programTrash,x=>String(x.id||''),x=>Number(x.deletedAt||0))
+      .filter(x=>x.program&&programKeys(x.program).some(k=>deletedPrograms.has(k)));
     base.seededPrograms={...(remote.seededPrograms||{}),...(local.seededPrograms||{})};
-    base.builtinProgramHidden=!!(local.builtinProgramHidden||remote.builtinProgramHidden);
+    const visibilitySource=Number(remote.builtinProgramVisibilityUpdatedAt||0)>Number(local.builtinProgramVisibilityUpdatedAt||0)?remote:local;
+    base.builtinProgramVisibilityUpdatedAt=Number(visibilitySource.builtinProgramVisibilityUpdatedAt||0);
+    base.builtinProgramHidden=base.builtinProgramVisibilityUpdatedAt?!!visibilitySource.builtinProgramHidden:!!(local.builtinProgramHidden||remote.builtinProgramHidden);
     const builtinSource=Number(remote.builtinProgramNameUpdatedAt||0)>Number(local.builtinProgramNameUpdatedAt||0)?remote:local;
     if(builtinSource.builtinProgramName){base.builtinProgramName=builtinSource.builtinProgramName;base.builtinProgramNameUpdatedAt=builtinSource.builtinProgramNameUpdatedAt||0}
     base.remotePlans=mergeByKey(first.remotePlans,second.remotePlans,x=>String(x.id||''),x=>Number(x.version||x.updatedAt||0));
@@ -183,6 +194,7 @@
     });
   })();
 
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')reconcile({quiet:true})});
+  document.addEventListener('visibilitychange',()=>reconcile({quiet:true}));
+  window.addEventListener('pageshow',()=>reconcile({quiet:true}));
   window.addEventListener('online',()=>reconcile({quiet:true}));
 })();

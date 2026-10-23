@@ -86,6 +86,7 @@ async function cloudAcceptInviteProgramAware(){
     p.id=typeof uid==='function'?uid('prog'):'prog-'+Date.now();
     p.cloudPlanId=data.plan_id;p.cloudVersion=data.version||1;p.trainerId=data.trainer_id;p.trainerName=data.trainer;
     p.created=Date.now();p.updated=Date.now();
+    window.unvrslRestoreProgramKeys?.(p);
     if(typeof ensureProgramShape==='function')ensureProgramShape(p);
     p.weeks?.forEach(w=>w.days?.forEach(d=>d.id=typeof uid==='function'?uid('day'):'day-'+Math.random()));
     const old=st.programs.findIndex(x=>x.cloudPlanId===data.plan_id);
@@ -104,6 +105,7 @@ async function cloudAcceptInviteProgramAware(){
   closeModal();
   render();
   toast('Программа добавлена');
+  window.accountSyncNow?.({quiet:true});
   }catch(error){console.warn('Program invite failed',error);alert('Не удалось добавить программу: '+(error.message||error))}
   finally{acceptingProgramInvite=false}
 }

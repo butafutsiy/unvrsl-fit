@@ -65,7 +65,7 @@
   }
   function assignedProgramsStrict(){
     if(!isClient())return [];
-    return (Array.isArray(st.programs)?st.programs:[]).filter(p=>p&&!p.archived&&p.cloudPlanId&&p.trainerId&&hasAssignment(p.cloudPlanId))
+    return (Array.isArray(st.programs)?st.programs:[]).filter(p=>p&&!p.archived&&!window.unvrslIsDeletedProgram?.(p)&&((p.importedFromLink&&!p.cloudPlanId)||(p.cloudPlanId&&p.trainerId&&hasAssignment(p.cloudPlanId))))
   }
   window.assignedClientPrograms=assignedProgramsStrict;
   try{assignedClientPrograms=assignedProgramsStrict}catch(e){}

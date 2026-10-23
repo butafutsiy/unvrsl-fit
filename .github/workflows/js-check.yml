@@ -119,6 +119,10 @@ jobs:
           node tests/runtime-eight-week-cycle.cjs
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
           node tests/runtime-cycle-settings.cjs
+      - name: Verify saved programs, re-import and trash recovery
+        run: |
+          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
+          node tests/runtime-program-recovery.cjs
       - name: Audit traceable nutrition catalog
         run: node scripts/audit-nutrition.cjs
       - name: Audit catalog fields

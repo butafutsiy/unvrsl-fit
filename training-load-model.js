@@ -63,7 +63,7 @@
     const cur = st.current;
     if (!cur || cur.pendingCompletion) return false;
     running = true;
-    let changed = false;
+    let changed = false, weightsChanged = false;
     try {
       W.equipmentAttachDefaults405?.(cur);
       for (const ex of cur.ex || []) {
@@ -106,8 +106,18 @@
             set.trainingIntensity292 = { owner: "workout-domain" };
             changed = true;
           }
-          // Applying a recommendation is an explicit action in training-engine.
-          // Recalculation never overwrites the assigned or manual weight.
+          // Auto mode fills pending loads; prescribed and manually edited loads
+          // still require the explicit recommendation button.
+          if (ex.programWeightMode === "adaptive" &&
+              suggested > 0 && (rec.sessionIds.length > 0 || rec.nextSetSuggestion || rec.strength?.estimate > 0) &&
+              set.recommendationDecision?.status !== 'applied' &&
+              !set.dismissedRecommendation && !rec.planPreserved) {
+            const before = set.w;
+            if (A.applyAuto(set, rec)) {
+              set.plannedW = set.w;
+              if (before !== set.w) changed = weightsChanged = true;
+            }
+          }
           ex.trainingProgression292 = {
             actualEffort: rec.sessionIds.length>0,
             action: rec.action,
@@ -115,7 +125,7 @@
           };
           ex.weightDecision =
             ex.programWeightMode === "adaptive"
-              ? "recommendation_pending"
+              ? (set.weightSource === 'auto' ? 'adaptive_auto' : 'recommendation_pending')
               : ex.weightDecision;
         }
       }
@@ -123,6 +133,7 @@
       cur.trainingMathOwner = "workout-domain";
       if (changed) {
         save({ draftOnly: true });
+        if (weightsChanged) W.startPage?.();
         W.trainingEngine200Tick?.();
       }
       return changed;

@@ -28,17 +28,17 @@ test('personal plan preserves both original days and glute bridge replacement ac
   const restored=JSON.parse(JSON.stringify(plan));
   assert.deepEqual(restored.weeks,JSON.parse(JSON.stringify(plan.weeks)));
 });
-test('loading never seeds other users; explicit add is idempotent and preserves an active workout',()=>{
+test('loading never seeds other users; explicit add is idempotent and preserves an active workout',async()=>{
   const current={id:'unfinished',ex:[{n:'Existing',set:[{w:100,r:8,ok:true}]}]};
   const st={programs:[],current};let saves=0,syncs=0;
   const root={st,WorkoutDomain:domain,location:{href:'https://example.test/?addPlan='+api.ID},history:{replaceState(){}},addEventListener(){},templatesSheet(){},accountSyncNow(){syncs++}};
   const context={window:root,st,save(){saves++},URL,document:{}};
   vm.runInNewContext(fs.readFileSync(require.resolve('../semen-training-plan.js'),'utf8'),context);
   assert.equal(st.programs.length,0);
-  root.addSemenTrainingPlan();
+  await root.addSemenTrainingPlan();
   assert.equal(st.programs.length,1);assert.equal(st.primaryProgramId,api.ID);
   st.programs[0].weeks[0].days[0].ex[0].sets[0].w=95;
-  root.addSemenTrainingPlan();
+  await root.addSemenTrainingPlan();
   assert.equal(st.programs.length,1);
   assert.equal(st.programs[0].weeks[0].days[0].ex[0].sets[0].w,95);
   assert.equal(st.current,current);assert.equal(saves,2);assert.equal(syncs,2);

@@ -7,7 +7,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
     w.history.replaceState(null,'','?addPlan=semen-upper-lower-8');
     w.dispatchEvent(new w.CustomEvent('unvrsl:app-ready'));
     assert.match(w.document.getElementById('sheet').textContent,/Добавить в мои программы/);
-    w.addSemenTrainingPlan();
+    await w.addSemenTrainingPlan();
     const result=await w.eval(`(async()=>{
       const p=st.programs.find(p=>p.seedId==='semen-upper-lower-8');
       const rows=[];

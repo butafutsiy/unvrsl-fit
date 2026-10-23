@@ -5,9 +5,9 @@ function masterTrainerEmail(){return String(cloud?.user?.email||'').trim().toLow
 function unvrslTrainerMode(){return masterTrainerEmail()||cloud?.profile?.role==='trainer'}
 function assignedClientPrograms(){
   const userId=String(cloud?.user?.id||'');
-  if(!userId||String(st.clientAssignedUserId||'')!==userId||st.clientAssignmentsLoaded!==true)return[];
-  const active=new Set((Array.isArray(st.clientAssignedPlanIds)?st.clientAssignedPlanIds:[]).map(String));
-  return(st.programs||[]).filter(p=>p&&p.cloudPlanId&&p.trainerId&&active.has(String(p.cloudPlanId)))
+  const loaded=userId&&String(st.clientAssignedUserId||'')===userId&&st.clientAssignmentsLoaded===true;
+  const active=new Set(loaded?(st.clientAssignedPlanIds||[]).map(String):[]);
+  return(st.programs||[]).filter(p=>p&&!p.archived&&!window.unvrslIsDeletedProgram?.(p)&&((p.importedFromLink&&!p.cloudPlanId)||(p.cloudPlanId&&p.trainerId&&active.has(String(p.cloudPlanId)))))
 }
 
 const _modeCloudEnsureProfile=window.cloudEnsureProfile;

@@ -28,6 +28,7 @@
   function readDeleted(){
     const out=new Set(Array.isArray(st.deletedProgramKeys)?st.deletedProgramKeys:[]);
     try{(JSON.parse(localStorage.getItem(STORE)||'[]')||[]).forEach(x=>out.add(String(x)))}catch(e){}
+    for(const key of out)if(Number(st.programRestoredAt?.[key]||0)>Number(st.programDeletedAt?.[key]||0))out.delete(key);
     return out;
   }
   function writeDeleted(set){
@@ -46,6 +47,49 @@
     ].filter(Boolean).map(String);
   }
   function isDeleted(p,set=readDeleted()){return keysFor(p).some(k=>set.has(k))}
+  const copy=value=>JSON.parse(JSON.stringify(value));
+  function archiveProgram(p,deletedAt=Date.now()){
+    st.programTrash=Array.isArray(st.programTrash)?st.programTrash:[];
+    const entry={id:String(p.id),program:copy(p),deletedAt};
+    const i=st.programTrash.findIndex(x=>x.id===entry.id);
+    if(i<0)st.programTrash.push(entry);
+    else if(st.programTrash[i].deletedAt<deletedAt)st.programTrash[i]=entry;
+  }
+  function restoreKeys(p){
+    const set=readDeleted();st.programRestoredAt=st.programRestoredAt||{};
+    for(const key of keysFor(p)){
+      set.delete(key);st.programRestoredAt[key]=Math.max(Date.now(),Number(st.programDeletedAt?.[key]||0)+1);
+    }
+    writeDeleted(set);
+    st.programTrash=(st.programTrash||[]).filter(x=>!keysFor(x.program).some(k=>keysFor(p).includes(k)));
+  }
+  window.unvrslRestoreProgramKeys=restoreKeys;
+  window.unvrslIsDeletedProgram=isDeleted;
+  async function persist(){
+    const ok=window.persistWorkoutState?await window.persistWorkoutState():save();
+    if(ok===false)throw Error('Не удалось сохранить изменения. Повтори попытку.');
+  }
+  window.openProgramTrash=function(){
+    const trash=Array.isArray(st.programTrash)?st.programTrash:[];
+    const rows=trash.slice().sort((a,b)=>b.deletedAt-a.deletedAt).map(entry=>`<div class="card"><b>${esc(entry.program?.name||'Программа')}</b><p class="muted small">${entry.program?.weeks?.length||0} нед. · удалена ${esc(new Date(entry.deletedAt).toLocaleDateString('ru-RU'))}</p><button class="btn primary full" onclick="restoreDeletedProgram('${encodeURIComponent(entry.id)}')">Восстановить</button></div>`).join('');
+    modal(`<div class="row between"><h2>Корзина программ</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><p class="muted small">Удалённые программы хранятся здесь до восстановления.</p>${st.builtinProgramHidden?'<button class="btn full" onclick="restoreBuiltinProgram()">Восстановить встроенный цикл</button>':''}${rows||'<p class="muted">В корзине пока нет программ. Программы, удалённые до появления корзины, могут отсутствовать.</p>'}<p id="programTrashStatus" role="status"></p>`);
+  };
+  let restoreBusy=false;
+  window.restoreDeletedProgram=async function(token){
+    if(restoreBusy)return;const entry=(st.programTrash||[]).find(x=>x.id===decodeURIComponent(token));if(!entry)return;
+    restoreBusy=true;const backup=copy(st),deleted=readDeleted();
+    try{
+      const p=copy(entry.program);p.archived=false;p.updated=p.updatedAt=Date.now();
+      restoreKeys(p);st.programs=(st.programs||[]).filter(x=>String(x.id)!==String(p.id));st.programs.push(p);
+      normalizePrimary();await persist();refreshViews();window.openProgramTrash();toast('Программа восстановлена');
+    }catch(error){Object.keys(st).forEach(key=>delete st[key]);Object.assign(st,backup);writeDeleted(deleted);const status=document.getElementById('programTrashStatus');if(status)status.textContent=error.message}
+    finally{restoreBusy=false}
+  };
+  window.restoreBuiltinProgram=async function(){
+    const previous=st.builtinProgramHidden,stamp=st.builtinProgramVisibilityUpdatedAt;
+    try{st.builtinProgramHidden=false;st.builtinProgramVisibilityUpdatedAt=Date.now();await persist();localStorage.removeItem(BUILTIN_STORE);refreshViews();window.openProgramTrash();toast('Встроенная программа восстановлена')}
+    catch(error){st.builtinProgramHidden=previous;st.builtinProgramVisibilityUpdatedAt=stamp;toast(error.message)}
+  };
   function visiblePrograms(){return (Array.isArray(st.programs)?st.programs:[]).filter(p=>p&&!p.archived&&!isDeleted(p))}
   function fallbackId(){const p=visiblePrograms()[0];return p?String(p.id):(st.builtinProgramHidden?'':BUILTIN)}
   function normalizePrimary(){
@@ -57,7 +101,10 @@
   }
   function applyTombstones(persist=false){
     const set=readDeleted(),before=(st.programs||[]).length;
-    st.programs=(Array.isArray(st.programs)?st.programs:[]).filter(p=>!isDeleted(p,set));
+    st.programs=(Array.isArray(st.programs)?st.programs:[]).filter(p=>{
+      if(!isDeleted(p,set))return true;
+      archiveProgram(p,Math.max(1,...keysFor(p).map(k=>Number(st.programDeletedAt?.[k]||0))));return false;
+    });
     normalizePrimary();
     if(persist||before!==st.programs.length)try{save()}catch(e){}
   }
@@ -66,19 +113,23 @@
     try{if(typeof planPage==='function')planPage()}catch(e){}
   }
 
+  let deleteBusy=false;
   window.trainerDeleteOwnProgram=async function(id){
+    if(deleteBusy)return;
     id=String(id);
     if(id===BUILTIN)return window.deleteBuiltinProgram();
     const p=(Array.isArray(st.programs)?st.programs:[]).find(x=>String(x?.id)===id);if(!p)return;
     const cloudNote=p.cloudPlanId?'\n\nУже отправленные клиентам версии останутся у них, пока ты не уберёшь их в карточке клиента.':'';
-    if(!confirm(`Удалить программу «${p.name||'Программа'}»?${cloudNote}`))return;
-    const set=readDeleted();keysFor(p).forEach(k=>set.add(k));writeDeleted(set);
+    if(!confirm(`Переместить программу «${p.name||'Программа'}» в корзину? Её можно будет восстановить.${cloudNote}`))return;
+    deleteBusy=true;const backup=copy(st),previousDeleted=readDeleted(),at=Date.now();
+    archiveProgram(p,at);st.programDeletedAt=st.programDeletedAt||{};
+    const set=readDeleted();keysFor(p).forEach(k=>{set.add(k);st.programDeletedAt[k]=Math.max(at,Number(st.programRestoredAt?.[k]||0)+1)});writeDeleted(set);
     if(p.seedId){st.seededPrograms=st.seededPrograms&&typeof st.seededPrograms==='object'?st.seededPrograms:{};st.seededPrograms[p.seedId]=true}
     st.programs=(st.programs||[]).filter(x=>String(x?.id)!==id);
     normalizePrimary();
-    try{if(await window.persistWorkoutState()===false)throw new Error('save failed')}catch(e){toast('Не удалось сохранить удаление. Оставь приложение открытым и повтори попытку');refreshViews();return}
+    try{await persist()}catch(e){Object.keys(st).forEach(key=>delete st[key]);Object.assign(st,backup);writeDeleted(previousDeleted);toast('Не удалось сохранить удаление. Повтори попытку');refreshViews();return}finally{deleteBusy=false}
     if(typeof closeModal==='function')try{closeModal()}catch(e){}
-    if(typeof toast==='function')toast('Программа удалена');
+    if(typeof toast==='function')toast('Программа перемещена в корзину');
     refreshViews();
   };
   try{trainerDeleteOwnProgram=window.trainerDeleteOwnProgram}catch(e){}
@@ -91,6 +142,7 @@
     const name=typeof window.unvrslBuiltInProgramName==='function'?window.unvrslBuiltInProgramName():(st.builtinProgramName||'Встроенный цикл · 8 недель');
     if(!confirm(`Удалить программу «${name}» из «Моих программ»?\n\nСам тренировочный код останется в приложении, но программа больше не будет отображаться и выбираться для старта.`))return;
     st.builtinProgramHidden=true;
+    st.builtinProgramVisibilityUpdatedAt=Date.now();
     try{localStorage.setItem(BUILTIN_STORE,'1')}catch(e){}
     if(String(st.primaryProgramId)===BUILTIN)st.primaryProgramId=fallbackId();
     if(String(st.startProgramId)===BUILTIN)st.startProgramId=st.primaryProgramId||fallbackId();
@@ -133,7 +185,7 @@
     if(typeof trainerIsTrainer==='function'&&!trainerIsTrainer()){el.innerHTML='<div class="card"><div class="title">Раздел тренера</div></div>';return}
     applyTombstones(false);
     const list=builtinCard()+visiblePrograms().map(programCard).join('');
-    el.innerHTML=`<div class="card"><div class="row between"><div><div class="title">Программы</div><div class="muted">Создание, шаблоны и отправка клиентам</div></div><button class="btn primary" onclick="newProgramSheet()">＋</button></div><div class="coach-actions"><button class="btn" onclick="templatesSheet()">Шаблоны</button></div></div><div class="section">МОИ ПРОГРАММЫ</div>${list||'<div class="card muted">Пока нет программ. Создай новую или выбери шаблон.</div>'}`;
+    el.innerHTML=`<div class="card"><div class="row between"><div><div class="title">Программы</div><div class="muted">Создание, шаблоны и отправка клиентам</div></div><button class="btn primary" onclick="newProgramSheet()">＋</button></div><div class="coach-actions"><button class="btn" onclick="templatesSheet()">Шаблоны</button><button class="btn" onclick="openProgramTrash()">Корзина · ${(st.programTrash||[]).length+(st.builtinProgramHidden?1:0)}</button></div></div><div class="section">МОИ ПРОГРАММЫ</div>${list||'<div class="card muted">Пока нет программ. Создай новую или выбери шаблон.</div>'}`;
   };
   try{trainerProgramsPage=window.trainerProgramsPage}catch(e){}
 
@@ -188,7 +240,7 @@
   window.quick=window.openStartProgramPicker;try{quick=window.quick}catch(e){}
   window.quickWeek=function(w){picker.week=w;renderPicker()};try{quickWeek=window.quickWeek}catch(e){}
 
-  try{if(localStorage.getItem(BUILTIN_STORE)==='1')st.builtinProgramHidden=true}catch(e){}
+  try{if(!st.builtinProgramVisibilityUpdatedAt&&localStorage.getItem(BUILTIN_STORE)==='1')st.builtinProgramHidden=true}catch(e){}
   applyTombstones(true);
   [0,250,900,1800].forEach(t=>setTimeout(()=>{applyTombstones(false);try{if(typeof trainerProgramsPage==='function'&&document.querySelector('#programs.active'))trainerProgramsPage()}catch(e){}},t));
   window.addEventListener('pageshow',()=>{applyTombstones(false);refreshViews()},{passive:true});

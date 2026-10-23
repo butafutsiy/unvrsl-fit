@@ -32,7 +32,7 @@
   function saveState(){try{if(typeof save==='function')save()}catch(_){}}
   function cleanClientCalendarPlans(s){
     if(!s?.calendarPlans||typeof s.calendarPlans!=='object'||Array.isArray(s.calendarPlans))return false;
-    const active=new Set((s.programs||[]).filter(p=>p?.clientAssignmentActive).map(p=>String(p.id||''))),entries=Object.entries(s.calendarPlans);let changed=false;
+    const active=new Set((s.programs||[]).filter(p=>p&&!p.archived&&!window.unvrslIsDeletedProgram?.(p)&&(p.clientAssignmentActive||(p.importedFromLink&&!p.cloudPlanId))).map(p=>String(p.id||''))),entries=Object.entries(s.calendarPlans);let changed=false;
     entries.forEach(([date,entry])=>{if(entry?.kind==='builtin'||(entry?.kind==='program'&&!active.has(String(entry.programId||'')))){delete s.calendarPlans[date];changed=true}});
     return changed
   }
@@ -126,9 +126,9 @@
 
   function assigned(){
     const c=cloudState(),s=state();if(!c?.user||!s)return[];
-    if(String(s.clientAssignedUserId||'')!==String(c.user.id)||s.clientAssignmentsLoaded!==true)return[];
-    const ids=new Set((s.clientAssignedPlanIds||[]).map(String));
-    return (s.programs||[]).filter(p=>p?.cloudPlanId&&p?.trainerId&&ids.has(String(p.cloudPlanId)));
+    const loaded=String(s.clientAssignedUserId||'')===String(c.user.id)&&s.clientAssignmentsLoaded===true;
+    const ids=new Set(loaded?(s.clientAssignedPlanIds||[]).map(String):[]);
+    return (s.programs||[]).filter(p=>p&&!p.archived&&!window.unvrslIsDeletedProgram?.(p)&&((p.importedFromLink&&!p.cloudPlanId)||(p.cloudPlanId&&p.trainerId&&ids.has(String(p.cloudPlanId)))));
   }
 
   function esc2(v){try{return typeof esc==='function'?esc(String(v??'')):String(v??'')}catch(_){return String(v??'')}}

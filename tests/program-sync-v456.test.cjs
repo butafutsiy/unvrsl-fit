@@ -25,3 +25,23 @@ test('legacy master plan with a new id cannot bypass deletion',()=>{
  const out=merge({deletedProgramKeys:['seed:master-trainer-plan']},{programs:[{id:'recreated',isMasterPlan:true}]});
  assert.equal(out.programs.length,0);
 });
+test('trash snapshots sync and a restored program defeats stale deletion on both devices',()=>{
+ const p={id:'p',seedId:'seed',name:'Restored',updated:300,weeks:[{days:[]}]};
+ const deleted={programs:[],deletedProgramKeys:['id:p','seed:seed'],programDeletedAt:{'id:p':100,'seed:seed':100},programTrash:[{id:'p',program:p,deletedAt:100}]};
+ const restored={programs:[p],programRestoredAt:{'id:p':200,'seed:seed':200},programTrash:[]};
+ for(const [a,b] of [[deleted,restored],[restored,deleted]]){
+  const out=merge(a,b);assert.equal(out.programs[0].name,'Restored');assert.deepEqual(out.programTrash,[]);assert.deepEqual(out.deletedProgramKeys,[]);
+  assert.equal(merge(out,deleted).programs.length,1);
+ }
+ const trash=merge(deleted,{programs:[p]});assert.equal(trash.programTrash[0].program.weeks.length,1);
+ const reDeleted={...deleted,programDeletedAt:{'id:p':400,'seed:seed':400},programTrash:[{id:'p',program:p,deletedAt:400}]};
+ assert.equal(merge(restored,reDeleted).programs.length,0);
+});
+test('legacy deleted programs can be recovered from a surviving device snapshot',()=>{
+ const out=merge({deletedProgramKeys:['seed:seed']},{programs:[{id:'p',seedId:'seed',name:'Recoverable',weeks:[{days:[]}]}]});
+ assert.equal(out.programs.length,0);assert.equal(out.programTrash[0].program.name,'Recoverable');
+});
+test('restoring built-in visibility survives stale hidden cloud state',()=>{
+ const out=merge({builtinProgramHidden:false,builtinProgramVisibilityUpdatedAt:200},{builtinProgramHidden:true,builtinProgramVisibilityUpdatedAt:100});
+ assert.equal(out.builtinProgramHidden,false);assert.equal(out.builtinProgramVisibilityUpdatedAt,200);
+});

@@ -5,21 +5,40 @@
   if(!root)return;
   root.SemenTrainingPlan=api;
   // Personal plans are opt-in. Loading the app never seeds other accounts.
-  root.addSemenTrainingPlan=()=>{
+  let adding=false;
+  root.addSemenTrainingPlan=async()=>{
+    if(adding)return;
     const state=typeof st==='object'?st:root.st;
     if(!state||!root.WorkoutDomain)return;
+    adding=true;
+    const backup=JSON.parse(JSON.stringify(state)),deletedKey='unvrsl-fit-deleted-programs-v2',deletedBackup=root.localStorage?.getItem(deletedKey);
+    try{
     state.programs=Array.isArray(state.programs)?state.programs:[];
     let plan=state.programs.find(p=>p?.seedId===api.ID);
-    if(!plan){plan=api.build(root.WorkoutDomain);state.programs.push(plan);}
+    if(!plan){
+      const trashed=(state.programTrash||[]).find(entry=>entry.program?.seedId===api.ID);
+      plan=trashed?JSON.parse(JSON.stringify(trashed.program)):api.build(root.WorkoutDomain);
+      plan.archived=false;plan.updated=plan.updatedAt=Date.now();state.programs.push(plan);
+    }
+    plan.importedFromLink=true;
+    root.unvrslRestoreProgramKeys?.(plan);
     state.primaryProgramId=plan.id;state.startProgramId=plan.id;
     state.startProgramWeeks=state.startProgramWeeks||{};
     if(state.startProgramWeeks[plan.id]==null)state.startProgramWeeks[plan.id]=0;
-    save();root.accountSyncNow?.({quiet:true});
-    root.openProgramEditor?.(plan.id,state.startProgramWeeks[plan.id],0);
+    const client=typeof root.unvrslTrainerMode==='function'&&!root.unvrslTrainerMode();
+    if(client)state.clientPrimaryProgramKey=state.clientPlanViewKey='coach:'+plan.id;
+    const ok=root.persistWorkoutState?await root.persistWorkoutState():save();
+    if(ok===false)throw Error('Не удалось сохранить план. Повтори добавление.');
+    root.accountSyncNow?.({quiet:true});
+    if(client){
+      root.closeModal?.();root.nav?.('plan');root.clientCleanPlanPage?.();
+    }else root.openProgramEditor?.(plan.id,state.startProgramWeeks[plan.id],0);
     root.toast?.('План добавлен в мои программы');
     const url=new URL(root.location.href);url.searchParams.delete('addPlan');
     root.history.replaceState(null,'',url);
     return plan;
+    }catch(error){Object.keys(state).forEach(key=>delete state[key]);Object.assign(state,backup);try{if(deletedBackup==null)root.localStorage?.removeItem(deletedKey);else root.localStorage?.setItem(deletedKey,deletedBackup)}catch(_){}root.toast?.(error.message);return null}
+    finally{adding=false}
   };
   const card=()=>`<div class="card" id="semen-training-plan"><b>${api.NAME}</b><div class="muted small" style="margin-top:8px">Два исходных смешанных дня · 10 упражнений в каждом · 8 недель. Грудь и квадрицепс / спина и задняя поверхность бедра. Разгрузка на 4-й и 6-й неделях. Веса подбираются по истории и RPE.</div><button class="btn primary" style="margin-top:12px" onclick="addSemenTrainingPlan()">Добавить в мои программы</button></div>`;
   const original=root.templatesSheet;
