@@ -74,8 +74,9 @@
    if(['time','distance'].includes(WorkoutDomain.loadType(ex,workoutRegistry)))continue;const src=source(ex,cur);if((cur.programId||cur.planId)&&!src){unresolved=true;continue}
    const launch=(ex.set||[]).map(s=>s.launchWeightCaptured206?num(s.launchW):([s.programW,s.plannedW,s.w].map(num).find(x=>x>0)||0)),sets=ex.set||[];
    const sourceWeights=sets.map((s,i)=>src?sourceWeight(src,ex,i,cur):0);
-   const seeds=sets.map((s,i)=>sourceWeights[i]>0?sourceWeights[i]:num(launch[i]));
-   const mode=ownerPlan||src?.weightMode==='manual'||sourceWeights.some(x=>x>0)?'prescribed':'adaptive';
+   const declaredMode=src?.parameterOverrides?.weight?.mode||src?.weightMode;
+   const mode=declaredMode==='auto'?'adaptive':declaredMode==='manual'||sourceWeights.some(x=>x>0)?'prescribed':'adaptive';
+   const seeds=sets.map((s,i)=>declaredMode==='auto'?0:sourceWeights[i]>0?sourceWeights[i]:num(launch[i]));
    ex.programWeightMode=mode;delete ex.recommendation194;delete ex.engine196Recommendation;delete ex.progression187;
    const activeMethod=method(src,ex);
    if(mode==='adaptive'){
@@ -91,7 +92,7 @@
   }
   if(unresolved)return false;
   if(cur.trainingReadinessDone)(cur.ex||[]).forEach(ex=>(ex.set||[]).forEach(s=>{if(!s.ok&&!s.manualOverride&&num(s.plannedW)>0)s.w=todayWeight(s.plannedW,ex,cur)}));
-  cur.trainingWeightPolicy214=ownerPlan?'recommendation':adaptive&&prescribed?'mixed':prescribed?'recommendation':'autoweight';
+  cur.trainingWeightPolicy214=adaptive&&prescribed?'mixed':prescribed?'recommendation':'autoweight';
   cur.trainingEngineRevision=REV;cur.trainingEngineVersion=REV;cur.trainingPreparedAt=new Date().toISOString();cur.trainingMathOwner=MATH_OWNER;cur.trainingTrace200={adaptive,prescribed,policy:cur.trainingWeightPolicy214,mathOwner:MATH_OWNER};
   try{
    W.unvrslTrainingPrescriptionPrepareV292?.(cur);

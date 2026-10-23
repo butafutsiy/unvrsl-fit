@@ -18,7 +18,7 @@
   function weekBand(w){const lo=normalizePct(w?.intensityMin??w?.weekIntensityMin??w?.intensity?.min),hi=normalizePct(w?.intensityMax??w?.weekIntensityMax??w?.intensity?.max);return lo>0&&hi>0?[Math.min(lo,hi),Math.max(lo,hi)]:null}
   function weekBandPct(w){const b=weekBand(w);return b?[Math.round(b[0]*1000)/10,Math.round(b[1]*1000)/10]:null}
   function useWeekIntensity(w){return !!weekBand(w)&&w?.useIntensity!==false}
-  function weightMode(e){if(e?.weightMode==='auto'||e?.weightMode==='manual')return e.weightMode;return (e?.sets||[]).some(s=>num(s?.w)>0)?'manual':'auto'}
+  function weightMode(e){const mode=e?.parameterOverrides?.weight?.mode||e?.weightMode;if(mode==='auto'||mode==='manual')return mode;return (e?.sets||[]).some(s=>num(s?.w)>0)?'manual':'auto'}
   function saveState(){try{if(typeof save==='function')save();else W.save?.()}catch(_){}}
   function recalc(force=true){try{return W.trainingLoadModel292?.run?.(force)||W.trainingLoadModel258?.run?.(force)}catch(_){return null}}
   function style(){

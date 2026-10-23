@@ -185,7 +185,7 @@
     if(typeof trainerIsTrainer==='function'&&!trainerIsTrainer()){el.innerHTML='<div class="card"><div class="title">Раздел тренера</div></div>';return}
     applyTombstones(false);
     const list=builtinCard()+visiblePrograms().map(programCard).join('');
-    el.innerHTML=`<div class="card"><div class="row between"><div><div class="title">Программы</div><div class="muted">Создание, шаблоны и отправка клиентам</div></div><button class="btn primary" onclick="newProgramSheet()">＋</button></div><div class="coach-actions"><button class="btn" onclick="templatesSheet()">Шаблоны</button><button class="btn" onclick="openProgramTrash()">Корзина · ${(st.programTrash||[]).length+(st.builtinProgramHidden?1:0)}</button></div></div><div class="section">МОИ ПРОГРАММЫ</div>${list||'<div class="card muted">Пока нет программ. Создай новую или выбери шаблон.</div>'}`;
+    el.innerHTML=`<div class="card"><div class="row between"><div><div class="title">Программы</div><div class="muted">Создание, шаблоны и отправка клиентам</div></div><button class="btn primary" onclick="newProgramSheet()">＋</button></div><p class="muted small" data-account-sync-status>${esc(window.accountSyncStatusText?.()||'Состояние синхронизации ещё загружается')}</p><div class="coach-actions"><button class="btn" onclick="accountSyncNow?.()">Синхронизировать программы</button><button class="btn" onclick="templatesSheet()">Шаблоны</button><button class="btn" onclick="openProgramTrash()">Корзина · ${(st.programTrash||[]).length+(st.builtinProgramHidden?1:0)}</button></div></div><div class="section">МОИ ПРОГРАММЫ</div>${list||'<div class="card muted">Пока нет программ. Создай новую или выбери шаблон.</div>'}`;
   };
   try{trainerProgramsPage=window.trainerProgramsPage}catch(e){}
 
