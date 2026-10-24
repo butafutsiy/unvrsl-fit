@@ -76,7 +76,7 @@
     if (input.warmup === true) return result('hold', weight, 'Разминочный подход не меняет рабочую нагрузку', {...general, confidence:'none'});
     if (['time','distance','repetitions_only','bodyweight_only'].includes(loadType))
       return result('hold', weight, 'Для этого упражнения нужна прогрессия по повторам, времени или сложности', {...general, confidence:'none'});
-    if (rir == null || rir < 0 || rir > 9 || input.effortUncertain || input.effortCensored || rir >= 5)
+    if (rir == null || rir < 0 || rir > 9 || input.effortUncertain || input.effortCensored || rir >= 6)
       return result('hold', weight, 'RIR не определён или оценка слишком приблизительная: вес сохранён', {...general, confidence:'low'});
     if (reps > 20 || highReps > 20) return result('hold', weight, 'Высокоповторный подход: без прогноза веса по формуле 1ПМ', {...general, confidence:'low'});
     if (['bodyweight_assisted','bodyweight_added'].includes(loadType) && !(bodyWeight > 0))
@@ -100,7 +100,7 @@
     const strengthGap = harder ? excess : shortage;
     const capacityReference = 30 + (lowerCapacity + upperCapacity) / 2;
     const damping = harder ? .60 : strengthGap >= 3 ? .76 : .66;
-    const fraction = Math.min(harder ? caps.up : caps.down, strengthGap / capacityReference * damping);
+    const fraction = Math.min(harder ? (rir >= 5 ? Math.min(caps.up, .03) : caps.up) : caps.down, strengthGap / capacityReference * damping);
     const wantedEffective = currentEffective * (harder ? 1 + fraction : 1 - fraction);
     const wanted = inverse ? bodyWeight - wantedEffective : loadType === 'bodyweight_added' ? wantedEffective - bodyWeight : wantedEffective;
     const sign = (harder ? 1 : -1) * (inverse ? -1 : 1);
@@ -109,7 +109,7 @@
       if (difference * sign <= 1e-8) return false;
       const nextEffective = effective(candidate, loadType, bodyWeight);
       const pct = Math.abs(nextEffective / currentEffective - 1);
-      return nextEffective > 0 && pct <= (harder ? caps.up : caps.down) + 1e-8;
+      return nextEffective > 0 && pct <= (harder ? (rir >= 5 ? Math.min(caps.up, .03) : caps.up) : caps.down) + 1e-8;
     });
     if (!legal.length)
       return result('hold', weight, 'Ближайший доступный шаг оборудования слишком большой: сохрани вес или используй микронагрузку', {...general, ...evidence, confidence:'medium', desired:round(wanted), blockedByStep:true});
@@ -124,7 +124,7 @@
     const visibleDirection = inverse ? (harder ? 'уменьшить помощь' : 'увеличить помощь') : (harder ? 'увеличить вес' : 'уменьшить вес');
     return result(effortAction, chosen,
       'Факт ' + reps + ' повт. с RIR ' + fmt(rir) + ', цель ' + lowReps + (highReps!==lowReps?'–'+highReps:'') + ' повт. с RIR ' + fmt(lowRir) + (highRir!==lowRir?'–'+fmt(highRir):'') + ': ' + visibleDirection + ' на ' + fmt(magnitude) + ' кг с учётом шага оборудования',
-      {...general, ...evidence, confidence:'medium', desired:round(wanted), percentChange:round((effective(chosen, loadType, bodyWeight) / currentEffective - 1) * 100), step: n(input.step)});
+      {...general, ...evidence, confidence:rir >= 5 ? 'low' : 'medium', desired:round(wanted), percentChange:round((effective(chosen, loadType, bodyWeight) / currentEffective - 1) * 100), step: n(input.step)});
   }
   return {adjust, category, version:VERSION};
 });
