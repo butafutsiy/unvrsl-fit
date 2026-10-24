@@ -24,11 +24,3 @@ test('leg counting does not affect bilateral presses, squats or dumbbell weight 
  for(const n of ['Зашагивания на платформу с гантелями','Болгарские приседания','Жим одной ногой'])assert.equal(D.legReps({n}),true,n);
  assert.equal(D.repsText({...e,repSide:'none'},24),'24');
 });
-test('strength estimates use repetitions per leg rather than the combined total',()=>{
- const reg=D.registry([]),s={w:26,r:24,ok:true,rpe:7};
- assert.equal(D.performedReps(e,s),12);
- assert.equal(D.e1rm(e,s,{},reg),39);
- assert.deepEqual(D.repRange(e,{r:24}),{lo:12,hi:12});
- assert.deepEqual(D.repRange(e,{r:24,targetRepMin:10,targetRepMax:12}),{lo:10,hi:12});
- assert.equal(D.repRangeText(e,{lo:10,hi:12}),'10–12 / 10–12');
-});

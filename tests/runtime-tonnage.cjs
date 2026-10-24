@@ -21,7 +21,7 @@ function fixture(role){
   return q;
  }}};
  const load=name=>{const script=W.document.createElement('script');script.textContent=fs.readFileSync(path.join(root,name),'utf8');W.document.head.appendChild(script)};
- load('exercise-catalog.js');load('workout-domain.js');W.workoutRegistry=W.WorkoutDomain.registry(W.UNVRSL_EXERCISES);
+ load('exercise-catalog.js');load('exercise-profiles.js');load('recommendation-engine.js');load('recommendation-adapter.js');load('workout-domain.js');W.workoutRegistry=W.WorkoutDomain.registry(W.UNVRSL_EXERCISES);
  return {dom,W,load};
 }
 function metric(W){

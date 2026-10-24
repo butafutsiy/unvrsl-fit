@@ -23,7 +23,8 @@
   let activeTab='online';
   function ageFromBirth(v){if(!v)return null;const d=new Date(v+'T12:00:00');if(Number.isNaN(d.getTime()))return null;const n=new Date();let a=n.getFullYear()-d.getFullYear();const m=n.getMonth()-d.getMonth();if(m<0||(m===0&&n.getDate()<d.getDate()))a--;return a>=0&&a<130?a:null}
   function fmtNum(v,d=1){if(v==null||v==='')return'—';const n=Number(v);return Number.isFinite(n)?n.toFixed(d).replace('.0',''):'—'}
-  function e1rm(w,r){w=Number(w)||0;r=Number(r)||0;if(!w||!r)return null;return +(r===1?w:w*(1+r/30)).toFixed(1)}
+  function e1rm(){return null;} // Legacy manual strength record has no effort/profile context.
+
   function strengthPresets(sex){return sex==='male'?MALE_STRENGTHS:FEMALE_STRENGTHS}
   function measureValue(row,key){const n=Number(row?.measurements?.[key]);return Number.isFinite(n)&&n>0?n:null}
   function deltaText(now,prev,unit='см'){if(now==null||prev==null)return'';const d=+(now-prev).toFixed(1);if(!d)return'<span class="muted small">без изменений</span>';return `<span class="offline-delta ${d<0?'down':''}">${d>0?'+':''}${d} ${unit}</span>`}

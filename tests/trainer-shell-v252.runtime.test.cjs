@@ -61,4 +61,3 @@ test('ordinary client keeps the five-tab shell',()=>{
   assert.deepEqual(navEl.children.map(x=>x.dataset.p),['home','plan','start','stats','exercises']);
   assert.equal(navEl.style['--nav-cols'],'5');
 });
-

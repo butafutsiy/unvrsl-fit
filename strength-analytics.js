@@ -23,11 +23,7 @@
   }
 
   // Display estimates use the entered load, independently of prescription estimates.
-  function estimate(w,r,type){
-    if(['bodyweight_only','bodyweight_assisted','time','distance','repetitions_only'].includes(type)||!Number.isFinite(w)||w<0||!Number.isInteger(r)||r<1)return null;
-    const value=w*(r===1?1:1+r/30);
-    return Number.isFinite(value)?Math.round(value*10)/10:null;
-  }
+  function estimate(){return null;} // A bare weight/repetition pair has no exercise or effort context.
   const average=values=>values.length?values.reduce((sum,v)=>sum+v,0)/values.length:null;
   function build(sessions,reg,weights,D,{group='all',now=new Date(),deleted=[],equipmentProfiles={}}={}){
     const end=new Date(now);end.setHours(0,0,0,0);end.setDate(end.getDate()+1);
@@ -41,7 +37,7 @@
         if(['time','distance','repetitions_only'].includes(type)||(group!=='all'&&g!==group))continue;
         for(const raw of e.set||[]){
           const s={...raw,w:raw.w??raw.weight,r:raw.actualReps??raw.r??raw.reps,ok:raw.ok??(raw.completed===true||raw.done===true||raw.status==='completed')};
-          if(!D.complete(e,s,reg))continue;
+          if(!D.complete(e,s,reg)||s.status==='failed_attempt')continue;
           const equipment=String(s.equipmentProfileId||s.equipmentSnapshot?.id||e.equipmentProfileId||e.equipmentProfile?.id||e.machineId||'');
           const configuration=type==='per_side'?[e.loadedSides??2,e.implementWeight??0]:type==='per_dumbbell'?(e.implementCount??2):'';
           const familyKey=JSON.stringify([reg.identity(e),type,configuration]);
@@ -49,7 +45,7 @@
           const row=rows.get(key)||{key,familyKey,base:resolved.n||e.n,group:g,type,equipment,equipmentName:s.equipmentSnapshot?.name||(e.equipmentProfile?.id===equipment?e.equipmentProfile.name:'')||equipmentProfiles[equipment]?.name||(equipment?'Оборудование '+equipment:'Оборудование не указано'),points:[],sets:0};
           let p=row.points.find(x=>x.id===sid);if(!p){p={id:sid,date,started:session.started,e1:null,maxWeight:0,maxReps:0,sets:0,entries:[],estimateSet:null,deload:session.deload===true||session.isDeload===true||((!session.programId||session.programId==='__builtin_cycle__')&&['A1','A2','B','C','D'].includes(session.c)&&[4,6].includes(Number(session.w)))};row.points.push(p)}
           const w=D.number(s.w)??0,r=D.number(s.actualReps??s.r),method=D.method(e,s),role=D.setRole(e,s);
-          const e1=estimate(w,r,type);
+          const e1=D.e1rm(e,s,session,reg,weights);
           const entry={w,r,method,role,rpe:D.effortRpe(s),e1};p.entries.push(entry);p.sets++;row.sets++;
           if(w>p.maxWeight||(w===p.maxWeight&&r>p.maxReps)){p.maxWeight=w;p.maxReps=r}
           if(e1!=null&&(p.e1==null||e1>p.e1)){p.e1=e1;p.estimateSet=entry}

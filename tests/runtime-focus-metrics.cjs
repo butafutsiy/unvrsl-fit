@@ -9,7 +9,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
    for(const [type,target,actual] of [['time',{seconds:120},95],['time',{min:2},115],['distance',{distance:2.5},'2,1']]){
     workoutFocus.close();stopTimer();if(st.current)workoutStore.discard(st);st.sessions=[];
     st.current={id:'focus-metric-'+results.length,date:iso(),w:1,started:Date.now(),trainingEngineRevision:295,ex:[{
-     n:type==='time'?'Аэробайк':'Бег',loadType:type,method:'STANDARD',programWeightMode:'adaptive',rest:0,
+     exerciseId:type==='time'?'cardio:bike':'cardio:treadmill',n:type==='time'?'Аэробайк':'Бег',loadType:type,method:'STANDARD',programWeightMode:'adaptive',rest:0,
      set:[{w:0,r:'',ok:false,...target},{w:0,r:'',ok:false,...target}]
     }]};save();nav('start');workoutFocus.open();
     const card=root.querySelector('.wf-load').textContent,form=root.querySelector('form');
@@ -17,7 +17,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
     form.elements.reps.value='-1';form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
     const invalidSaved=st.current.ex[0].set[0].ok;
     form.elements.reps.value=String(actual);form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
-    const set=st.current.ex[0].set[0];results.push({...before,invalidSaved,ok:set.ok,seconds:set.seconds,distance:set.distance,rirValue:set.actualRir,rpe:set.actualRpe,history:root.querySelector('.wf-row')?.textContent});
+    const set=st.current.ex[0].set[0];results.push({...before,invalidSaved,ok:set.ok,seconds:set.seconds,distance:set.actualDistance,rirValue:set.actualRir,rpe:set.actualRpe,history:root.querySelector('.wf-row')?.textContent});
    }
    return results;
   })()`);

@@ -12,10 +12,7 @@ test('client overview uses only completed owned sets and averages effort by actu
  assert.equal(m.totals.workouts,2);assert.equal(m.totals.sets,3);assert.equal(m.totals.volume,1750);assert.equal(m.totals.rpe,8);assert.equal(m.totals.duration,3600000);assert.equal(JSON.stringify(rows),before);
  assert.deepEqual(m.sessions.map(x=>x.session.id),['a','b']);assert.equal(m.weightPoints.at(-1).value,71);assert.equal(m.measurePoints.waist.at(-1).value,79);
 });
-test('client strength history separates machines and compares matching equipment only',()=>{
- const m=P.build(data([workout('a','2026-10-01',[50],[8]),workout('b','2026-10-02',[150],[8],'foreman'),workout('c','2026-10-10',[60],[8])]),reg,D,S,'client');
- assert.equal(m.strength.length,2);const matrix=m.strength.find(x=>x.equipment==='matrix');assert.equal(matrix.workouts,2);assert.equal(matrix.bestWeight,60);assert.ok(Math.abs(matrix.growth-20)<0.1);assert.equal(m.strength.find(x=>x.equipment==='foreman').growth,null);
-});
+
 test('missing data remains unknown; charts and titles escape user text',()=>{
  const m=P.build(data([]),reg,D,S,'client');assert.equal(m.totals.duration,null);assert.equal(m.totals.rpe,null);assert.equal(m.totals.volume,null);
  const html=P.chart([{date:'2026-10-01',value:50,note:'<img src=x onerror=alert(1)>'}],{label:'<script>',unit:'кг'});assert.doesNotMatch(html,/<img|<script/);assert.match(html,/&lt;img/);

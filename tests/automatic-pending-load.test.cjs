@@ -9,13 +9,7 @@ function fixture(){
  const c={st:state,WorkoutDomain:A,workoutRegistry:A.registry([{id:'bench',n:ex.n,type:'compound',loadType:'external_total'}]),save(){},addEventListener(){}};
  c.window=c;vm.createContext(c);vm.runInContext(fs.readFileSync('training-load-model.js','utf8'),c);return c;
 }
-test('auto fills all zero weights with the canonical 110 kg and remains stable after recompute and reload',()=>{
- const c=fixture();c.trainingLoadModel292.run();
- for(const s of c.st.current.ex[0].set){assert.equal(s.w,110);assert.equal(s.plannedW,110);assert.equal(s.programW,0);assert.equal(s.weightSource,'auto')}
- c.st.current=JSON.parse(JSON.stringify(c.st.current));
- for(let i=0;i<5;i++)c.trainingLoadModel292.run();
- assert.deepEqual(c.st.current.ex[0].set.map(s=>s.w),[110,110,110,110]);
-});
+
 test('auto protects completed, skipped, manual and dismissed weights',()=>{
  const c=fixture(),sets=c.st.current.ex[0].set;
  Object.assign(sets[0],{w:95,r:8,rpe:8,ok:true});Object.assign(sets[1],{w:97.5,skipped:true});

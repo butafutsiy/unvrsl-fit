@@ -1,0 +1,231 @@
+{
+  "date": "2026-10-24",
+  "engineVersion": 3,
+  "applicationVersion": 535,
+  "nodeTests": {
+    "command": "node --test tests/*.test.cjs",
+    "reported": 397,
+    "passed": 397,
+    "failed": 0,
+    "skipped": 0,
+    "engine3Tests": 35,
+    "referenceMatrixCells": 25
+  },
+  "runtime": {
+    "passed": 40,
+    "failed": 0,
+    "scenarios": [
+      {
+        "file": "tests/runtime-meal-planner.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-meal-protocol.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-meal-catalog.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-meal-products.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-meal-search.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-meal-online.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-recipe-builder.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-nutrition-units.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-client-save.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-public-weight-goal.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-bodyweight-history.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-tonnage.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-client-progress-v521.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-paired-load.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-per-leg-reps.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-exercise-replacement.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-weight-rounding.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-story-layouts.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-strength-equipment.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-offline-history.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-v392.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-methods-v438.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-storage-v393.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-focus-calibration.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-focus-metrics.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-focus-warmup.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-adaptive-load.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-weekly-calculated-weight.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-equipment-steps.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-equipment-delivery-v520.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-periodization.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-semen-plan.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-builtin-engine-cycle.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-eight-week-cycle.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-cycle-settings.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-program-recovery.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-program-modes.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-template-visibility.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-load-policy-audit.cjs",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/runtime-management-cleanup.cjs",
+        "exitCode": 0
+      }
+    ]
+  },
+  "browser": {
+    "passed": 4,
+    "failed": 0,
+    "scenarios": [
+      "browser-rir-recommendations.cjs",
+      "browser-pwa-persistence.cjs",
+      "browser-program-audit.cjs",
+      "browser-management-cleanup.cjs"
+    ],
+    "viewports": [
+      320,
+      390
+    ],
+    "themes": [
+      "dark",
+      "light"
+    ],
+    "engine": "Chromium"
+  },
+  "build": {
+    "command": "node scripts/build-static.cjs",
+    "passed": true
+  },
+  "catalogAudit": {
+    "command": "node scripts/audit-exercises.cjs --strict",
+    "complete": 189,
+    "total": 189
+  },
+  "nutritionAudit": {
+    "command": "node scripts/audit-nutrition.cjs",
+    "errors": 0
+  },
+  "profileAudit": {
+    "command": "node scripts/audit-recommendation-profiles.cjs --snapshot=<clean-runtime-export.json>",
+    "canonical": 189,
+    "declaredAdditions": 12,
+    "sourceProgramReferences": 2477,
+    "inventoryOccurrences": 3151,
+    "groupedStatusCounts": {
+      "provisional": 434,
+      "manual_only": 673,
+      "resolved": 21
+    }
+  },
+  "limitations": [
+    "Superseded Engine 2 contracts are archived and are not counted as passing Engine 3 assertions.",
+    "Runtime snapshot contains clean fixture data, not private user inventories.",
+    "No real-device Safari or Android validation.",
+    "Provisional and manual-only profiles need equipment/variant review.",
+    "No deployment or merge performed."
+  ]
+}

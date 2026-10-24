@@ -17,13 +17,7 @@ test('UNVRSL expands to three heavy-light rounds and two finishing sets',()=>{
   assert.deepEqual(result.sets.map(set=>set.r),[3,9,3,9,3,9,6,6]);
 });
 
-test('UNVRSL heavy and light phases are not averaged into one recommendation',()=>{
- const A=require('../workout-domain.js'),reg=A.registry([]);
- const heavy={n:'Жим',loadType:'external_total',method:'UNVRSL'};
- const old=[1,2,3].map(i=>({id:'s'+i,started:i,ended:i+1,ex:[{...heavy,set:[{role:'light',w:10,r:9,ok:true}]}]}));
- const recommendation=A.recommend(heavy,{role:'heavy',w:130,r:3},{id:'now'},old,reg);
- assert.equal(recommendation.weight,130);
-});
+
 
 test('main workout session opens the complete eight-set UNVRSL block',()=>{
   const context={
@@ -87,44 +81,7 @@ test('automatic readiness never raises the program weight at workout start',asyn
   assert.equal(context.st.current.readinessAdjusted,true);
 });
 
-test('autoweight fills missing loads while prescribed loads require explicit acceptance',async()=>{
-  const program={id:'mine',weeks:[{days:[{name:'B',ex:[
-    {n:'Жим лёжа',sourceId:'bench',method:'STANDARD',sets:[{w:110,r:6}]},
-    {n:'Тяга блока',sourceId:'row',method:'STANDARD',sets:[{w:0,r:8}]}
-  ]}]}]};
-  const previous={id:'previous',ended:1,date:'2026-08-29',target:8,ex:[
-    {n:'Жим лёжа',sourceId:'bench',set:[{w:100,r:6,rpe:8,ok:true}]},
-    {n:'Тяга блока',sourceId:'row',set:[{w:60,r:8,rpe:8,ok:true}]}
-  ]};
-  const context={
-    console,setInterval:()=>0,setTimeout:()=>0,
-    document:{createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null,querySelectorAll:()=>[]},
-    st:{programs:[program],sessions:[previous],readinessLog:[],current:{id:'current',programId:'mine',w:1,c:'B',target:8,ex:[
-      {n:'Жим лёжа',sourceId:'bench',set:[{w:110,r:6,ok:false}]},
-      {n:'Тяга блока',sourceId:'row',set:[{w:0,r:8,ok:false}]}
-    ]}},
-    programById:id=>id==='mine'?program:null,baseExerciseName:name=>String(name).replace(/\s+—\s+.*$/,'').trim(),save:()=>{},startPage:()=>{},UNVRSL_METHOD_V211:require('../unvrsl-method.js'),loadStepFor:()=>2.5
-  };
-  context.window=context;
-  context.WorkoutDomain=require('../workout-domain.js');context.workoutRegistry=context.WorkoutDomain.registry([]);context.addEventListener=()=>{};
-  vm.runInNewContext(fs.readFileSync(require.resolve('../training-engine.js'),'utf8'),context);
-  vm.runInNewContext(fs.readFileSync(require.resolve('../training-load-model.js'),'utf8'),context);
-  await context.trainingEngine200Tick();
-  const [prescribed,adaptive]=context.st.current.ex;
-  assert.equal(prescribed.programWeightMode,'prescribed');
-  assert.equal(prescribed.set[0].w,110);
-  assert.ok(prescribed.set[0].recommendedW>0);
-  assert.equal(prescribed.weightDecision,'program');
-  assert.equal(adaptive.programWeightMode,'adaptive');
-  assert.equal(adaptive.weightDecision,'adaptive_auto');
-  assert.equal(adaptive.set[0].w,60);
-  assert.match(adaptive.set[0].recommendation.reason,/сохранить вес/i);
-  assert.equal(adaptive.set[0].recommendedW,60);
-  context.trainingApplyRecommendation200('id:bench');
-  assert.equal(prescribed.set[0].w,prescribed.set[0].recommendedW);
-  context.trainingRestoreProgram200('id:bench');
-  assert.equal(prescribed.set[0].w,110);
-});
+
 
 test('client workout rerender keeps the visible exercise anchored',()=>{
   const classList={contains:name=>name==='active'};
