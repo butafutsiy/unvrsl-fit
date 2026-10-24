@@ -6,7 +6,9 @@ function renderExerciseDetail(ex){
  const title=ex.custom?ex.n:ruExerciseName(ex.n),body=BP_RU[ex.bp]||ex.bp||'—',eq=ex.custom?(EQ_RU[ex.eq]||'Своё'):(EQ_RU[ex.eq]||ex.eq||'—'),target=ruTarget(ex.tg),sourceId=ex.rawId||ex.sourceId||null,key=detailPlanKey(ex),best=bestEstimateFor(key,sourceId),hist=historySetsFor(key,sourceId),rules=planOccurrences(key),est=estimate1RM(rmState.w,rmState.r),gif=mediaUrl(ex.gif||ex.gif_url||''),img=mediaUrl(ex.image||''),tech=instructionRu(ex),en=ex.sourceName||(!ex.custom?ex.n:'');
  if(best&&rmState.id===ex.id&&rmState.w===20&&rmState.r===5){rmState.w=best.w;rmState.r=best.r}
  const currentEst=estimate1RM(rmState.w,rmState.r);
- const sourceNote=ex.anatome
+ const sourceNote=ex.id==='canon:machine_shoulder_press'
+  ?'<div class="source-note">Анимация © FitnessProgramer. Использование на сайте требует разрешения правообладателя.</div>'
+  :ex.anatome
   ?'<div class="source-note">Метаданные упражнения и анатомия: Anatome. Изображения упражнений не копируются из-за неподтверждённых прав на исходные медиа.</div>'
   :(!ex.custom||gif||img?`<div class="source-note">Данные и техника: ExerciseDB dataset. Медиа © Gym visual; в публичном/коммерческом использовании нужны условия правообладателя. <a href="${OG_SOURCE_URL}" target="_blank" rel="noopener">Источник</a></div>`:'');
  modal(`<div class="sheet-grabber"></div><div class="detail-title">${esc(title)}</div>${en&&String(en).toLowerCase()!==String(title).toLowerCase()?`<div class="detail-en">${esc(en)}</div>`:''}<div class="detail-tags"><span>${esc(body)}</span><span>${esc(eq)}</span><span>${esc(target)}</span></div>
