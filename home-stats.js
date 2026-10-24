@@ -47,8 +47,10 @@
     #home .home-stats-v254 .sd2-activity-label .short{display:none}
     #home .home-stats-v254 .sd2-activity-number{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin:11px 0 5px;min-height:35px}
     #home .home-stats-v254 .sd2-activity-number b{font-size:clamp(25px,8vw,33px);line-height:1;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap}
-    #home .home-stats-v254 .sd2-activity-delta{font-size:11px;font-weight:700;color:var(--muted,#8e8e93);white-space:nowrap}
+    #home .home-stats-v254 .sd2-activity-delta{display:block;margin-top:5px;font-size:12px;line-height:1.4;font-weight:700;color:var(--muted,#8e8e93);overflow-wrap:anywhere}
     #home .home-stats-v254 .sd2-activity-delta.up{color:var(--green)}
+    #home .home-stats-v254 .sd2-activity-previous{margin-top:10px;font-size:12px;line-height:1.4;color:var(--muted,#8e8e93)}
+    #home .home-stats-v254 .sd2-activity-previous b{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
     #home .home-stats-v254 .sd2-activity-unit{font-size:11px;line-height:1.3;color:var(--muted,#8e8e93)}
     #home .home-stats-v254 .sd2-activity-grid-title{font-size:14px;line-height:1.35;color:var(--muted,#8e8e93);margin-bottom:14px}
     #home .home-stats-v254 .sd2-activity-card .sd2-cell,#home .home-stats-v254 .sd2-activity-card .sd2-legend i{background:color-mix(in srgb,var(--text) 10%,var(--panel,#1c1c1f))}
@@ -116,14 +118,14 @@
 
   function heatmapHtml(){
     const stats=Activity.summarize(workouts()),format=n=>Number(n).toLocaleString('ru-RU'),delta=(value,kind)=>{
-      const comparison=stats[kind],text=value>0?`↑ +${format(value)}`:value<0?`↓ −${format(Math.abs(value))}`:'±0';
+      const comparison=stats[kind],text=value===0?'Без изменений':`${value>0?'+':'−'}${format(Math.abs(value))} к ${kind==='week'?'прошлой':'прошлому'}`;
       const label=`${kind==='week'?'Неделя':'Месяц'}: ${kind==='month'&&comparison.shorterPreviousMonth?comparison.compared:comparison.count} ${Activity.workoutWord(kind==='month'&&comparison.shorterPreviousMonth?comparison.compared:comparison.count)} за сопоставимые дни. За сопоставимый прошлый период: ${comparison.previous}. Изменение: ${value>0?'+':''}${value}.`;
       return `<span class="sd2-activity-delta ${value>0?'up':value<0?'down':'same'}" title="${label}" aria-label="${label}">${text}</span>`;
     };
-    const metric=(kind,long,short)=>{const x=stats[kind];return `<div class="sd2-activity-metric" data-activity="${kind}"><div class="sd2-activity-label"><span class="long">${long}</span><span class="short">${short}</span></div><div class="sd2-activity-number"><b data-activity-count>${format(x.count)}</b>${delta(x.delta,kind)}</div><span class="sd2-activity-unit">${Activity.workoutWord(x.count)}</span></div>`};
+    const metric=(kind,long,short)=>{const x=stats[kind];return `<div class="sd2-activity-metric" data-activity="${kind}"><div class="sd2-activity-label"><span class="long">${long}</span><span class="short">${short}</span></div><div class="sd2-activity-number"><b data-activity-count>${format(x.count)}</b></div><span class="sd2-activity-unit">${Activity.workoutWord(x.count)}</span><div class="sd2-activity-previous">${kind==='week'?'Прошлая':'Прошлый'}: <b data-activity-previous-count>${format(x.previous)}</b></div>${delta(x.delta,kind)}</div>`};
     const maxMinutes=Math.max(1,...stats.days.map(x=>x.minutes));
     const cells=stats.days.map(x=>{const ratio=x.minutes/maxMinutes,level=x.minutes?(ratio>.72?4:ratio>.42?3:ratio>.18?2:1):x.count?1:0,title=x.count?`${x.count} ${Activity.workoutWord(x.count)} · ${x.minutes?x.minutes+' мин':'время не указано'}`:'нет тренировки';return `<i class="sd2-cell ${level?'l'+level:''}" data-activity-date="${x.date}" data-count="${x.count}" data-minutes="${x.minutes}" title="${x.date}: ${title}"></i>`}).join('');
-    const note=stats.month.shorterPreviousMonth?`Неделя — одинаковые дни. Месяц — первые ${stats.month.comparedDays} дней.`:'Сравнение за одинаковое число дней.';
+    const note=stats.month.shorterPreviousMonth?`Неделя — одинаковые дни. Месяц — первые ${stats.month.comparedDays} дней.`:'Прошлая неделя и месяц — за те же дни.';
     return `<div class="sd2-card sd2-activity-card"><div class="sd2-activity-head"><h2>Активность</h2><span>Тренировки</span></div><div class="sd2-activity-summary">${metric('week','На этой неделе','Неделя')}${metric('month','В этом месяце','Месяц')}<div class="sd2-activity-metric" data-activity="year"><div class="sd2-activity-label">За ${stats.year} год</div><div class="sd2-activity-number"><b data-activity-count>${format(stats.yearCount)}</b></div><span class="sd2-activity-unit">${Activity.workoutWord(stats.yearCount)}</span></div></div><div class="sd2-activity-grid-title">Последние 12 месяцев · по времени тренировок</div><div class="sd2-heat-wrap" id="homeHeatWrap"><div class="sd2-heat" role="img" aria-label="Активность по времени тренировок за последние 12 месяцев">${cells}</div></div><div class="sd2-legend"><span>Меньше</span><i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i><span>Больше</span></div><p class="sd2-activity-note">${note}</p></div>`;
   }
 

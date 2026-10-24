@@ -22,8 +22,9 @@ const base=process.env.UNVRSL_AUDIT_URL||'http://127.0.0.1:8770/unvrsl-fit/',out
   await page.evaluate(()=>homeProgressRefresh(true));await page.waitForTimeout(100);
   const card=page.locator('.sd2-activity-card');await card.evaluate(el=>el.scrollIntoView({block:'center'}));await page.waitForTimeout(100);
   assert.deepEqual(await page.locator('[data-activity-count]').allTextContents(),['3','11','32']);
-  assert.deepEqual(await page.locator('.sd2-activity-delta').allTextContents(),['↑ +1','↑ +2']);
+  assert.deepEqual(await page.locator('.sd2-activity-delta').allTextContents(),['+1 к прошлой','+2 к прошлому']);
   assert.match(await page.locator('[data-activity="year"]').innerText(),/За 2026 год/);
+  assert.deepEqual(await page.locator('[data-activity-previous-count]').allTextContents(),['2','9']);
   assert.match(await page.locator('.sd2-current').innerText(),/94/);
   assert.match(await card.innerText(),/по времени тренировок/);
   assert.equal(await card.locator('[data-activity-date="2026-10-24"]').getAttribute('data-minutes'),'60');
@@ -39,7 +40,7 @@ const base=process.env.UNVRSL_AUDIT_URL||'http://127.0.0.1:8770/unvrsl-fit/',out
   await page.waitForFunction(()=>document.querySelector('[data-activity="week"] [data-activity-count]')?.textContent==='0');
   assert.match(await page.locator('[data-activity="week"] .sd2-activity-delta').innerText(),/−2/);
   await page.evaluate(()=>{st.sessions=[];st.deletedSessionIds=[]});await page.evaluate(()=>homeProgressRefresh(true));
-  assert.deepEqual(await page.locator('[data-activity-count]').allTextContents(),['0','0','0']);assert.deepEqual(errors,[]);
+  assert.deepEqual(await page.locator('[data-activity-count]').allTextContents(),['0','0','0']);assert.deepEqual(await page.locator('.sd2-activity-delta').allTextContents(),['Без изменений','Без изменений']);assert.deepEqual(errors,[]);
   results.push({width,theme,layout,errors});await page.close();
  }}finally{await browser.close()}
  fs.writeFileSync(output+'/activity-browser-results.json',JSON.stringify(results,null,2));
