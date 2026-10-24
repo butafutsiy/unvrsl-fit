@@ -728,7 +728,7 @@
         weight:used,actualReps:reps,actualRpe:felt,
         targetRepMin:range.lo,targetRepMax:range.hi,
         targetRirMin:10-target.hi,targetRirMax:10-target.lo,
-        exerciseName:e.n||e.name,exerciseKind:exerciseKind(e,reg),
+        exerciseName:e.n||e.name,exerciseKind:exerciseKind(e),
         loadType:p.loadType,bodyWeight:number(session?.bodyWeight),
         step:p.step,available:p.available,min:p.min,
         techniqueFailed:s.techniqueFailed,fullROM:s.fullROM,
