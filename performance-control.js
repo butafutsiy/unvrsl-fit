@@ -4,7 +4,7 @@
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root&&root.document)api.boot();
 })(typeof window!=='undefined'?window:globalThis,function(W){
-  const D=W.document,VERSION=318,DELOAD_FACTOR=.925;
+  const D=W.document,VERSION=319,DELOAD_FACTOR=.925;
   const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const mean=a=>{a=(a||[]).map(N).filter(Number.isFinite);return a.length?a.reduce((s,x)=>s+x,0)/a.length:null};
@@ -76,6 +76,29 @@
   function loadStep(ex,weights=[]){let step=null;try{step=N(W.loadStepFor?.(base(ex?.n),ex?.sourceId||null))}catch(_){ }const w=median(weights);if(!(step>0))step=2.5;if(w>0&&w<=6)step=Math.min(step,.5);else if(w>0&&w<=12)step=Math.min(step,1);else if(w>0&&w<=22)step=Math.min(step,2);return step}
   function groupedSets(session,reference){const out=[];(session?.ex||[]).forEach((ex,ei)=>{if(!sameEquipment(ex,reference))return;(ex.set||[]).forEach((set,si)=>out.push({ex,set,ei,si}))});return out}
   function recommendAfter(session,reference,completed,next){
+    if(!completed?.set||!next?.set)return null;
+    const engine=W.UNVRSLLoadAdjustment,domain=W.WorkoutDomain;
+    if(engine&&domain&&typeof engine.adjust==='function'){
+      const actual=effort(completed.set),target=targetFor(session,next.ex,next.set);
+      if(!(actual.weight>=0)||!(actual.reps>=0)||!(target.repMin>0)||target.rpeMin==null)return null;
+      const reg=typeof workoutRegistry==='undefined'?W.workoutRegistry:workoutRegistry;
+      const profile=domain.profile(reference,reg,state()?.exerciseWeightProfiles||{});
+      const proposal=engine.adjust({
+        weight:actual.weight,actualReps:actual.reps,actualRir:actual.rir,
+        targetRepMin:target.repMin,targetRepMax:target.repMax,
+        targetRirMin:10-target.rpeMax,targetRirMax:10-target.rpeMin,
+        loadType:domain.loadType(reference,reg),exerciseName:reference.n,
+        exerciseKind:domain.exerciseKind?.(reference,reg),
+        bodyWeight:N(session.bodyWeight),step:profile.step,available:profile.available,min:profile.min,
+        techniqueFailed:completed.set.techniqueFailed,fullROM:completed.set.fullROM,
+        partial:completed.set.partial,pain:completed.set.pain,
+        effortUncertain:completed.set.effortUncertain,effortCensored:completed.set.effortCensored
+      });
+      const assessment=analyzeSet({...actual,...target});
+      return {weight:proposal.weight??actual.weight,step:profile.step,target,nextSet:next.set,next,
+        completed,last:{...completed,...actual},assessment,action:proposal.action,
+        confidence:proposal.confidence,reason:proposal.reason};
+    }
     if(!completed?.set||!next?.set)return null;const actual=effort(completed.set),target=targetFor(session,next.ex,next.set);if(!(actual.weight>0)||!(actual.reps>0)||actual.rpe==null||!(target.repMin>0)||target.rpeMin==null)return null;
     const targetReps=(target.repMin+(target.repMax??target.repMin))/2,targetRpe=(target.rpeMin+(target.rpeMax??target.rpeMin))/2,targetRir=clamp(10-targetRpe,0,10),e1rm=actual.weight*(1+(actual.reps+actual.rir)/30),raw=e1rm/(1+(targetReps+targetRir)/30),anchor=[next.set?.programW,next.set?.plannedW,next.set?.w,actual.weight].map(N).find(x=>x>0)??actual.weight,step=loadStep(reference,[actual.weight,anchor]),assisted=/гравитрон|assisted|помощ/i.test(base(reference?.n).toLowerCase()),assessment=analyzeSet({...actual,...targetFor(session,completed.ex,completed.set)});let recommended;
     if(assisted){const heavier=assessment.code==='too_heavy'||assessment.code==='high_rpe',lighter=assessment.code==='easy_top'||assessment.code==='above_reps',delta=heavier?step:lighter?-step:0;recommended=Math.max(0,Math.round((anchor+delta)/step)*step)}else{const limit=Math.max(step,anchor*.075);recommended=Math.max(0,Math.round(clamp(raw,anchor-limit,anchor+limit)/step)*step)}
