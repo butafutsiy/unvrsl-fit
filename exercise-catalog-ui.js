@@ -286,7 +286,7 @@
               )
               .join("")
           : '<p class="muted">Завершённых рабочих подходов пока нет.</p>'
-      }<button class="btn primary full" onclick="addToPlanSheet('${encodeURIComponent(e.id)}')">Добавить в план</button>${e.mediaProvenance?.kind?.startsWith('generated') ? '' : '<p class="muted small">${e.id === 'canon:machine_shoulder_press' ? 'Анимация © FitnessProgramer. Использование требует разрешения правообладателя.' : 'Медиа © Gym visual. Источник: ExerciseDB dataset.'}</p>'}`,
+      }<button class="btn primary full" onclick="addToPlanSheet('${encodeURIComponent(e.id)}')">Добавить в план</button>${e.mediaProvenance?.kind?.startsWith('generated') ? '' : e.id === 'canon:machine_shoulder_press' ? '<p class="muted small">Анимация © FitnessProgramer. Использование требует разрешения правообладателя.</p>' : '<p class="muted small">Медиа © Gym visual. Источник: ExerciseDB dataset.</p>'}`,
     );
     observe();
   };
