@@ -31,7 +31,9 @@ jobs:
       - name: Test workout integrity
         run: node --test tests/*.test.cjs
       - name: Require complete canonical catalog
-        run: node scripts/audit-exercises.cjs --strict
+        run: |
+          node scripts/audit-exercises.cjs --strict
+          node scripts/audit-load-policies.cjs
       - name: Require verified nutrition catalog
         run: node scripts/audit-nutrition.cjs
       - name: Build public static application

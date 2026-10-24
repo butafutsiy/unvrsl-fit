@@ -82,6 +82,7 @@
         const test=set.role==='test_attempt',values={targetIntensityMin:test?95:spec.pct[0],targetIntensityMax:test?100:spec.pct[1],targetRepMin:test?1:spec.reps[0],targetRepMax:test?1:spec.reps[1],targetRpeMin:test?9.5:spec.rpe[0],targetRpeMax:test?10:spec.rpe[1]};
         if(!test&&manualReps){values.targetRepMin=set.targetRepMin;values.targetRepMax=set.targetRepMax;}
         if(!test&&manualEffort){values.targetRpeMin=set.targetRpeMin;values.targetRpeMax=set.targetRpeMax;}
+        if(!test&&!manualEffort&&String(ex.method||'STANDARD').toUpperCase()==='STANDARD'){values.effortTargetSource='week_inherited';values.effortBaseMin=spec.rpe[0];values.effortBaseMax=spec.rpe[1];const effort=W.WorkoutDomain.effortTarget(ex,{...set,...values},cur);values.targetRpeMin=effort.lo;values.targetRpeMax=effort.hi;}
         for(const [k,v] of Object.entries(values))if(set[k]!==v){set[k]=v;changed=true;}
         set.targetRepLabel=values.targetRepMin===values.targetRepMax?String(values.targetRepMin):`${values.targetRepMin}–${values.targetRepMax}`;
       }
