@@ -4,9 +4,9 @@
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.UNVRSLLoadAdjustment = api;
 })(typeof window === 'undefined' ? globalThis : window, function () {
-  const VERSION = 1;
+  const VERSION = 2;
   const n = value => {
-    if (value == null || value === '') return null;
+    if (value == null || typeof value === 'boolean' || String(value).trim() === '') return null;
     const parsed = Number(String(value).replace(',', '.'));
     return Number.isFinite(parsed) ? parsed : null;
   };
@@ -35,13 +35,14 @@
     small_dumbbell: {up: .08, down: .12},
     bodyweight: {up: .06, down: .10},
   };
-  function effective(external, loadType, bodyWeight) {
+  function effective(external, loadType, bodyWeight, sides, base) {
+    if (loadType === 'per_side') return external * sides + base;
     if (loadType === 'bodyweight_assisted') return bodyWeight - external;
     if (loadType === 'bodyweight_added') return bodyWeight + external;
     return external;
   }
   function candidates(input, current, min) {
-    const available = (input.available || []).map(n).filter(x => x != null && x >= min).sort((a, b) => a - b);
+    const available = (Array.isArray(input.available) ? input.available : []).map(n).filter(x => x != null && x >= min).sort((a, b) => a - b);
     if (available.length) return [...new Set(available)];
     const step = n(input.step);
     if (!(step > 0)) return [current];
@@ -66,12 +67,13 @@
     const lowRir = n(input.targetRirMin), highRir = n(input.targetRirMax) ?? lowRir;
     const minimal = n(input.min) ?? 0;
     const bodyWeight = n(input.bodyWeight);
+    const sides = n(input.loadedSides), base = n(input.implementWeight);
     const group = category(input), caps = CAPS[group];
     const general = {category:group, actualRir:rir, targetRir: lowRir != null ? [lowRir, highRir] : null};
-    if (weight == null || weight < 0 || !Number.isInteger(reps) || reps < 0 || reps > 30 || lowReps == null || lowReps < 1 || highReps < lowReps || lowRir == null || highRir < lowRir || highRir > 9)
-      return result('hold', weight, 'Нет полных данных для расчёта нагрузки', {...general, confidence:'none'});
     if (input.pain === true) return result('stop', weight, 'Отмечена боль: останови упражнение и проверь причину', {...general, confidence:'none'});
-    if (input.techniqueFailed === true || input.fullROM === false || input.partial === true)
+    if (weight == null || weight < 0 || !Number.isInteger(reps) || reps < 0 || reps > 30 || lowReps == null || lowReps < 1 || !Number.isInteger(lowReps) || !Number.isInteger(highReps) || highReps < lowReps || lowRir == null || lowRir < 0 || minimal < 0 || highRir < lowRir || highRir > 9)
+      return result('hold', weight, 'Нет полных данных для расчёта нагрузки', {...general, confidence:'none'});
+    if (input.techniqueFailed === true || input.fullROM === false || input.partial === true || input.incomplete === true)
       return result('hold', weight, 'Нарушена техника или амплитуда: нагрузку не повышать, проверить выполнение', {...general, confidence:'low'});
     if (input.warmup === true) return result('hold', weight, 'Разминочный подход не меняет рабочую нагрузку', {...general, confidence:'none'});
     if (['time','distance','repetitions_only','bodyweight_only'].includes(loadType))
@@ -81,7 +83,9 @@
     if (reps > 20 || highReps > 20) return result('hold', weight, 'Высокоповторный подход: без прогноза веса по формуле 1ПМ', {...general, confidence:'low'});
     if (['bodyweight_assisted','bodyweight_added'].includes(loadType) && !(bodyWeight > 0))
       return result('hold', weight, 'Для этого упражнения нужна актуальная масса тела', {...general, confidence:'none'});
-    const currentEffective = effective(weight, loadType, bodyWeight);
+    if (loadType === 'per_side' && (!(sides > 0) || !Number.isInteger(sides) || base == null || base < 0))
+      return result('hold', weight, 'Укажи число загруженных сторон и массу каретки или рычага', {...general, confidence:'none'});
+    const currentEffective = effective(weight, loadType, bodyWeight, sides, base);
     if (!(currentEffective > 0)) return result('hold', weight, 'Недостаточная эффективная нагрузка для расчёта', {...general, confidence:'none'});
     const actualCapacity = reps + rir;
     const lowerCapacity = lowReps + lowRir;
@@ -96,18 +100,20 @@
     if (excess >= 2 && reps < lowReps)
       return result('hold', weight, 'Сначала добери минимальное число повторений, затем оцени повышение', {...general, ...evidence, confidence:'medium'});
     const harder = excess >= 2;
+    if (harder && input.deload === true)
+      return result('hold', weight, 'Плановая разгрузка: сохранить заданную лёгкую нагрузку', {...general, ...evidence, confidence:'medium'});
     const inverse = loadType === 'bodyweight_assisted';
     const strengthGap = harder ? excess : shortage;
     const capacityReference = 30 + (lowerCapacity + upperCapacity) / 2;
     const damping = harder ? .60 : strengthGap >= 3 ? .76 : .66;
     const fraction = Math.min(harder ? (rir >= 5 ? Math.min(caps.up, .03) : caps.up) : caps.down, strengthGap / capacityReference * damping);
     const wantedEffective = currentEffective * (harder ? 1 + fraction : 1 - fraction);
-    const wanted = inverse ? bodyWeight - wantedEffective : loadType === 'bodyweight_added' ? wantedEffective - bodyWeight : wantedEffective;
+    const wanted = loadType === 'per_side' ? (wantedEffective - base) / sides : inverse ? bodyWeight - wantedEffective : loadType === 'bodyweight_added' ? wantedEffective - bodyWeight : wantedEffective;
     const sign = (harder ? 1 : -1) * (inverse ? -1 : 1);
     const legal = candidates(input, weight, minimal).filter(candidate => {
       const difference = candidate - weight;
       if (difference * sign <= 1e-8) return false;
-      const nextEffective = effective(candidate, loadType, bodyWeight);
+      const nextEffective = effective(candidate, loadType, bodyWeight, sides, base);
       const pct = Math.abs(nextEffective / currentEffective - 1);
       return nextEffective > 0 && pct <= (harder ? (rir >= 5 ? Math.min(caps.up, .03) : caps.up) : caps.down) + 1e-8;
     });
@@ -124,7 +130,7 @@
     const visibleDirection = inverse ? (harder ? 'уменьшить помощь' : 'увеличить помощь') : (harder ? 'увеличить вес' : 'уменьшить вес');
     return result(effortAction, chosen,
       'Факт ' + reps + ' повт. с RIR ' + fmt(rir) + ', цель ' + lowReps + (highReps!==lowReps?'–'+highReps:'') + ' повт. с RIR ' + fmt(lowRir) + (highRir!==lowRir?'–'+fmt(highRir):'') + ': ' + visibleDirection + ' на ' + fmt(magnitude) + ' кг с учётом шага оборудования',
-      {...general, ...evidence, confidence:rir >= 5 ? 'low' : 'medium', desired:round(wanted), percentChange:round((effective(chosen, loadType, bodyWeight) / currentEffective - 1) * 100), step: n(input.step)});
+      {...general, ...evidence, confidence:rir >= 5 ? 'low' : 'medium', desired:round(wanted), percentChange:round((effective(chosen, loadType, bodyWeight, sides, base) / currentEffective - 1) * 100), step: n(input.step)});
   }
   return {adjust, category, version:VERSION};
 });

@@ -23,7 +23,7 @@ const cases = [
   [{actualReps:9,actualRir:0,warmup:true},'hold',100],
   [{weight:8,step:2,actualReps:10,actualRir:4,loadType:'per_dumbbell',exerciseName:'Махи гантелями'},'hold',8],
   [{weight:8,step:1,actualReps:9,actualRir:0,loadType:'per_dumbbell',exerciseName:'Махи гантелями'},'hold',8],
-  [{weight:200,step:5,actualReps:9,actualRir:0,loadType:'per_side',exerciseName:'Жим ногами'},'down',190],
+  [{weight:200,step:5,actualReps:9,actualRir:0,loadType:'per_side',loadedSides:2,implementWeight:0,exerciseName:'Жим ногами'},'down',190],
   [{weight:30,step:5,actualReps:9,actualRir:0,loadType:'bodyweight_assisted',exerciseName:'Гравитрон',bodyWeight:80},'down',35],
   [{weight:30,step:5,actualReps:10,actualRir:4,loadType:'bodyweight_assisted',exerciseName:'Гравитрон',bodyWeight:80},'hold',30],
   [{weight:30,step:5,actualReps:10,actualRir:4,loadType:'bodyweight_assisted',exerciseName:'Гравитрон',bodyWeight:100},'hold',30],

@@ -180,6 +180,7 @@ jobs:
           export UNVRSL_AUDIT_OUTPUT="$RUNNER_TEMP/unvrsl-layout-proof"
           node tests/browser-program-audit.cjs
           node tests/browser-pwa-persistence.cjs
+          node tests/browser-rir-recommendations.cjs
           node tests/browser-management-cleanup.cjs
       - uses: actions/upload-artifact@v4
         if: always()

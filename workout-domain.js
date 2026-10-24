@@ -557,7 +557,7 @@
   function e1rm(e, s, session, reg, weights = []) {
     if (
       !complete(e, s, reg) ||
-      !strengthEligible(e,s) || s.effortUncertain === true || s.effortCensored === true || s.partial === true || s.fullROM === false || s.incomplete === true || s.techniqueFailed === true ||
+      !strengthEligible(e,s) || s.pain === true || s.effortUncertain === true || s.effortCensored === true || s.partial === true || s.fullROM === false || s.incomplete === true || s.techniqueFailed === true ||
       reg?.resolve(e)?.resultRule?.e1rm === false
     )
       return null;
@@ -732,7 +732,10 @@
         loadType:p.loadType,bodyWeight:number(session?.bodyWeight),
         step:p.step,available:p.available,min:p.min,
         techniqueFailed:s.techniqueFailed,fullROM:s.fullROM,
-        partial:s.partial,pain:s.pain,warmup:warmup(s),
+        partial:s.partial,incomplete:s.incomplete,pain:s.pain,warmup:warmup(s),
+        loadedSides:e.loadedSides??e.equipmentProfile?.loadedSides,
+        implementWeight:e.implementWeight??e.equipmentProfile?.implementWeight,
+        deload:session?.deload===true||session?.isDeload===true||session?.phase==='deload',
         effortUncertain:s.effortUncertain,effortCensored:s.effortCensored
       });
       return {
@@ -1310,7 +1313,7 @@
             stop = true;
             break;
           }
-          if ((complete(ex, s, reg)||(s.ok&&performedReps(ex,s)===0&&setRole(ex,s)==="test_attempt")) && comparable(e, ex, reg, set, s))
+          if ((complete(ex, s, reg)||(s.ok&&s.pain===true)||(s.ok&&performedReps(ex,s)===0&&setRole(ex,s)==="test_attempt")) && comparable(e, ex, reg, set, s))
             currentRows.push({ exercise: ex, set: s });
         }
         if (stop) break;
@@ -1483,6 +1486,7 @@
             : latestOneRepMax!=null?"средняя":"низкая";
     // Some isolation machines intentionally do not expose an e1RM. Their
     // completed working sets and effort still provide valid load evidence.
+    if(nextSetSuggestion?.action==='stop'){action='stop';reason=nextSetSuggestion.reason;}
     const reliable=effortKnown>0&&recent.length>0||!!lastToday&&effortRpe(lastToday.set)!=null||testWeekSuggestion&&ids.length>0;
     return {
       weight,
@@ -1490,13 +1494,13 @@
       analogousSessionId:analogous?.[0]?.session.id??null,
       calculationVersion:470,
       reliable,
-      canApply:(!set.weightMode||reliable)&&(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
+      canApply:nextSetSuggestion?.action!=='stop'&&(!set.weightMode||reliable)&&(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
       allowedWeightRange:corridor?{min:Math.min(...corridor),max:Math.max(...corridor)}:null,
       calculatedWeight:weeklyCalculated?weight:projected,
       weeklyCalculated:!!weeklyCalculated,
       profileWarnings:prescription.warnings,
       scope:nextSetSuggestion?'next_set':'next_session',
-      proposalKey:proposalFingerprint([470,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
+      proposalKey:proposalFingerprint([470,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set),x.set.pain,x.set.techniqueFailed,x.set.fullROM,x.set.partial]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
       raw,
       previous: prior,
       basis:ids.length?{date:sessionDate(latest[0]?.session??strength.source?.session),weight:prior??number(strength.source?.set.w),planned:seed||null,estimatedOneRepMax:latestOneRepMax!=null?Number(latestOneRepMax.toFixed(1)):null,sets:latest.map(x=>({weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effort(x)}))}:null,
