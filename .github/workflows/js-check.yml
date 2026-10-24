@@ -163,7 +163,7 @@ jobs:
           npx --prefix "$RUNNER_TEMP/unvrsl-browser" playwright install --with-deps chromium
       - name: Build production shell
         run: node scripts/build-static.cjs
-      - name: Check dock, scroll, hit targets and offline PWA
+      - name: Check floating navigation, scroll, hit targets and offline PWA
         env:
           UNVRSL_AUDIT_URL: http://127.0.0.1:8770/unvrsl-fit/
         run: |

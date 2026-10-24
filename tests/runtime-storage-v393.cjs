@@ -10,7 +10,7 @@ const { memoryIndexedDB } = require("./storage-fixture.cjs");
     current: null, programs: [],
   }) };
   const first = make(seed, { indexedDB, quota: true });
-  await wait(2800);
+  for(let i=0;i<100&&!first.window.__unvrslStartupComplete;i++)await wait(100);
   const w = first.window;
   assert.equal(w.__unvrslStartupComplete, true);
   w.document.querySelector('.nav button[data-p="exercises"]').click();
@@ -29,7 +29,7 @@ const { memoryIndexedDB } = require("./storage-fixture.cjs");
   w.__disconnectTestObservers();
   first.window.close();
   const second = make(seed, { indexedDB, quota: true });
-  await wait(2800);
+  for(let i=0;i<100&&!second.window.__unvrslStartupComplete;i++)await wait(100);
   assert.equal(second.window.__unvrslStartupComplete, true);
   assert.equal(second.window.st.current.id, 'ios-draft');
   assert.equal(second.window.st.current.ex[0].set[0].r, 12);

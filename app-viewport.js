@@ -3,11 +3,11 @@
  const W=window,D=document,app=D.querySelector('body>.app');
  if(!app||W.UNVRSLViewport)return;
  const root=D.documentElement,nav=D.querySelector('body>.nav'),timer=D.getElementById('timer');
- root.classList.add('unvrsl-docked-viewport');
- const scrollRoot=()=>app.clientHeight>0?app:W;
- W.unvrslScrollTop=()=>scrollRoot()===app?app.scrollTop:W.scrollY||0;
- W.unvrslScrollTo=(...args)=>scrollRoot().scrollTo(...args);
- W.unvrslScrollBy=(...args)=>scrollRoot().scrollBy(...args);
+ root.classList.add('unvrsl-floating-viewport');
+ const scrollRoot=()=>D.scrollingElement||root;
+ W.unvrslScrollTop=()=>W.scrollY||scrollRoot().scrollTop||0;
+ W.unvrslScrollTo=(...args)=>W.scrollTo(...args);
+ W.unvrslScrollBy=(...args)=>W.scrollBy(...args);
  let queued=false;
  function visible(element){
   if(!element)return false;
@@ -16,14 +16,13 @@
  }
  function measure(){
   queued=false;
-  const height=W.visualViewport?.height||W.innerHeight;
-  root.style.setProperty('--app-viewport-height',height+'px');
+  const height=W.innerHeight;
   // A modal owns its own scroll pane; keep the underlying page stationary.
   if(D.getElementById('modal')?.classList.contains('show'))return;
   const controls=[nav,timer].filter(visible);
   if(visible(nav))controls.push(...[...nav.querySelectorAll('.ico')].filter(visible));
   const edge=controls.reduce((top,el)=>Math.min(top,el.getBoundingClientRect().top),height);
-  root.style.setProperty('--app-dock-space',Math.max(0,Math.ceil(height-edge)+(controls.length?12:0))+'px');
+  root.style.setProperty('--app-controls-clearance',Math.max(0,Math.ceil(height-edge)+(controls.length?12:0))+'px');
  }
  function refresh(){if(!queued){queued=true;W.requestAnimationFrame(measure)}}
  W.UNVRSLViewport={scrollRoot,refresh};

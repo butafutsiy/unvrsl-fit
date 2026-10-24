@@ -3,7 +3,7 @@
 const {chromium}=require(process.env.UNVRSL_PLAYWRIGHT||'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs');
 const base=process.env.UNVRSL_AUDIT_URL||'http://127.0.0.1:8770/unvrsl-fit/';
-const output=process.env.UNVRSL_AUDIT_OUTPUT||'/workspace/unvrsl-overlap-audit';fs.mkdirSync(output,{recursive:true});
+const output=process.env.UNVRSL_AUDIT_OUTPUT||'/workspace/unvrsl-floating-audit';fs.mkdirSync(output,{recursive:true});
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||(fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),args:['--no-sandbox']});
  const results=[];
@@ -41,24 +41,24 @@ const output=process.env.UNVRSL_AUDIT_OUTPUT||'/workspace/unvrsl-overlap-audit';
    await page.locator('.te200-rec-main').scrollIntoViewIfNeeded();
    await page.screenshot({path:`${output}/workout-${theme}-${width}.png`});
    const dock=await page.evaluate(async()=>{
-    const app=document.querySelector('body>.app'),checks=[];
+    const checks=[];
     for(const fraction of [0,.25,.5,.75,1]){
-     app.scrollTo(0,(app.scrollHeight-app.clientHeight)*fraction);await new Promise(requestAnimationFrame);
-     const bottom=app.getBoundingClientRect().bottom,nav=document.querySelector('.nav');
-     const controlTop=Math.min(...[nav,...nav.querySelectorAll('.ico')].map(el=>el.getBoundingClientRect().top));
-     checks.push({fraction,bottom,controlTop,scrollTop:app.scrollTop});
+     window.scrollTo(0,(document.scrollingElement.scrollHeight-innerHeight)*fraction);await new Promise(requestAnimationFrame);
+     const nav=document.querySelector('.nav'),rect=nav.getBoundingClientRect();
+     checks.push({fraction,top:rect.top,bottom:rect.bottom,height:innerHeight,scrollTop:window.scrollY,position:getComputedStyle(nav).position});
     }
     return checks;
    });
-   for(const point of dock)assert.ok(point.bottom+10<=point.controlTop,JSON.stringify(point));
+   for(const point of dock){assert.equal(point.position,'fixed');assert.ok(point.top>0&&point.bottom<=point.height,JSON.stringify(point));assert.ok(Math.abs(point.top-dock[0].top)<=1,JSON.stringify(point));}
+   assert.ok(dock.at(-1).scrollTop>0);
    // Check actual hit targets while the recommendation passes the old overlap position.
    for(const selector of ['.te200-rec-main b','.te406-plan-comparison','.te200-rec summary','.te200-rec-apply']){
-    await page.locator(selector).first().scrollIntoViewIfNeeded();
+    await page.locator(selector).first().evaluate(el=>el.scrollIntoView({block:'center'}));
     const target=await page.locator(selector).first().evaluate(el=>{
-     const r=el.getBoundingClientRect(),app=document.querySelector('body>.app').getBoundingClientRect();
+     const r=el.getBoundingClientRect(),nav=document.querySelector('.nav .start .ico').getBoundingClientRect();
      const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
-     return{top:r.top,bottom:r.bottom,appBottom:app.bottom,hit:!!hit&&(hit===el||el.contains(hit))};
-    });assert.ok(target.hit&&target.bottom<=target.appBottom,JSON.stringify({selector,...target}));
+     return{top:r.top,bottom:r.bottom,controlTop:nav.top,hit:!!hit&&(hit===el||el.contains(hit))};
+    });assert.ok(target.hit&&target.bottom<=target.controlTop,JSON.stringify({selector,...target}));
    }
    await page.locator('.te200-rec').evaluate(el=>el.scrollIntoView({block:'center'}));await page.waitForTimeout(80);
    await page.screenshot({path:`${output}/recommendation-${theme}-${width}.png`});
@@ -68,19 +68,19 @@ const output=process.env.UNVRSL_AUDIT_OUTPUT||'/workspace/unvrsl-overlap-audit';
    const navVisible=await page.locator('.nav').isVisible();assert.equal(navVisible,false);
    await page.locator('.setrow input').nth(0).fill('82,5');await page.locator('.setrow input').nth(1).fill('10');await page.locator('.setrow .rpe-input').first().fill('8');await page.locator('.setrow .check').first().click();
    const actual=await page.evaluate(()=>({done:st.current.ex[0].set[0].ok,weight:st.current.ex[0].set[0].actualWeight,assigned:st.current.ex[0].set[0].assignedW}));assert.equal(actual.done,true);assert.equal(actual.weight,82.5);assert.equal(actual.assigned,80);
-   await page.evaluate(()=>{document.activeElement?.blur();unvrslScrollTo(0,document.querySelector('body>.app').scrollHeight)});await page.waitForTimeout(100);
-   const footer=await page.evaluate(()=>({bottom:document.querySelector('.workout-finish-card').getBoundingClientRect().bottom,appBottom:document.querySelector('body>.app').getBoundingClientRect().bottom,timerTop:document.querySelector('#timer').getBoundingClientRect().top,navTop:document.querySelector('.nav').getBoundingClientRect().top}));assert.ok(footer.bottom<=footer.appBottom&&footer.appBottom<footer.timerTop&&footer.timerTop<footer.navTop,JSON.stringify(footer));
+   await page.evaluate(()=>{document.activeElement?.blur();unvrslScrollTo(0,document.scrollingElement.scrollHeight)});await page.waitForTimeout(100);
+   const footer=await page.evaluate(()=>({bottom:document.querySelector('.workout-finish-card').getBoundingClientRect().bottom,timerTop:document.querySelector('#timer').getBoundingClientRect().top,navTop:document.querySelector('.nav').getBoundingClientRect().top}));assert.ok(footer.bottom<footer.timerTop&&footer.timerTop<footer.navTop,JSON.stringify(footer));
    await page.evaluate(()=>stopTimer());await page.waitForTimeout(100);
    const restoration=await page.evaluate(async()=>{
-    const app=document.querySelector('body>.app');app.scrollTo(0,500);save({draftOnly:true});const saved=st.current.scrollY;nav('home');app.scrollTo(0,0);resumeWorkoutDraft();await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);return{saved,restored:app.scrollTop};
+    window.scrollTo(0,500);save({draftOnly:true});const saved=st.current.scrollY;nav('home');window.scrollTo(0,0);resumeWorkoutDraft();await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);return{saved,restored:window.scrollY};
    });assert.ok(restoration.saved>0);assert.ok(Math.abs(restoration.saved-restoration.restored)<=1,JSON.stringify(restoration));
    // Late client-specific scroll CSS must not restore the old document overlay.
    await page.evaluate(()=>{window.cloud.profile.role='client';window.unvrslTrainerMode=()=>false;window.dispatchEvent(new CustomEvent('unvrsl:cloud-modules-settled'))});await page.waitForTimeout(100);
-   const clientDock=await page.evaluate(()=>({bottom:document.querySelector('body>.app').getBoundingClientRect().bottom,navTop:document.querySelector('.nav .start .ico').getBoundingClientRect().top,client:document.body.classList.contains('unvrsl-client-workout-scroll-v268')}));assert.equal(clientDock.client,true);assert.ok(clientDock.bottom+10<=clientDock.navTop,JSON.stringify(clientDock));
+   const clientDock=await page.evaluate(()=>({appHeight:document.querySelector('body>.app').getBoundingClientRect().height,viewport:innerHeight,nav:document.querySelector('.nav').getBoundingClientRect().bottom,position:getComputedStyle(document.querySelector('.nav')).position,client:document.body.classList.contains('unvrsl-client-workout-scroll-v268')}));assert.equal(clientDock.client,true);assert.equal(clientDock.position,'fixed');assert.ok(clientDock.appHeight>clientDock.viewport&&clientDock.nav<=clientDock.viewport,JSON.stringify(clientDock));
    await page.screenshot({path:`${output}/client-workout-${theme}-${width}.png`});
    results.push({width,theme,programLayout,templateLayout:overflow,recommendation:positions,dock,keyboardNavHidden:true,actual,footer,restoration,clientDock,errors});
    assert.deepEqual(errors,[]);await page.close();
   }
-  fs.writeFileSync(output+'/browser-results.json',JSON.stringify(results,null,2));console.log('PASS Chromium: 320/390 px, dark/light, programs/templates/settings/workout, recommendation placement, keyboard, scrolling dock, timer, hit targets, client CSS and draft scroll restoration');
+  fs.writeFileSync(output+'/browser-results.json',JSON.stringify(results,null,2));console.log('PASS Chromium: 320/390 px, dark/light, programs/templates/settings/workout, recommendation placement, keyboard, fixed floating navigation, native document scrolling, timer, hit targets, client CSS and draft scroll restoration');
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});

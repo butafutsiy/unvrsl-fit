@@ -25,11 +25,8 @@ html body #modal .sheet{padding-bottom:calc(32px + env(safe-area-inset-bottom))!
 html body:has(#modal.show)>.nav{visibility:hidden;pointer-events:none}
 html body.keyboard-open>.nav{visibility:hidden!important;pointer-events:none!important}
 @media(max-width:360px){html body .program-unified-card>.row{gap:8px}html body .program-unified-card .title,html body .program-template-card .title{font-size:17px}html body .program-card-actions{grid-template-columns:1fr}html body .program-unified-card .btn{padding-inline:9px!important}}
-/* The navigation owns a separate viewport area, including its raised Start icon.
-   Extra padding at the end of a document cannot protect content mid-scroll. */
-html:root.unvrsl-docked-viewport{height:100%!important;overflow:hidden!important}
-html:root.unvrsl-docked-viewport body{height:var(--app-viewport-height,100dvh)!important;min-height:0!important;overflow:hidden!important;padding-bottom:var(--app-dock-space,calc(90px + env(safe-area-inset-bottom)))!important}
-html:root.unvrsl-docked-viewport body>.app{width:100%;height:100%!important;min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior-y:contain;touch-action:auto!important;-webkit-overflow-scrolling:touch;scroll-padding-block:100px 16px}
-html:root.unvrsl-docked-viewport body .page,html:root.unvrsl-docked-viewport body #start.page.active{padding-bottom:24px!important}
-html:root.unvrsl-docked-viewport body #start .workout-head{position:static!important;top:auto!important}
-html:root.unvrsl-docked-viewport body:has(#modal.show)>.app{overflow-y:hidden!important}
+/* Keep the original floating bar and native document scrolling. Only scroll
+   alignment and end-of-page clearance account for the controls. */
+html:root.unvrsl-floating-viewport{scroll-padding-top:100px;scroll-padding-bottom:var(--app-controls-clearance,100px)}
+html:root.unvrsl-floating-viewport body>.nav{position:fixed!important;top:auto!important}
+html:root.unvrsl-floating-viewport body #start .workout-head{position:static!important;top:auto!important}
