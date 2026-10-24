@@ -30,8 +30,8 @@ const base=process.env.UNVRSL_AUDIT_URL||'http://127.0.0.1:8770/unvrsl-fit/',out
   assert.match(await card.locator('[data-activity-date="2026-10-24"]').getAttribute('title'),/60 мин/);
   assert.notEqual(await card.locator('[data-activity-date="2026-10-01"]').getAttribute('class'),await card.locator('[data-activity-date="2026-10-03"]').getAttribute('class'));
   assert.equal(await page.locator('.nav').isVisible(),true);
-  const layout=await card.evaluate(el=>{const r=el.getBoundingClientRect(),grid=el.querySelector('.sd2-heat');return{width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,card:r.toJSON(),gridWidth:grid.clientWidth,gridScroll:grid.scrollWidth,metrics:[...el.querySelectorAll('.sd2-activity-metric')].map(m=>({client:m.clientWidth,scroll:m.scrollWidth,top:m.getBoundingClientRect().top})),cells:grid.children.length}});
-  assert.ok(layout.scroll<=layout.width+1,JSON.stringify(layout));assert.ok(layout.gridScroll<=layout.gridWidth+1,JSON.stringify(layout));assert.ok(layout.cells>=365);
+  const layout=await card.evaluate(el=>{const r=el.getBoundingClientRect(),grid=el.querySelector('.sd2-heat'),wrap=el.querySelector('.sd2-heat-wrap'),cell=grid.firstElementChild;return{width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,card:r.toJSON(),gridWidth:grid.clientWidth,gridScroll:grid.scrollWidth,wrapWidth:wrap.clientWidth,wrapScroll:wrap.scrollWidth,cellWidth:cell.getBoundingClientRect().width,cellHeight:cell.getBoundingClientRect().height,gap:getComputedStyle(grid).gap,overflow:getComputedStyle(wrap).overflowX,metrics:[...el.querySelectorAll('.sd2-activity-metric')].map(m=>({client:m.clientWidth,scroll:m.scrollWidth,top:m.getBoundingClientRect().top})),cells:grid.children.length}});
+  assert.ok(layout.scroll<=layout.width+1,JSON.stringify(layout));assert.ok(layout.gridScroll<=layout.gridWidth+1,JSON.stringify(layout));assert.ok(layout.cells>=365);assert.equal(layout.cellWidth,10);assert.equal(layout.cellHeight,10);assert.equal(layout.gap,'4px');assert.equal(layout.overflow,'auto');assert.ok(layout.wrapScroll>layout.wrapWidth,'original-size annual grid scrolls inside its own card');
   for(const metric of layout.metrics){assert.ok(metric.scroll<=metric.client+1,JSON.stringify(metric));assert.equal(metric.top,layout.metrics[0].top)}
   await page.screenshot({path:`${output}/activity-${theme}-${width}.png`});
   // Offline edits should refresh the same card via the standard history event.
@@ -43,5 +43,5 @@ const base=process.env.UNVRSL_AUDIT_URL||'http://127.0.0.1:8770/unvrsl-fit/',out
   results.push({width,theme,layout,errors});await page.close();
  }}finally{await browser.close()}
  fs.writeFileSync(output+'/activity-browser-results.json',JSON.stringify(results,null,2));
- console.log('PASS Chromium activity: 320/390 px, dark/light, calendar counts/deltas/year, full-year grid, no overflow, offline deletion events, empty history, bodyweight parity');
+ console.log('PASS Chromium activity: 320/390 px, dark/light, calendar counts/deltas/year, original-size duration grid, contained horizontal scrolling, no page overflow, offline deletion events, empty history, bodyweight parity');
 })().catch(e=>{console.error(e);process.exitCode=1});

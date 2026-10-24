@@ -50,16 +50,12 @@
     #home .home-stats-v254 .sd2-activity-delta{font-size:11px;font-weight:700;color:var(--muted,#8e8e93);white-space:nowrap}
     #home .home-stats-v254 .sd2-activity-delta.up{color:var(--green)}
     #home .home-stats-v254 .sd2-activity-unit{font-size:11px;line-height:1.3;color:var(--muted,#8e8e93)}
-    #home .home-stats-v254 .sd2-activity-grid-title{font-size:11px;color:var(--muted,#8e8e93);margin-bottom:12px}
-    #home .home-stats-v254 .sd2-activity-card .sd2-heat-wrap{overflow:visible;padding-bottom:0}
-    #home .home-stats-v254 .sd2-activity-card .sd2-heat{grid-template-rows:repeat(7,8px);grid-auto-columns:minmax(0,1fr);gap:2px;width:100%;min-width:0}
-    #home .home-stats-v254 .sd2-activity-card .sd2-cell{width:auto;min-width:0;height:8px;border-radius:2px}
+    #home .home-stats-v254 .sd2-activity-grid-title{font-size:14px;line-height:1.35;color:var(--muted,#8e8e93);margin-bottom:14px}
     #home .home-stats-v254 .sd2-activity-card .sd2-cell,#home .home-stats-v254 .sd2-activity-card .sd2-legend i{background:color-mix(in srgb,var(--text) 10%,var(--panel,#1c1c1f))}
     #home .home-stats-v254 .sd2-activity-card :is(.sd2-cell,.sd2-legend i).l1{background:color-mix(in srgb,var(--green) 28%,var(--panel2,#2c2c31))}
     #home .home-stats-v254 .sd2-activity-card :is(.sd2-cell,.sd2-legend i).l2{background:color-mix(in srgb,var(--green) 46%,var(--panel2,#2c2c31))}
     #home .home-stats-v254 .sd2-activity-card :is(.sd2-cell,.sd2-legend i).l3{background:color-mix(in srgb,var(--green) 68%,var(--panel2,#2c2c31))}
     #home .home-stats-v254 .sd2-activity-card :is(.sd2-cell,.sd2-legend i).l4{background:var(--green)}
-    #home .home-stats-v254 .sd2-activity-months{display:flex;justify-content:space-between;font-size:10px;color:var(--muted,#8e8e93);margin-top:7px}
     #home .home-stats-v254 .sd2-activity-note{font-size:11px;line-height:1.5;color:var(--muted,#8e8e93);margin:16px 0 0}
     @media(max-width:360px){#home .home-stats-v254 .sd2-activity-label .long{display:none}#home .home-stats-v254 .sd2-activity-label .short{display:inline}#home .home-stats-v254 .sd2-activity-metric{padding-right:6px}#home .home-stats-v254 .sd2-activity-metric+.sd2-activity-metric{padding-left:8px}}
     @media(max-width:390px){
@@ -127,10 +123,8 @@
     const metric=(kind,long,short)=>{const x=stats[kind];return `<div class="sd2-activity-metric" data-activity="${kind}"><div class="sd2-activity-label"><span class="long">${long}</span><span class="short">${short}</span></div><div class="sd2-activity-number"><b data-activity-count>${format(x.count)}</b>${delta(x.delta,kind)}</div><span class="sd2-activity-unit">${Activity.workoutWord(x.count)}</span></div>`};
     const maxMinutes=Math.max(1,...stats.days.map(x=>x.minutes));
     const cells=stats.days.map(x=>{const ratio=x.minutes/maxMinutes,level=x.minutes?(ratio>.72?4:ratio>.42?3:ratio>.18?2:1):x.count?1:0,title=x.count?`${x.count} ${Activity.workoutWord(x.count)} · ${x.minutes?x.minutes+' мин':'время не указано'}`:'нет тренировки';return `<i class="sd2-cell ${level?'l'+level:''}" data-activity-date="${x.date}" data-count="${x.count}" data-minutes="${x.minutes}" title="${x.date}: ${title}"></i>`}).join('');
-    const months=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-    const labels=Array.from({length:6},(_,i)=>{const day=stats.days[Math.round((stats.days.length-1)*i/5)];return `<span>${months[Number(day.date.slice(5,7))-1]}</span>`}).join('');
     const note=stats.month.shorterPreviousMonth?`Неделя — одинаковые дни. Месяц — первые ${stats.month.comparedDays} дней.`:'Сравнение за одинаковое число дней.';
-    return `<div class="sd2-card sd2-activity-card"><div class="sd2-activity-head"><h2>Активность</h2><span>Тренировки</span></div><div class="sd2-activity-summary">${metric('week','На этой неделе','Неделя')}${metric('month','В этом месяце','Месяц')}<div class="sd2-activity-metric" data-activity="year"><div class="sd2-activity-label">За ${stats.year} год</div><div class="sd2-activity-number"><b data-activity-count>${format(stats.yearCount)}</b></div><span class="sd2-activity-unit">${Activity.workoutWord(stats.yearCount)}</span></div></div><div class="sd2-activity-grid-title">Последние 12 месяцев · по времени тренировок</div><div class="sd2-heat-wrap" id="homeHeatWrap"><div class="sd2-heat" role="img" aria-label="Активность по времени тренировок за последние 12 месяцев">${cells}</div></div><div class="sd2-activity-months" aria-hidden="true">${labels}</div><div class="sd2-legend"><span>Меньше</span><i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i><span>Больше</span></div><p class="sd2-activity-note">${note}</p></div>`;
+    return `<div class="sd2-card sd2-activity-card"><div class="sd2-activity-head"><h2>Активность</h2><span>Тренировки</span></div><div class="sd2-activity-summary">${metric('week','На этой неделе','Неделя')}${metric('month','В этом месяце','Месяц')}<div class="sd2-activity-metric" data-activity="year"><div class="sd2-activity-label">За ${stats.year} год</div><div class="sd2-activity-number"><b data-activity-count>${format(stats.yearCount)}</b></div><span class="sd2-activity-unit">${Activity.workoutWord(stats.yearCount)}</span></div></div><div class="sd2-activity-grid-title">Последние 12 месяцев · по времени тренировок</div><div class="sd2-heat-wrap" id="homeHeatWrap"><div class="sd2-heat" role="img" aria-label="Активность по времени тренировок за последние 12 месяцев">${cells}</div></div><div class="sd2-legend"><span>Меньше</span><i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i><span>Больше</span></div><p class="sd2-activity-note">${note}</p></div>`;
   }
 
   function filteredWeights(){
