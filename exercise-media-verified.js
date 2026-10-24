@@ -318,12 +318,12 @@ window.UNVRSL_VERIFIED_EXERCISE_MEDIA_V331={
       "triceps",
       "chest"
     ],
-    "gif": "videos/0603-67n3r98.gif",
-    "image": "images/0603-67n3r98.jpg",
+    "gif": "https://fitnessprogramer.com/wp-content/uploads/2021/04/Lever-Shoulder-Press.gif",
+    "image": "https://fitnessprogramer.com/wp-content/uploads/2021/04/Lever-Shoulder-Press.gif",
     "instructions": {
       "ru": "Отрегулируйте высоту сиденья и расположитесь на машине спиной к спинке сиденья. Возьмитесь за рукоятки верхним хватом и расположите руки на уровне плеч. Толкайте ручки вверх до тех пор, пока руки полностью не выпрямятся, но не сгибайте локти. Задержитесь на мгновение в верхней точке, затем медленно опустите ручки обратно в исходное положение. Повторите необходимое количество повторений."
     },
-    "attribution": "© Gym visual — https://gymvisual.com/"
+    "attribution": "© FitnessProgramer — https://fitnessprogramer.com/exercise/lever-shoulder-press/"
   },
   "rear_delt": {
     "id": "0383",
