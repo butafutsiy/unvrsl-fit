@@ -12,6 +12,8 @@ const cases = [
   [{actualReps:10,actualRir:0},'down',97.5],
   [{actualReps:10,actualRir:2},'hold',100],
   [{actualReps:10,actualRir:4},'up',102.5],
+  [{actualReps:10,actualRir:5},'up',102.5],
+  [{actualReps:10,actualRir:6},'hold',100],
   [{actualReps:12,actualRir:0},'hold',100],
   [{actualReps:12,actualRir:2},'up',102.5],
   [{actualRir:null,actualRpe:0},'hold',100],
