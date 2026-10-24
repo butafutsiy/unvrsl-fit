@@ -68,6 +68,7 @@
     try {
       W.equipmentAttachDefaults405?.(cur);
       W.trainingInitializeSetWeights?.(cur);
+      const history=recommendationHistory();
       for (const ex of cur.ex || []) {
         if (!A.recommendationEngine&&["time","distance"].includes(A.loadType(ex,workoutRegistry))) {
           for (const set of ex.set || []) {
@@ -89,11 +90,11 @@
             ex,
             set,
             cur,
-            recommendationHistory(),
+            history,
             workoutRegistry,
             st.exerciseWeightProfiles || {},
           );
-          const observations=rec.engineVersion===3?[]:recommendationHistory().filter(x=>!x.isLoadCalibration&&x.id!==cur.id&&!x.pendingCompletion&&(!cur.userId||!x.userId||x.userId===cur.userId)&&(!cur.date||!x.date||x.date<=cur.date)).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).flatMap(old=>{
+          const observations=rec.engineVersion===3?[]:history.filter(x=>!x.isLoadCalibration&&x.id!==cur.id&&!x.pendingCompletion&&(!cur.userId||!x.userId||x.userId===cur.userId)&&(!cur.date||!x.date||x.date<=cur.date)).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).flatMap(old=>{
             const match=(old.ex||[]).find(x=>A.loadComparable(ex,x,workoutRegistry,set,x.set?.[0]||{})&&A.method(ex,set)===A.method(x,x.set?.[0]||{}));if(!match)return [];
             const done=(match.set||[]).filter(x=>A.complete(match,x,workoutRegistry)),target=A.effortTarget(match,done[0]||{},old),range=A.repRange(match,done[0]||{});
             const estimate=A.strengthEstimate(ex,A.history(ex,[old],workoutRegistry),workoutRegistry,[],set).estimate;

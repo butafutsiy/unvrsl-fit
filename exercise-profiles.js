@@ -48,15 +48,20 @@
   'подъем гантелей в стороны':'canon:lateral_raise','присед hb':'unvrsl:squat-high-bar'};
  const identityName=v=>String(v||'').replace(/^\s*\d+[A-CА-В]?\s*·\s*/i,'').replace(/\s+[—–]\s+(?:UNVRSL|SLDR|DS|FST|тест|back-off|W\d).*$/i,'').trim();
  const legacyAccounting={per_dumbbell:'per_implement',machine_stack:'stack_display',bodyweight_only:'none',time:'none',distance:'none',repetitions_only:'none'};
+ // Index immutable routing names once. Most calls already carry a canonical ID.
+ const routingNames=new Map();
+ for(const [id,p] of Object.entries(routing)){const name=norm(p.name),ids=routingNames.get(name)||[];ids.push(id);routingNames.set(name,ids);}
  function resolve(ex={},registry,overrides={}){
   const stableId=String(ex.exerciseId||ex.canonicalExerciseId||ex.sourceId||ex.rawId||ex.id||'');
   const rows=registry?.rows||[];
   const exact=rows.find(x=>[x.id,x.rawId,...(x.legacyIds||[])].filter(Boolean).map(String).includes(stableId));
-  const byName=rows.filter(x=>[x.n,...(x.aliases||[])].some(n=>norm(n)===norm(identityName(ex.n||ex.name))));
-  const alias=aliases[norm(identityName(ex.n||ex.name))];
-  const named=Object.entries(routing).filter(([,p])=>norm(p.name)===norm(identityName(ex.n||ex.name)));
   const unknownStable=!!(ex.exerciseId||ex.sourceId)&&!routing[stableId]&&!exact;
-  const id=unknownStable?stableId:routing[stableId]?stableId:exact?.id||alias||(byName.length===1?byName[0].id:null)||(named.length===1?named[0][0]:null);
+  let id=unknownStable?stableId:routing[stableId]?stableId:exact?.id;
+  if(!id){
+   const name=norm(identityName(ex.n||ex.name)),alias=aliases[name];
+   if(alias)id=alias;
+   else {const byName=rows.filter(x=>[x.n,...(x.aliases||[])].some(n=>norm(n)===name)),named=routingNames.get(name)||[];id=(byName.length===1?byName[0].id:null)||(named.length===1?named[0]:null);}
+  }
   const override=overrides[`${stableId}:${ex.variantId||''}`]||overrides[stableId]||overrides[`${id}:${ex.variantId||''}`]||overrides[id];
   const explicit=override?.confirmed?override:ex.recommendationProfile?.confirmed?ex.recommendationProfile:exact?.recommendationProfile;
   let p=explicit?.family&&families[explicit.family]?{...routing[id],...explicit,profileStatus:explicit.profileStatus||'resolved',source:'confirmed-metadata'}:routing[id];

@@ -23,7 +23,7 @@ const base=process.env.UNVRSL_AUDIT_URL||'http://127.0.0.1:8770/unvrsl-fit/';
    return {action:live.action,weight:live.weight,text:card?.textContent,disabled:card?.querySelector('.te200-rec-apply')?.disabled,
     done:JSON.stringify(ex.set[0]),next:ex.set[1].w,program:ex.set[1].programW};
   });
-  const before=await state();assert.equal(before.weight,95);assert.equal(before.disabled,false);
+  const before=await state();assert.match(before.text,/Следующий подход: 95 кг · 10 повт\./);assert.match(before.text,/Почему этот вес\?/);assert.equal(before.weight,95);assert.equal(before.disabled,false);
   const activeId=await page.locator('#start [data-recommendation-version="3"]').first().getAttribute('data-recommendation-id');
   await page.evaluate(()=>workoutFocus.open(0));
   assert.equal(await page.locator('#workout-focus [data-recommendation-version="3"]').first().getAttribute('data-recommendation-id'),activeId);

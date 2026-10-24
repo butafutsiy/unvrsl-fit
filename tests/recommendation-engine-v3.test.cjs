@@ -243,3 +243,23 @@ test('authored numbering is identity decoration; stable unknown IDs and ambiguou
  assert.equal(P.resolve({exerciseId:'archived:unknown',n:'1 · Жим штанги лёжа'}).family,'F00');
  assert.equal(P.resolve({n:'Присед со штангой'}).family,'F00');
 });
+
+test('history search never reads set metrics belonging to another exercise',()=>{
+ const unrelated=Array.from({length:90},(_,i)=>({id:'foreign-exercise-'+i,started:now-day,ended:now-day+1000,ex:[{exerciseId:'canon:leg_extension',set:Array.from({length:32},()=>({get actualReps(){throw Error('Unrelated performance was normalized');}}))}]}));
+ const c=E.normalizeRecommendationInput(input({scope:'START',history:[...unrelated,series()]}));
+ assert.deepEqual(E.getComparableEvidence(c).map(x=>x.sessionId),['old']);
+ const known={exerciseId:'canon:bench_press',get n(){throw Error('Known canonical identity must not scan names');}};
+ assert.equal(P.resolve(known).canonicalId,'canon:bench_press');
+});
+test('evidence reuse is limited to one decision and respects history, actor, time and ROM',()=>{
+ const history=[series()],c=E.normalizeRecommendationInput(input({scope:'START',history})),prepared=E.withComparableEvidence(c);
+ assert.deepEqual(E.recommendStart(prepared),E.recommendStart(c));
+ assert.equal(E.getComparableEvidence(prepared).length,1);
+ assert.equal(E.getComparableEvidence({...prepared,session:{...c.session,userId:'other'}}).length,0);
+ assert.equal(E.getComparableEvidence({...prepared,now:now-2*day}).length,0);
+ assert.equal(E.getComparableEvidence({...prepared,actual:{...c.actual,rom:'planned_partial'}}).length,0);
+ assert.equal(E.getComparableEvidence(prepared,[]).length,0);
+ history[0].ex[0].set[0].actualReps=6;
+ const fresh=E.withComparableEvidence(E.normalizeRecommendationInput(input({scope:'START',history})));
+ assert.equal(E.getComparableEvidence(fresh)[0].rows[0].context.actual.reps,6);
+});

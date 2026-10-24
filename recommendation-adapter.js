@@ -20,7 +20,7 @@
   return {...r,action:legacyAction(r),state:r.effortAction==='stop'?'STOP':r.effortAction==='review'?'REVIEW':r.effortAction==='harder'?'TOO_EASY':r.effortAction==='easier'?'TOO_HARD':'TARGET',weight:r.suggestedWeight,reason:r.reasonText};
  }
  function recommend(e,set,session,sessions,reg,overrides={}){
-  const c=context(e,set,session,sessions,reg,overrides);
+  const c=E.withComparableEvidence(context(e,set,session,sessions,reg,overrides));
   const targetIndex=(e.set||[]).indexOf(set);
   // Select the last comparable role, including safety signals with incomplete metrics.
   const prior=(e.set||[]).slice(0,targetIndex).filter(s=>(s.ok||['completed','failed_attempt'].includes(s.status))&&!s.warmup&&!s.skipped&&E.resolvePrescription({exercise:e,set:s,session}).setRole===c.prescription.setRole).at(-1);
