@@ -16,7 +16,7 @@ const base=process.env.UNVRSL_AUDIT_URL||'http://127.0.0.1:8770/unvrsl-fit/',out
    window.cloud={user:{id:'activity-fixture'},profile:{role:'trainer'},ready:false,initSettled:true};window.trainerIsTrainer=()=>true;window.unvrslTrainerShellSyncV260?.(false);
    st.theme=theme;applyTheme();st.accountOwnerId='activity-fixture';st.current=null;st.deletedSessionIds=[];
    const dates=[1,3,5,7,9,11,12,14,19,21,24].map(d=>`2026-10-${String(d).padStart(2,'0')}`).concat([1,3,5,7,9,11,13,15,17].map(d=>`2026-09-${String(d).padStart(2,'0')}`),Array.from({length:12},(_,i)=>`2026-01-${String(i+1).padStart(2,'0')}`));
-   st.sessions=dates.map((date,i)=>({id:'fixture-'+i,date,ended:1,ex:[{id:'bench',n:'Жим лёжа',set:[{w:80,r:10,ok:true}]}]}));
+   st.sessions=dates.map((date,i)=>({id:'fixture-'+i,date,started:Date.parse(date+'T09:00:00Z'),ended:Date.parse(date+'T09:00:00Z')+(30+15*(i%4))*60000,ex:[{id:'bench',n:'Жим лёжа',set:[{w:80,r:10,ok:true}]}]}));
    st.bw=[{d:'2026-10-12',w:94}];st.weightGoalKg=90;nav('home');
   },{theme});
   await page.evaluate(()=>homeProgressRefresh(true));await page.waitForTimeout(100);
@@ -25,6 +25,11 @@ const base=process.env.UNVRSL_AUDIT_URL||'http://127.0.0.1:8770/unvrsl-fit/',out
   assert.deepEqual(await page.locator('.sd2-activity-delta').allTextContents(),['↑ +1','↑ +2']);
   assert.match(await page.locator('[data-activity="year"]').innerText(),/За 2026 год/);
   assert.match(await page.locator('.sd2-current').innerText(),/94/);
+  assert.match(await card.innerText(),/по времени тренировок/);
+  assert.equal(await card.locator('[data-activity-date="2026-10-24"]').getAttribute('data-minutes'),'60');
+  assert.match(await card.locator('[data-activity-date="2026-10-24"]').getAttribute('title'),/60 мин/);
+  assert.notEqual(await card.locator('[data-activity-date="2026-10-01"]').getAttribute('class'),await card.locator('[data-activity-date="2026-10-03"]').getAttribute('class'));
+  assert.equal(await page.locator('.nav').isVisible(),true);
   const layout=await card.evaluate(el=>{const r=el.getBoundingClientRect(),grid=el.querySelector('.sd2-heat');return{width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,card:r.toJSON(),gridWidth:grid.clientWidth,gridScroll:grid.scrollWidth,metrics:[...el.querySelectorAll('.sd2-activity-metric')].map(m=>({client:m.clientWidth,scroll:m.scrollWidth,top:m.getBoundingClientRect().top})),cells:grid.children.length}});
   assert.ok(layout.scroll<=layout.width+1,JSON.stringify(layout));assert.ok(layout.gridScroll<=layout.gridWidth+1,JSON.stringify(layout));assert.ok(layout.cells>=365);
   for(const metric of layout.metrics){assert.ok(metric.scroll<=metric.client+1,JSON.stringify(metric));assert.equal(metric.top,layout.metrics[0].top)}

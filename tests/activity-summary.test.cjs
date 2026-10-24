@@ -15,14 +15,14 @@ test('local corrections override duplicate cloud records, deletions and active d
  const cloud=[workout('a','2026-10-20'),workout('deleted','2026-10-21'),workout('active','2026-10-22')];
  const local=[workout('a','2026-10-19'),workout('b','2026-10-19'),workout('draft','2026-10-20',{ended:null}),workout('empty','2026-10-20',{ex:[]}),workout('cancelled','2026-10-20',{status:'cancelled'}),workout('pending','2026-10-20',{pendingCompletion:true}),workout('foreign','2026-10-20',{userId:'bob'})];
  const actual=A.completedWorkouts(local,cloud,{ownerId:'alice',deletedIds:['deleted'],currentId:'active'});
- assert.deepEqual(actual,[{id:'a',date:'2026-10-19'},{id:'b',date:'2026-10-19'}]);
+ assert.deepEqual(actual,[{id:'a',date:'2026-10-19',duration:0},{id:'b',date:'2026-10-19',duration:0}]);
  const summary=A.summarize(actual,new Date(2026,9,24));assert.equal(summary.days.find(d=>d.date==='2026-10-19').count,2);
  assert.equal(A.completedWorkouts([workout('a','2026-10-19',{ended:null})],cloud).some(x=>x.id==='a'),false);
 });
 test('completed conditioning counts; missing dates and unfinished conditioning do not',()=>{
  const conditioning=status=>({ex:[],conditioning:[{status,result:{rounds:3}}]});
  const actual=A.completedWorkouts([workout('cardio','2026-10-20',conditioning('completed')),workout('unfinished','2026-10-20',conditioning('pending')),workout('undated','bad-date')]);
- assert.deepEqual(actual,[{id:'cardio',date:'2026-10-20'}]);
+ assert.deepEqual(actual,[{id:'cardio',date:'2026-10-20',duration:0}]);
 });
 test('shorter previous month compares equal prefixes while retaining full current month count',()=>{
  const actual=A.summarize(rows(['2026-02-01','2026-02-28','2026-03-01','2026-03-28','2026-03-30']),new Date(2026,2,31));
@@ -48,4 +48,13 @@ test('activity date and current-day boundaries follow the local timezone',()=>{
  const run=TZ=>JSON.parse(execFileSync(process.execPath,['-e',script],{cwd:require('node:path').resolve(__dirname,'..'),env:{...process.env,TZ},encoding:'utf8'}));
  assert.deepEqual(run('America/Los_Angeles'),{key:'2026-10-23',total:0});
  assert.deepEqual(run('Pacific/Kiritimati'),{key:'2026-10-24',total:1});
+});
+
+test('duration heatmap sums minutes per day while counters remain workout counts',()=>{
+ const start=Date.parse('2026-10-20T09:00:00Z'),finished=(id,date,minutes)=>workout(id,date,{started:start,ended:start+minutes*60000});
+ const records=A.completedWorkouts([finished('one','2026-10-20',45),finished('two','2026-10-20',30),finished('three','2026-10-21',120)]);
+ const summary=A.summarize(records,new Date(2026,9,24));assert.equal(summary.week.count,3);
+ const day=summary.days.find(x=>x.date==='2026-10-20');assert.equal(day.count,2);assert.equal(day.minutes,75);
+ assert.equal(summary.days.find(x=>x.date==='2026-10-21').minutes,120);
+ assert.equal(A.durationMinutes({ended:1}),0);assert.equal(A.durationMinutes({started:start,ended:start-1000}),0);
 });

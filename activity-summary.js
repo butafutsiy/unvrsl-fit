@@ -16,6 +16,10 @@
   if(!s||s.pendingCompletion||['cancelled','canceled','discarded'].includes(s.status)||!(s.ended||s.completedAt||s.finishedAt||s.status==='completed'))return false;
   return (s.ex||s.exercises||[]).some(e=>(e.set||e.sets||[]).some(completedSet))||(s.conditioning||[]).some(b=>b.status==='completed'&&b.result);
  }
+ function durationMinutes(s){
+  const start=new Date(s.started??s.startedAt).getTime(),end=new Date(s.ended??s.completedAt??s.finishedAt).getTime();
+  return start>0&&end>start?Math.max(1,Math.round((end-start)/60000)):0;
+ }
  function completedWorkouts(local=[],remote=[],{ownerId=null,deletedIds=[],currentId=null}={}){
   const deleted=new Set(deletedIds.map(String)),map=new Map();
   for(const s of [...remote,...local]){
@@ -27,7 +31,7 @@
    // Reconcile identities before checking completion to avoid reviving the cloud copy.
    map.set(identity,{session:s,id:id==null?identity:String(id),date});
   }
-  return [...map.values()].filter(x=>x.date&&completed(x.session)).map(x=>({id:x.id,date:x.date}));
+  return [...map.values()].filter(x=>x.date&&completed(x.session)).map(x=>({id:x.id,date:x.date,duration:durationMinutes(x.session)}));
  }
  function summarize(records=[],now=new Date()){
   const today=new Date(now);today.setHours(12,0,0,0);if(!Number.isFinite(today.getTime()))throw Error('Invalid activity date');
@@ -41,10 +45,10 @@
   const workouts=[...unique.values()],count=(start,end)=>workouts.filter(x=>x.date>=key(start)&&x.date<=key(end)).length;
   const weekCount=count(weekStart,today),previousWeekCount=count(previousWeek,previousWeekEnd),monthCount=count(monthStart,today),monthCompared=count(monthStart,monthEnd),previousMonthCount=count(previousMonth,previousMonthEnd);
   const start=new Date(today);start.setDate(start.getDate()-364);start.setDate(start.getDate()-(start.getDay()+6)%7);
-  const byDate=new Map();for(const w of workouts)byDate.set(w.date,(byDate.get(w.date)||0)+1);
-  const days=[];for(let d=new Date(start);d<=today;d.setDate(d.getDate()+1))days.push({date:key(d),count:byDate.get(key(d))||0});
+  const byDate=new Map(),minutes=new Map();for(const w of workouts){byDate.set(w.date,(byDate.get(w.date)||0)+1);minutes.set(w.date,(minutes.get(w.date)||0)+Math.max(0,Number(w.duration)||0))}
+  const days=[];for(let d=new Date(start);d<=today;d.setDate(d.getDate()+1))days.push({date:key(d),count:byDate.get(key(d))||0,minutes:minutes.get(key(d))||0});
   return{today:until,year:today.getFullYear(),yearCount:count(new Date(today.getFullYear(),0,1,12),today),week:{count:weekCount,previous:previousWeekCount,delta:weekCount-previousWeekCount,from:key(weekStart),previousFrom:key(previousWeek),previousUntil:key(previousWeekEnd)},month:{count:monthCount,previous:previousMonthCount,compared:monthCompared,delta:monthCompared-previousMonthCount,comparedDays,shorterPreviousMonth:comparedDays<today.getDate(),from:key(monthStart),until:key(monthEnd),previousFrom:key(previousMonth),previousUntil:key(previousMonthEnd)},days};
  }
  function workoutWord(n){const a=Math.abs(n)%100,b=a%10;return a>=11&&a<=14?'тренировок':b===1?'тренировка':b>=2&&b<=4?'тренировки':'тренировок'}
- return{key,calendarDate,completedWorkouts,summarize,workoutWord};
+ return{key,calendarDate,durationMinutes,completedWorkouts,summarize,workoutWord};
 });
