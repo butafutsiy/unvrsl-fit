@@ -18,10 +18,10 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
         await unvrslTrainingPrescriptionSyncV292(true);
         const bench=st.current.ex.filter(e=>e.exerciseId==='canon:bench_press');
         const iso=st.current.ex.find(e=>e.exerciseId==='canon:pec_deck');
-        summary.push({week:wi+1,base:p.weeks[wi].weeklyLoadProfile.base,isoProfile:p.weeks[wi].weeklyLoadProfile.isolation,
+        summary.push({week:wi+1,deload:p.weeks[wi].deload,isoOffset:iso?WorkoutDomain.profile(iso,workoutRegistry).correctionPolicy?.effortOffset||0:0,base:p.weeks[wi].weeklyLoadProfile.base,isoProfile:p.weeks[wi].weeklyLoadProfile.isolation,
           bench:bench.flatMap(e=>e.set.map(s=>({method:e.method,role:WorkoutDomain.setRole(e,s),reps:WorkoutDomain.repRange(e,s),
             pct:[s.targetIntensityMin??e.targetIntensityMin,s.targetIntensityMax??e.targetIntensityMax],rpe:[s.targetRpeMin,s.targetRpeMax],w:s.w}))),
-          iso:iso&&iso.set.map(s=>({pct:[s.targetIntensityMin,s.targetIntensityMax],reps:[s.targetRepMin,s.targetRepMax],rpe:[s.targetRpeMin,s.targetRpeMax]}))});
+          iso:iso&&iso.set.map(s=>({pct:[s.targetIntensityMin,s.targetIntensityMax],reps:[s.targetRepMin,s.targetRepMax],rpe:[s.targetRpeMin,s.targetRpeMax],source:s.effortTargetSource}))});
       }
       if(st.current)workoutStore.discard(st);
       programBeginDayCoreV382(p.id,0,0);await unvrslTrainingPrescriptionSyncV292(true);
@@ -62,7 +62,8 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
       for(const set of row.iso||[]){
         assert.deepEqual(Array.from(set.pct),Array.from(row.isoProfile.pct));
         assert.deepEqual(Array.from(set.reps),Array.from(row.isoProfile.reps));
-        assert.deepEqual(Array.from(set.rpe),Array.from(row.isoProfile.rpe));
+        const offset=!row.deload&&row.week!==8&&set.source==='week_inherited'?row.isoOffset:0;
+        assert.deepEqual(Array.from(set.rpe),Array.from(row.isoProfile.rpe,n=>Math.max(1,Math.min(10,n+offset))));
       }
     }
     assert.equal(result.summary[0].bench[0].w,110,'authored manual weight is retained');

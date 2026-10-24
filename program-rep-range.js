@@ -53,10 +53,10 @@
   }
 
   function sourceTargets(p,wi,di,current){
-    const week=p?.weeks?.[Number(wi)],d=week?.days?.[Number(di)];if(!d||!current)return false;
+    const week=p?.weeks?.[Number(wi)],d=week?.days?.[Number(di)];if(!d||!current||current.ended)return false;
     if(current.weeklyLoadProfile&&week.weeklyLoadProfile&&JSON.stringify(current.weeklyLoadProfile)!==JSON.stringify(week.weeklyLoadProfile))return false;
     let cursor=0;
-    const snapshot=()=>JSON.stringify((current.ex||[]).map(e=>({rpe:[e.targetRpeMin,e.targetRpeMax],sets:(e.set||[]).map(s=>[s.targetRepMin,s.targetRepMax,s.targetRepLabel,s.targetRpeMin,s.targetRpeMax,s.repMode,s.r])})));
+    const snapshot=()=>JSON.stringify((current.ex||[]).map(e=>({rpe:[e.targetRpeMin,e.targetRpeMax],sets:(e.set||[]).map(s=>[s.targetRepMin,s.targetRepMax,s.targetRepLabel,s.targetRpeMin,s.targetRpeMax,s.effortTargetSource,s.effortBaseMin,s.effortBaseMax,s.repMode,s.r])})));
     const before=snapshot();
     (d.ex||[]).forEach(block=>{
       if(block.kind==='cardio'||block.workMode==='timer'||block.loadType==='time'){cursor++;return;}
@@ -64,12 +64,30 @@
       const resolved=typeof W.programResolveExerciseParametersV381==='function'?W.programResolveExerciseParametersV381(p.id,wi,block):null;
       const rpeMin=resolved?.effort?.rpeMin,rpeMax=resolved?.effort?.rpeMax;
       if(method==='STANDARD'||method==='FST-7'){
-        const e=current.ex?.[cursor++];if(!e)return;const lo=resolved?.reps?.min??(block.repMode==='manual'?N(block.repMin):null)??auto[0],hi=resolved?.reps?.max??(block.repMode==='manual'?N(block.repMax):null)??auto[1],lab=label(lo,hi);
-        if(rpeMin!=null&&rpeMax!=null){e.targetRpeMin=rpeMin;e.targetRpeMax=rpeMax;e.targetRirMin=Math.max(0,10-rpeMax);e.targetRirMax=Math.max(0,10-rpeMin)}
-        (e.set||[]).forEach((set,si)=>{const src=sets[si],managed=block.cycleManaged&&src?.targetRepMin!=null,autoReps=managed&&resolved?.reps?.mode==='auto',autoEffort=managed&&resolved?.effort?.mode==='auto',low=autoReps?src.targetRepMin:lo,high=autoReps?src.targetRepMax:hi,effortLo=autoEffort?(src.targetRpeMin??rpeMin):rpeMin,effortHi=autoEffort?(src.targetRpeMax??rpeMax):rpeMax;set.targetRepMin=low;set.targetRepMax=high;set.targetRepLabel=label(low,high);set.repMode=resolved?.reps?.mode||block.repMode||'auto';if(effortLo!=null&&effortHi!=null){set.targetRpeMin=effortLo;set.targetRpeMax=effortHi;set.targetRirMin=Math.max(0,10-effortHi);set.targetRirMax=Math.max(0,10-effortLo)}if(!set.ok&&!set.manualFields?.r&&!set.repEntered)set.r=''})
+        const e=current.ex?.[cursor++];if(!e)return;
+        const lo=resolved?.reps?.min??(block.repMode==='manual'?N(block.repMin):null)??auto[0],hi=resolved?.reps?.max??(block.repMode==='manual'?N(block.repMax):null)??auto[1];
+        for(const [si,set] of (e.set||[]).entries()){
+          if(set.ok||set.skipped)continue;
+          const src=sets[si],managed=block.cycleManaged&&src?.targetRepMin!=null,autoReps=managed&&resolved?.reps?.mode==='auto';
+          const low=autoReps?src.targetRepMin:lo,high=autoReps?src.targetRepMax:hi;
+          set.targetRepMin=low;set.targetRepMax=high;set.targetRepLabel=label(low,high);set.repMode=resolved?.reps?.mode||block.repMode||'auto';
+          const inherited=resolved?.effort?.mode==='auto';
+          const unknownOwn=!set.effortTargetSource&&(N(set.targetRpeMin)!=null||N(set.targetRpeMax)!=null);
+          if(set.effortTargetSource!=='set_override'&&!(inherited&&unknownOwn)){
+            const raw=inherited?(managed?[src.effortBaseMin??src.targetRpeMin,src.effortBaseMax??src.targetRpeMax]:resolved.defaults.rpe):[rpeMin,rpeMax];
+            if(raw[0]!=null&&raw[1]!=null){
+              const provenance={effortTargetSource:inherited?'week_inherited':'exercise_override',effortBaseMin:raw[0],effortBaseMax:raw[1]};
+              const effort=WorkoutDomain.effortTarget(e,{...set,...provenance,targetRpeMin:raw[0],targetRpeMax:raw[1]},current);
+              Object.assign(set,provenance,{targetRpeMin:effort.lo,targetRpeMax:effort.hi,targetRirMin:Math.max(0,10-effort.hi),targetRirMax:Math.max(0,10-effort.lo)});
+            }
+          }
+          if(!set.manualFields?.r&&!set.repEntered)set.r='';
+        }
+        const pending=(e.set||[]).find(x=>!x.ok&&!x.skipped);
+        if(pending&&N(pending.targetRpeMin)!=null&&N(pending.targetRpeMax)!=null)Object.assign(e,{targetRpeMin:pending.targetRpeMin,targetRpeMax:pending.targetRpeMax,targetRirMin:pending.targetRirMin,targetRirMax:pending.targetRirMax});
       }else{
         sets.forEach((src)=>{
-          const e=current.ex?.[cursor++],set=e?.set?.[0];if(!set)return;
+          const e=current.ex?.[cursor++],set=e?.set?.[0];if(!set||set.ok||set.skipped)return;
           const r=Math.max(1,N(src?.r)||1)/WorkoutDomain.planRepDivisor(block);set.targetRepMin=N(src.targetRepMin)??r;set.targetRepMax=N(src.targetRepMax)??r;set.targetRepLabel=src.targetRepLabel||String(r);set.repMode=block.repMode||'method';
           if(rpeMin!=null&&rpeMax!=null){e.targetRpeMin=rpeMin;e.targetRpeMax=rpeMax;e.targetRirMin=Math.max(0,10-rpeMax);e.targetRirMax=Math.max(0,10-rpeMin);set.targetRpeMin=rpeMin;set.targetRpeMax=rpeMax;set.targetRirMin=Math.max(0,10-rpeMax);set.targetRirMax=Math.max(0,10-rpeMin)}
           if(!set.ok&&!set.manualFields?.r&&!set.repEntered)set.r=''

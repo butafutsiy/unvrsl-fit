@@ -46,8 +46,8 @@ function trackedRuntime(seed){
     const live=st.current;
     if(!live||live.programId!==p.id)throw Error('Launch failed W'+(wi+1)+' D'+di);
     audit.push({wi,di,test:p.weeks[wi].testWeek,profile:p.weeks[wi].weeklyLoadProfile,
-     exercises:live.ex.map(e=>({kind:e.kind,method:e.method,mode:e.mode,intensity:[e.targetIntensityMin,e.targetIntensityMax],
-      sets:e.set.map(s=>({role:s.role,reps:[s.targetRepMin,s.targetRepMax],label:s.targetRepLabel,rpe:[s.targetRpeMin,s.targetRpeMax],seconds:s.workSeconds}))}))});
+     exercises:live.ex.map(e=>({kind:e.kind,method:e.method,mode:e.mode,offset:WorkoutDomain.profile(e,workoutRegistry).correctionPolicy?.effortOffset||0,intensity:[e.targetIntensityMin,e.targetIntensityMax],
+      sets:e.set.map(s=>({role:s.role,reps:[s.targetRepMin,s.targetRepMax],label:s.targetRepLabel,rpe:[s.targetRpeMin,s.targetRpeMax],source:s.effortTargetSource,seconds:s.workSeconds}))}))});
    }
    if(st.current)workoutStore.discard(st);
    // The actual editor uses the same W9 defaults as the day preview.
@@ -75,8 +75,8 @@ function trackedRuntime(seed){
   assert.equal(result.migrated,8);assert.ok(result.retainedCurrent);assert.equal(result.duplicates,1);assert.equal(result.uniqueDays,40);
   assert.match(result.name,/8-недельный/);
   const preview=plain(result.preview),squat=preview.find(x=>/high-bar/.test(x.name)),isolation=preview.find(x=>/Разгибание ног/.test(x.name)),cardio=preview.find(x=>/Аэробайк/.test(x.name));
-  assert.match(squat.text,/3×3–5/);assert.match(squat.text,/88–90%/);assert.match(squat.text,/RPE 8,5–9,5/);
-  assert.match(isolation.text,/4×15–20/);assert.match(isolation.text,/60–65%/);assert.match(isolation.text,/RPE 7–8/);
+  assert.match(squat.text,/3×3–5/);assert.match(squat.text,/88–90%/);assert.match(squat.text,/RPE 8–9/);
+  assert.match(isolation.text,/4×15–20/);assert.match(isolation.text,/60–65%/);assert.match(isolation.text,/RPE 7,5–8,5/);
   for(const row of preview)assert.equal((row.text.match(/RPE/g)||[]).length,1,'one effort prescription per exercise');
   assert.doesNotMatch(cardio.text,/темп|кг|%/);assert.match(cardio.text,/RPE 5/);
   for(const row of plain(result.audit))for(const e of row.exercises){
@@ -88,7 +88,9 @@ function trackedRuntime(seed){
     const reps=row.test?(set.role==='test_attempt'?[1,1]:[2,3]):spec.reps;
     assert.deepEqual(set.reps,reps,'per-set reps survive every launch wrapper');
     assert.equal(set.label,reps[0]===reps[1]?String(reps[0]):reps.join('–'));
-    assert.deepEqual(set.rpe,row.test&&set.role==='test_attempt'?[9.5,10]:spec.rpe);
+    const raw=row.test&&set.role==='test_attempt'?[9.5,10]:spec.rpe;
+    const offset=!row.test&&!row.profile.deload&&set.source==='week_inherited'?e.offset:0;
+    assert.deepEqual(set.rpe,raw.map(n=>Math.max(1,Math.min(10,n+offset))),'known inherited effort follows the exercise policy; deload/test remain unchanged');
    }
   }
   assert.match(result.constructorText,/3×3–5/);assert.match(result.constructorText,/4×15–20/);
