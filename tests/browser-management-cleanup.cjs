@@ -8,6 +8,9 @@ const base=process.env.UNVRSL_AUDIT_URL||'http://127.0.0.1:8770/unvrsl-fit/',out
   for(const width of [320,390])for(const theme of ['dark','light']){
    const page=await browser.newPage({viewport:{width,height:844},isMobile:true,hasTouch:true}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
    await page.route('**/*',r=>r.request().url().startsWith(new URL(base).origin)?r.continue():r.abort());await page.goto(base);await page.waitForFunction(()=>window.__unvrslStartupComplete,{timeout:25000});await page.evaluate(async()=>{await unvrslWarmDeferredModulesV320()});await page.waitForFunction(()=>window.__unvrslCloudModulesSettledV260,{timeout:25000});
+   // Let the existing 0/250/900/1800 ms program migration passes finish
+   // before interacting with an expanded menu in the isolated fixture.
+   await page.waitForTimeout(2000);
    await page.evaluate(theme=>{
     window.cloud={user:{id:'management-fixture',email:'fixture@example.test'},profile:{role:'trainer'},ready:false,initSettled:true};window.trainerIsTrainer=()=>true;st.accountOwnerId='management-fixture';st.theme=theme;applyTheme();
     st.sessions=[{id:'history-kept',date:iso(),ended:1,ex:[]}];st.programs=[ensureProgramShape({id:'managed',name:'Мой 8-недельный цикл · проверка',weeks:[{days:[{id:'day',name:'Грудь',ex:[{id:'long',n:'Французский жим с гантелями лёжа',method:'STANDARD',weightMode:'auto',sets:[{w:'',r:10},{w:'',r:10},{w:'',r:10}],rest:75}]}]}]})];

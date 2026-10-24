@@ -49,6 +49,8 @@ jobs:
         run: |
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
           node tests/runtime-bodyweight-history.cjs
+          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
+          node tests/runtime-home-activity.cjs
       - name: Verify equipment tonnage across history and statistics
         run: |
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
@@ -181,6 +183,7 @@ jobs:
           node tests/browser-program-audit.cjs
           node tests/browser-pwa-persistence.cjs
           node tests/browser-management-cleanup.cjs
+          node tests/browser-home-activity.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -36,6 +36,32 @@
     #home .home-stats-v254 .sd2-chart{display:block;width:100%;height:auto;margin-top:8px;overflow:visible}
     #home .home-stats-v254 .sd2-axis{font-size:9px;fill:#77777e}#home .home-stats-v254 .sd2-date{font-size:9px;fill:#6f6f76}
     #home .home-stats-v254 .sd2-empty{color:#85858b;padding:6px 0}
+    #home .home-stats-v254 .sd2-activity-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:20px}
+    #home .home-stats-v254 .sd2-activity-head h2{margin:0;font-size:22px;line-height:1.2;letter-spacing:-.4px;color:var(--text)}
+    #home .home-stats-v254 .sd2-activity-head>span{color:var(--muted,#8e8e93);font-size:11px}
+    #home .home-stats-v254 .sd2-activity-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin-bottom:22px}
+    #home .home-stats-v254 .sd2-activity-metric{min-width:0;padding-right:9px}
+    #home .home-stats-v254 .sd2-activity-metric+.sd2-activity-metric{border-left:1px solid var(--line,#343438);padding-left:10px}
+    #home .home-stats-v254 .sd2-activity-metric:last-child{padding-right:0}
+    #home .home-stats-v254 .sd2-activity-label{font-size:11px;line-height:1.3;color:var(--muted,#8e8e93);white-space:nowrap}
+    #home .home-stats-v254 .sd2-activity-label .short{display:none}
+    #home .home-stats-v254 .sd2-activity-number{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin:11px 0 5px;min-height:35px}
+    #home .home-stats-v254 .sd2-activity-number b{font-size:clamp(25px,8vw,33px);line-height:1;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap}
+    #home .home-stats-v254 .sd2-activity-delta{font-size:11px;font-weight:700;color:var(--muted,#8e8e93);white-space:nowrap}
+    #home .home-stats-v254 .sd2-activity-delta.up{color:var(--green)}
+    #home .home-stats-v254 .sd2-activity-unit{font-size:11px;line-height:1.3;color:var(--muted,#8e8e93)}
+    #home .home-stats-v254 .sd2-activity-grid-title{font-size:11px;color:var(--muted,#8e8e93);margin-bottom:12px}
+    #home .home-stats-v254 .sd2-activity-card .sd2-heat-wrap{overflow:visible;padding-bottom:0}
+    #home .home-stats-v254 .sd2-activity-card .sd2-heat{grid-template-rows:repeat(7,8px);grid-auto-columns:minmax(0,1fr);gap:2px;width:100%;min-width:0}
+    #home .home-stats-v254 .sd2-activity-card .sd2-cell{width:auto;min-width:0;height:8px;border-radius:2px}
+    #home .home-stats-v254 .sd2-activity-card .sd2-cell,#home .home-stats-v254 .sd2-activity-card .sd2-legend i{background:color-mix(in srgb,var(--text) 10%,var(--panel,#1c1c1f))}
+    #home .home-stats-v254 .sd2-activity-card :is(.sd2-cell,.sd2-legend i).l1{background:color-mix(in srgb,var(--green) 28%,var(--panel2,#2c2c31))}
+    #home .home-stats-v254 .sd2-activity-card :is(.sd2-cell,.sd2-legend i).l2{background:color-mix(in srgb,var(--green) 46%,var(--panel2,#2c2c31))}
+    #home .home-stats-v254 .sd2-activity-card :is(.sd2-cell,.sd2-legend i).l3{background:color-mix(in srgb,var(--green) 68%,var(--panel2,#2c2c31))}
+    #home .home-stats-v254 .sd2-activity-card :is(.sd2-cell,.sd2-legend i).l4{background:var(--green)}
+    #home .home-stats-v254 .sd2-activity-months{display:flex;justify-content:space-between;font-size:10px;color:var(--muted,#8e8e93);margin-top:7px}
+    #home .home-stats-v254 .sd2-activity-note{font-size:11px;line-height:1.5;color:var(--muted,#8e8e93);margin:16px 0 0}
+    @media(max-width:360px){#home .home-stats-v254 .sd2-activity-label .long{display:none}#home .home-stats-v254 .sd2-activity-label .short{display:inline}#home .home-stats-v254 .sd2-activity-metric{padding-right:6px}#home .home-stats-v254 .sd2-activity-metric+.sd2-activity-metric{padding-left:8px}}
     @media(max-width:390px){
       #home .home-stats-v254 .sd2-current{font-size:41px}
       #home .home-stats-v254 .sd2-weight-actions{gap:10px}
@@ -45,56 +71,65 @@
   document.head.appendChild(css);
 
   let range='3m';
-  let cache={workouts:[],weights:[],goal:null,loaded:false,loading:false,ts:0};
+  const Activity=window.UNVRSLActivity;
+  let cache={owner:null,workouts:[],weights:[],goal:null,loaded:false,workoutsLoaded:false,weightsLoaded:false,loading:false,ts:0,promise:null};
+  function ensureOwner(){const owner=window.cloud?.user?.id||null;if(cache.owner!==owner)cache={owner,workouts:[],weights:[],goal:null,loaded:false,workoutsLoaded:false,weightsLoaded:false,loading:false,ts:0,promise:null};return cache}
+  const ownsLocal=()=>!window.cloud?.user?.id||!st.accountOwnerId||String(st.accountOwnerId)===String(window.cloud.user.id);
   const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
   const fmt=v=>v==null?'—':Number(v).toFixed(1).replace('.0','').replace('.',',');
-  const isoDate=d=>{const x=new Date(d);return Number.isNaN(x.getTime())?'':x.toISOString().slice(0,10)};
+  const isoDate=d=>{const x=new Date(d);return Number.isNaN(x.getTime())?'':Activity.key(x)};
   const parseDate=s=>new Date(String(s).slice(0,10)+'T12:00:00');
   const isClientMode=()=>!!window.cloud?.user&&!(typeof window.unvrslTrainerMode==='function'?window.unvrslTrainerMode():window.cloud?.profile?.role==='trainer');
   const visibleWeight=x=>!(isClientMode()&&String(x?.d||x?.measure_date||'').slice(0,10)==='2026-08-25'&&Number(x?.v??x?.w??x?.weight_kg)===97.5);
 
-  function localWorkouts(){
-    return (st.sessions||[]).map(s=>({
-      date:s.date||isoDate(s.started||Date.now()),
-      duration:Math.max(1,Math.round(((+s.ended||+s.started||Date.now())-(+s.started||Date.now()))/60000))
-    })).filter(x=>x.date);
-  }
-  function localWeights(){return (st.bw||[]).map(x=>({d:x.d,v:num(x.w)})).filter(x=>x.d&&x.v!=null&&visibleWeight(x)).sort((a,b)=>a.d.localeCompare(b.d))}
-  function workouts(){return cache.loaded&&cache.workouts.length?cache.workouts:localWorkouts()}
-  function weights(){return cache.loaded?cache.weights:localWeights()}
+  function localWeights(){return (ownsLocal()?st.bw||[]:[]).map(x=>({d:x.d,v:num(x.w)})).filter(x=>x.d&&x.v!=null&&visibleWeight(x)).sort((a,b)=>a.d.localeCompare(b.d))}
+  function workouts(){const c=ensureOwner();return Activity.completedWorkouts(ownsLocal()?st.sessions||[]:[],c.workoutsLoaded?c.workouts:[],{ownerId:window.cloud?.user?.id||st.accountOwnerId||null,deletedIds:st.deletedSessionIds||[],currentId:st.current?.id})}
+  function weights(){const c=ensureOwner();return c.weightsLoaded?c.weights:localWeights()}
   window.homeStatsBodyweights=()=>weights().map(x=>({...x}));
-  function goal(){return num(cache.goal)??num(st.weightGoalKg)}
+  function goal(){const c=ensureOwner();return num(c.goal)??(ownsLocal()?num(st.weightGoalKg):null)}
+  async function fetchWorkouts(client,owner){
+    const rows=[];for(let from=0;;from+=500){const result=await client.from('workouts').select('workout_date,external_id,payload').eq('user_id',owner).order('workout_date',{ascending:true}).order('external_id',{ascending:true}).range(from,from+499);if(result.error)throw result.error;rows.push(...(result.data||[]));if((result.data||[]).length<500)break}return rows;
+  }
 
   async function hydrate(force=false){
-    if(!window.cloud?.client||!window.cloud?.user)return;
-    if(cache.loading)return;
-    if(!force&&cache.loaded&&Date.now()-cache.ts<30000)return;
-    cache.loading=true;
-    try{
-      const c=window.cloud.client,uid=window.cloud.user.id;
-      const [wo,bw,pr]=await Promise.all([
-        c.from('workouts').select('workout_date,payload').eq('user_id',uid).order('workout_date',{ascending:true}).limit(1000),
-        c.from('bodyweights').select('measure_date,weight_kg').eq('user_id',uid).order('measure_date',{ascending:true}).limit(1000),
-        c.from('profiles').select('target_weight_kg').eq('id',uid).maybeSingle()
-      ]);
-      cache.workouts=(wo.data||[]).map(w=>({date:w.workout_date,duration:Math.max(1,Math.round((((w.payload?.ended||0)-(w.payload?.started||0))/60000)||1))}));
-      const deleted=new Set((st.deletedBodyweights||[]).map(x=>String(x?.d||x||'').slice(0,10)).filter(Boolean));
-      cache.weights=(bw.data||[]).map(x=>({d:String(x.measure_date).slice(0,10),v:num(x.weight_kg)})).filter(x=>x.v!=null&&!deleted.has(x.d)&&visibleWeight(x)).sort((a,b)=>a.d.localeCompare(b.d));
-      cache.goal=num(pr.data?.target_weight_kg)??num(st.weightGoalKg);
-      cache.loaded=true;cache.ts=Date.now();
-    }catch(e){console.warn('home stats hydrate',e)}finally{cache.loading=false}
+    const target=ensureOwner();if(!window.cloud?.client||!target.owner)return;
+    if(target.loading)return target.promise;
+    if(!force&&target.loaded&&Date.now()-target.ts<30000)return;
+    target.loading=true;
+    target.promise=(async()=>{
+      try{
+        const c=window.cloud.client,uid=target.owner;
+        const [wo,bw,pr]=await Promise.allSettled([
+          fetchWorkouts(c,uid),
+          c.from('bodyweights').select('measure_date,weight_kg').eq('user_id',uid).order('measure_date',{ascending:true}).limit(1000),
+          c.from('profiles').select('target_weight_kg').eq('id',uid).maybeSingle()
+        ]);
+        if(cache!==target||window.cloud?.user?.id!==uid)return;
+        if(wo.status==='fulfilled'){
+          target.workouts=wo.value.map(w=>({...w.payload,id:w.external_id||w.payload?.id,date:w.workout_date||w.payload?.date,userId:uid}));target.workoutsLoaded=true;
+        }else console.warn('home activity hydrate',wo.reason);
+        if(bw.status==='fulfilled'&&!bw.value.error){
+          const deleted=new Set((st.deletedBodyweights||[]).map(x=>String(x?.d||x||'').slice(0,10)).filter(Boolean));
+          target.weights=(bw.value.data||[]).map(x=>({d:String(x.measure_date).slice(0,10),v:num(x.weight_kg)})).filter(x=>x.v!=null&&!deleted.has(x.d)&&visibleWeight(x)).sort((a,b)=>a.d.localeCompare(b.d));target.weightsLoaded=true;
+        }
+        if(pr.status==='fulfilled'&&!pr.value.error)target.goal=num(pr.value.data?.target_weight_kg)??(ownsLocal()?num(st.weightGoalKg):null);
+        target.loaded=true;target.ts=Date.now();
+      }catch(e){console.warn('home stats hydrate',e)}finally{target.loading=false;target.promise=null}
+    })();return target.promise;
   }
 
   function heatmapHtml(){
-    const map=new Map();
-    workouts().forEach(x=>map.set(x.date,(map.get(x.date)||0)+(x.duration||1)));
-    const today=new Date();today.setHours(12,0,0,0);const end=new Date(today),start=new Date(today);start.setDate(start.getDate()-364);const weekday=(start.getDay()+6)%7;start.setDate(start.getDate()-weekday);
-    const vals=[...map.values()],max=Math.max(1,...vals);let cells='';
-    for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){
-      const k=isoDate(d),v=map.get(k)||0,ratio=v/max,lev=!v?'':ratio>.72?'l4':ratio>.42?'l3':ratio>.18?'l2':'l1';
-      cells+=`<i class="sd2-cell ${lev}" title="${k}: ${v?Math.round(v)+' мин':'нет тренировки'}"></i>`;
-    }
-    return `<div class="sd2-card"><div class="sd2-card-title">Активность — последние 12 месяцев · по времени тренировок</div><div class="sd2-heat-wrap" id="homeHeatWrap"><div class="sd2-heat">${cells}</div></div><div class="sd2-legend"><span>Меньше</span><i style="background:#2c2c31"></i><i style="background:#4c365e"></i><i style="background:#70468d"></i><i style="background:#914fb8"></i><i style="background:#bf5af2"></i><span>Больше</span></div></div>`;
+    const stats=Activity.summarize(workouts()),format=n=>Number(n).toLocaleString('ru-RU'),delta=(value,kind)=>{
+      const comparison=stats[kind],text=value>0?`↑ +${format(value)}`:value<0?`↓ −${format(Math.abs(value))}`:'±0';
+      const label=`${kind==='week'?'Неделя':'Месяц'}: ${kind==='month'&&comparison.shorterPreviousMonth?comparison.compared:comparison.count} ${Activity.workoutWord(kind==='month'&&comparison.shorterPreviousMonth?comparison.compared:comparison.count)} за сопоставимые дни. За сопоставимый прошлый период: ${comparison.previous}. Изменение: ${value>0?'+':''}${value}.`;
+      return `<span class="sd2-activity-delta ${value>0?'up':value<0?'down':'same'}" title="${label}" aria-label="${label}">${text}</span>`;
+    };
+    const metric=(kind,long,short)=>{const x=stats[kind];return `<div class="sd2-activity-metric" data-activity="${kind}"><div class="sd2-activity-label"><span class="long">${long}</span><span class="short">${short}</span></div><div class="sd2-activity-number"><b data-activity-count>${format(x.count)}</b>${delta(x.delta,kind)}</div><span class="sd2-activity-unit">${Activity.workoutWord(x.count)}</span></div>`};
+    const cells=stats.days.map(x=>`<i class="sd2-cell ${x.count?'l'+Math.min(4,x.count):''}" data-activity-date="${x.date}" data-count="${x.count}" title="${x.date}: ${x.count} ${Activity.workoutWord(x.count)}"></i>`).join('');
+    const months=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    const labels=Array.from({length:6},(_,i)=>{const day=stats.days[Math.round((stats.days.length-1)*i/5)];return `<span>${months[Number(day.date.slice(5,7))-1]}</span>`}).join('');
+    const note=stats.month.shorterPreviousMonth?`Неделя — одинаковые дни. Месяц — первые ${stats.month.comparedDays} дней.`:'Сравнение за одинаковое число дней.';
+    return `<div class="sd2-card sd2-activity-card"><div class="sd2-activity-head"><h2>Активность</h2><span>Тренировки</span></div><div class="sd2-activity-summary">${metric('week','На этой неделе','Неделя')}${metric('month','В этом месяце','Месяц')}<div class="sd2-activity-metric" data-activity="year"><div class="sd2-activity-label">За ${stats.year} год</div><div class="sd2-activity-number"><b data-activity-count>${format(stats.yearCount)}</b></div><span class="sd2-activity-unit">${Activity.workoutWord(stats.yearCount)}</span></div></div><div class="sd2-activity-grid-title">Последние 12 месяцев · по дням</div><div class="sd2-heat-wrap" id="homeHeatWrap"><div class="sd2-heat" role="img" aria-label="Число завершённых тренировок по дням за последние 12 месяцев">${cells}</div></div><div class="sd2-activity-months" aria-hidden="true">${labels}</div><div class="sd2-legend"><span>Меньше</span><i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i><span>Больше</span></div><p class="sd2-activity-note">${note}</p></div>`;
   }
 
   function filteredWeights(){
@@ -186,6 +221,8 @@
     const base=cur;const wrapped=function(){const r=base.apply(this,arguments);setTimeout(()=>renderHomeProgress(false),0);return r};wrapped.__homeStatsV254=true;window.home=wrapped;try{home=wrapped}catch(e){}
   }
 
+  for(const event of ['unvrsl:history-updated','unvrsl:cloud-ready','unvrsl:auth-changed','unvrsl:storage-hydrated'])window.addEventListener(event,()=>{ensureOwner();if(document.getElementById('home')?.classList.contains('active'))renderHomeProgress(true)});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&document.getElementById('home')?.classList.contains('active'))renderHomeProgress(false)});
   installHomeWrap();
   [40,350,1000,2200].forEach(t=>setTimeout(()=>{installHomeWrap();if(document.getElementById('home')?.classList.contains('active'))renderHomeProgress(false)},t));
 })();

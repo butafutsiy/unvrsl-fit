@@ -10,14 +10,14 @@ const root=path.resolve(__dirname,'..');
  w.scrollTo=()=>{};w.st={bw:[],sessions:[]};
  w.modal=html=>w.document.getElementById('sheet').innerHTML=html;
  w.home=()=>{};
- for(const file of ['home-stats.js','bodyweight-history.js'])w.eval(fs.readFileSync(path.join(root,file),'utf8'));
+ for(const file of ['activity-summary.js','home-stats.js','bodyweight-history.js'])w.eval(fs.readFileSync(path.join(root,file),'utf8'));
  const tick=()=>new Promise(r=>setTimeout(r,60));
  for(const fn of timers.splice(0))await fn();await tick();
  assert.match(w.document.querySelector('.bw190-scroll').textContent,/Записей пока нет/);
  // Sign-in completes after all startup retries have already run. The chart
  // hydrates directly from cloud while local state has not reconciled yet.
  let cloudWeights=[{measure_date:'2026-09-15',weight_kg:95.7},{measure_date:'2026-10-09',weight_kg:92.5}];
- w.cloud={user:{id:'alice'},profile:{role:'client'},client:{from(table){const q={select(){return q},eq(){return q},order(){return q},limit(){return Promise.resolve({data:table==='bodyweights'?cloudWeights:[]})},maybeSingle(){return Promise.resolve({data:{target_weight_kg:90}})}};return q}}};
+ w.cloud={user:{id:'alice'},profile:{role:'client'},client:{from(table){const q={select(){return q},eq(){return q},order(){return q},range(){return Promise.resolve({data:[]})},limit(){return Promise.resolve({data:table==='bodyweights'?cloudWeights:[]})},maybeSingle(){return Promise.resolve({data:{target_weight_kg:90}})}};return q}}};
  w.dispatchEvent(new w.CustomEvent('unvrsl:cloud-ready'));
  await w.homeProgressRefresh(true);await tick();
  assert.equal(w.st.bw.length,0,'exercise the cloud snapshot rather than local fallback');
