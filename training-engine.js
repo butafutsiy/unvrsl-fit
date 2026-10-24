@@ -196,16 +196,9 @@
    const detail=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Почему этот вес?';detail.append(summary);const text=document.createElement('p');text.className='small muted';text.textContent=`${rec.reason}. Цель: ${repText} повт., RPE ${fmt(rec.targetEffort.lo)}–${fmt(rec.targetEffort.hi)}. ${rec.nextSetSuggestion?`После подхода сегодня: ${rec.nextSetSuggestion.reason}, ${fmt(rec.nextSetSuggestion.weight,6)} кг. `:''}${rec.previous==null?'Нет прошлой сопоставимой нагрузки':`Изменение: ${rec.delta>0?'+':''}${fmt(rec.delta,6)} кг`}. Шаг: ${fmt(rec.step,6)} кг. Уверенность: ${rec.confidence}. ${rec.rounding}. Прошлые подходы: ${rec.evidence.join('; ')||'нет'}`;detail.append(text);if(rec.strength?.sources?.length){const source=document.createElement('div');source.className='te410-equipment';source.textContent=`Учтены: ${rec.strength.sources.map(x=>`${String(x.date).slice(0,10)} · ${x.method} · ${fmt(x.weight,6)} × ${x.reps}${x.rpe!=null?` @${fmt(x.rpe)}`:''}`).join('; ')}`;detail.append(source)}if(rec.strength?.protocols){const means=document.createElement('div');means.className='small muted';means.textContent='Оценки по протоколам: '+Object.entries(rec.strength.protocols).map(([name,p])=>`${name}: ${fmt(Number(p.estimate.toFixed(1)))} кг (${p.sets} подходов)`).join('; ');detail.append(means)}title.append(detail);el.append(title);
    if(!rec.planPreserved&&rec.canApply!==false&&rec.action!=='stop'){
     const actions=document.createElement('div');actions.className='te200-rec-actions';
-    const target=document.createElement('select');target.className='te-rec-target';target.setAttribute('aria-label','К каким подходам применить рекомендацию');
-    target.innerHTML='<option value="next">Следующий подход</option><option value="remaining">Все оставшиеся подходы</option><option value="range">Выбрать диапазон подходов</option>';
-    const rangeControls=document.createElement('div');rangeControls.className='te-rec-range';rangeControls.hidden=true;
-    rangeControls.innerHTML=`<label>Из оставшихся, с<input type="number" min="1" max="${pending.length}" value="1" aria-label="Первый подход диапазона"></label><label>По<input type="number" min="1" max="${pending.length}" value="${pending.length}" aria-label="Последний подход диапазона"></label>`;
-    target.onchange=()=>{rangeControls.hidden=target.value!=='range'};
     const button=document.createElement('button');button.type='button';button.className='te200-rec-apply';button.textContent='Применить';
     button.onclick=()=>{
-     const bounds=[...rangeControls.querySelectorAll('input')].map(input=>Number(input.value));
-     if(target.value==='range'&&(!bounds.every(Number.isInteger)||bounds[0]<1||bounds[1]<bounds[0]||bounds[1]>pending.length)){W.toast?.('Проверь диапазон оставшихся подходов');return}
-     const targets=target.value==='remaining'?pending:target.value==='range'?pending.slice(bounds[0]-1,bounds[1]):pending.slice(0,1);let count=0;
+     const targets=pending.slice(0,1);let count=0;
      for(const {e,s} of targets){
       if(s.ok||s.skipped)continue;
       const latest=WorkoutDomain.recommend(e,s,cur,W.trainingLoadModel292?.history?.()||st.sessions||[],workoutRegistry,st.exerciseWeightProfiles||{});
@@ -214,7 +207,7 @@
      }
      if(count){W.save();W.startPage()}else W.toast?.('Недостаточно данных для применения рекомендации');
     };
-    actions.append(target,rangeControls,button);
+    actions.append(button);
     const cancel=document.createElement('button');cancel.type='button';cancel.className='btn';cancel.textContent='Отменить';
     cancel.onclick=()=>{for(const {s} of pending)if(s.recommendation)WorkoutDomain.dismissRecommendation(s,s.recommendation);W.save();W.startPage()};
     actions.append(cancel);el.append(actions);

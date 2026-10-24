@@ -16,10 +16,6 @@ html body .program-template-card p{margin:0;line-height:1.5}
 html body .program-template-card>.btn{width:100%!important;margin:0!important}
 html body .template-description summary{font-size:13px;color:var(--muted,#8e8e93);cursor:pointer}
 html body .template-description p{padding-top:8px}
-html body .te200-rec-actions .te-rec-target{flex:1 1 100%;width:100%;min-height:44px;border-radius:12px;background:var(--panel2,#242427);color:var(--text);padding:10px;border:1px solid var(--line,#414146)}
-html body .te-rec-range:not([hidden]){display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1 1 100%}
-html body .te-rec-range label{font-size:12px;color:var(--muted)}
-html body .te-rec-range input{display:block;width:100%;margin-top:4px;padding:8px}
 html body .page{scroll-padding-bottom:calc(130px + env(safe-area-inset-bottom));padding-bottom:calc(130px + env(safe-area-inset-bottom))}
 html body #modal .sheet{padding-bottom:calc(32px + env(safe-area-inset-bottom))!important;scroll-padding-bottom:calc(32px + env(safe-area-inset-bottom))}
 html body:has(#modal.show)>.nav{visibility:hidden;pointer-events:none}

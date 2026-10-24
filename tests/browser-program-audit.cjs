@@ -62,8 +62,8 @@ const output=process.env.UNVRSL_AUDIT_OUTPUT||'/workspace/unvrsl-floating-audit'
    }
    await page.locator('.te200-rec').evaluate(el=>el.scrollIntoView({block:'center'}));await page.waitForTimeout(80);
    await page.screenshot({path:`${output}/recommendation-${theme}-${width}.png`});
-   const positions=await page.evaluate(()=>{const banner=document.querySelector('.te200-rec').getBoundingClientRect(),set=document.querySelector('.setrow').getBoundingClientRect();return{bannerBottom:banner.bottom,setTop:set.top,banners:document.querySelectorAll('.te200-rec').length,hints:document.querySelectorAll('.te405-next').length}});
-   assert.equal(positions.banners,1);assert.equal(positions.hints,0);assert.ok(positions.bannerBottom<=positions.setTop);
+   const positions=await page.evaluate(()=>{const banner=document.querySelector('.te200-rec').getBoundingClientRect(),set=document.querySelector('.setrow').getBoundingClientRect();return{bannerBottom:banner.bottom,setTop:set.top,banners:document.querySelectorAll('.te200-rec').length,hints:document.querySelectorAll('.te405-next').length,selectors:document.querySelectorAll('.te-rec-target,.te-rec-range').length,buttons:[...document.querySelectorAll('.te200-rec-actions button')].map(b=>b.textContent)}});
+   assert.equal(positions.banners,1);assert.equal(positions.hints,0);assert.equal(positions.selectors,0);assert.deepEqual(positions.buttons,['Применить','Отменить']);assert.ok(positions.bannerBottom<=positions.setTop);
    await page.locator('.setrow input').first().focus();
    const navVisible=await page.locator('.nav').isVisible();assert.equal(navVisible,false);
    await page.locator('.setrow input').nth(0).fill('82,5');await page.locator('.setrow input').nth(1).fill('10');await page.locator('.setrow .rpe-input').first().fill('8');await page.locator('.setrow .check').first().click();
