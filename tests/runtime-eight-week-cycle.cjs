@@ -17,7 +17,7 @@ function trackedRuntime(seed){
    p.weeks[8].days[0].ex.find(e=>e.kind==='compound').sets[0].w=182.5;
    programBeginDayCoreV382(p.id,8,0);await unvrslTrainingPrescriptionSyncV292(true);
    const history=JSON.stringify(st.sessions),current=JSON.stringify(st.current),oldDayId=p.weeks[8].days[0].id;
-
+   
    p.engineCycleRevision=501;const savedState=JSON.stringify(st),primary=WorkoutStore.PRIMARY;
    const changed=upgradeBuiltinEngineCycleV502(p),twice=upgradeBuiltinEngineCycleV502(p);
    return {primary,savedState,id:p.id,oldDayId,changed,twice,historyPreserved:JSON.stringify(st.sessions)===history,currentPreserved:JSON.stringify(st.current)===current,

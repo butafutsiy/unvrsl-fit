@@ -20,14 +20,14 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
    const oldHistory=JSON.stringify(st.sessions),doneBefore=JSON.stringify(sets.slice(0,5).map(s=>({w:s.w,r:s.r,rpe:s.rpe,ok:s.ok})));
    nav('start');await trainingEngine200Tick();await trainingLoadModel292.run(true);startPage();await trainingEngine200Tick();
    const repaired=e.set.slice(6).map(s=>s.w),shown=e.set.slice(6).map(s=>workoutWeightInput(e,s,0,6)),clean=!document.querySelector('#start').textContent.includes('101,538461');
-   const fresh=e.set.slice(6).map(s=>s.recommendation.nextSetSuggestion?.weight??null);
+   const fresh=e.set.slice(6).map(s=>s.recommendation.nextSetSuggestion.weight);
    const reloaded=JSON.parse(JSON.stringify(st.current));st.current=reloaded;startPage();await trainingEngine200Tick();
    const persisted=st.current.ex[0].set.slice(6).map(s=>s.w);
    const newSet=st.current.ex[0].set[6];newSet.w=raw;newSet.manualOverride=true;newSet.weightSource='manual';await trainingEngine200Tick();const manualKept=newSet.w===raw;
    const result={repaired,shown,clean,fresh,persisted,manualKept,historyKept:oldHistory===JSON.stringify(st.sessions),doneKept:doneBefore===JSON.stringify(sets.slice(0,5).map(s=>({w:s.w,r:s.r,rpe:s.rpe,ok:s.ok})))};
    st.current=null;return result;
   })()`);
-  assert.deepEqual(Array.from(r.repaired),[102.5,102.5]);assert.deepEqual(Array.from(r.persisted),[102.5,102.5]);assert.deepEqual(Array.from(r.fresh),[null,null]);
+  assert.deepEqual(Array.from(r.repaired),[102.5,102.5]);assert.deepEqual(Array.from(r.persisted),[102.5,102.5]);assert.deepEqual(Array.from(r.fresh),[102.5,102.5]);
   r.shown.forEach(x=>assert.match(x,/value="102,5"/));assert.equal(r.clean,true);assert.equal(r.manualKept,true);assert.equal(r.historyKept,true);assert.equal(r.doneKept,true,"completed weights and actual reps/RPE stay intact");assert.deepEqual(errors,[]);
   console.log('PASS: screenshot UNVRSL draft repairs to 102.5 kg, rendered inputs and new proposals agree, reload persists, manual and completed/history weights stay untouched.');
  }finally{dom.window.close()}

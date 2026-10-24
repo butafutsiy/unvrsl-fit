@@ -6,7 +6,7 @@ html body .program-unified-card .title{display:-webkit-box;-webkit-line-clamp:2;
 html body .program-unified-card .row>.btn{flex:0 0 auto}
 html body .program-primary-badge{background:var(--panel2,#27272a)!important;color:var(--text)!important;font-size:11px;border:1px solid var(--line,#414146)}
 html body .program-card-footer{display:flex;align-items:flex-start;gap:8px;margin-top:12px;flex-wrap:wrap}
-html body .program-more{flex:1 1 100%;min-width:100px}
+html body .program-more{flex:1;min-width:100px}
 html body .program-more>summary{list-style:none;text-align:center;cursor:pointer}
 html body .program-more>summary::-webkit-details-marker{display:none}
 html body .program-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}

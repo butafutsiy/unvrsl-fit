@@ -16,9 +16,7 @@ const base=process.env.UNVRSL_AUDIT_URL||'http://127.0.0.1:8770/unvrsl-fit/',out
     st.sessions=[{id:'history-kept',date:iso(),ended:1,ex:[]}];st.programs=[ensureProgramShape({id:'managed',name:'Мой 8-недельный цикл · проверка',weeks:[{days:[{id:'day',name:'Грудь',ex:[{id:'long',n:'Французский жим с гантелями лёжа',method:'STANDARD',weightMode:'auto',sets:[{w:'',r:10},{w:'',r:10},{w:'',r:10}],rest:75}]}]}]})];
     nav('programs');trainerProgramsPage();
    },theme);
-   const menu=page.locator('.program-unified-card').last().locator('.program-more');
-   if(!await menu.evaluate(el=>el.open))await menu.locator('summary').click();
-   await page.waitForFunction(()=>document.querySelectorAll('.program-card-actions')[document.querySelectorAll('.program-card-actions').length-1]?.clientWidth>0);
+   await page.locator('.program-unified-card').last().locator('summary').click();
    const actions=await page.locator('.program-unified-card').last().locator('.program-card-actions').evaluate(el=>({width:el.clientWidth,last:el.lastElementChild.getBoundingClientRect().width,cardInner:el.closest('.program-unified-card').clientWidth-parseFloat(getComputedStyle(el.closest('.program-unified-card')).paddingLeft)-parseFloat(getComputedStyle(el.closest('.program-unified-card')).paddingRight),primaryHeight:el.closest('.program-card-footer').querySelector(':scope>.btn')?.getBoundingClientRect().height||0}));assert.ok(Math.abs(actions.width-actions.last)<=1&&actions.width>=actions.cardInner-1&&actions.primaryHeight<=60,JSON.stringify(actions));
    await page.evaluate(()=>document.querySelectorAll('.program-unified-card .program-card-actions')[document.querySelectorAll('.program-unified-card .program-card-actions').length-1].scrollIntoView({block:'center'}));await page.screenshot({path:`${output}/management-programs-${theme}-${width}.png`});
    await page.evaluate(()=>settingsSheet());const text=await page.locator('#sheet').innerText();assert.match(text,/UNVRSL Cloud/);assert.doesNotMatch(text,/Синхронизировать|Облачная копия|Синхронизация/);

@@ -24,7 +24,13 @@ test('screenshot totals 10985 kg everywhere and leaves old session values intact
  assert.equal(D.tonnage(s),10985);
 });
 
-
+test('paired tonnage does not double displayed dumbbell or cable strength',()=>{
+ const s=fixture(),db=s.ex[1],cable=s.ex[5];
+ assert.equal(D.e1rm(db,db.set[0],s,reg),58.7);
+ assert.equal(D.effectiveLoad(cable,cable.set[0],s,reg),20);
+ assert.equal(D.tonnageLoad(db,db.set[0],reg),88);
+ assert.equal(D.tonnageLoad(cable,cable.set[0],reg),40);
+});
 
 test('one dumbbell, one cable stack and total equipment load are not doubled',()=>{
  const db={n:'Тяга гантели одной рукой',loadType:'per_dumbbell',implementCount:1};

@@ -62,14 +62,13 @@
     if (running) return false;
     const cur = st.current;
     if (!cur || cur.pendingCompletion) return false;
-    if(W.cloud?.user?.id)cur.recommendationActorId=W.cloud.user.id;
     running = true;
     let changed = false, weightsChanged = false;
     try {
       W.equipmentAttachDefaults405?.(cur);
       W.trainingInitializeSetWeights?.(cur);
       for (const ex of cur.ex || []) {
-        if (!A.recommendationEngine&&["time","distance"].includes(A.loadType(ex,workoutRegistry))) {
+        if (["time","distance"].includes(A.loadType(ex,workoutRegistry))) {
           for (const set of ex.set || []) {
             if (set.recommendation || set.recommendedW != null) changed = true;
             delete set.recommendation; delete set.recommendedW;
@@ -83,8 +82,7 @@
           ex.implementCount = ex.implementCount || row.implementCount;
         }
         for (const set of ex.set || []) {
-          if (set.ok || set.skipped || ['completed','skipped','failed_attempt'].includes(set.status)) continue;
-          if(!String(set.recommendationTargetId||'').startsWith(String(cur.id)+':set:'))set.recommendationTargetId=cur.id+':set:'+cur.ex.indexOf(ex)+':'+ex.set.indexOf(set);
+          if (set.ok || set.skipped) continue;
           const rec = A.recommend(
             ex,
             set,
@@ -93,7 +91,7 @@
             workoutRegistry,
             st.exerciseWeightProfiles || {},
           );
-          const observations=rec.engineVersion===3?[]:recommendationHistory().filter(x=>!x.isLoadCalibration&&x.id!==cur.id&&!x.pendingCompletion&&(!cur.userId||!x.userId||x.userId===cur.userId)&&(!cur.date||!x.date||x.date<=cur.date)).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).flatMap(old=>{
+          const observations=recommendationHistory().filter(x=>!x.isLoadCalibration&&x.id!==cur.id&&!x.pendingCompletion&&(!cur.userId||!x.userId||x.userId===cur.userId)&&(!cur.date||!x.date||x.date<=cur.date)).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).flatMap(old=>{
             const match=(old.ex||[]).find(x=>A.loadComparable(ex,x,workoutRegistry,set,x.set?.[0]||{})&&A.method(ex,set)===A.method(x,x.set?.[0]||{}));if(!match)return [];
             const done=(match.set||[]).filter(x=>A.complete(match,x,workoutRegistry)),target=A.effortTarget(match,done[0]||{},old),range=A.repRange(match,done[0]||{});
             const estimate=A.strengthEstimate(ex,A.history(ex,[old],workoutRegistry),workoutRegistry,[],set).estimate;
@@ -111,8 +109,8 @@
           }
           // Auto mode fills pending loads; prescribed and manually edited loads
           // still require the explicit recommendation button.
-          if ((rec.engineVersion!==3||['START','PHASE_CHANGE'].includes(rec.scope))&&(set.weightMode==='auto'||(!set.weightMode&&ex.programWeightMode === "adaptive")) &&
-              suggested != null && suggested >= 0 && (rec.sessionIds.length > 0 || rec.nextSetSuggestion || rec.strength?.estimate > 0) &&
+          if ((set.weightMode==='auto'||(!set.weightMode&&ex.programWeightMode === "adaptive")) &&
+              suggested > 0 && (rec.sessionIds.length > 0 || rec.nextSetSuggestion || rec.strength?.estimate > 0) &&
               set.recommendationDecision?.status !== 'applied' &&
               !set.dismissedRecommendation && !rec.planPreserved && !set.autoInitialApplied) {
             const before = set.w;
@@ -148,8 +146,6 @@
     }
   }
   const readinessWeight = (v, ex, cur) => {
-    if(A.recommendationEngine)return A.number(v); // Engine 3 applies readiness once to its historical/prescribed start.
-
     const factor = cur?.trainingReadinessDone && cur?.readinessAdjusted
       ? (A.number(cur?.readiness?.factor) || 1)
       : 1;

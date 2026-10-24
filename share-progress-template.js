@@ -19,13 +19,13 @@
   const durationMs=s=>{const direct=[s?.advancedMetrics?.duration,s?.finalDurationMs,s?.durationMs].map(N).find(x=>x!=null&&x>=0);if(direct!=null)return direct;const a=N(s?.started),b=N(s?.ended);if(a!=null&&b!=null&&b>=a)return b-a;const a2=Date.parse(s?.startedAt||s?.start||''),b2=Date.parse(s?.endedAt||s?.end||'');return Number.isFinite(a2)&&Number.isFinite(b2)&&b2>=a2?b2-a2:0};
   const durationText=s=>{const t=Math.max(0,Math.floor(durationMs(s)/1000)),h=Math.floor(t/3600),m=Math.floor((t%3600)/60),r=t%60,p=n=>String(n).padStart(2,'0');return h?`${h}:${p(m)}:${p(r)}`:`${m}:${p(r)}`};
   const setRpe=x=>{let p=N(x?.rpe),r=N(x?.rir);if(p==null&&r!=null)p=10-r;return p};
-  const e1rm=z=>z.e&&z.x?A.e1rm(z.e,z.x,z.session||{},workoutRegistry)||0:0;
+  const e1rm=z=>z.w>0&&z.reps>0?z.w*(1+(z.reps+clamp(10-(z.rpe??8),0,10))/30):0;
 
   function completedStrength(s){
     return (s?.ex||[]).flatMap(e=>{
       if(e?.mode==='cardio')return[];
       return (e.set||[]).filter(x=>A.complete(e,x,workoutRegistry)).map(x=>({
-        e,x,session:s,name:baseName(e.n),key:String(e.sourceId||norm(e.n))+'|'+String(x.equipmentProfileId||e.equipmentProfileId||e.equipmentProfile?.id||''),sourceId:e.sourceId||null,
+        e,x,name:baseName(e.n),key:String(e.sourceId||norm(e.n))+'|'+String(x.equipmentProfileId||e.equipmentProfileId||e.equipmentProfile?.id||''),sourceId:e.sourceId||null,
         w:N(x.w)||0,reps:N(x.actualReps??x.r)||0,rpe:setRpe(x),rir:N(x.actualRir??x.rir)??(setRpe(x)==null?null:Math.max(0,10-setRpe(x)))
       }))
     })

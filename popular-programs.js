@@ -49,13 +49,6 @@ const POPULAR_PROGRAMS={
  }
 };
 
-for(const [id,spec] of Object.entries(POPULAR_PROGRAMS)){
- const build=spec.build;spec.build=function(){const program=build.call(this);
-  const strategy=id==='stronglifts'?'LINEAR_SETS':'DOUBLE_PROGRESSION';program.strategyId=strategy;
-  for(const week of program.weeks||[])for(const day of week.days||[])for(const ex of day.ex||[]){ex.strategyId=strategy;ex.phaseId=`popular:${id}:${day.name}`;if(id==='phul'&&/power|сил/i.test(day.name))ex.strategyId='LINEAR_SETS';}
-  return program;
- };
-}
 function createPopularProgram(id){const spec=POPULAR_PROGRAMS[id];if(!spec)return;return window.addIndependentTemplate('popular:'+id,()=>spec.build())}
 function popularProgramsHtml(){return `<div class="section">ПОПУЛЯРНЫЕ ПРОГРАММЫ ИЗ ИНТЕРНЕТА</div><p class="muted small">Рабочие веса подбираются по вашей истории.</p>${Object.entries(POPULAR_PROGRAMS).map(([id,p])=>window.renderTemplateCard({title:p.title,description:p.meta,weeks:Number(p.meta.match(/(\d+) недель?/)?.[1])||(id==='ppl6'?6:8),frequency:p.meta.match(/(\d+) дн/)?.[1],action:`createPopularProgram('${id}')`,source:p.source,sourceName:p.sourceName})).join('')}`}
 

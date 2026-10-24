@@ -28,3 +28,34 @@ test('W5 Romanian prescription and W8 isolation are reflected in the source',()=
   assert.match(w8.find(x=>x.c==='B').e.find(x=>x.n==='Разводка / бабочка').d,/8–12 повторений/);
   assert.ok(!w8.find(x=>x.c==='D').e.some(x=>/Подъём штанги на бицепс — тест/.test(x.n)));
 });
+
+test('W8 test suggestions use exercise history, the completed attempt, and equipment step',()=>{
+  const first=current('Румынская тяга — тест 2–3ПМ',[{w:0,r:3,ok:false}]);
+  const a=rec(first);
+  assert.equal(a.testWeekSuggestion,true);
+  assert.ok(a.weight>0);
+  assert.equal(a.weight%2.5,0);
+  const completed={n:'Румынская тяга — тест 2–3ПМ',set:[{w:a.weight,r:3,rpe:9,ok:true}]};
+  const second={n:'Румынская тяга — тест 1ПМ',set:[{w:0,r:1,ok:false}]};
+  const s=current('',[]);s.ex=[completed,second];
+  const b=domain.recommend(second,second.set[0],s,[prior],registry,{});
+  assert.equal(b.testWeekSuggestion,true);
+  assert.ok(b.weight>=a.weight);
+  assert.ok(b.weight<=a.weight+5);
+  completed.set[0].rpe=9.5;
+  const hard=domain.recommend(second,second.set[0],s,[prior],registry,{});
+  assert.ok(hard.weight<=a.weight);
+});
+
+test('W8 back-off uses completed test weight and isolation ignores the test percentage',()=>{
+  const first={n:'Присед HB — тест попытка 1',set:[{w:180,r:1,rpe:9,ok:true}]};
+  const back={n:'Присед HB — back-off 70%',set:[{w:0,r:5,ok:false}]};
+  const s=current('',[]);s.c='A1';s.ex=[first,back];
+  const suggestion=domain.recommend(back,back.set[0],s,[prior],registry,{});
+  assert.equal(suggestion.testWeekSuggestion,true);
+  assert.equal(suggestion.weight,125);
+  const iso=current('Разгибание ног',[{w:70,r:12,targetRepMin:8,targetRepMax:12,ok:false}]);
+  const r=rec(iso);
+  assert.equal(r.weeklyIntensity,null);
+  assert.equal(r.testWeekSuggestion,false);
+});

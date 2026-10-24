@@ -5,7 +5,7 @@ const reg=A.registry([]),clone=x=>JSON.parse(JSON.stringify(x));
 const {prepareProgramWeights}=require('../program-weight-choice.js');
 const {programWeightProfile}=require('../program-weight-policy.js');
 const set=(w=0)=>({w,r:'',ok:false,targetRepMin:8,targetRepMax:12,targetRpeMin:7,targetRpeMax:8});
-const exercise=(name='Bench')=>({n:name,exerciseId:name,recommendationProfile:{confirmed:true,family:'F04',loadAccounting:'external_total'},loadType:'external_total',method:'STANDARD',programWeightMode:'adaptive',equipmentProfileId:'machine-a',equipmentProfile:{id:'machine-a',weightStep:2.5},set:[set(),set(),set()]});
+const exercise=(name='Bench')=>({n:name,exerciseId:name,loadType:'external_total',method:'STANDARD',programWeightMode:'adaptive',equipmentProfileId:'machine-a',equipmentProfile:{id:'machine-a',weightStep:2.5},set:[set(),set(),set()]});
 const sample=(weight=50,reps=10,rir=2)=>({weight,reps,rir,technique:true,targetReps:reps});
 function fixture(){const e=exercise(),current={id:'active',userId:'owner',date:'2026-10-23',started:1000000000000,ex:[e]};return {e,current,target:e.set[0]};}
 test('saved constructor supersets expand to distinct exercises and retain their weights and rest',()=>{
@@ -68,8 +68,21 @@ test('calibration is evidence inside a workout, not extra completed workouts',()
  assert.equal(JSON.stringify(e),before);assert.equal(ev.ex[0].set[0].equipmentSnapshot.id,'machine-a');
  const restored=clone(current);assert.equal(A.recommendationSessions([restored]).length,2);
 });
-
-
+test('first-session calibration works immediately and does not leak across accounts or equipment',()=>{
+ const {e,target,current}=fixture(),ev=A.calibrationSession(e,target,[sample(50,10,2)],current,reg,{id:'cal',now:1000000001000});
+ current.calibrationSessions=[ev];const sessions=A.recommendationSessions([],current),r=A.recommend(e,target,current,sessions,reg);
+ assert.ok(r.strength.estimate>0);assert.ok(A.recommendationWeight(r)>0);assert.equal(r.series,null);
+ assert.equal(A.history(e,sessions,reg,{userId:'other'}).length,0);
+ const other={...e,equipmentProfileId:'machine-b',equipmentProfile:{id:'machine-b'}};
+ assert.equal(A.recommend(other,target,{...current,ex:[other]},sessions,reg).strength.estimate,null);
+});
+test('one calibration remains one low-confidence observation across different rep ranges',()=>{
+ const {e,target,current}=fixture(),ev=A.calibrationSession(e,target,[sample(),sample(),sample()],current,reg,{id:'cal',now:1000000001000});
+ const strength=A.strengthEstimate(e,A.history(e,[ev],reg),reg,[],target);
+ assert.equal(strength.sessionCount,1);assert.equal(strength.confidence,'низкая');
+ const weights=F.steps.map(n=>{const t={...target,targetRepMin:n,targetRepMax:n,targetRepLabel:String(n)};return A.recommendationWeight(A.recommend(e,t,current,[ev],reg));});
+ assert.ok(weights.every(w=>w>0));assert.ok(weights.at(-1)>weights[0]);
+});
 test('calibration preserves per-leg actual counts and per-dumbbell load units',()=>{
  const {e,target,current}=fixture();Object.assign(e,{n:'Выпады с гантелями',repSide:'leg',loadType:'per_dumbbell',implementCount:2});
  const ev=A.calibrationSession(e,target,[sample(20,'10 / 8',2)],current,reg,{id:'cal',now:1000000001000});
@@ -87,8 +100,26 @@ test('default probe uses the current rep and RIR targets; the ladder is optional
  assert.deepEqual(F.probeTarget(e,target,current,A),{range:{lo:15,hi:20},rir:{lo:4,hi:5}});
  assert.deepEqual(F.probeTarget(e,target,current,A,8).range,{lo:8,hi:8});
 });
-
-
+test('probe adjustments use one available equipment step and conservative unknown effort',()=>{
+ const {e,target,current}=fixture();e.equipmentProfile.availableLoads=[20,35,50];
+ const decide=a=>F.probeDecision(e,target,a,current,A,reg);
+ assert.equal(decide(sample(35,12,5)).nextWeight,50);
+ assert.equal(decide(sample(35,6,0)).nextWeight,20);
+ assert.equal(decide(sample(35,10,'unknown')).nextWeight,35);
+ assert.equal(decide(sample(35,10,'unknown')).credit,false);
+ assert.equal(decide(sample(35,10,2)).credit,true);
+ assert.equal(F.probeDecision(e,target,sample(35,8,2),current,A,reg,{},8).credit,false);
+ e.superGroup='pair';assert.equal(decide(sample(35,10,2)).credit,false);
+});
+test('credited probes cannot contribute a second strength sample',()=>{
+ const {e,target,current}=fixture();const credited={...sample(),id:'probe-2',credited:true};
+ const ev=A.calibrationSession(e,target,[{...sample(45),id:'probe-1'},credited],current,reg,{id:'cal',now:1000000001000});
+ assert.equal(ev.ex[0].set.length,1);assert.equal(ev.ex[0].set[0].calibrationAttemptId,'probe-1');
+ e.set[0]={...target,w:50,r:10,actualReps:10,rir:2,rpe:8,ok:true,calibrationAttemptId:'probe-2'};
+ current.ended=1000000002000;current.calibrationSessions=[ev];
+ const strength=A.strengthEstimate(e,A.history(e,[current],reg),reg,[],target);
+ assert.equal(strength.setCount,2);assert.equal(strength.sessionCount,1);
+});
 test('unknown effort is retained as a completed result without a strength anchor or increase',()=>{
  const {e,target,current}=fixture(),actual={...target,w:50,r:10,actualReps:10,ok:true,rir:'',rpe:'',actualRir:null,actualRpe:null,effortUncertain:true};
  assert.equal(A.validSet(e,actual,reg),true);assert.equal(A.e1rm(e,actual,current,reg),null);

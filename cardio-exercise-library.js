@@ -41,7 +41,7 @@
     return 0
   };
   const isLegacyTimedCardio=e=>legacyDurationSeconds(e)>0&&!!legacyPresetForName(e?.n);
-  const isCardio=e=>e?.kind==='cardio'||!!byName(e?.n)||isLegacyTimedCardio(e);
+  const isCardio=e=>e?.kind==='cardio'||e?.workMode==='timer'||!!byName(e?.n)||isLegacyTimedCardio(e);
   const fmtTime=sec=>{sec=Math.max(1,Math.round(Number(sec)||0));if(sec%60===0)return `${sec/60} мин`;if(sec>=60)return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;return `${sec} сек`};
   const formValue=sec=>sec>=120&&sec%60===0?{v:sec/60,u:'min'}:{v:sec,u:'sec'};
 

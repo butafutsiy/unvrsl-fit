@@ -68,8 +68,7 @@
     return nums.every(n=>Number.isFinite(n)&&n>=0)&&nums.every(n=>Math.abs(n-nums[0])<1e-6)?nums[0]:null;
   }
   function calibrationAllowed(e,s,A,reg){
-    if(A.recommendationEngine?.resolveExerciseProfile(e,reg).profileStatus==='manual_only')return false;
-    return ['external_total','per_dumbbell','machine_stack','per_side','bodyweight_added','bodyweight_assisted'].includes(A.loadType(e,reg))&&
+    return ['external_total','per_dumbbell','machine_stack','per_side','bodyweight_added'].includes(A.loadType(e,reg))&&
       ['STANDARD','UNVRSL','SLDR','DS','FST-7'].includes(A.method(e,s));
   }
   function needsCalibration(e,s,A,reg){
@@ -89,18 +88,6 @@
     return {range,rir:{lo:10-effort.hi,hi:10-effort.lo}};
   }
   function probeDecision(e,set,attempt,session,A,reg,overrides={},step=null){
-    if(A.recommendationEngine){
-      const E=A.recommendationEngine,p=A.profile(e,reg,overrides),target=probeTarget(e,set,session,A),parsed=A.parseReps(e,attempt.reps);
-      const reps=parsed?A.performedReps(e,{r:parsed.total,repsLeft:parsed.left,repsRight:parsed.right}):null;
-      const ctx=E.normalizeRecommendationInput({exercise:e,set,session,scope:'CALIBRATION',equipment:{...p,...e.equipmentProfile},
-       actual:{w:attempt.weight,r:reps,repCounting:'per_side',rir:attempt.rir,technique:attempt.technique?'clean':'unknown',painFlag:attempt.pain,status:'completed'},
-       prescription:{...E.resolvePrescription({exercise:e,set,session}),repMin:target.range.lo,repMax:target.range.hi}},reg);
-      ctx.familiar=attempt.familiar;
-      const r=E.recommendCalibration(ctx),known=E.effort({rir:attempt.rir}).effortKnown;
-      const fits=reps>=target.range.lo&&reps<=target.range.hi&&known&&Number(attempt.rir)>=target.rir.lo&&Number(attempt.rir)<=target.rir.hi&&attempt.technique&&!attempt.pain;
-      return {...r,target,reps,known,fits,credit:fits&&!e.superGroup&&!['review','stop'].includes(r.effortAction),nextWeight:r.suggestedWeight,action:r.effortAction==='harder'?'up':r.effortAction==='easier'?'down':'hold',reason:r.reasonText};
-    }
-
     const target=probeTarget(e,set,session,A,step),parsed=A.parseReps(e,attempt.reps);
     const reps=parsed?A.performedReps(e,{r:parsed.total,repsLeft:parsed.left,repsRight:parsed.right}):null;
     const rir=A.number(attempt.rir),weight=parseWeight(attempt.weight),known=rir!=null&&rir>=0&&rir<=6;
@@ -117,7 +104,7 @@
     const type=A.loadType(e,reg),weight=A.number(target);
     if(!(weight>0)||!['external_total','per_dumbbell','machine_stack','per_side','bodyweight_added'].includes(type))return [];
     const profile=A.profile(e,reg,overrides),meta=reg?.resolve(e),bar=(e.eq||meta?.eq)==='barbell'||/штанг|barbell/i.test(e.n||'');
-    if(bar&&!profile.available?.length&&A.number(e.equipmentProfile?.implementWeight)!=null)profile.min=Math.max(profile.min||0,A.number(e.equipmentProfile.implementWeight));
+    if(bar&&!profile.available?.length)profile.min=Math.max(profile.min||0,A.number(e.equipmentProfile?.implementWeight)??20);
     const raw=bar&&weight>=45?[[profile.min||20,10],[weight*.35,5],[weight*.55,3],[weight*.725,2],[weight*.875,1]]:[[weight*.4,10],[weight*.6,5],[weight*.75,3],[weight*.88,1]],out=[];
     for(const [value,reps] of raw){const w=A.roundWeight(Math.min(value,weight*.94),profile,'down');if(w>0&&w<weight&&!out.some(x=>x.w===w))out.push({w,r:reps,ok:false,warmup:true});}
     return out.sort((a,b)=>a.w-b.w);

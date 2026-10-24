@@ -48,3 +48,4 @@ test('client picker contains every reviewed canonical name without duplicates',(
   for(const spec of api.specs.filter(x=>x.show))assert.ok(names.includes(spec.ru),spec.ru);
   assert.equal(names.length,new Set(names.map(x=>x.toLocaleLowerCase('ru').replace(/ё/g,'е'))).size)
 });
+

@@ -21,8 +21,7 @@ function renderExerciseDetail(ex){
   ${sourceNote}`)
 }
 function fmt1(v){return Number(v)%1?Number(v).toFixed(1):String(Number(v))}
-function estimate1RM(){return null;} // Use completed, profiled sets through WorkoutDomain.e1rm.
-
+function estimate1RM(w,r){w=Number(w);r=Number(r);if(!Number.isFinite(w)||!Number.isFinite(r)||w<=0||r<1||r>12)return null;const v=r===1?w:w*(1+r/30);return Math.round(v*10)/10}
 function stepRM(k,d){if(k==='w')rmState.w=Math.max(0,Math.round((Number(rmState.w)+d)*2)/2);else rmState.r=Math.max(1,Math.min(20,Math.round(Number(rmState.r)+d)));const est=estimate1RM(rmState.w,rmState.r);if($('#rmW'))$('#rmW').textContent=fmt1(rmState.w);if($('#rmR'))$('#rmR').textContent=rmState.r;if($('#rmEst'))$('#rmEst').textContent=est!==null?`${fmt1(est)} кг`:'—'}
 function historySetsFor(n,sourceId=null){const target=exerciseHistoryIdentity(n),out=[];[...st.sessions].reverse().forEach(s=>{[...s.ex].forEach(e=>{const nameMatch=exerciseHistoryIdentity(e.n)===target,known=window.UNVRSL_EXERCISE_REGISTRY_V331?.find(e.n),sourceMatch=!known&&sourceId&&String(e.sourceId||'')===String(sourceId);if(!nameMatch&&!sourceMatch)return;[...e.set].reverse().forEach(x=>{if(x.ok&&x.w&&x.r)out.push({date:s.date,w:+x.w,r:+x.r,rpe:x.rpe??''})})})});return out}
 function bestEstimateFor(n,sourceId=null){let best=null;historySetsFor(n,sourceId).forEach(x=>{const est=estimate1RM(x.w,x.r);if(est!==null&&(!best||est>best.est))best={...x,est}});return best}

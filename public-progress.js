@@ -17,8 +17,7 @@
   const sourceKey=v=>v==='client'?'client':'trainer';
   const sourceName=v=>sourceKey(v)==='client'?'Клиент':'Тренер';
   const sourceBadge=v=>`<span class="pp-source ${sourceKey(v)}">${sourceName(v)}</span>`;
-  const e1rm=()=>null; // No exercise/effort context in these legacy manual records.
-
+  const e1rm=(weight,reps)=>{const w=N(weight),r=N(reps);return w>0&&r>=1&&r<=30?+(r===1?w:w*(1+r/30)).toFixed(1):null};
 
   function chart(points,{color='#bf5af2',unit='',label='Динамика',detailed=false}={}){
     const clean=A(points).map(x=>({date:String(x.date||''),value:N(x.value),source:sourceKey(x.source),note:String(x.note||'')})).filter(x=>x.date&&x.value!=null).slice(-80);
@@ -152,7 +151,7 @@
         payload={date,weight:value('ppEntryWeight'),measurements,note};if(!payload.weight&&!Object.keys(measurements).length)throw new Error('Добавь вес или хотя бы один обхват')
       }else{
         const base=value('ppEntryExercise'),variant=value('ppEntryVariant'),match=exerciseCatalog().find(name=>name.toLocaleLowerCase('ru')===base.toLocaleLowerCase('ru'));
-        if(!match)throw new Error('Выбери упражнение из списка');payload={date,exerciseName:variant?`${match} · ${variant}`:match,weight:value('ppEntryWeight'),reps:value('ppEntryReps'),note};if(!(N(payload.weight)>=0&&Number.isInteger(N(payload.reps))&&N(payload.reps)>0))throw new Error('Укажи рабочий вес и от 1 до 30 повторений')
+        if(!match)throw new Error('Выбери упражнение из списка');payload={date,exerciseName:variant?`${match} · ${variant}`:match,weight:value('ppEntryWeight'),reps:value('ppEntryReps'),note};if(e1rm(payload.weight,payload.reps)==null)throw new Error('Укажи рабочий вес и от 1 до 30 повторений')
       }
       if(button){button.disabled=true;button.textContent='Сохраняю…'}
       const result=await api.rpc('submit_offline_progress_entry_v333',{p_token_hash:shareHash,p_kind:kind,p_payload:payload});if(result.error)throw result.error;if(!result.data?.data)throw new Error('Не удалось обновить прогресс');

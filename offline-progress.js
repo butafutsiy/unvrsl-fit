@@ -24,8 +24,7 @@
   const sourceKey=v=>v==='client'?'client':'trainer';
   const sourceName=v=>sourceKey(v)==='client'?'Клиент':'Тренер';
   const sourceBadge=v=>`<span class="ofp-source ${sourceKey(v)}">${sourceName(v)}</span>`;
-  const e1rm=()=>null; // No exercise/effort context in these legacy manual records.
-
+  const e1rm=(weight,reps)=>{const w=N(weight),r=N(reps);return w>0&&r>=1&&r<=30?+(r===1?w:w*(1+r/30)).toFixed(1):null};
   function age(v){if(!v)return null;const d=new Date(`${v}T12:00:00`);if(Number.isNaN(d.getTime()))return null;const n=new Date();let x=n.getFullYear()-d.getFullYear(),m=n.getMonth()-d.getMonth();if(m<0||(m===0&&n.getDate()<d.getDate()))x--;return x>=14&&x<=100?x:null}
   function measure(row,key){const n=N(row?.measurements?.[key]);return n!=null&&n>0?n:null}
   function signed(v,unit){const n=N(v);if(n==null)return'';const x=Math.round(n*10)/10;return`${x>0?'+':''}${String(x).replace('.',',')} ${unit}`}
@@ -249,7 +248,7 @@
   W.offlineProgressE1rmV328=function(){const result=e1rm(D.getElementById('osWeight')?.value,D.getElementById('osReps')?.value),out=D.getElementById('ofpE1rmValue');if(out)out.textContent=result==null?'—':`≈ ${fmt(result)} кг`};
   async function saveStrength(id,keyToken,nameToken){
     const key=decodeURIComponent(keyToken),name=decodeURIComponent(nameToken),raw=x=>String(D.getElementById(x)?.value||'').trim(),weight=N(raw('osWeight')),reps=N(raw('osReps')),one=e1rm(weight,reps),button=D.getElementById('ofpStrengthSave');
-    try{if(!(weight>=0)||weight==null||!Number.isInteger(reps)||reps<1||reps>30||weight>999)throw new Error('Укажи рабочий вес и от 1 до 30 повторений');const c=W.cloud;if(!c?.client||!c?.user)throw new Error('Нет подключения к аккаунту тренера');if(button)button.disabled=true;const payload={offline_client_id:id,trainer_id:c.user.id,measured_at:raw('osDate')||today(),exercise_key:key,exercise_name:name,weight_kg:weight,reps,e1rm:one,notes:raw('osNotes')||null,entry_source:'trainer'};const result=await saveEntry('offline_client_strengths',id,button?.dataset.entryId,payload);if(result.error)throw result.error;await c.client.from('offline_clients').update({updated_at:iso()}).eq('id',id).eq('trainer_id',c.user.id);W.toast?.('Показатель сохранён');await openDetail(id)}catch(error){W.alert?.(error?.message||'Не удалось сохранить показатель')}finally{if(button)button.disabled=false}
+    try{if(one==null||!Number.isInteger(reps)||weight>999)throw new Error('Укажи рабочий вес и от 1 до 30 повторений');const c=W.cloud;if(!c?.client||!c?.user)throw new Error('Нет подключения к аккаунту тренера');if(button)button.disabled=true;const payload={offline_client_id:id,trainer_id:c.user.id,measured_at:raw('osDate')||today(),exercise_key:key,exercise_name:name,weight_kg:weight,reps,e1rm:one,notes:raw('osNotes')||null,entry_source:'trainer'};const result=await saveEntry('offline_client_strengths',id,button?.dataset.entryId,payload);if(result.error)throw result.error;await c.client.from('offline_clients').update({updated_at:iso()}).eq('id',id).eq('trainer_id',c.user.id);W.toast?.(`Показатель сохранён · 1ПМ ≈ ${fmt(one)} кг`);await openDetail(id)}catch(error){W.alert?.(error?.message||'Не удалось сохранить показатель')}finally{if(button)button.disabled=false}
   }
   async function strengthHistory(id,keyToken,nameToken){
     const key=decodeURIComponent(keyToken),name=decodeURIComponent(nameToken),c=W.cloud;if(!c?.client||!c?.user)return W.toast?.('Нет подключения к аккаунту тренера');const result=await c.client.from('offline_client_strengths').select('*').eq('offline_client_id',id).eq('exercise_key',key).order('measured_at',{ascending:false}).order('created_at',{ascending:false});if(result.error)return W.alert?.(result.error.message);
@@ -296,33 +295,23 @@
     if(data.error||!data.client)return W.alert?.(data.error?.message||'Клиент не найден');
     if(!W.WorkoutDomain?.cycleProfiles)return W.toast?.('Расчёт нагрузки ещё загружается');
     const groups=strengthGroups(data),domain=W.WorkoutDomain;
-    W.modal?.(`<div class="sheet-grabber"></div><div class="ofp-add-head"><div><h2>Нагрузка по неделям</h2><div class="muted">${E(data.client.display_name)} · Только для тренера</div></div><button class="btn tiny" onclick="offlineClientDetail('${E(id)}')">✕</button></div><div class="field"><label for="ofpCycleWeeks">Длительность цикла</label><select id="ofpCycleWeeks">${[3,4,6,8,10,11,12].map(n=>`<option value="${n}"${n===8?' selected':''}>${n} недель</option>`).join('')}</select></div><div class="ofp-tip">Укажи измеренный максимум или отдельный training max и реальные ступени оборудования. Просмотр не изменяет программу или историю.</div><div id="ofpWeeklyExercises"></div>`);
+    W.modal?.(`<div class="sheet-grabber"></div><div class="ofp-add-head"><div><h2>Нагрузка по неделям</h2><div class="muted">${E(data.client.display_name)} · Только для тренера</div></div><button class="btn tiny" onclick="offlineClientDetail('${E(id)}')">✕</button></div><div class="field"><label for="ofpCycleWeeks">Длительность цикла</label><select id="ofpCycleWeeks">${[3,4,6,8,10,11,12].map(n=>`<option value="${n}"${n===8?' selected':''}>${n} недель</option>`).join('')}</select></div><div class="ofp-tip">1ПМ – среднее расчётных максимумов всех записей каждого упражнения. Рабочий вес – середина недельного диапазона с округлением до выбранного шага. Это ориентир по процентам, без автоматического назначения тренировок.</div><div id="ofpWeeklyExercises"></div>`);
     const registry=domain.registry(W.UNVRSL_EXERCISES||[]);
-    const engine=domain.recommendationEngine;
-    const eligible=(W.UNVRSL_EXERCISES||[]).filter(ex=>{const p=engine.resolveExerciseProfile(ex,registry);return p.family!=='F00'&&['external_total','per_implement','stack_display'].includes(p.loadAccounting)&&p.e1rmPolicy!=='disabled';});
-    const settings=groups.map(g=>({exerciseId:engine.resolveExerciseProfile({n:g.name},registry).canonicalId,referenceType:'trainingMax',referenceValue:null,step:2.5,min:null,max:null,available:''}));
+    const settings=groups.map(g=>({kind:domain.exerciseKind({n:g.name},registry),step:domain.profile({n:g.name},registry).step}));
     const host=D.getElementById('ofpWeeklyExercises'),select=D.getElementById('ofpCycleWeeks');
     function render(){
       const profiles=domain.cycleProfiles(Number(select.value));
       host.innerHTML=groups.map((g,i)=>{
-        const setting=settings[i],exercise=eligible.find(e=>e.id===setting.exerciseId),profile=exercise?engine.resolveExerciseProfile(exercise,registry):null;
-        const controls=`<div class="field"><label>Вариант для расчёта</label><select data-projection="${i}:exerciseId"><option value="">Выбери упражнение</option>${eligible.map(e=>`<option value="${E(e.id)}" ${e.id===setting.exerciseId?'selected':''}>${E(e.n)}</option>`).join('')}</select></div><div class="field"><label>База процентов</label><select data-projection="${i}:referenceType"><option value="trainingMax" ${setting.referenceType==='trainingMax'?'selected':''}>Training max</option><option value="measured1RM" ${setting.referenceType==='measured1RM'?'selected':''}>Измеренный 1ПМ</option></select></div><div class="offline-measure-grid">${[['referenceValue','Подтверждённая база, кг'],['min','Минимум, кг'],['max','Максимум, кг'],['step','Шаг, кг'],['available','Или список доступных весов через ;']].map(([key,label])=>`<div class="field"><label>${label}</label><input data-projection="${i}:${key}" inputmode="decimal" value="${E(setting[key]??'')}"></div>`).join('')}</div>`;
-        let rows='';
-        if(exercise&&setting.referenceValue>0){
-          const loads=String(setting.available||'').split(';').map(engine.num).filter(x=>x!=null);
-          rows=profiles.map(p=>{
-            const prescription=p[profile.movementKind==='isolation'?'isolation':'base'];
-            if(!prescription.sets)return `<tr><td>${p.week}</td><td colspan="3">Без нагрузки</td></tr>`;
-            const result=engine.recommend({exercise,set:{status:'pending'},session:{id:'projection'},now:0,scope:'START',profile,
-             prescription:{repMin:prescription.reps[0],repMax:prescription.reps[1],targetRirMin:10-prescription.rpe[1],targetRirMax:10-prescription.rpe[0],strategyId:'PERCENT_PERIODIZED',referenceType:setting.referenceType,referenceValue:setting.referenceValue,percent:(prescription.pct[0]+prescription.pct[1])/2},
-             equipment:{step:setting.step,min:setting.min,max:setting.max,availableLoads:loads},actual:{status:'pending'}});
-            return `<tr><td><b>${p.week}</b><small>${E(p.focus)}</small></td><td>${prescription.pct.join('–')}%</td><td><b>${result.suggestedWeight==null?'—':fmt(result.suggestedWeight,2)}</b></td><td>${E(result.reasonText)}</td></tr>`;
-          }).join('');
-        }
-        return `<section class="ofp-weekly-exercise"><h3>${E(g.name)}</h3>${controls}${rows?`<div class="ofp-weekly-scroll"><table class="ofp-weekly-table"><thead><tr><th>Неделя</th><th>% базы</th><th>Вес, кг</th><th>Пояснение</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<p class="muted">Укажи вариант упражнения, подтверждённую базу и оборудование. Старые вес и повторы не заменяют 1ПМ.</p>'}</section>`;
-      }).join('')||'<div class="ofp-empty">Сначала добавь силовую запись.</div>';
+        const estimates=g.rows.map(r=>e1rm(r.weight_kg,r.reps)??N(r.e1rm)).filter(x=>x>0),one=estimates.length?estimates.reduce((sum,x)=>sum+x,0)/estimates.length:null,setting=settings[i];
+        return `<section class="ofp-weekly-exercise"><h3>${E(g.name)}</h3><p>Средний 1ПМ: <b>${one?fmt(one)+' кг':'нет данных'}</b> · Записей: ${estimates.length}</p><div class="offline-measure-grid"><div class="field"><label>Тип упражнения</label><select data-weekly-kind="${i}"><option value="base"${setting.kind==='base'?' selected':''}>Базовое</option><option value="isolation"${setting.kind==='isolation'?' selected':''}>Изоляция</option></select></div><div class="field"><label>Шаг веса, кг</label><select data-weekly-step="${i}">${[...new Set([.25,.5,1,1.25,2,2.5,4,5,10,setting.step])].sort((a,b)=>a-b).map(n=>`<option value="${n}"${n===setting.step?' selected':''}>${n===0?'Без веса':fmt(n,2)}</option>`).join('')}</select></div></div>${one&&setting.step>0?`<div class="ofp-weekly-scroll"><table class="ofp-weekly-table"><thead><tr><th>Неделя</th><th>% 1ПМ</th><th>Диапазон, кг</th><th>Вес, кг</th></tr></thead><tbody>${profiles.map(p=>{
+          const prescription=p[setting.kind],pct=prescription.pct,lo=one*pct[0]/100,hi=one*pct[1]/100;
+          const rounded=domain.roundWeight((lo+hi)/2,{step:setting.step,min:0},'nearest');
+          const weight=rounded;
+          return `<tr><td><b>${p.week}</b><small>${E(p.focus)}</small></td>${!prescription.sets?'<td colspan="3">Без нагрузки</td>':`<td>${pct.join('–')}%</td><td>${fmt(lo)}–${fmt(hi)}</td><td><b>${fmt(weight,2)}</b>${weight<lo-1e-8||weight>hi+1e-8?'<small>Округлено по шагу</small>':''}${p.test?'<small>Тест: ориентир, не обязательный вес</small>':''}</td>`}</tr>`;
+        }).join('')}</tbody></table></div>`:'<p class="muted">Добавь запись с рабочим весом и повторениями.</p>'}</section>`;
+      }).join('')||'<div class="ofp-empty">Сначала добавь упражнения и результаты клиента.</div>';
     }
-    host.addEventListener('change',event=>{const input=event.target;if(!input.dataset.projection)return;const [i,key]=input.dataset.projection.split(':');settings[Number(i)][key]=['referenceValue','step','min','max'].includes(key)?engine.num(input.value):input.value;render();});
+    host.addEventListener('change',event=>{const el=event.target;if(el.dataset.weeklyKind!=null)settings[Number(el.dataset.weeklyKind)].kind=el.value;else if(el.dataset.weeklyStep!=null)settings[Number(el.dataset.weeklyStep)].step=Number(el.value);else return;render()});
     select.addEventListener('change',render);render();
   };
 

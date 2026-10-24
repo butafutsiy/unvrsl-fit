@@ -282,7 +282,6 @@ if (require.main === module) (async () => {
     assert.equal(recovered.window.st.current.timerEnd, expectedTimer);
     result.timerRecovered = true;
     const rw = recovered.window;
-    await rw.unvrslWarmDeferredModulesV320?.();
     rw.cloud = rw.cloud || {};
     rw.cloud.user = { id: "integration-user" };
     rw.st.current.userId = "integration-user";

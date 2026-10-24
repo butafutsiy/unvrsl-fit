@@ -19,18 +19,34 @@ test('eight-week canonical phases, real deload and no ordinary isolation during 
  assert.equal(A.cycleProfiles(3,{testWeek:false}).at(-1).phase,'strength');
  assert.equal(A.cycleProfiles(3,{testWeek:false,priority:'hypertrophy'}).at(-1).phase,'strength');
 });
-
+test('formula and external pull-up load exclude body mass',()=>{
+ const e=ex('pull');assert.equal(A.e1rm(e,work(20,6,8),{bodyWeight:100},reg),25.3);
+ assert.equal(A.e1rm(e,work(20,6,8),{},reg),25.3);
+ assert.ok(Math.abs(A.estimateMaxFromSet(work(150,1,10))-155)<1e-9);
+ assert.equal(A.e1rm(e,work(0,6,8),{bodyWeight:100},reg),null);
+});
 test('different IDs, technique, equipment, method and partial sets cannot contaminate strength',()=>{
  const e=ex(),s=target(),cur=current(s);const h=past([work(100,8,8)]);
  for(const change of [{exerciseId:'curl'},{techniqueId:'paused'},{equipmentProfileId:'machine-2'},{method:'DS'}]){const other=structuredClone(h);Object.assign(other.ex[0],change);assert.equal(A.recommend(e,s,cur,[other],reg).strength.estimate,null);}
  for(const flag of [{warmup:true},{partial:true},{fullROM:false},{incomplete:true},{techniqueFailed:true}])assert.equal(A.e1rm(e,work(100,8,8,flag),{},reg),null);
 });
-
+test('isolation has its own e1RM and missing history preserves assigned load',()=>{
+ const s=target({w:20,programW:20});const c=current(s,'curl');const r=A.recommend(c.ex[0],s,c,[past([work(20,10,8)],'curl'),past([work(200,8,8)])],reg);
+ assert.ok(r.strength.estimate>20&&r.strength.estimate<35);
+ const empty=A.recommend(c.ex[0],s,c,[],reg);assert.equal(empty.weight,20);assert.equal(empty.strength.estimate,null);
+});
 test('percentage conflict uses inverse Epley corridor and validates RIR',()=>{
  const v=A.validatePrescription({sets:3,pct:[85,88],reps:[5,7],rpe:[8,9],rir:[1,2]});assert.equal(v.valid,false);assert.ok(v.corridor[1]<85);
  assert.equal(A.validatePrescription({sets:3,pct:[70,75],reps:[10,12],rpe:[7,8],rir:[0,1]}).valid,false);
 });
-
+test('target, hard minimum, failed minimum and easy series decisions obey bounded steps',()=>{
+ const e=ex(),s=target(),p=A.profile(e,reg);
+ assert.equal(A.setDecision(e,work(100,8,8),{},p,s).action,'hold');
+ assert.equal(A.setDecision(e,work(100,8,9),{},p,s).action,'hold');
+ const bad=A.setDecision(e,work(100,5,10),{},p,s);assert.ok(bad.weight>=90&&bad.weight<100);
+ const easy=A.setDecision(e,work(100,10,6),{},p,s);assert.ok(easy.weight>100&&easy.weight<=107.5);
+ assert.equal(A.boundedProgression(12,10,{step:2,min:0}).weight,10);
+});
 test('manual weight and dismissed proposals survive recalculation',()=>{
  const manual=target({manualOverride:true,weightSource:'manual'});assert.equal(A.applyAuto(manual,{weight:105}),false);assert.equal(manual.w,100);
  const s=target({dismissedRecommendation:'a'});assert.equal(A.applyAuto(s,{weight:105,proposalKey:'a'}),false);assert.equal(s.w,100);

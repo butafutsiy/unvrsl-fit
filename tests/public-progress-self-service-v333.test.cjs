@@ -38,3 +38,4 @@ test('new RPCs require a valid private share and are limited to anon and authent
   assert.match(migration,/revoke all on function public\.update_offline_progress_profile_v333\(text, jsonb\) from public/);
   assert.match(migration,/grant execute on function public\.update_offline_progress_profile_v333\(text, jsonb\) to anon, authenticated/);
 });
+

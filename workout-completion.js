@@ -11,13 +11,9 @@
   };
   const nextWeight=(s,entry)=>{
     const ex=entry.best.exercise,set=entry.best.set;
-    if(ex.mode==='cardio'&&!A.recommendationEngine)return null;
-    const future={...s,id:`next-${s.id}`,started:(Number(s.ended)||Date.now())+1,ended:null,ex:[],recommendationScope:'NEXT_SESSION'};
-    const pending={...set,ok:false,status:'pending',actualWeight:null,actualReps:null,actualRir:null,actualRpe:null,actualSeconds:null,actualDistance:null,seconds:null,distance:null,km:null,r:'',rir:'',rpe:''};
-    const rec=A.recommend(ex,pending,future,[...(st.sessions||[]),s],workoutRegistry,st.exerciseWeightProfiles||{});
-    if(rec.engineVersion===3&&rec.suggestedSeconds!=null)return `Следующая тренировка: ${rec.suggestedSeconds} сек · ${rec.reasonText}`;
-    if(rec.engineVersion===3&&rec.suggestedReps!=null&&rec.suggestedWeight==null)return `Следующая тренировка: ${rec.suggestedReps} повторений · ${rec.reasonText}`;
-    if(rec.engineVersion===3)return rec.suggestedWeight==null?`Следующая тренировка: ${rec.reasonText}`:`Следующая тренировка: ${rec.profile.loadAccounting==='bodyweight_assisted'?'помощь ':''}${String(rec.suggestedWeight).replace('.',',')} кг · ${rec.reasonText}`;
+    if(ex.mode==='cardio')return null;
+    const future={...s,id:`next-${s.id}`,started:(Number(s.ended)||Date.now())+1,ended:null,ex:[]};
+    const rec=A.recommend(ex,{...set,ok:false},future,st.sessions||[],workoutRegistry,st.exerciseWeightProfiles||{});
     return rec.sessionIds.length&&rec.action!=='reps'?`В следующий раз: ${String(rec.weight).replace('.',',')} кг · ${rec.reason}`:null;
   };
   let currentReport = null,

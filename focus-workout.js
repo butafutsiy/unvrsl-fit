@@ -212,7 +212,7 @@
     save();show('focus');
   }
   function inputDraft(row){const s=session(),f=s.focusState,key=F.token(row),e=s.ex[row.ei],set=e.set[row.si];
-    if(f.inputs?.key!==key)f.inputs={key,weight:set.w==null||F.needsCalibration(e,set,A,reg)||N(set.w)===0&&['external_total','per_dumbbell','machine_stack'].includes(A.loadType(e,reg))?'':String(set.w),reps:set.repEntered||set.actualReps!=null?A.repsText(e,set.actualReps??set.r,false,set):'',rir:set.actualRir==null?'':String(set.actualRir),technique:set.technique==='clean',pain:false};
+    if(f.inputs?.key!==key)f.inputs={key,weight:set.w==null||F.needsCalibration(e,set,A,reg)?'':String(set.w),reps:set.repEntered||set.actualReps!=null?A.repsText(e,set.actualReps??set.r,false,set):'',rir:set.actualRir==null?'':String(set.actualRir),technique:true,pain:false};
     return f.inputs;
   }
   function label(e,set,weight){const type=A.loadType(e,reg);if(type==='bodyweight_only')return 'Свой вес';if(type==='repetitions_only')return 'По повторениям';
@@ -220,9 +220,8 @@
     const value=weight==null?'–':A.weightText(e,weight,reg,set);return `${value} кг${type==='per_dumbbell'?' на гантель':type==='per_side'?' на сторону':type==='bodyweight_assisted'?' помощи':''}`;
   }
   const measured=type=>['time','distance'].includes(type);
-  const workSeconds=(e,set)=>N(set.selectedDurationSec??set.workSeconds??set.seconds??e.workSeconds??e.durationSec)??(N(set.min)||0)*60;
-  function loadCard(e,set,s,unknown){if(set.recommendation?.engineVersion===3&&W.UNVRSLRecommendationUI)return '<div class="wf-card wf-load">'+W.UNVRSLRecommendationUI.markup(e,set,s,A,reg)+'</div>';
-const type=A.loadType(e,reg),metric=measured(type),body=['bodyweight_only','repetitions_only'].includes(type),band=metric||body?null:A.intensityBand(s,e,set);
+  const workSeconds=(e,set)=>N(set.seconds??set.workSeconds??e.workSeconds)??(N(set.min)||0)*60;
+  function loadCard(e,set,s,unknown){const type=A.loadType(e,reg),metric=measured(type),body=['bodyweight_only','repetitions_only'].includes(type),band=metric||body?null:A.intensityBand(s,e,set);
     const target=type==='time'?workSeconds(e,set):N(set.distance??set.km),value=unknown?'Подобрать вес':metric&&target>0?`${fmt(target)} ${type==='time'?'сек':'км'}`:label(e,set,N(set.w));
     const title=metric?'Задание по программе':body?'Нагрузка':unknown?'Первый рабочий вес ещё не подобран':e.programWeightMode==='prescribed'?'Вес по назначению':'Рекомендованный вес';
     const detail=metric?`${e.repLabel?`${esc(e.repLabel)} · `:''}Запиши фактическ${type==='time'?'ое время в секундах':'ую дистанцию в километрах'}. Автовес здесь не используется.`:unknown?'Без истории нельзя рассчитать рабочий вес. После разминки выполни 1–3 пробы с посильной нагрузкой: укажи повторы и запас, затем скорректируй вес на шаг оборудования.':body?'Запиши выполненные повторы и запас после подхода.':band?`План недели · ${fmt(band.lo*100)}–${fmt(band.hi*100)}% e1RM`:'Под сегодняшние повторы и запас';
@@ -262,13 +261,12 @@ const type=A.loadType(e,reg),metric=measured(type),body=['bodyweight_only','repe
   }
   function fields(d,e,{calibration=false,type='reps',set={}}={}){
     const metric=type==='time'?'Время, сек':type==='distance'?'Дистанция, км':A.legReps(e)?'Повторы: левая / правая':'Повторы';
-    const profile=A.recommendationEngine?.resolveExerciseProfile(e,reg),usesRir=!['cardio','isometric','ballistic','mobility'].includes(profile?.movementKind);
     const weighted=!['bodyweight_only','repetitions_only','time','distance'].includes(type);
-    return `<div class="wf-grid ${weighted?'':'wf-single'}">${weighted?`<label><span>${A.loadType(e,reg)==='per_dumbbell'?'Вес одной гантели, кг':'Фактический вес, кг'}</span><div class="wf-stepper"><button type="button" data-wf-weight="-1" aria-label="Уменьшить вес на шаг оборудования">−</button><input name="weight" inputmode="decimal" value="${esc(d.weight)}" placeholder="Вес" autocomplete="off"><button type="button" data-wf-weight="1" aria-label="Увеличить вес на шаг оборудования">+</button></div></label>`:''}<label><span>${metric}</span><input name="reps" inputmode="${A.legReps(e)?'text':'decimal'}" value="${esc(d.reps)}" placeholder="Факт" autocomplete="off"></label></div>${weighted&&A.pairedLoad(e,reg,set)?'<div class="wf-sub">Вес одной стороны. Можно ввести 25 / 25.</div>':''}${!usesRir||measured(type)?'<div class="wf-sub">Обычный силовой RIR здесь не используется.</div>':rirMarkup(d.rir)}${profile?.movementKind==='cardio'?'<label><span>Кардио RPE (необязательно)</span><input name="cardioRpe" inputmode="decimal" placeholder="1–10"></label>':profile?.movementKind==='isometric'?'<label><span>Сложность удержания (необязательно)</span><input name="holdEffort" inputmode="decimal" placeholder="1–10"></label>':''}${!measured(type)?'<label class="wf-check"><input name="failed" type="checkbox">Неудачная попытка: 0 выполненных повторений</label>':''}<label class="wf-check"><input name="technique" type="checkbox" ${d.technique?'checked':''}>Техника сохранена</label><label class="wf-check"><input name="pain" type="checkbox" ${d.pain?'checked':''}>Возникла боль</label><details><summary>Техника, амплитуда и причина остановки</summary><label>Качество<select name="techniqueQuality"><option value="unknown">Не оценено</option><option value="degraded">Ухудшилось</option><option value="invalid">Нарушено</option></select></label><label>Амплитуда<select name="rom"><option value="unknown">Не оценена</option><option value="full">Полная</option><option value="planned_partial">Плановая частичная</option><option value="unplanned_partial">Неплановая частичная</option></select></label><label>Причина остановки<select name="stopReason"><option value="unknown">Не указана</option><option value="target_reached">Цель выполнена</option><option value="muscular_limit">Мышечный предел</option><option value="technical_limit">Технический предел</option><option value="interruption">Прерывание</option><option value="balance">Равновесие</option><option value="grip">Хват</option><option value="breathlessness">Дыхание</option></select></label></details>${calibration?'<label class="wf-check"><input name="familiar" type="checkbox">Мне знакома техника этого упражнения</label><div class="wf-sub">Разминка выполняется отдельно. При боли останови подбор веса.</div>':''}`;
+    return `<div class="wf-grid ${weighted?'':'wf-single'}">${weighted?`<label><span>${A.loadType(e,reg)==='per_dumbbell'?'Вес одной гантели, кг':'Фактический вес, кг'}</span><div class="wf-stepper"><button type="button" data-wf-weight="-1" aria-label="Уменьшить вес на шаг оборудования">−</button><input name="weight" inputmode="decimal" value="${esc(d.weight)}" placeholder="Вес" autocomplete="off"><button type="button" data-wf-weight="1" aria-label="Увеличить вес на шаг оборудования">+</button></div></label>`:''}<label><span>${metric}</span><input name="reps" inputmode="${A.legReps(e)?'text':'decimal'}" value="${esc(d.reps)}" placeholder="Факт" autocomplete="off"></label></div>${weighted&&A.pairedLoad(e,reg,set)?'<div class="wf-sub">Вес одной стороны. Можно ввести 25 / 25.</div>':''}${measured(type)?'<div class="wf-sub">Для времени и дистанции запас повторений (RIR) не требуется.</div>':rirMarkup(d.rir)}<label class="wf-check"><input name="technique" type="checkbox" ${d.technique?'checked':''}>Техника сохранена</label><label class="wf-check"><input name="pain" type="checkbox" ${d.pain?'checked':''}>Возникла боль</label>${calibration?'<div class="wf-sub">Разминка выполняется отдельно. При боли останови подбор веса.</div>':''}`;
   }
   function auto(row){const s=session(),e=s.ex[row.ei],set=e.set[row.si];
     W.trainingLoadModel292?.run();const rec=set.recommendation;
-    if(e.programWeightMode==='adaptive'&&rec?.scope==='START'&&(rec.sessionIds?.length||rec.nextSetSuggestion)&&rec.action!=='stop'&&A.applyAuto(set,rec))save();
+    if(e.programWeightMode==='adaptive'&&rec&&(rec.sessionIds?.length||rec.nextSetSuggestion)&&rec.action!=='stop'&&A.applyAuto(set,rec))save();
   }
   function focusMarkup(){const s=session(),f=s.focusState;
     if(f.rest){const snap=W.workoutTimerSnapshot?.();if(snap?.end>Date.now()&&snap.workoutId===String(s.id))return `<div class="wf-badge">${esc(f.rest.label)}</div><h2 id="focus-title">Подход сохранён</h2><div class="wf-timer" data-wf-countdown></div><p class="wf-sub">${esc(f.rest.nextLabel||'Работа по этому блоку завершена')}</p><button class="wf-primary" data-wf-action="continue">Закончить отдых и продолжить</button>`;delete f.rest;}
@@ -311,6 +309,7 @@ const type=A.loadType(e,reg),metric=measured(type),body=['bodyweight_only','repe
     const target=F.probeTarget(e,d.targetSet,s,A,d.mode==='advanced'?d.step:null),last=d.attempts.at(-1),decision=probeResult(d),canCredit=decision?.credit&&d.mode==='target',canUseUnconfirmed=!count&&last?.rir==='unknown'&&last.technique&&decision.reps>=target.range.lo&&decision.reps<=target.range.hi;
     return `<div class="wf-badge">Первый рабочий вес · проба ${Math.min(3,d.attempts.length+1)} из 3</div><h2 id="focus-title">${esc(e.n)}</h2><div class="wf-sub">Проверяем вес под задание текущей тренировки. Обычно достаточно 1–3 проб; все ступени проходить не нужно.</div>
       <div class="wf-card wf-load"><div class="wf-sub">Сегодняшняя цель</div><h3>${A.repRangeText(e,target.range)} повт. · RIR ${fmt(target.rir.lo)}–${fmt(target.rir.hi)}</h3><div class="wf-sub">После разминки начни с лёгкой контролируемой нагрузки. Если не знаешь вес, возьми лёгкие гантели или минимальную посильную нагрузку тренажёра; для штанги при необходимости используй облегчённый гриф. После пробы приложение предложит сохранить вес, добавить или убрать один доступный шаг. Проходка до максимума не нужна.${e.superGroup?' Пробы выполняются отдельно до кругов связки; рабочие подходы запишешь в её порядке.':''}</div></div>
+      <details><summary>Дополнительные ступени 12 / 10 / 8 / 6 / 4 / 2</summary><div class="wf-mode"><button class="wf-secondary" data-wf-mode="target" aria-pressed="${d.mode==='target'}">По заданию на сегодня</button><button class="wf-secondary" data-wf-mode="advanced" aria-pressed="${d.mode==='advanced'}">Отдельная ступень</button></div><div class="wf-steps">${F.steps.map(n=>`<button class="wf-step" data-wf-step="${n}" aria-pressed="${d.mode==='advanced'&&d.step===n}">${n}</button>`).join('')}</div><p>Для опытного пользователя. Низкие повторения не обязательны. Оценки для других диапазонов остаются предварительными.</p></details>
       ${decision?`<div class="wf-banner">${esc(decision.reason)}${last.rir==='unknown'?' Эта проба не используется как силовая оценка.':''}</div>`:''}
       ${canCredit&&!d.halted?'<button class="wf-primary" data-wf-action="credit-calibration">Зачесть подход и продолжить ✓</button><div class="wf-sub">Он станет первым рабочим подходом и будет учтён один раз.</div>':''}
       ${count&&!d.halted?`<button class="wf-secondary" data-wf-action="save-calibration">Сохранить предварительный вес${canCredit?' без зачёта подхода':''}</button>`:''}
@@ -335,13 +334,11 @@ const type=A.loadType(e,reg),metric=measured(type),body=['bodyweight_only','repe
     for(const el of [shell.querySelector('#focus-title'),shell.querySelector(':scope>.wf-meta'),shell.querySelector('.wf-progress')])if(el)current.appendChild(el);
     stage.appendChild(current);
     const load=shell.querySelector('.wf-load'),loadMain=D.createElement('div');loadMain.className='wf-load-main';
-    if(load.querySelector('[data-recommendation-version="3"],[data-recommendation-dismissed]'))load.classList.add('wf-load-v3');else {
     const title=load.querySelector('.wf-sub'),number=load.querySelector('.wf-number'),calibrate=load.querySelector('[data-wf-action="calibrate"]');
     for(const el of [...load.children])if(el!==title&&el!==number&&el!==calibrate)help.appendChild(el);
     if(calibrate){const description=D.createElement('p');description.textContent=title.textContent;help.prepend(description);title.textContent='Первый рабочий вес';calibrate.textContent='Начать';}
     loadMain.append(title,number);load.prepend(loadMain);
     if(!calibrate){const info=D.createElement('button');info.type='button';info.className='wf-load-info';info.dataset.wfOpenPanel='help';info.setAttribute('aria-label','Подробности нагрузки');info.textContent='?';load.appendChild(info);}
-    }
     stage.appendChild(load);
     const warmupDetails=shell.querySelector('[data-wf-warmup]');if(warmupDetails)warmup.appendChild(warmupDetails);
     const nav=shell.querySelector(':scope>details:not([data-wf-warmup])');if(nav){nav.open=true;navigation.appendChild(nav);}
@@ -380,13 +377,13 @@ const type=A.loadType(e,reg),metric=measured(type),body=['bodyweight_only','repe
     if(view==='focus')compactLayout();else root.dataset.compact='false';
     root.scrollTop=0;tickTimer();
   }
-  function readForm(form){return {weight:form.elements.weight?.value??'',reps:form.elements.reps.value,rir:form.querySelector('[data-wf-rir]')?(view==='calibration'?cur().loadCalibrationDraft.form:cur().focusState.inputs).rir:'unknown',technique:form.elements.technique.checked,pain:form.elements.pain.checked,familiar:form.elements.familiar?.checked??true,failed:form.elements.failed?.checked??false,techniqueQuality:form.elements.techniqueQuality?.value||'unknown',rom:form.elements.rom?.value||'unknown',stopReason:form.elements.stopReason?.value||'unknown',cardioRpe:N(form.elements.cardioRpe?.value),holdEffort:N(form.elements.holdEffort?.value)}}
+  function readForm(form){return {weight:form.elements.weight?.value??'',reps:form.elements.reps.value,rir:form.querySelector('[data-wf-rir]')?(view==='calibration'?cur().loadCalibrationDraft.form:cur().focusState.inputs).rir:'unknown',technique:form.elements.technique.checked,pain:form.elements.pain.checked}}
   function record(form,{calibrationAttempt=null}={}){const s=session(),row=activeRow();if(!s||!row||writing||form.dataset.token!==F.token(row))return;
-    const e=s.ex[row.ei],set=e.set[row.si];if(set.ok||set.skipped||['completed','skipped','failed_attempt'].includes(set.status))return;
+    const e=s.ex[row.ei],set=e.set[row.si];if(set.ok||set.skipped)return;
     if(row.group){const unknown=F.groupCalibration(s,row,A,reg);if(unknown)return beginCalibration(unknown.ei);}
     const d=readForm(form),type=A.loadType(e,reg),weighted=!['bodyweight_only','repetitions_only','time','distance'].includes(type);
     if(d.pain){
-      for(const ex of s.ex)if(A.loadComparable(e,ex,reg,set,ex.set?.[0]||{}))for(const x of ex.set||[])if(!x.ok&&!['completed','skipped','failed_attempt'].includes(x.status)){x.skipped=true;x.skipReason='pain';}
+      for(const ex of s.ex)if(A.loadComparable(e,ex,reg,set,ex.set?.[0]||{}))for(const x of ex.set||[])if(!x.ok){x.skipped=true;x.skipReason='pain';}
       (s.exerciseStops||(s.exerciseStops=[])).push({exerciseIndex:row.ei,reason:'pain',at:Date.now()});s.focusState.notice='Упражнение остановлено после сообщения о боли. Его оставшиеся подходы пропущены.';delete s.focusState.inputs;
       save();W.startPage?.();render();return;
     }
@@ -394,16 +391,13 @@ const type=A.loadType(e,reg),metric=measured(type),body=['bodyweight_only','repe
     if(measured(type)&&!(reps>0))return message(type==='time'?'Укажи фактическое время больше нуля в секундах.':'Укажи фактическую дистанцию больше нуля в километрах.');
     if(!reps||weighted&&weight==null||d.rir!=='unknown'&&(rir==null||rir<0||rir>6))return message('Запиши фактический результат, вес и выбери RIR.');
     if(F.needsCalibration(e,set,A,reg)&&weight===0)return message('Рабочий вес пока неизвестен. Подбери его или введи фактическую нагрузку.');
-    if(!measured(type)&&d.failed&&reps.total!==0)return message('Для неудачной попытки укажи 0 выполненных повторений.');
-    if(!measured(type)&&reps.total===0&&!d.failed)return message('Для нуля повторений отметь неудачную попытку.');
-    const actual={...set,status:d.failed?'failed_attempt':'completed',w:weight,selectedW:weight,actualWeight:weight,technique:d.techniqueQuality!=='unknown'?d.techniqueQuality:d.technique?'clean':'unknown',techniqueClean:d.technique,techniqueFailed:d.techniqueQuality==='invalid',rom:d.rom,stopReason:d.stopReason,cardioRpe:d.cardioRpe,holdEffort:d.holdEffort,performedAt:Date.now(),bodyWeightSnapshot:A.bodyWeightAt(s,state().bw||[]),equipmentSnapshot:JSON.parse(JSON.stringify(e.equipmentProfile||set.equipmentSnapshot||{})),pain:false,effortUncertain:d.rir==='unknown',effortCensored:d.rir==='6',rpe:rir==null?'':10-rir,rir:rir??'',actualRpe:rir==null?null:10-rir,actualRir:rir};
-    if((d.cardioRpe!=null&&(d.cardioRpe<1||d.cardioRpe>10))||(d.holdEffort!=null&&(d.holdEffort<1||d.holdEffort>10)))return message('Оценка сложности должна быть от 1 до 10.');
-    if(type==='time')actual.seconds=actual.actualSeconds=reps;else if(type==='distance')actual.distance=actual.actualDistance=reps;else Object.assign(actual,{r:reps.total,actualReps:reps.total,repEntered:true,manualFields:{...set.manualFields,r:true},...(A.legReps(e)?{repsLeft:reps.left,repsRight:reps.right,repCounting:'total'}:{})});
+    const actual={...set,w:weight,selectedW:weight,actualWeight:weight,techniqueFailed:!d.technique,pain:false,effortUncertain:d.rir==='unknown',effortCensored:d.rir==='6',rpe:rir==null?'':10-rir,rir:rir??'',actualRpe:rir==null?null:10-rir,actualRir:rir};
+    if(type==='time')actual.seconds=reps;else if(type==='distance')actual.distance=reps;else Object.assign(actual,{r:reps.total,actualReps:reps.total,repEntered:true,manualFields:{...set.manualFields,r:true},...(A.legReps(e)?{repsLeft:reps.left,repsRight:reps.right,repCounting:'total'}:{})});
     if(!A.validSet(e,actual,reg))return message('Проверь фактически выполненные повторения, время или дистанцию.');
     if(calibrationAttempt){actual.calibrationAttemptId=calibrationAttempt.id;actual.weightSource='calibrated';actual.manualOverride=false;}
     if(!calibrationAttempt&&weighted&&Math.abs((N(set.w)||0)-weight)>1e-6){actual.manualOverride=true;actual.weightSource='manual';}
     const before=JSON.parse(JSON.stringify(set)),revert=()=>{for(const key of Object.keys(set))delete set[key];Object.assign(set,before)};Object.assign(set,actual);writing=true;
-    try{W.toggleSet(row.ei,row.si,{timer:false,recordingActual:true});if(!set.ok){revert();return message('Подход не записан. Проверь фактические значения.');}
+    try{W.toggleSet(row.ei,row.si,{timer:false});if(!set.ok){revert();return message('Подход не записан. Проверь фактические значения.');}
       delete s.focusState.inputs;delete s.focusState.notice;
       const following=F.next(s,row),rest=F.restAfter(s,row,following);if(calibrationAttempt)rest.seconds=Math.max(0,rest.seconds-Math.floor((Date.now()-calibrationAttempt.at)/1000));s.focusState.token=following?F.token(following):null;
       if(rest.seconds>0){s.focusState.rest={...rest,nextLabel:following?`Далее: ${s.ex[following.ei].n}`:'Все подходы отмечены'};W.timer?.(rest.seconds,rest.label);}
@@ -414,9 +408,9 @@ const type=A.loadType(e,reg),metric=measured(type),body=['bodyweight_only','repe
     const now=W.workoutTimerSnapshot?.();if(now?.end>Date.now())return message('Дождись окончания отдыха или заверши его кнопкой.');
     const f=readForm(form),w=F.parseWeight(f.weight),reps=A.parseReps(e,f.reps),rir=N(f.rir);
     if(f.pain){d.halted=true;d.form=f;d.attempts.push({...f,weight:w,at:Date.now()});
-      for(const ex of s.ex)if(A.loadComparable(e,ex,reg,d.targetSet,ex.set?.[0]||{}))for(const x of ex.set||[])if(!x.ok&&!['completed','skipped','failed_attempt'].includes(x.status)){x.skipped=true;x.skipReason='pain';}
+      for(const ex of s.ex)if(A.loadComparable(e,ex,reg,d.targetSet,ex.set?.[0]||{}))for(const x of ex.set||[])if(!x.ok){x.skipped=true;x.skipReason='pain';}
       (s.exerciseStops||(s.exerciseStops=[])).push({exerciseIndex:d.ei,reason:'pain',at:Date.now()});W.stopTimer?.();save();render();return;}
-    if(!(w>0||w===0&&['bodyweight_added','bodyweight_assisted'].includes(A.loadType(e,reg)))||!reps||!(A.performedReps(e,{r:reps.total,repsLeft:reps.left,repsRight:reps.right})>=1)||A.performedReps(e,{r:reps.total,repsLeft:reps.left,repsRight:reps.right})>20||f.rir!=='unknown'&&(rir==null||rir<0||rir>6))return message('Укажи вес больше нуля, фактические повторы от 1 до 20 и оцени запас или выбери «Пока не могу оценить».');
+    if(!(w>0)||!reps||!(A.performedReps(e,{r:reps.total,repsLeft:reps.left,repsRight:reps.right})>=1)||A.performedReps(e,{r:reps.total,repsLeft:reps.left,repsRight:reps.right})>20||f.rir!=='unknown'&&(rir==null||rir<0||rir>6))return message('Укажи вес больше нуля, фактические повторы от 1 до 20 и оцени запас или выбери «Пока не могу оценить».');
     const target=F.probeTarget(e,d.targetSet,s,A,d.mode==='advanced'?d.step:null);
     const attempt={...f,id:`${d.id}:${d.attempts.length+1}`,weight:w,targetRepMin:target.range.lo,targetRepMax:target.range.hi,advancedStep:d.mode==='advanced'?d.step:null,at:Date.now()};
     d.attempts.push(attempt);const decision=probeResult(d);
@@ -447,7 +441,6 @@ const type=A.loadType(e,reg),metric=measured(type),body=['bodyweight_only','repe
         return;
       }
     }else{
-      target.w=attempt.weight;target.selectedW=attempt.weight;target.weightSource='calibrated';target.provisionalBaseline={weight:attempt.weight,equipmentId:e.equipmentProfile?.id||e.equipmentProfileId||null,variantId:e.variantId||null,sourceId:attempt.id};
       if(unconfirmed){target.w=attempt.weight;target.weightSource='trial_unconfirmed';s.focusState.notice='Вес выбран без силовой оценки. Запас пока не оценён; автоматического повышения по этой пробе не будет.';}
       W.stopTimer?.();W.trainingLoadModel292?.run();
       for(const ex of s.ex)for(const x of ex.set||[]){const r=x.recommendation;if(ex.programWeightMode==='adaptive'&&r?.sessionIds?.length&&A.applyAuto(x,r))ex.weightDecision='calibrated';}
@@ -456,7 +449,6 @@ const type=A.loadType(e,reg),metric=measured(type),body=['bodyweight_only','repe
     d.committed=true;save();W.startPage?.();render();
   }
   root.addEventListener('toggle',event=>{if(!event.target.matches?.('[data-wf-warmup]')||!session())return;const f=session().focusState;if(f.warmupOpen!==event.target.open){f.warmupOpen=event.target.open;save();}},true);
-  root.addEventListener('click',event=>{const row=activeRow();if(!row)return;const s=session(),e=s.ex[row.ei],set=e.set[row.si];W.UNVRSLRecommendationUI?.handle(event,{e,set,session:s,A,reg,history:W.trainingLoadModel292?.history?.()||state().sessions||[],overrides:state().exerciseWeightProfiles||{},changed:()=>{save();W.trainingLoadModel292?.run();W.startPage?.();render()}})});
   root.addEventListener('submit',event=>{event.preventDefault();if(event.target.dataset.wfForm==='work')record(event.target);else if(event.target.dataset.wfForm==='calibration')recordCalibration(event.target)});
   root.addEventListener('input',event=>{if(!session()||!event.target.name)return;if(event.target.dataset.wfWarmupField){const el=event.target.closest('[data-wf-warmup-row]'),f=session().focusState,key=`${el.dataset.ei}:${el.dataset.wfWarmupRow}`;((f.warmupInputs||={})[key]||={})[event.target.dataset.wfWarmupField]=event.target.value;save();return;}const form=event.target.form;if(!form?.dataset.wfForm)return;const d=readForm(form);if(view==='calibration')cur().loadCalibrationDraft.form=d;else cur().focusState.inputs={...cur().focusState.inputs,...d};save()});
   root.addEventListener('change',event=>{if(!event.target.matches('[data-wf-select]'))return;cur().focusState.token=event.target.value;delete cur().focusState.inputs;panel=null;save();render()});

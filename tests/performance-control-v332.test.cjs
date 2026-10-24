@@ -6,7 +6,7 @@ const api=require('../performance-control.js');
 
 function fixture(mode='adaptive',policy='autoweight'){
   const ex={
-    n:'Кроссовер',recommendationProfile:{confirmed:true,family:'F15',loadAccounting:'stack_display'},weightProfile:{step:5,min:5,max:100},
+    n:'Кроссовер',
     programWeightMode:mode,
     set:[
       {programW:0,plannedW:60,w:60,r:12,rpe:3,ok:true,targetRepMin:12,targetRepMax:12,targetRpeMin:7,targetRpeMax:8},
@@ -44,3 +44,4 @@ test('final report is allowed only in the workout completion sheet',()=>{
   assert.equal(api.isCompletionSheet(sheet('Тренировка завершена')),true);
   assert.equal(api.isCompletionSheet(null),false);
 });
+
