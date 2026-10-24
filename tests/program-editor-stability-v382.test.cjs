@@ -62,4 +62,3 @@ test('editor start uses the canonical readiness request with an exact day',()=>{
   assert.match(readiness,/programStartFromEditorV382/);
   assert.match(readiness,/__unvrslPendingProgramStartV382/);
 });
-

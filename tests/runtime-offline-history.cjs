@@ -6,7 +6,7 @@ const db={offline_clients:[{id:'c1',trainer_id:'t1',display_name:'Client'}],offl
 let alerts=[],confirm=true;
 w.modal=html=>w.document.getElementById('sheet').innerHTML=html;w.alert=x=>alerts.push(x);w.confirm=()=>confirm;w.toast=()=>{};
 w.cloud={user:{id:'t1'},client:{from(table){let filters=[],action='',payload,single=false,range;const query={select(){return this},eq(k,v){filters.push([k,v]);return this},order(){return this},range(a,b){range=[a,b];return this},limit(){return this},single(){single=true;return this},maybeSingle(){single=true;return this},update(p){action='update';payload=p;return this},insert(p){action='insert';payload=p;return this},delete(){action='delete';return this},then(resolve,reject){try{let rows=db[table].filter(r=>filters.every(([k,v])=>r[k]===v));if(action==='insert'){db[table].push({...payload,id:'new'});rows=[db[table].at(-1)]}if(action==='update')rows.forEach(r=>Object.assign(r,payload));if(action==='delete')db[table]=db[table].filter(r=>!rows.includes(r));if(range)rows=rows.slice(range[0],range[1]+1);return Promise.resolve({data:single?rows[0]||null:rows,error:single&&!rows.length&&action?{message:'Row not found'}:null}).then(resolve,reject)}catch(e){return Promise.reject(e).then(resolve,reject)}}};return query}}};
-w.WorkoutDomain=require('../workout-domain.js');w.eval(fs.readFileSync(require.resolve('../offline-progress.js'),'utf8'));
+w.eval(fs.readFileSync(require.resolve('../exercise-catalog.js'),'utf8'));w.WorkoutDomain=require('../workout-domain.js');w.eval(fs.readFileSync(require.resolve('../offline-progress.js'),'utf8'));
 const val=(id,v)=>w.document.getElementById(id).value=v;
 (async()=>{
  await w.offlineClientDetail('c1');
@@ -15,8 +15,11 @@ const val=(id,v)=>w.document.getElementById(id).value=v;
  assert.equal(db.offline_client_measurements.length,1);assert.equal(db.offline_client_measurements[0].weight_kg,95);assert.equal(db.offline_client_measurements[0].measurements.waist,90);assert.equal(db.offline_client_measurements[0].entry_source,'client');
  await w.offlineStrengthHistory('c1','bench','Жим');assert.match(w.document.body.textContent,/Изменить/);assert.match(w.document.body.textContent,/Удалить/);
  await w.offlineProgressEditEntry('strength','c1','s1');val('osWeight','110');val('osReps','10');await w.offlineSaveStrength('c1','bench','Жим');
- assert.equal(db.offline_client_strengths.length,1);assert.equal(db.offline_client_strengths[0].e1rm,146.7);assert.equal(db.offline_client_strengths[0].entry_source,'client');
- await w.offlineProgressWeeklyLoad('c1');assert.equal(w.document.querySelectorAll('tbody tr').length,8);assert.equal(w.document.querySelector('tbody tr td:last-child b').textContent,'107,50');
+ assert.equal(db.offline_client_strengths.length,1);assert.equal(db.offline_client_strengths[0].e1rm,null);assert.equal(db.offline_client_strengths[0].entry_source,'client');
+ await w.offlineProgressWeeklyLoad('c1');assert.equal(w.document.querySelectorAll('tbody tr').length,0);
+ const choose=(key,value)=>{const input=w.document.querySelector('[data-projection="0:'+key+'"]');input.value=value;input.dispatchEvent(new w.Event('change',{bubbles:true}));};
+ choose('exerciseId','canon:bench_press');choose('referenceType','trainingMax');choose('referenceValue','150');choose('min','20');choose('max','300');
+ assert.equal(w.document.querySelectorAll('tbody tr').length,8);assert.equal(w.document.querySelector('tbody tr td:nth-child(3) b').textContent,'107,50');
  val('ofpCycleWeeks','4');w.document.getElementById('ofpCycleWeeks').dispatchEvent(new w.Event('change'));assert.equal(w.document.querySelectorAll('tbody tr').length,4);
  assert.ok(!JSON.stringify(db.offline_progress_shares[0].snapshot).includes('weekly'));
  confirm=false;await w.offlineProgressDeleteStrength('c1','s1');assert.equal(db.offline_client_strengths.length,1);

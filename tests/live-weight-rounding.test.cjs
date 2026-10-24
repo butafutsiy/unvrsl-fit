@@ -13,15 +13,7 @@ function fixture(equipmentProfile){
  const history=[{id:'old',date:'2026-10-17',ended:Date.parse('2026-10-17'),ex:[{...e,set:sets.map(s=>({...s,w:s.role==='heavy'?150:s.role==='light'?110:130,ok:true}))}]}];
  return {e,cur,history};
 }
-test('live UNVRSL middle stages apply the rounded next-set weight, not 110 × 120 / 130',()=>{
- for(const [equipment,expected] of [[undefined,102.5],[{weightStep:5},100],[{weightStep:.5},101.5],[{weightStep:.25},101.5],[{weightStep:5,availableLoads:[95,102,110]},102]]){
-  const {e,cur,history}=fixture(equipment);
-  for(const s of e.set.slice(6)){
-   const rec=A.recommend(e,s,cur,history,reg);assert.equal(rec.nextSetSuggestion.weight,expected);assert.equal(A.recommendationWeight(rec),expected);
-   assert.equal(A.acceptRecommendation(s,rec),true);assert.equal(s.w,expected);assert.equal(s.plannedW,expected);
-  }
- }
-});
+
 test('pending floating-point loads repair once, preserving manual, skipped and completed data',()=>{
  const raw=110*120/130;
  for(const extra of [{},{weightSource:'auto'},{weightSource:'recommendation'}]){

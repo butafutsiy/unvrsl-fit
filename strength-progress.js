@@ -12,7 +12,8 @@
   const shortDay=v=>{const p=String(v||'').slice(0,10).split('-');return p.length===3?`${p[2]}.${p[1]}`:String(v||'')};
   const sourceKey=v=>v==='client'?'client':'trainer';
   const sourceName=v=>sourceKey(v)==='client'?'Клиент':'Тренер';
-  const e1rm=(weight,reps)=>{const w=N(weight),r=N(reps);return w>0&&r>=1&&r<=30?+(r===1?w:w*(1+r/30)).toFixed(1):null};
+  const e1rm=()=>null; // Legacy manual rows lack exercise and effort context.
+
 
   const style=D.createElement('style');
   style.id='unvrsl-strength-progress-v335-style';

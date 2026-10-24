@@ -83,3 +83,10 @@ html body .strength-average strong{font-size:23px;font-variant-numeric:tabular-n
 html body .strength-average small{font-size:11px;color:var(--muted);line-height:1.4}
 html body .strength-set-estimate{display:block;margin-top:4px;font-size:12px;color:var(--green)}
 html body .strength-set-list>div>span{text-align:right;max-width:42%;overflow-wrap:anywhere}
+
+/* Shared Engine 3 recommendation in list and focus views. */
+.rec-v3-value{display:block;font-size:clamp(21px,5vw,30px);font-weight:800;line-height:1.15;overflow-wrap:anywhere}
+.wf-load.wf-load-v3{display:block;min-width:0}
+.wf-load-v3 .te200-rec-main{display:block;min-width:0;width:100%}
+.wf-load-v3 .te200-rec-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.wf-load-v3 p{font-size:13px;line-height:1.4;overflow-wrap:anywhere}

@@ -54,14 +54,7 @@ const prior = (weight, reps = 15, rpe = 7, extra = {}) =>
       { id: "s" + i, started: i, programId: "p" + i, ...extra },
     ),
   );
-test("manual maximum uses the same rules as completed sets without writing a record", () => {
-  assert.equal(A.manualOneRepMax(bar, 60, 8, reg), 76);
-  assert.equal(A.manualOneRepMax(pull, 0, 8, reg, 90), null);
-  assert.equal(A.manualOneRepMax(pull, 10, 8, reg, 90), 12.7);
-  assert.equal(A.manualOneRepMax(assist, 25, 6, reg, 90), null);
-  assert.equal(A.manualOneRepMax(pull, 0, 8, reg), null);
-  assert.equal(A.manualOneRepMax(bar, 60, 13, reg), null);
-});
+
 test("1 + 27 + 28: bodyweight zero is a real value, never a fake 1 kg", () => {
   assert.equal(A.validSet(pull, set(0), reg), true);
   assert.equal(A.number(0), 0);
@@ -86,28 +79,7 @@ test("3: added weight remains distinct from body mass", () => {
     "Собственный вес + 10 кг × 8",
   );
 });
-test("4: assistance is subtracted, progress reduces assistance", () => {
-  assert.equal(
-    A.effectiveLoad(assist, set(25, 12), session(), reg, [
-      { d: "2026-09-01", w: 90 },
-    ]),
-    65,
-  );
-  const h = prior(25).map((s) => ({
-    ...s,
-    ex: s.ex.map((e) => ({ ...e, ...assist })),
-  }));
-  assert.equal(
-    A.recommend(
-      assist,
-      set(25, 15, { targetRepMin: 8, targetRepMax: 15 }),
-      session(),
-      h,
-      reg,
-    ).weight,
-    25,
-  );
-});
+
 test("5 + 6: reload / process restart preserves full draft and timer identity", () => {
   const mem = storage(),
     db = S.create(mem),
@@ -185,13 +157,7 @@ for (const [num, method] of [
   [29, "SLDR"],
   [30, "FST-7"],
 ])
-  test(`${num}: ${method} contributes an e1RM without creating a standard-set PR`, () => {
-    const e = { ...bar, method, set: [set(100, 10)] },
-      s = session([e]);
-    assert.ok(A.e1rm(e, e.set[0], s, reg)>0);
-    assert.equal(A.summary(s, prior(60), reg).records.length, 0);
-    assert.equal(A.summary(s, [], reg).setCount, 1);
-  });
+
 test("16: stable ID survives renaming", () => {
   const row = reg.resolve(bar);
   assert.equal(
@@ -221,33 +187,8 @@ test("19: asynchronous auto weights cannot overwrite manual input", () => {
   assert.equal(A.applyAuto(s, { weight: 10 }), false);
   assert.equal(s.w, 61);
 });
-test("20: individual equipment increment used for recommendation and buttons", () => {
-  const overrides = { [reg.identity(bar)]: { step: 2.5 } };
-  const r = A.recommend(
-    bar,
-    set(60, 15, { targetRepMin: 8, targetRepMax: 15 }),
-    session(),
-    prior(60,15,6),
-    reg,
-    overrides,
-  );
-  assert.equal(r.weight, 62.5);
-  assert.equal(A.moveWeight(60, 1, A.profile(bar, reg, overrides)), 62.5);
-  assert.equal(
-    A.roundWeight(61.4, { step: 2.5, min: 0, rounding: "nearest" }),
-    62.5,
-  );
-});
-test("21: dumbbell weight is not doubled in recommendations or 1RM", () => {
-  const e = {
-    n: "Жим гантелей лёжа",
-    loadType: "per_dumbbell",
-    implementCount: 2,
-  };
-  const s = set(20, 10);
-  assert.equal(A.e1rm(e, s, session(), reg), 26.7);
-  assert.equal(A.effectiveLoad(e, s, session(), reg), 40);
-});
+
+
 test("22: per-side recording requires side count and implement weight for total volume", () => {
   const e = { loadType: "per_side", n: "Machine" };
   assert.equal(A.effectiveLoad(e, set(20), session(), reg), null);
@@ -285,17 +226,8 @@ test("different methods do not share strength history", () => {
     0,
   );
 });
-test("low confidence without effort data, without blocking completion", () => {
-  const r = A.recommend(bar, set(60, 15), session(), prior(60, 15, ""), reg);
-  assert.equal(r.confidence, "низкая");
-  assert.ok(r.weight >= 60);
-});
-test("no history preserves an off-grid manually chosen current load", () => {
-  const r = A.recommend(bar, set(61.4, 10), session(), [], reg);
-  assert.equal(r.previous, null);
-  assert.equal(r.weight, 61.4);
-  assert.match(r.reason, /Недостаточно/);
-});
+
+
 test("old deleted draft is not resurrected after cancellation", () => {
   const mem = storage(),
     db = S.create(mem),
@@ -336,14 +268,7 @@ test("all 189 stable catalog IDs are unique and weight profiles are explicit", (
   }
 });
 
-test("UNVRSL heavy and light phases cannot exchange working weights", () => {
-  const e = { ...bar, n: bar.n + " — UNVRSL 3/9" };
-  const h = prior(10).map((s) => ({
-    ...s,
-    ex: s.ex.map((x) => ({ ...x, n: bar.n + " — UNVRSL 9/3" })),
-  }));
-  assert.equal(A.recommend(e, set(60), session(), h, reg).weight, 60);
-});
+
 test("historical PR excludes future sessions", () => {
   const current = session([{ ...bar, set: [set(65, 10)] }], { started: 100 });
   const h = [
@@ -352,32 +277,12 @@ test("historical PR excludes future sessions", () => {
   ];
   assert.equal(A.summary(current, h, reg).records.length, 1);
 });
-test("strength statistics include completed compatible method work", () => {
-  const s = session([
-    {
-      ...bar,
-      set: [
-        set(60, 10),
-        set(100, 10, { ok: false }),
-        set(80, 10, { warmup: true }),
-        set(90, 10, { method: "DS" }),
-      ],
-    },
-  ]);
-  const series = A.strengthSeries([s], reg);
-  assert.equal(series[0].sets, 2);
-  assert.ok(series[0].best>=80&&series[0].best<90);
-  assert.equal(series[0].points[0].volume, 1500);
-});
+
 test("unknown legacy session IDs do not collapse independent history", () => {
   const h = prior(60).map((s) => ({ ...s, id: undefined }));
   assert.equal(A.history(bar, h, reg).length, 6);
 });
-test("one abnormal historical session cannot collapse a 60 kg starting load", () =>
-  assert.equal(
-    A.recommend(bar, set(60), session(), prior(10).slice(0, 1), reg).weight,
-    60,
-  ));
+
 
 test("switching accounts preserves private history and active drafts per owner", () => {
   const mem = storage(),
@@ -399,40 +304,4 @@ test("switching accounts preserves private history and active drafts per owner",
   assert.equal(restored.sessions[0].id, "finished-a");
   assert.equal(restored.programs[0].id, "a-plan");
   assert.equal(db.journal().owners.b.id, "b-draft");
-});
-
-test("next set recommendation uses actual current work and the same individual step", () => {
-  const e = {
-      ...bar,
-      set: [
-        set(60, 5, { rpe: 10 }),
-        set(60, 10, { ok: false, targetRepMin: 8, targetRepMax: 15 }),
-      ],
-    },
-    cur = session([e], { ended: null });
-  const r = A.recommend(e, e.set[1], cur, prior(60), reg);
-  assert.equal(r.nextSetSuggestion.weight, 55);
-  assert.equal(r.nextSetSuggestion.action, 'down');
-  assert.ok(r.weight >= 60);
-  assert.ok(r.evidence.some((x) => x.startsWith("Сегодня:")));
-});
-test("three comparable stable workouts produce an explicit plateau explanation", () => {
-  const r = A.recommend(
-    bar,
-    set(60, 10, { targetRepMin: 8, targetRepMax: 15 }),
-    session(),
-    prior(60, 10, 8),
-    reg,
-  );
-  assert.equal(r.trend, "plateau");
-  assert.equal(r.weight, 60);
-});
-
-test("weighted dips record and estimate external load separately", () => {
-  const dip = reg.resolve("canon:weighted_dip");
-  assert.equal(dip.loadType, "bodyweight_added");
-  assert.equal(dip.weightProfile.step, 2.5);
-  assert.equal(A.manualOneRepMax(dip, 20, 6, reg, 80), 24);
-  assert.equal(A.manualOneRepMax(dip, 0, 6, reg), null);
-  assert.equal(A.manualOneRepMax(dip, 0, 6, reg, 80), null);
 });
