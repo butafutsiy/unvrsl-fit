@@ -141,14 +141,14 @@ function programWorkoutRepTarget(b,q,x){
 function programCycleSetTargets(b,q,x){
  if(!b.cycleManaged)return {};
  return {role:x.role,...(q?.reps?.mode==='auto'?{targetRepMin:x.targetRepMin,targetRepMax:x.targetRepMax}:{}),
-  ...(q?.effort?.mode==='auto'?{targetRpeMin:x.targetRpeMin,targetRpeMax:x.targetRpeMax,effortTargetSource:x.effortTargetSource||'week_inherited',effortBaseMin:x.effortBaseMin??x.targetRpeMin,effortBaseMax:x.effortBaseMax??x.targetRpeMax}:{})};
+  ...(q?.effort?.mode==='auto'?{targetRpeMin:x.targetRpeMin,targetRpeMax:x.targetRpeMax}:{})};
 }
 function beginProgramDay(pid,wi,di){
  if(window.intakeDraftBlocked?.(programById(pid)))return;
  const p=programById(pid),d=p?.weeks?.[wi]?.days?.[di];if(!p||!d)return;if(st.current){toast('У вас есть незавершённая тренировка');nav('start');return;}
  let conditioning=[];try{conditioning=(d.conditioning||[]).map(x=>window.ConditioningClock.create(x))}catch(e){toast(e.message);return}
  const ex=[],resolved=b=>typeof window.programResolveExerciseParametersV381==='function'?window.programResolveExerciseParametersV381(pid,wi,b):null;
- const effort=(b,q)=>{const min=q?.effort?.rpeMin??b.rpeMin??b.rpe??8,max=q?.effort?.rpeMax??b.rpeMax??b.rpe??8;return{target:Math.round(((min+max)/2)*2)/2,targetRpeMin:min,targetRpeMax:max,targetRirMin:Math.max(0,10-max),targetRirMax:Math.max(0,10-min),effortTargetSource:q?.effort?.mode==='auto'?'week_inherited':'exercise_override',effortBaseMin:q?.effort?.mode==='auto'?(q.defaults?.rpe?.[0]??min):min,effortBaseMax:q?.effort?.mode==='auto'?(q.defaults?.rpe?.[1]??max):max}};
+ const effort=(b,q)=>{const min=q?.effort?.rpeMin??b.rpeMin??b.rpe??8,max=q?.effort?.rpeMax??b.rpeMax??b.rpe??8;return{target:Math.round(((min+max)/2)*2)/2,targetRpeMin:min,targetRpeMax:max,targetRirMin:Math.max(0,10-max),targetRirMax:Math.max(0,10-min)}};
  (window.WorkoutFocusFlow?.programEntries(d.ex)||d.ex).forEach(b=>{
   if(b.kind==='cardio'){
     const seconds=Number(b.durationSec||b.workSeconds||b.sets?.[0]?.workSeconds)||0;

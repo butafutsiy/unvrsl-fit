@@ -23,7 +23,7 @@
   }
   function put(obj,key,value){if(obj[key]===value)return false;obj[key]=value;return true}
   function annotate(cur){
-    if(cur?.ended||!isBuiltinWorkout(cur))return false;
+    if(!isBuiltinWorkout(cur))return false;
     const p=PROFILE[Number(cur.w)];if(!p)return false;
     const target=mid(p.rpe),targetRir=Math.max(0,10-target);let changed=false;
     const fields={
@@ -40,14 +40,7 @@
       const isolation=/(разгибан|сгибан|подъ[её]м штанги на бицепс|супинац|молотков|мах|разведен|сведен|бицеп|трицеп|кроссов|икр|дельт|бабоч|канат|французск)/i.test(name);
       const effort=Number(cur.w)===8?(/тест/i.test(name)?[9,10]:isolation?[6,8]:[7,8]):p.rpe;
       (ex.set||[]).forEach(set=>{
-        if(set.ok||set.skipped)return;
-        if(Number(cur.w)!==8&&!p.deload&&!p.test&&(!set.effortTargetSource||set.effortTargetSource==='week_inherited')&&N(set.targetRpeMin)==null&&N(set.targetRpeMax)==null){
-          changed=put(set,'effortTargetSource','week_inherited')||changed;
-          changed=put(set,'effortBaseMin',effort[0])||changed;
-          changed=put(set,'effortBaseMax',effort[1])||changed;
-        }
-        const resolved=set.effortTargetSource==='week_inherited'?W.WorkoutDomain.effortTarget(ex,set,cur):null;
-        const setTarget=resolved?(resolved.lo+resolved.hi)/2:mid(effort);
+        const setTarget=mid(effort);
         changed=put(set,'targetRpeResolved',setTarget)||changed;
         changed=put(set,'targetRir',Math.max(0,10-setTarget))||changed;
         if(Number(cur.w)===8){

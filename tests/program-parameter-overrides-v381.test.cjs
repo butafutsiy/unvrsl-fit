@@ -21,7 +21,7 @@ function loadResolver(program){
   return context.programResolveExerciseParametersV381;
 }
 
-test('previously assigned women templates inherit W4 reps with exercise-specific RPE ranges for every client',()=>{
+test('previously assigned women templates inherit W4 rep and RPE ranges for every client',()=>{
   const model=require('../program-model.js');
   const week={n:4,intensityMin:78,intensityMax:82,rpeMin:8,rpeMax:8.5,
     baseRepMin:6,baseRepMax:8,isolationRepMin:10,isolationRepMax:12,
@@ -35,8 +35,8 @@ test('previously assigned women templates inherit W4 reps with exercise-specific
     model.normalizeProgram(program);
     const resolve=loadResolver(program);
     const [compound,isolation]=program.weeks[0].days[0].ex.map(ex=>resolve(client,0,ex));
-    assert.deepEqual([compound.reps.min,compound.reps.max,compound.effort.rpeMin,compound.effort.rpeMax],[6,8,8.25,8.75]);
-    assert.deepEqual([isolation.reps.min,isolation.reps.max,isolation.effort.rpeMin,isolation.effort.rpeMax],[10,12,8.5,9]);
+    assert.deepEqual([compound.reps.min,compound.reps.max,compound.effort.rpeMin,compound.effort.rpeMax],[6,8,8,8.5]);
+    assert.deepEqual([isolation.reps.min,isolation.reps.max,isolation.effort.rpeMin,isolation.effort.rpeMax],[10,12,8,8.5]);
     assert.equal(program.weeks[0].days[0].ex[0].sets[0].w,35);
   }
 });
@@ -81,7 +81,7 @@ test('an already opened client workout replaces old point placeholders with week
     querySelector:()=>null,querySelectorAll:()=>[]};
   vm.runInNewContext(read('program-rep-range.js'),context);
   assert.deepEqual([pending.targetRepMin,pending.targetRepMax,pending.targetRepLabel],[6,8,'6–8']);
-  assert.deepEqual([pending.targetRpeMin,pending.targetRpeMax,pending.targetRirMin,pending.targetRirMax],[8.25,8.75,1.25,1.75]);
+  assert.deepEqual([pending.targetRpeMin,pending.targetRpeMax,pending.targetRirMin,pending.targetRirMax],[8,8.5,1.5,2]);
   assert.equal(pending.r,'');
   assert.equal(completed.r,10);
   assert.ok(saved>0);

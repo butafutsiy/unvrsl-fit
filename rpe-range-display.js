@@ -6,7 +6,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(W){
   const D=W.document,VERSION=314;
   const num=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
-  const fmt=v=>String(Math.round(Number(v)*100)/100).replace('.',',');
+  const fmt=v=>Number(v).toFixed(1).replace('.0','').replace('.',',');
   const state=()=>{try{if(typeof st!=='undefined'){W.st=st;return st}}catch(_){ }return W.st||null};
   const saveState=()=>{try{if(typeof save==='function')save();else W.save?.()}catch(_){ }};
   const label=(a,b)=>{const lo=Math.min(Number(a),Number(b)),hi=Math.max(Number(a),Number(b));return Math.abs(lo-hi)<.001?fmt(lo):`${fmt(lo)}–${fmt(hi)}`};
@@ -30,38 +30,15 @@
     return null;
   }
   function setRange(cur,ex,set){
-    const base=currentRange(cur);
-    if(W.WorkoutDomain?.effortTarget&&ex&&set){
-      const r=W.WorkoutDomain.effortTarget(ex,set,{...cur,programWeekRpeMin:cur?.programWeekRpeMin??base?.min,programWeekRpeMax:cur?.programWeekRpeMax??base?.max});
-      return {min:r.lo,max:r.hi};
-    }
-    const ownMin=num(set?.targetRpeMin??ex?.targetRpeMin),ownMax=num(set?.targetRpeMax??ex?.targetRpeMax);
+    const ownMin=num(set?.targetRpeMin??ex?.targetRpeMin),ownMax=num(set?.targetRpeMax??ex?.targetRpeMax),base=currentRange(cur);
     return ownMin!=null&&ownMax!=null?{min:Math.min(ownMin,ownMax),max:Math.max(ownMin,ownMax)}:base;
   }
   function annotate(cur){
-    const range=currentRange(cur);if(!range||cur?.ended)return false;let changed=false;
+    const range=currentRange(cur);if(!range)return false;let changed=false;
+    const rpeLabel=label(range.min,range.max),rirMin=Math.max(0,10-range.max),rirMax=Math.max(0,10-range.min),rirLabel=label(rirMin,rirMax);
     const put=(o,k,v)=>{if(o[k]===v)return;o[k]=v;changed=true};
-    const store=(o,r)=>{put(o,'targetRpeMin',r.min);put(o,'targetRpeMax',r.max);put(o,'targetRpeLabel',label(r.min,r.max));put(o,'targetRirMin',Math.max(0,10-r.max));put(o,'targetRirMax',Math.max(0,10-r.min));put(o,'targetRirLabel',label(Math.max(0,10-r.max),Math.max(0,10-r.min)))};
-    store(cur,range);
-    for(const ex of cur.ex||[]){
-      if(ex.kind==='cardio'||ex.mode==='cardio'||ex.mode==='timer'||ex.loadType==='time')continue;
-      const hadOwn=num(ex.targetRpeMin)!=null||num(ex.targetRpeMax)!=null;
-      if(!hadOwn&&!ex.effortTargetSource&&ex.parameterOverrides?.effort?.mode!=='manual'&&ex.effortSourceMode!=='manual'){
-        put(ex,'effortTargetSource','week_inherited');put(ex,'effortBaseMin',range.min);put(ex,'effortBaseMax',range.max);
-      }
-      for(const set of ex.set||[]){
-        if(set.ok||set.skipped)continue;
-        const own=num(set.targetRpeMin)!=null||num(set.targetRpeMax)!=null;
-        if(!own&&!set.effortTargetSource){
-          put(set,'effortTargetSource',ex.effortTargetSource==='week_inherited'?'week_inherited':'exercise_override');
-          if(ex.effortTargetSource==='week_inherited'){put(set,'effortBaseMin',ex.effortBaseMin??range.min);put(set,'effortBaseMax',ex.effortBaseMax??range.max);}
-        }
-        store(set,setRange(cur,ex,set)||range);
-      }
-      const pending=(ex.set||[]).find(s=>!s.ok&&!s.skipped);
-      const r=pending?setRange(cur,ex,pending):{min:num(ex.targetRpeMin)??range.min,max:num(ex.targetRpeMax)??range.max};
-      store(ex,r||range);
-    }
+    put(cur,'targetRpeMin',range.min);put(cur,'targetRpeMax',range.max);put(cur,'targetRpeLabel',rpeLabel);put(cur,'targetRirMin',rirMin);put(cur,'targetRirMax',rirMax);put(cur,'targetRirLabel',rirLabel);
+    (cur.ex||[]).forEach(ex=>{if(ex.kind==='cardio'||ex.mode==='cardio'||ex.mode==='timer'||ex.loadType==='time')return;const ownMin=num(ex?.targetRpeMin),ownMax=num(ex?.targetRpeMax),own=ownMin!=null&&ownMax!=null?{min:Math.min(ownMin,ownMax),max:Math.max(ownMin,ownMax)}:range,ownRpeLabel=label(own.min,own.max),ownRirMin=Math.max(0,10-own.max),ownRirMax=Math.max(0,10-own.min),ownRirLabel=label(ownRirMin,ownRirMax);put(ex,'targetRpeMin',own.min);put(ex,'targetRpeMax',own.max);put(ex,'targetRpeLabel',ownRpeLabel);put(ex,'targetRirMin',ownRirMin);put(ex,'targetRirMax',ownRirMax);put(ex,'targetRirLabel',ownRirLabel);(ex.set||[]).forEach(set=>{const r=setRange(cur,ex,set)||own,lo=Math.max(0,10-r.max),hi=Math.max(0,10-r.min);put(set,'targetRpeMin',r.min);put(set,'targetRpeMax',r.max);put(set,'targetRpeLabel',label(r.min,r.max));put(set,'targetRirMin',lo);put(set,'targetRirMax',hi);put(set,'targetRirLabel',label(lo,hi))})});
     if(changed){cur.rpeRangeDisplayRevision=VERSION;saveState()}return changed;
   }
   function parseIndex(input){

@@ -105,10 +105,7 @@
     const repMode=method==='UNVRSL'||method==='SLDR'?'method':legacyMode(e,'reps',false),repManual=orderedPair(canonical.min,canonical.max,defaults.reps),reps=repMode==='manual'?repManual.map(v=>v/WorkoutDomain.planRepDivisor(e)):defaults.reps;
     const effortMode=legacyMode(e,'effort',false),effortType=String(overrides.effort?.type||e.effortType||'rpe').toLowerCase()==='rir'?'rir':'rpe';
     const ownRpe=orderedPair(manualValue(e,'effort','rpeMin',e.rpeMin??e.rpe),manualValue(e,'effort','rpeMax',e.rpeMax??e.rpe),defaults.rpe),ownRir=orderedPair(manualValue(e,'effort','rirMin',e.rirMin),manualValue(e,'effort','rirMax',e.rirMax),defaults.rir);
-    const rawRpe=effortMode==='manual'?(effortType==='rir'?[Math.max(0,10-ownRir[1]),Math.max(0,10-ownRir[0])]:ownRpe):defaults.rpe;
-    const week=programById(pid)?.weeks?.[Number(wi)]||{};
-    const inherited=effortMode==='auto'&&method==='STANDARD'?WorkoutDomain.effortTarget(e,{targetRpeMin:rawRpe[0],targetRpeMax:rawRpe[1],effortTargetSource:'week_inherited',effortBaseMin:rawRpe[0],effortBaseMax:rawRpe[1]}, {deload:week.deload||week.weeklyLoadProfile?.deload,testWeek:week.testWeek||week.weeklyLoadProfile?.test}):null;
-    const rpe=inherited?[inherited.lo,inherited.hi]:rawRpe,rir=[Math.max(0,10-rpe[1]),Math.max(0,10-rpe[0])];
+    const rpe=effortMode==='manual'?(effortType==='rir'?[Math.max(0,10-ownRir[1]),Math.max(0,10-ownRir[0])]:ownRpe):defaults.rpe,rir=[Math.max(0,10-rpe[1]),Math.max(0,10-rpe[0])];
     const tempoMode=legacyMode(e,'tempo',false),tempo=tempoMode==='manual'?String(manualValue(e,'tempo','value',e.tempo)||defaults.tempo):defaults.tempo;
     const restMode=legacyMode(e,'rest',false),restManual=orderedPair(manualValue(e,'rest','min',e.restMin??e.rest),manualValue(e,'rest','max',e.restMax??e.rest),defaults.rest),rest=restMode==='manual'?restManual:defaults.rest,restValue=Math.round(((rest[0]+rest[1])/2)/15)*15;
     const weightMode=legacyMode(e,'weight',false),weight=weightMode==='manual'?Math.max(0,nullableNumber(manualValue(e,'weight','value',e.sets?.[0]?.w))||0):0;

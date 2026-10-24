@@ -132,15 +132,11 @@ jobs:
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
           node tests/runtime-load-policy-audit.cjs
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
-          node tests/runtime-individual-load-policies.cjs
-          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
           node tests/runtime-management-cleanup.cjs
       - name: Audit traceable nutrition catalog
         run: node scripts/audit-nutrition.cjs
       - name: Audit catalog fields
-        run: |
-          node scripts/audit-exercises.cjs
-          node scripts/audit-load-policies.cjs
+        run: node scripts/audit-exercises.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

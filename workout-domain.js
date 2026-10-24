@@ -1,9 +1,9 @@
 "use strict";
 (function (root, factory) {
-  const api = factory(typeof module === "object" && module.exports ? require("./exercise-load-policies") : root?.ExerciseLoadPolicies);
+  const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.WorkoutDomain = api;
-})(typeof window === "undefined" ? null : window, (LoadPolicies) => {
+})(typeof window === "undefined" ? null : window, () => {
   const SCHEMA_VERSION = 4;
   const weekProfiles={
     1:{pct:[70,75],rpe:[7,8],tempo:'3-1-2',baseRest:[120,180],isoRest:[60,90],focus:'Техника, базовый объём'},
@@ -126,7 +126,7 @@
           e.targetIntensityMin=spec.pct[0];e.targetIntensityMax=spec.pct[1];
           e.rpe=(spec.rpe[0]+spec.rpe[1])/2;
           delete e.repLabel;delete e.rpeLabel;delete e.displayPrescription;
-          e.sets=Array.from({length:count},(_,k)=>({...source.sets?.[k],w:number(source.sets?.[k]?.w??source.sets?.[0]?.w)??0,r:spec.reps[0],targetRepMin:spec.reps[0],targetRepMax:spec.reps[1],targetRpeMin:spec.rpe[0],targetRpeMax:spec.rpe[1],effortTargetSource:source.parameterOverrides?.effort?.mode==='manual'?'exercise_override':'week_inherited',effortBaseMin:spec.rpe[0],effortBaseMax:spec.rpe[1],allowFailure:false}));
+          e.sets=Array.from({length:count},(_,k)=>({...source.sets?.[k],w:number(source.sets?.[k]?.w??source.sets?.[0]?.w)??0,r:spec.reps[0],targetRepMin:spec.reps[0],targetRepMax:spec.reps[1],targetRpeMin:spec.rpe[0],targetRpeMax:spec.rpe[1],allowFailure:false}));
            if(!p.deload&&!p.test&&e.method!=='STANDARD'){e.sets=cloneProfile(e.cycleOriginalSets);e.cycleManaged=false;e.reps={mode:'method',min:null,max:null};}
           if(p.test){e.method='STANDARD';e.sets.forEach((s,k)=>Object.assign(s,k===count-1?{role:'test_attempt',targetRepMin:1,targetRepMax:1,r:1,targetRpeMin:9.5,targetRpeMax:10,allowFailure:true}:{role:'test_preparation',targetRepMin:2,targetRepMax:3}));}
           week.days[di].ex.push(e);
@@ -258,7 +258,6 @@
       ...(equipment.loadUnit==="TOTAL"&&number(equipment.implementWeight)>0?{min:number(equipment.implementWeight)}:{}),
       ...(noWeight?{step:0,available:[],min:0}:{}),
       loadType: type,
-      correctionPolicy: LoadPolicies?.resolve(e,row,overrides[reg?.identity(e)]||{})??null,
     };
   }
   function roundWeight(value, p, direction) {
@@ -293,7 +292,7 @@
     );
   }
   function recommendationWeight(result) {
-    return result.nextSetSuggestion?.policyVersion===540 ? number(result.nextSetSuggestion.weight) : result.weeklyCalculated ? number(result.calculatedWeight) : number(result.nextSetSuggestion?.weight??result.weight);
+    return result.weeklyCalculated ? number(result.calculatedWeight) : number(result.nextSetSuggestion?.weight??result.weight);
   }
   // Repair only pending generated loads. Recorded history and manual inputs are
   // authoritative, including deliberately entered fractional weights.
@@ -720,35 +719,7 @@
       confirmed:actualSingles.length?Math.max(...actualSingles.map(x=>loadForEstimate(x.exercise,x.set,x.session,reg,weights)||0)):null,
       confidence:sessions.filter(x=>x.weight>=.4).length>=3?'высокая':sessions.filter(x=>x.weight>=.3).length>=2?'средняя':'низкая'};
   }
-  function policyContext(e,s,session={}) {
-    return !session.ended&&method(e,s)==='STANDARD'&&setRole(e,s)==='standard'&&!warmup(s)&&
-      !session.deload&&!session.isDeload&&!session.testWeek&&!session.weeklyLoadProfile?.deload&&!session.weeklyLoadProfile?.test;
-  }
-  function individualSetDecision(e,s,session,p,targetSet) {
-    const used=number(s.w),policy=p.correctionPolicy;
-    if(!policy||!policyContext(e,targetSet,session))return null;
-    const hold=(reasonCode,reason)=>({weight:used,action:'hold',state:'TARGET',reasonCode,reason,policyVersion:540,reactionLevel:'HOLD',stepsApplied:0});
-    if(policy.blocked)return hold('POLICY_REVIEW','Проверь тип нагрузки и индивидуальные настройки этого упражнения');
-    if(s.pain===true||s.painReported===true||s.techniqueDangerous===true)return hold('MANUAL_REVIEW','Останови подход: проверь боль или потерю контроля, автоматическое продолжение отключено');
-    const felt=effortRpe(s),rawRpe=number(s.actualRpe??s.rpe),rawRir=number(s.actualRir??s.rir??s.RIR);
-    if(felt==null)return hold('EFFORT_REQUIRED','Укажи RPE или RIR: без оценки усилия вес сохранён');
-    const range=repRange(e,targetSet),target=effortTarget(e,targetSet,session),reps=performedReps(e,s);
-    if(used==null||reps==null||s.skipped)return hold('FACT_REQUIRED','Не хватает фактического веса или повторов');
-    const previousRange=repRange(e,s);
-    if(explicitRepTarget(e,s)&&(previousRange.lo!==range.lo||previousRange.hi!==range.hi))return hold('TARGET_CHANGED','Задание следующего подхода изменилось: используй расчёт программы');
-    const conflict=rawRpe!=null&&rawRir!=null&&rawRpe>=1&&rawRpe<=10&&rawRir>=0&&rawRir<=9&&Math.abs(rawRpe-(10-rawRir))>.5;
-    let level=null;
-    if(reps<range.lo&&felt<target.lo&&!s.techniqueFailed)return hold('REPS_EFFORT_CONFLICT','Повторов меньше цели, но запас большой: проверь причину остановки');
-    if(s.techniqueFailed||reps<range.lo*.75||felt>=target.hi+2)level='H3';
-    else if(felt>=target.hi+1.5)level='H2';
-    else if(felt>target.hi+policy.tolerance||reps<range.lo&&felt>=target.lo)level='H1';
-    else if(reps>=range.hi&&felt<=target.lo-2)level='L2';
-    else if(reps>=range.hi&&felt<target.lo-policy.tolerance)level='L1';
-    if(conflict&&level?.startsWith('L'))return hold('EFFORT_CONFLICT','RPE и RIR противоречат друг другу: уточни оценку перед повышением');
-    return level?LoadPolicies.select(used,p,level,session):hold('ON_TARGET','Повторы и усилие в допустимых пределах: сохранить вес');
-  }
   function setDecision(e,s,session,p,targetSet=s) {
-    const individual=individualSetDecision(e,s,session,p,targetSet);if(individual)return individual;
     const range=repRange(e,targetSet),target=effortTarget(e,targetSet,session);
     const reps=performedReps(e,s),felt=effortRpe(s),used=number(s.w);
     if(felt==null)return {state:'UNKNOWN',weight:used,action:'hold',reason:'Укажи RPE или RIR: без оценки усилия вес сохранён'};
@@ -770,22 +741,7 @@
     const explicit=number(s.targetRpe??e.targetRpe??e.rpeTarget)??(number(s.targetRIR??e.targetRIR)!=null?10-number(s.targetRIR??e.targetRIR):null);
     const lo=number(s.targetRpeMin??e.targetRpeMin)??(rirHi!=null?10-rirHi:null)??explicit??number(session.programWeekRpeMin??session.target)??7;
     const hi=number(s.targetRpeMax??e.targetRpeMax)??(rirLo!=null?10-rirLo:null)??explicit??number(session.programWeekRpeMax??session.target)??8;
-    const base={lo:Math.max(1,Math.min(lo,hi,10)),hi:Math.max(1,Math.min(10,Math.max(lo,hi)))};
-    // Unknown legacy provenance remains untouched. Store the unshifted base so
-    // display materialisation and reload cannot apply an offset twice.
-    const setOwn=[s.targetRpe,s.targetRpeMin,s.targetRpeMax,s.targetRIR,s.targetRirMin,s.targetRirMax].some(v=>number(v)!=null);
-    const source=s.effortTargetSource??(setOwn?undefined:e.effortTargetSource);
-    const manual=e.parameterOverrides?.effort?.mode==='manual'||e.effortSourceMode==='manual'||source==='set_override'||source==='exercise_override';
-    const hasOwn=[s.targetRpe,s.targetRpeMin,s.targetRpeMax,s.targetRIR,s.targetRirMin,s.targetRirMax,e.targetRpe,e.targetRpeMin,e.targetRpeMax,e.targetRIR,e.targetRirMin,e.targetRirMax,e.rpeTarget].some(v=>number(v)!=null);
-    if(!manual&&policyContext(e,s,session)&&(source==='week_inherited'||!hasOwn)){
-      const policy=LoadPolicies?.resolve(e);
-      if(policy&&!policy.blocked&&policy.effortOffset!=null){
-        const rawLo=source==='week_inherited'?number(s.effortBaseMin??e.effortBaseMin)??base.lo:base.lo;
-        const rawHi=source==='week_inherited'?number(s.effortBaseMax??e.effortBaseMax)??base.hi:base.hi;
-        return {lo:Math.max(1,Math.min(10,rawLo+policy.effortOffset)),hi:Math.max(1,Math.min(10,rawHi+policy.effortOffset))};
-      }
-    }
-    return base;
+    return {lo:Math.max(1,Math.min(lo,hi,10)),hi:Math.max(1,Math.min(10,Math.max(lo,hi)))};
   }
   function methodRows(e,session,reg) {
     const result=[];
@@ -1334,7 +1290,7 @@
             stop = true;
             break;
           }
-          if ((complete(ex, s, reg)||(s.ok&&performedReps(ex,s)===0&&(setRole(ex,s)==="test_attempt"||s.failedAttempt===true))) && comparable(e, ex, reg, set, s))
+          if ((complete(ex, s, reg)||(s.ok&&performedReps(ex,s)===0&&setRole(ex,s)==="test_attempt")) && comparable(e, ex, reg, set, s))
             currentRows.push({ exercise: ex, set: s });
         }
         if (stop) break;
@@ -1453,15 +1409,6 @@
       if(changedRepBand)reasonCodes.push('TARGET_REBASE');
       if(calibration.applied)reason+=`; поправка по прошлым прогнозам ${Math.round((calibration.factor-1)*1000)/10}%`;
     }
-    if(ordinary&&p.correctionPolicy&&!p.correctionPolicy.blocked&&policyContext(e,set,session)&&prior!=null&&!anomalous&&!changedRepBand&&series?.sameTarget){
-      if(series.full&&series.uniform&&series.effortKnown&&series.completed>=2&&series.mastered){
-        const allVeryEasy=latest.every(x=>effortRpe(x.set)<=targetMin-2);
-        const decision=LoadPolicies.select(prior,p,allVeryEasy?'L2':'L1',session);
-        raw=decision.weight;action=decision.action;reason=decision.reason;reasonCodes.push('INDIVIDUAL_SERIES_POLICY');
-      }else if(repeatedFatigue){
-        const decision=LoadPolicies.select(prior,p,'H1',session);raw=decision.weight;action=decision.action;reason=decision.reason;reasonCodes.push('INDIVIDUAL_SERIES_POLICY');
-      }else {raw=prior;action='hold';reason='Сначала заверши всю сопоставимую серию на верхней границе повторов';}
-    }
     // The completed series informs strength, but cannot replace this week's target.
     const weeklyCalculated=ordinary&&eligible&&weeklyApplied&&weeklyRaw!=null;
     if(weeklyCalculated){
@@ -1482,14 +1429,14 @@
       ? 'Процент недели расходится с повторами и целевым усилием; вес подобран по повторам и RPE/RIR' : null;
     if(conflict)reason+=`. ${conflict}`;
     let weight=(ids.length||testWeekSuggestion)&&!anomalous?roundWeight(raw,p,ids.length===1&&projected==null?"down":undefined):raw;
-    if(ordinary&&!weeklyCalculated&&!anomalous&&!deload&&prior!=null&&!reasonCodes.includes('INDIVIDUAL_SERIES_POLICY')){
+    if(ordinary&&!weeklyCalculated&&!anomalous&&!deload&&prior!=null){
       const bounded=boundedProgression(weight,prior,p,changedRepBand);
       if(bounded.limited){weight=bounded.weight;reasonCodes.push('STEP_LIMIT');reason+='; прибавка ограничена доступным шагом и размером изменения';}
       // A rounded sub-step estimate is not itself evidence of progression.
       if(!wellbeingApplied&&!strong&&!changedRepBand&&!series?.easier&&Math.abs(raw-prior)<p.step*.5){weight=prior;}
       if(weight===prior&&action!=='reps')action='hold';
     }
-    if(ordinary&&nextSetSuggestion&&nextSetSuggestion.policyVersion!==540){
+    if(ordinary&&nextSetSuggestion){
       const bounded=boundedProgression(nextSetSuggestion.weight,number(lastToday?.set.w),p);
       if(bounded.limited){nextSetSuggestion={...nextSetSuggestion,weight:bounded.weight,action:bounded.weight===number(lastToday.set.w)?'hold':nextSetSuggestion.action,
         reason:nextSetSuggestion.reason+'; прибавка ограничена шагом оборудования'};reasonCodes.push('NEXT_SET_STEP_LIMIT');}
@@ -1497,9 +1444,9 @@
     if(weeklyCalculated){
       // Equipment increments may not fit the narrow percentage/effort intersection.
       // Round the weekly midpoint instead of rejecting a usable adjacent load.
-      weight=roundWeight(nextSetSuggestion?.policyVersion===540?raw:nextSetSuggestion?.weight??raw,p,'nearest');
+      weight=roundWeight(nextSetSuggestion?.weight??raw,p,'nearest');
       if(weight!==prior)repetitionGoal=null;
-      if(nextSetSuggestion&&nextSetSuggestion.policyVersion!==540)nextSetSuggestion={...nextSetSuggestion,weight};
+      if(nextSetSuggestion)nextSetSuggestion={...nextSetSuggestion,weight};
       conflict=null;
       reasonCodes.push('WEEKLY_CALCULATED_WEIGHT');
       if(!nextSetSuggestion)action='range_adjust';
@@ -1521,16 +1468,15 @@
       weight,
       series,calibration,reasonCodes,repetitionGoal,
       analogousSessionId:analogous?.[0]?.session.id??null,
-      calculationVersion:p.correctionPolicy?540:469,
-      correctionPolicy:p.correctionPolicy,
+      calculationVersion:469,
       reliable,
-      canApply:!(ordinary&&p.correctionPolicy?.blocked)&&!(nextSetSuggestion?.policyVersion===540&&['MANUAL_REVIEW','POLICY_REVIEW'].includes(nextSetSuggestion.reasonCode))&&(!set.weightMode||reliable)&&(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
+      canApply:(!set.weightMode||reliable)&&(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
       allowedWeightRange:corridor?{min:Math.min(...corridor),max:Math.max(...corridor)}:null,
       calculatedWeight:weeklyCalculated?weight:projected,
       weeklyCalculated:!!weeklyCalculated,
       profileWarnings:prescription.warnings,
       scope:nextSetSuggestion?'next_set':'next_session',
-      proposalKey:proposalFingerprint([p.correctionPolicy?540:469,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
+      proposalKey:proposalFingerprint([469,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
       raw,
       previous: prior,
       basis:ids.length?{date:sessionDate(latest[0]?.session??strength.source?.session),weight:prior??number(strength.source?.set.w),planned:seed||null,estimatedOneRepMax:latestOneRepMax!=null?Number(latestOneRepMax.toFixed(1)):null,sets:latest.map(x=>({weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effort(x)}))}:null,
