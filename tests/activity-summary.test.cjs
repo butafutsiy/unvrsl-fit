@@ -58,3 +58,43 @@ test('duration heatmap sums minutes per day while counters remain workout counts
  assert.equal(summary.days.find(x=>x.date==='2026-10-21').minutes,120);
  assert.equal(A.durationMinutes({ended:1}),0);assert.equal(A.durationMinutes({started:start,ended:start-1000}),0);
 });
+
+test('two workouts including yesterday Friday occupy one Monday–Sunday column',()=>{
+ const now=new Date(2026,9,24),data=rows(['2026-10-12','2026-10-15','2026-10-18','2026-10-20','2026-10-23']);
+ const summary=A.summarize(data,now),week=summary.weeks.at(-1);
+ assert.equal(summary.week.count,2);assert.equal(summary.week.previous,3);assert.equal(summary.week.delta,-1);
+ assert.equal(week.from,'2026-10-19');assert.equal(week.until,'2026-10-25');assert.equal(week.current,true);
+ assert.deepEqual(week.days.map(d=>d.count),[0,1,0,0,1,0,0]);assert.equal(week.days[6].future,true);
+ for(const w of summary.weeks){assert.equal(w.days.length,7);w.days.forEach((day,i)=>assert.equal(new Date(day.date+'T12:00').getDay(),(i+1)%7))}
+ assert.equal(summary.weeks.filter(w=>w.current).length,1);
+});
+test('whole previous week includes Sunday and details explain each counted date',()=>{
+ const dates=[1,3,4,5,6,7,8,12,15,18,20,23].map(d=>`2026-10-${String(d).padStart(2,'0')}`).concat([1,3,5,7,9,11,13,15,17,19,21,23,27].map(d=>`2026-09-${String(d).padStart(2,'0')}`),[1,2,3,4,5,6].map(d=>`2026-08-0${d}`));
+ const records=rows(dates),now=new Date(2026,9,24),summary=A.summarize(records,now);
+ assert.deepEqual([summary.week.count,summary.week.previous,summary.month.count,summary.month.previous,summary.yearCount],[2,3,12,12,31]);
+ const detail=A.periodDetails(records,'week',now);assert.deepEqual(detail.current.days,[{date:'2026-10-23',count:1},{date:'2026-10-20',count:1}]);
+ assert.deepEqual(detail.previous.days,[{date:'2026-10-18',count:1},{date:'2026-10-15',count:1},{date:'2026-10-12',count:1}]);assert.equal(detail.previous.until,'2026-10-18');assert.equal(detail.delta,-1);
+ const month=A.periodDetails(records,'month',now);assert.equal(month.previous.until,'2026-09-24');assert.equal(month.previous.count,12);assert.ok(!month.previous.days.some(d=>d.date==='2026-09-27'));
+ for(const kind of ['week','month','year']){const d=A.periodDetails(records,kind,now);assert.equal(d.current.count,d.current.days.reduce((sum,x)=>sum+x.count,0));assert.equal(d.current.count,kind==='year'?summary.yearCount:summary[kind].count)}
+});
+test('empty legacy IDs do not merge different workouts, exact duplicate backups still count once',()=>{
+ const one=workout('','2026-10-20'),two=workout('','2026-10-23');
+ const records=A.completedWorkouts([one,two],[one]);assert.equal(records.length,2);assert.notEqual(records[0].id,records[1].id);
+ assert.equal(A.summarize(records,new Date(2026,9,24)).week.count,2);
+});
+test('short-month details separate current total from the equal-length comparison',()=>{
+ const report=A.periodDetails(rows(['2026-02-01','2026-02-28','2026-03-01','2026-03-28','2026-03-30']),'month',new Date(2026,2,31));
+ assert.equal(report.current.count,3);assert.equal(report.current.until,'2026-03-31');assert.equal(report.compared.count,2);assert.equal(report.compared.until,'2026-03-28');assert.equal(report.previous.count,2);assert.equal(report.delta,0);
+});
+test('calendar boundaries match an independent UTC day-number oracle',()=>{
+ const dates=[];for(let t=Date.UTC(2023,11,1),end=Date.UTC(2028,1,1),i=0;t<end;t+=86400000,i++)if(i%3===0||i%7===0)dates.push(new Date(t).toISOString().slice(0,10));
+ const records=dates.map((date,i)=>({id:String(i),date}));
+ for(const year of [2024,2025,2026,2027])for(let month=0;month<12;month++)for(const day of [1,15,new Date(year,month+1,0).getDate()]){
+  const timestamp=Date.UTC(year,month,day),weekday=(new Date(timestamp).getUTCDay()+6)%7,weekStart=timestamp-weekday*86400000,prevMonthStart=Date.UTC(year,month-1,1),daysCompared=Math.min(day,new Date(Date.UTC(year,month,0)).getUTCDate());
+  const count=(a,b)=>dates.filter(date=>{const t=Date.parse(date+'T00:00:00Z');return t>=a&&t<=b}).length;
+  const actual=A.summarize(records,new Date(year,month,day));
+  assert.equal(actual.week.count,count(weekStart,timestamp));assert.equal(actual.week.previous,count(weekStart-7*86400000,weekStart-86400000));
+  assert.equal(actual.month.count,count(Date.UTC(year,month,1),timestamp));assert.equal(actual.month.previous,count(prevMonthStart,Date.UTC(year,month-1,daysCompared)));
+  assert.equal(actual.month.delta,count(Date.UTC(year,month,1),Date.UTC(year,month,daysCompared))-actual.month.previous);assert.equal(actual.yearCount,count(Date.UTC(year,0,1),timestamp));
+ }
+});

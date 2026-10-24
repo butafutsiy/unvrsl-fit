@@ -58,8 +58,26 @@
     #home .home-stats-v254 .sd2-activity-card :is(.sd2-cell,.sd2-legend i).l2{background:color-mix(in srgb,var(--green) 46%,var(--panel2,#2c2c31))}
     #home .home-stats-v254 .sd2-activity-card :is(.sd2-cell,.sd2-legend i).l3{background:color-mix(in srgb,var(--green) 68%,var(--panel2,#2c2c31))}
     #home .home-stats-v254 .sd2-activity-card :is(.sd2-cell,.sd2-legend i).l4{background:var(--green)}
+    #home .home-stats-v254 .sd2-activity-dates{font-size:10px;line-height:1.4;color:var(--muted,#8e8e93);margin-top:5px}
+    #home .home-stats-v254 .sd2-activity-open{border:0;background:transparent;padding:0;min-width:44px;min-height:44px;text-align:left;color:inherit;cursor:pointer}
+    #home .home-stats-v254 .sd2-activity-open:focus-visible{outline:2px solid var(--green);outline-offset:2px;border-radius:6px}
+    #home .home-stats-v254 .sd2-activity-calendar{display:grid;grid-template-columns:18px minmax(0,1fr);gap:6px}
+    #home .home-stats-v254 .sd2-activity-weekdays{display:grid;grid-template-rows:repeat(7,10px);gap:4px;padding-top:3px;font-size:9px;line-height:10px;color:var(--muted,#8e8e93)}
+    #home .home-stats-v254 .sd2-activity-calendar .sd2-heat-wrap{padding:3px 2px}
+    #home .home-stats-v254 .sd2-cell.is-future{opacity:.25}
+    .sd2-activity-detail .sd2-detail-tabs{display:flex;gap:6px;margin:12px 0 18px}
+    .sd2-activity-detail .sd2-detail-tabs .btn{flex:1;min-width:0;padding:9px 4px;min-height:44px}
+    .sd2-activity-detail .sd2-detail-periods{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .sd2-activity-detail .sd2-detail-period{padding:12px;border:1px solid var(--line,#343438);border-radius:14px;min-width:0}
+    .sd2-activity-detail .sd2-detail-period-head{min-height:60px;font-size:14px;line-height:1.35}
+    .sd2-activity-detail .sd2-detail-period b{display:block;font-size:26px;margin:10px 0 4px}
+    .sd2-activity-detail .sd2-detail-date{font-size:12px;line-height:1.5;color:var(--muted,#8e8e93)}
+    .sd2-activity-detail .sd2-detail-days{list-style:none;padding:0;margin:10px 0 22px}
+    .sd2-activity-detail .sd2-detail-days li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--line,#343438);font-size:13px}
+    .sd2-activity-detail h3{font-size:16px;margin:20px 0 8px}
     #home .home-stats-v254 .sd2-activity-note{font-size:11px;line-height:1.5;color:var(--muted,#8e8e93);margin:16px 0 0}
     @media(max-width:360px){#home .home-stats-v254 .sd2-activity-label .long{display:none}#home .home-stats-v254 .sd2-activity-label .short{display:inline}#home .home-stats-v254 .sd2-activity-metric{padding-right:6px}#home .home-stats-v254 .sd2-activity-metric+.sd2-activity-metric{padding-left:8px}}
+    @media(max-width:360px){#home .home-stats-v254 .sd2-activity-delta{font-size:11px;overflow-wrap:normal}}
     @media(max-width:390px){
       #home .home-stats-v254 .sd2-current{font-size:41px}
       #home .home-stats-v254 .sd2-weight-actions{gap:10px}
@@ -116,17 +134,33 @@
     })();return target.promise;
   }
 
+  const activityRange=(from,until)=>{
+    const a=Activity.calendarDate(from),b=Activity.calendarDate(until);if(!a||!b)return '';
+    const months=['янв.','февр.','мар.','апр.','мая','июн.','июля','авг.','сент.','окт.','нояб.','дек.'];
+    if(a.getFullYear()!==b.getFullYear())return `${a.getDate()} ${months[a.getMonth()]} ${a.getFullYear()} – ${b.getDate()} ${months[b.getMonth()]} ${b.getFullYear()}`;
+    return a.getMonth()===b.getMonth()?`${a.getDate()}–${b.getDate()} ${months[b.getMonth()]}`:`${a.getDate()} ${months[a.getMonth()]} – ${b.getDate()} ${months[b.getMonth()]}`;
+  };
+  window.homeStatsActivityDetails=function(kind='week'){
+    const report=Activity.periodDetails(workouts(),kind),{current,previous,compared,summary}=report;
+    const names={week:['Эта неделя','Прошлая неделя'],month:['Этот месяц','Прошлый месяц'],year:[`За ${summary.year} год`]};
+    const section=(p,label,role)=>`<div class="sd2-detail-period" data-period="${role}"><div class="sd2-detail-period-head"><div>${label}</div><div class="sd2-detail-date">${activityRange(p.from,p.until)}${p.from.slice(0,4)===p.until.slice(0,4)?' '+p.from.slice(0,4):''}</div></div><b data-period-count>${p.count}</b><span class="muted small">${Activity.workoutWord(p.count)}</span></div>`;
+    const days=(p,label,role)=>`<h3>${label} · ${p.count} ${Activity.workoutWord(p.count)}</h3>${p.days.length?`<ul class="sd2-detail-days" data-period-days="${role}">${p.days.map(d=>`<li data-counted-date="${d.date}" data-counted-workouts="${d.count}"><time datetime="${d.date}">${Activity.calendarDate(d.date).toLocaleDateString('ru-RU',{weekday:'short',day:'numeric',month:'long'})}</time><span>${d.count} ${Activity.workoutWord(d.count)}</span></li>`).join('')}</ul>`:'<p class="muted small">Завершённых тренировок за эти даты нет.</p>'}`;
+    const explanation=kind==='week'?'Сравниваются полные календарные недели: понедельник–воскресенье. На текущей неделе учитываются уже завершённые тренировки.':previous?(compared.count===current.count&&compared.until===current.until?'Сравниваются одинаковые дни предыдущего периода.':`Для сравнения взяты ${activityRange(compared.from,compared.until)}: ${compared.count} ${Activity.workoutWord(compared.count)}; ${activityRange(previous.from,previous.until)}: ${previous.count} ${Activity.workoutWord(previous.count)}.`):'Завершённые тренировки с 1 января по сегодня.';
+    const change=previous?`Разница: ${report.delta>0?'+':''}${report.delta}.`:'';
+    modal(`<div class="sd2-activity-detail" data-activity-detail="${kind}"><h2>Тренировки по датам</h2><div class="sd2-detail-tabs">${[['week','Неделя'],['month','Месяц'],['year','Год']].map(([key,label])=>`<button class="btn ${key===kind?'primary':''}" onclick="homeStatsActivityDetails('${key}')" aria-pressed="${key===kind}">${label}</button>`).join('')}</div><div class="sd2-detail-periods">${section(current,names[kind][0],'current')}${previous?section(previous,names[kind][1],'previous'):''}</div><p class="muted small">${explanation} ${change}</p>${days(current,names[kind][0],'current')}${previous?days(previous,names[kind][1],'previous'):''}</div>`);
+  };
+
   function heatmapHtml(){
     const stats=Activity.summarize(workouts()),format=n=>Number(n).toLocaleString('ru-RU'),delta=(value,kind)=>{
       const comparison=stats[kind],text=value===0?'Без изменений':`${value>0?'+':'−'}${format(Math.abs(value))} к ${kind==='week'?'прошлой':'прошлому'}`;
-      const label=`${kind==='week'?'Неделя':'Месяц'}: ${kind==='month'&&comparison.shorterPreviousMonth?comparison.compared:comparison.count} ${Activity.workoutWord(kind==='month'&&comparison.shorterPreviousMonth?comparison.compared:comparison.count)} за сопоставимые дни. За сопоставимый прошлый период: ${comparison.previous}. Изменение: ${value>0?'+':''}${value}.`;
+      const label=`${kind==='week'?'Полная календарная неделя':'Месяц'}: ${kind==='month'&&comparison.shorterPreviousMonth?comparison.compared:comparison.count} ${Activity.workoutWord(kind==='month'&&comparison.shorterPreviousMonth?comparison.compared:comparison.count)} за период. За прошлый период: ${comparison.previous}. Изменение: ${value>0?'+':''}${value}.`;
       return `<span class="sd2-activity-delta ${value>0?'up':value<0?'down':'same'}" title="${label}" aria-label="${label}">${text}</span>`;
     };
-    const metric=(kind,long,short)=>{const x=stats[kind];return `<div class="sd2-activity-metric" data-activity="${kind}"><div class="sd2-activity-label"><span class="long">${long}</span><span class="short">${short}</span></div><div class="sd2-activity-number"><b data-activity-count>${format(x.count)}</b></div><span class="sd2-activity-unit">${Activity.workoutWord(x.count)}</span><div class="sd2-activity-previous">${kind==='week'?'Прошлая':'Прошлый'}: <b data-activity-previous-count>${format(x.previous)}</b></div>${delta(x.delta,kind)}</div>`};
+    const metric=(kind,long,short)=>{const x=stats[kind];return `<div class="sd2-activity-metric" data-activity="${kind}"><div class="sd2-activity-label"><span class="long">${long}</span><span class="short">${short}</span></div><div class="sd2-activity-dates">${activityRange(x.from,kind==='week'?x.until:stats.today)}</div><div class="sd2-activity-number"><button class="sd2-activity-open" onclick="homeStatsActivityDetails('${kind}')" aria-label="Показать тренировки: ${long.toLowerCase()}"><b data-activity-count>${format(x.count)}</b></button></div><span class="sd2-activity-unit">${Activity.workoutWord(x.count)}</span><div class="sd2-activity-previous"><b data-activity-previous-count>${format(x.previous)}</b> за ${activityRange(x.previousFrom,x.previousUntil)}</div>${kind==='month'&&x.shorterPreviousMonth?`<div class="sd2-activity-dates">Сейчас за ${activityRange(x.from,x.comparedUntil)}: ${format(x.compared)}</div>`:''}${delta(x.delta,kind)}</div>`};
     const maxMinutes=Math.max(1,...stats.days.map(x=>x.minutes));
-    const cells=stats.days.map(x=>{const ratio=x.minutes/maxMinutes,level=x.minutes?(ratio>.72?4:ratio>.42?3:ratio>.18?2:1):x.count?1:0,title=x.count?`${x.count} ${Activity.workoutWord(x.count)} · ${x.minutes?x.minutes+' мин':'время не указано'}`:'нет тренировки';return `<i class="sd2-cell ${level?'l'+level:''}" data-activity-date="${x.date}" data-count="${x.count}" data-minutes="${x.minutes}" title="${x.date}: ${title}"></i>`}).join('');
-    const note=stats.month.shorterPreviousMonth?`Неделя — одинаковые дни. Месяц — первые ${stats.month.comparedDays} дней.`:'Прошлая неделя и месяц — за те же дни.';
-    return `<div class="sd2-card sd2-activity-card"><div class="sd2-activity-head"><h2>Активность</h2><span>Тренировки</span></div><div class="sd2-activity-summary">${metric('week','На этой неделе','Неделя')}${metric('month','В этом месяце','Месяц')}<div class="sd2-activity-metric" data-activity="year"><div class="sd2-activity-label">За ${stats.year} год</div><div class="sd2-activity-number"><b data-activity-count>${format(stats.yearCount)}</b></div><span class="sd2-activity-unit">${Activity.workoutWord(stats.yearCount)}</span></div></div><div class="sd2-activity-grid-title">Последние 12 месяцев · по времени тренировок</div><div class="sd2-heat-wrap" id="homeHeatWrap"><div class="sd2-heat" role="img" aria-label="Активность по времени тренировок за последние 12 месяцев">${cells}</div></div><div class="sd2-legend"><span>Меньше</span><i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i><span>Больше</span></div><p class="sd2-activity-note">${note}</p></div>`;
+    const cells=stats.weeks.map(week=>week.days.map(x=>{const ratio=x.minutes/maxMinutes,level=x.minutes?(ratio>.72?4:ratio>.42?3:ratio>.18?2:1):x.count?1:0,title=x.future?'день ещё не наступил':x.count?`${x.count} ${Activity.workoutWord(x.count)} · ${x.minutes?x.minutes+' мин':'время не указано'}`:'нет тренировки';return `<i class="sd2-cell ${level?'l'+level:''} ${x.future?'is-future':''}" data-week-start="${week.from}" data-current-week="${week.current}" data-activity-date="${x.date}" data-count="${x.count}" data-minutes="${x.minutes}" title="${x.date}: ${title}"></i>`}).join('')).join('');
+    const note=stats.month.shorterPreviousMonth?`Недели — Пн–Вс. Месяц — первые ${stats.month.comparedDays} дней.`:'Недели — целиком, Пн–Вс. Месяцы — за одинаковые дни.';
+    return `<div class="sd2-card sd2-activity-card"><div class="sd2-activity-head"><h2>Активность</h2><span>Тренировки</span></div><div class="sd2-activity-summary">${metric('week','На этой неделе','Неделя')}${metric('month','В этом месяце','Месяц')}<div class="sd2-activity-metric" data-activity="year"><div class="sd2-activity-label">За ${stats.year} год</div><div class="sd2-activity-dates">${activityRange(`${stats.year}-01-01`,stats.today)}</div><div class="sd2-activity-number"><button class="sd2-activity-open" onclick="homeStatsActivityDetails('year')" aria-label="Показать тренировки за год"><b data-activity-count>${format(stats.yearCount)}</b></button></div><span class="sd2-activity-unit">${Activity.workoutWord(stats.yearCount)}</span></div></div><div class="sd2-activity-grid-title">Последние 12 месяцев · по времени тренировок</div><div class="sd2-activity-calendar"><div class="sd2-activity-weekdays" aria-hidden="true">${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>`<span>${d}</span>`).join('')}</div><div class="sd2-heat-wrap" id="homeHeatWrap"><div class="sd2-heat" role="img" aria-label="Столбцы — недели, дни сверху вниз с понедельника по воскресенье">${cells}</div></div></div><div class="sd2-legend"><span>Меньше</span><i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i><span>Больше</span></div><p class="sd2-activity-note">${note} Нажми на число, чтобы сверить даты тренировок.</p></div>`;
   }
 
   function filteredWeights(){
