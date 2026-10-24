@@ -225,6 +225,8 @@
   return hold(c,'progress_'+metric,texts[metric]||'Ручной протокол',{suggestedWeight:null});
  }
 
+ const evidenceSnapshot=Symbol('recommendationEvidenceSnapshot');
+ function withComparableEvidence(c){return {...c,[evidenceSnapshot]:{sessions:c.history,now:c.now,key:comparableKey(c),value:getComparableEvidence(c)}};}
  const date=v=>num(v)??(Date.parse(v||'')||0);
  const ordinary=role=>['ordinary','standard','work','working',''].includes(String(role||'ordinary').toLowerCase());
  function comparableKey(c){const p=c.prescription,e=c.exercise,s=c.set,eq=c.equipment;
@@ -232,7 +234,9 @@
    s.romProtocol||e.romProtocol||(c.actual.rom==='planned_partial'?'planned_partial':'full_or_unknown'),p.tempo,p.methodId,p.setRole,p.phaseId,p.groupId?true:false,p.groupPosition,c.profile.loadAccounting==='per_side'?[eq.loadedSides??e.loadedSides,eq.implementWeight??e.implementWeight]:c.profile.loadAccounting==='per_implement'?[eq.implementCount??e.implementCount]:null,eq.cableConfiguration||null,eq.loadConvention||null,p.roundIndex??s.roundIndex??s.round??null,s.segmentIndex??(num(s.mini)!=null?num(s.mini)-1:null),e.assistanceProtocol||null,c.profile.movementKind==='cardio'?c.exercise.cardioProtocol||[c.exercise.paceTarget,c.exercise.incline,c.exercise.powerTarget,c.exercise.resistanceLevel,c.exercise.intervalProtocol]:null]);
  }
  function getComparableEvidence(c,sessions=c.history){
-  const key=comparableKey(c),dedup=new Map(),earliest=c.now-CONFIG.historyWindowDays*86400000;
+  const key=comparableKey(c),snapshot=c[evidenceSnapshot];
+  if(snapshot&&snapshot.sessions===sessions&&snapshot.now===c.now&&snapshot.key===key)return snapshot.value;
+  const dedup=new Map(),earliest=c.now-CONFIG.historyWindowDays*86400000;
   for(const session of sessions||[]){
    const at=date(session.ended||session.started||session.date);
    if(session.id===c.session.id||session.pendingCompletion||at>c.now||at<earliest||c.session.userId&&(session.userId||session.recommendationActorId)&&(session.userId||session.recommendationActorId)!==c.session.userId)continue;
@@ -243,8 +247,9 @@
   for(const session of [...dedup.values()].sort((a,b)=>date(b.ended||b.started||b.date)-date(a.ended||a.started||a.date)||String(a.id).localeCompare(String(b.id)))){
    const rows=[];
    for(const ex of session.ex||[]){
+    const profile=P.resolve(ex);
+    if(profile.canonicalId!==c.profile.canonicalId)continue;
     for(const [i,set] of (ex.set||[]).entries()){
-     const profile=P.resolve(ex);
      const old=normalizeRecommendationInput({exercise:ex,set,actual:set,session,now:c.now,profile,equipment:set.equipmentSnapshot||ex.equipmentProfile||{},scope:c.scope});
      if(comparableKey(old)!==key||old.actual.status!=='completed'||old.actual.warmup||date(set.performedAt)>c.now)continue;
      if(set.equipmentSnapshot?.id&&c.equipment.id&&set.equipmentSnapshot.id!==c.equipment.id)continue;
@@ -491,7 +496,7 @@
   out.recommendationSchemaVersion=3;return out;
  }
  return {validatePrescription,CONFIG,num,effort,repetitions,normalizeTempo,fingerprint,normalizeRecommendationInput,resolveExerciseProfile:P.resolve,resolvePrescription,
-  modelLoad,fromModel,candidates,equipmentKnown,comparableKey,getComparableEvidence,estimateSet,estimateLocalCapacity,methodBlockAssessment,weightedMedian,median,
+  modelLoad,fromModel,candidates,equipmentKnown,comparableKey,getComparableEvidence,withComparableEvidence,estimateSet,estimateLocalCapacity,methodBlockAssessment,weightedMedian,median,
   recommend,recommendStart,recommendNextSet,recommendNextSession,recommendPhaseChange,recommendCalibration,recommendTestAttempt,
   applyRecommendation,undoRecommendation,applicationFingerprint,buildExerciseCoverage:P.coverage,migrate};
 });

@@ -1,0 +1,111 @@
+{
+  "release": "v540",
+  "baseline": "f76c95d (v539)",
+  "node": {
+    "fixture": "90 completed sessions, 2880 historical sets, 32 matched proposals + 4 unmatched proposals; three runs",
+    "before": {
+      "dir": "/workspace/scratch/perf-v539",
+      "pendingSets": 32,
+      "unmatchedProposals": 4,
+      "sessions": 90,
+      "historySets": 2880,
+      "samples": [
+        {
+          "matchMs": 4986.831836,
+          "unmatchedMs": 13437.806089
+        },
+        {
+          "matchMs": 6870.804576999999,
+          "unmatchedMs": 13473.478620999995
+        },
+        {
+          "matchMs": 4556.137576000001,
+          "unmatchedMs": 17058.280765000003
+        }
+      ],
+      "median": {
+        "matchMs": 4986.831836,
+        "unmatchedMs": 13473.478620999995
+      },
+      "decisionDigests": [
+        "v3:c9b1e5e5",
+        "v3:c9b1e5e5",
+        "v3:c9b1e5e5"
+      ]
+    },
+    "after": {
+      "dir": "/workspace/unvrsl-fit",
+      "pendingSets": 32,
+      "unmatchedProposals": 4,
+      "sessions": 90,
+      "historySets": 2880,
+      "samples": [
+        {
+          "matchMs": 210.987031,
+          "unmatchedMs": 66.603501
+        },
+        {
+          "matchMs": 205.00952700000005,
+          "unmatchedMs": 13.674713999999994
+        },
+        {
+          "matchMs": 157.80451700000003,
+          "unmatchedMs": 10.395883000000026
+        }
+      ],
+      "median": {
+        "matchMs": 205.00952700000005,
+        "unmatchedMs": 13.674713999999994
+      },
+      "decisionDigests": [
+        "v3:c9b1e5e5",
+        "v3:c9b1e5e5",
+        "v3:c9b1e5e5"
+      ]
+    },
+    "decisionsEqual": true
+  },
+  "chromium": {
+    "cpuSlowdown": 4,
+    "fixture": "90 sessions, 16 pending sets including one exercise absent from history",
+    "before": {
+      "url": "https://butafutsiy.github.io/unvrsl-fit/",
+      "cpuSlowdown": 4,
+      "release": "v539",
+      "firstRunMs": 46569.900000002235,
+      "repeatRunMs": 47722.199999999255,
+      "renderMs": 10166.800000000745,
+      "targets": [
+        "develop_repetitions",
+        "develop_repetitions",
+        "develop_repetitions",
+        "prescribed_no_history"
+      ],
+      "historyPreserved": true,
+      "sessionCount": 90,
+      "pendingSets": 16
+    },
+    "after": {
+      "url": "http://127.0.0.1:8770/unvrsl-fit/",
+      "cpuSlowdown": 4,
+      "release": "v540",
+      "firstRunMs": 990.3999999985099,
+      "repeatRunMs": 336.5,
+      "renderMs": 2169.5,
+      "targets": [
+        "develop_repetitions",
+        "develop_repetitions",
+        "develop_repetitions",
+        "prescribed_no_history"
+      ],
+      "historyPreserved": true,
+      "sessionCount": 90,
+      "pendingSets": 16
+    }
+  },
+  "limits": [
+    "Synthetic history, not private user data.",
+    "Chromium CPU throttling is not a real-device measurement.",
+    "Machine contention affects absolute timings; no phone-wide speed multiplier is claimed."
+  ]
+}

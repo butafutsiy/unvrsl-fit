@@ -28,9 +28,9 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
   card.querySelector('.te200-rec-apply').click();available.applied=e.set[0].w;
   return {before,fractional,available,persisted:JSON.parse(JSON.stringify(st.current)).ex[0].set.map(s=>s.w),history:old.set[0].w};
  })()`);
- assert.equal(result.before,'Оставить 132,5 кг');
- assert.equal(result.fractional.title,'Оставить 134 кг');assert.equal(result.fractional.planned,135);assert.equal(result.fractional.applied,134);assert.equal(result.fractional.step,.5);
- assert.equal(result.available.title,'Оставить 130 кг');assert.equal(result.available.calculated,130);assert.equal(result.available.applied,130);
+ assert.equal(result.before,'Смена диапазона: 132,5 кг · 3–5 повт.');
+ assert.equal(result.fractional.title,'Смена диапазона: 134 кг · 3–5 повт.');assert.equal(result.fractional.planned,135);assert.equal(result.fractional.applied,134);assert.equal(result.fractional.step,.5);
+ assert.equal(result.available.title,'Смена диапазона: 130 кг · 3–5 повт.');assert.equal(result.available.calculated,130);assert.equal(result.available.applied,130);
  assert.equal(result.persisted[0],130);assert.deepEqual(Array.from(result.persisted.slice(1)),Array.from(result.available.others));assert.equal(result.history,134.3);assert.deepEqual(errors,[]);
  console.log('Equipment edits: fractional step, available loads, display, apply and persistence passed');
  }finally{dom.window.close()}
