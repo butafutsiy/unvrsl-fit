@@ -170,9 +170,9 @@
   async function renderHomeProgress(force=false){
     const root=document.getElementById('home');if(!root)return;
     const stable=fn=>{
-      const active=root.classList.contains('active'),y=window.scrollY||document.documentElement?.scrollTop||0;
+      const active=root.classList.contains('active'),y=(window.unvrslScrollTop?.()??window.scrollY??0);
       fn();
-      if(active&&y>0)window.scrollTo({top:y,left:0,behavior:'auto'});
+      if(active&&y>0)(window.unvrslScrollTo||window.scrollTo)({top:y,left:0,behavior:'auto'});
     };
     stable(()=>{removeOldHomeWeight(root);insertHost(root)});
     await hydrate(force);

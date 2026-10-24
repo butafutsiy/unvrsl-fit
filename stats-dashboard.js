@@ -104,9 +104,9 @@
     const root=document.getElementById('stats');if(!root)return;
     const html=dashboardHtml();root.classList.remove('stats-v2');root.classList.add('stats-v254');root.dataset.statsAuthority='254';
     if(root.__statsDashboardHtml===html&&root.querySelector('.sd2-head')){window.anatomeMountCardV254?.();return}
-    const y=root.classList.contains('active')?(window.scrollY||document.documentElement?.scrollTop||0):0;
+    const y=root.classList.contains('active')?((window.unvrslScrollTop?.()??window.scrollY??0)):0;
     root.innerHTML=html;root.__statsDashboardHtml=html;window.anatomeMountCardV254?.();
-    if(y>0)window.scrollTo({top:y,left:0,behavior:'auto'});
+    if(y>0)(window.unvrslScrollTo||window.scrollTo)({top:y,left:0,behavior:'auto'});
   }
   window.statsDashboardRender=renderDashboard;
 

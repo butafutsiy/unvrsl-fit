@@ -220,7 +220,7 @@
   function checkpoint() {
     if (!st.current) return;
     try {
-      if (document.querySelector("#start.active")) st.current.scrollY = scrollY;
+      if (document.querySelector("#start.active")) st.current.scrollY = W.unvrslScrollTop?.() ?? W.scrollY ?? 0;
       const snapshot = W.workoutTimerSnapshot?.();
       if (snapshot && snapshot.workoutId === String(st.current.id)) {
         st.current.timer = snapshot;

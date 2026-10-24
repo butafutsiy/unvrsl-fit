@@ -58,7 +58,7 @@
     return cur?hasWorkout:!hasWorkout;
   }
   function workoutScrollSnapshot(root){
-    const y=window.scrollY||document.documentElement?.scrollTop||0;
+    const y=(window.unvrslScrollTop?.()??window.scrollY??0);
     const cards=[...root.querySelectorAll('.exercise')];
     let index=-1,offset=0;
     for(let i=0;i<cards.length;i++){
@@ -72,10 +72,10 @@
     const card=snapshot.index>=0?root.querySelectorAll('.exercise')[snapshot.index]:null;
     if(card){
       const delta=card.getBoundingClientRect().top-snapshot.offset;
-      if(Math.abs(delta)>.5)window.scrollBy({top:delta,left:0,behavior:'auto'});
+      if(Math.abs(delta)>.5)(window.unvrslScrollBy||window.scrollBy)({top:delta,left:0,behavior:'auto'});
       return;
     }
-    window.scrollTo({top:snapshot.y,left:0,behavior:'auto'});
+    (window.unvrslScrollTo||window.scrollTo)({top:snapshot.y,left:0,behavior:'auto'});
   }
   function workoutGestureActive(){
     const now=typeof performance!=='undefined'&&performance.now?performance.now():Date.now();
@@ -92,10 +92,10 @@
   document.addEventListener?.('touchstart',e=>{if(e.target?.closest?.('#start'))workoutTouching=true},{passive:true});
   document.addEventListener?.('touchend',()=>{workoutTouching=false},{passive:true});
   document.addEventListener?.('touchcancel',()=>{workoutTouching=false},{passive:true});
-  window.addEventListener?.('scroll',()=>{
+  document.addEventListener?.('scroll',()=>{
     if(!document.getElementById('start')?.classList.contains('active'))return;
     lastWorkoutScrollAt=typeof performance!=='undefined'&&performance.now?performance.now():Date.now();
-  },{passive:true});
+  },{passive:true,capture:true});
 
   function installStableWorkoutScroll(){
     const current=window.startPage;
@@ -141,7 +141,7 @@
 
   const baseNav=window.nav;
   if(typeof baseNav==='function'&&!baseNav.__clientUiFix){
-    const wrapped=function(page){const current=document.querySelector('.page.active')?.id;clientNavigationDepth++;let r;try{r=baseNav.apply(this,arguments)}finally{clientNavigationDepth--}applyClientClass();if(page&&page!==current)requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:'auto'}));return r};
+    const wrapped=function(page){const current=document.querySelector('.page.active')?.id;clientNavigationDepth++;let r;try{r=baseNav.apply(this,arguments)}finally{clientNavigationDepth--}applyClientClass();if(page&&page!==current)requestAnimationFrame(()=>(window.unvrslScrollTo||window.scrollTo)({top:0,left:0,behavior:'auto'}));return r};
     wrapped.__clientUiFix=true;window.nav=wrapped;try{nav=wrapped}catch(e){}
   }
   const baseRender=window.render;

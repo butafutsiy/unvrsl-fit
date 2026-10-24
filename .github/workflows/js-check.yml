@@ -150,3 +150,36 @@ jobs:
           node-version: '22'
       - name: Require media for every canonical exercise
         run: node scripts/audit-exercises.cjs --strict
+  mobile-layout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install real browser checks
+        run: |
+          npm install --prefix "$RUNNER_TEMP/unvrsl-browser" --no-audit --no-fund playwright@1.56.1
+          npx --prefix "$RUNNER_TEMP/unvrsl-browser" playwright install --with-deps chromium
+      - name: Build production shell
+        run: node scripts/build-static.cjs
+      - name: Check dock, scroll, hit targets and offline PWA
+        env:
+          UNVRSL_AUDIT_URL: http://127.0.0.1:8770/unvrsl-fit/
+        run: |
+          mkdir -p "$RUNNER_TEMP/unvrsl-static"
+          ln -s "$GITHUB_WORKSPACE/dist" "$RUNNER_TEMP/unvrsl-static/unvrsl-fit"
+          python3 -m http.server 8770 --directory "$RUNNER_TEMP/unvrsl-static" > "$RUNNER_TEMP/unvrsl-layout-server.log" 2>&1 &
+          for attempt in {1..50}; do
+            curl -fsS "$UNVRSL_AUDIT_URL" -o /dev/null 2>/dev/null && break
+            sleep .1
+          done
+          export UNVRSL_PLAYWRIGHT="$RUNNER_TEMP/unvrsl-browser/node_modules/playwright"
+          export UNVRSL_AUDIT_OUTPUT="$RUNNER_TEMP/unvrsl-layout-proof"
+          node tests/browser-program-audit.cjs
+          node tests/browser-pwa-persistence.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-layout-proof
+          path: ${{ runner.temp }}/unvrsl-layout-proof

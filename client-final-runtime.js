@@ -177,10 +177,10 @@
     if(root.dataset.clientHomeSignatureV257===signature&&root.querySelector('.calendar-card')){
       refreshClientHomeExtras();return;
     }
-    const y=root.classList.contains('active')?(window.scrollY||document.documentElement?.scrollTop||0):0;
+    const y=root.classList.contains('active')?((window.unvrslScrollTop?.()??window.scrollY??0)):0;
     root.innerHTML=`${clientCalendarHtml()}${clientStreakHtml()}`;
     root.dataset.clientHomeSignatureV257=signature;
-    if(y>0)window.scrollTo({top:y,left:0,behavior:'auto'});
+    if(y>0)(window.unvrslScrollTo||window.scrollTo)({top:y,left:0,behavior:'auto'});
     [0,160,700].forEach(t=>setTimeout(refreshClientHomeExtras,t));
   }
   function installCanonicalClientHome(){

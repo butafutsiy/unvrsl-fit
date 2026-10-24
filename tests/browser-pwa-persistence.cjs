@@ -1,9 +1,10 @@
 'use strict';
 const {chromium}=require(process.env.UNVRSL_PLAYWRIGHT||'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs');
+const output=process.env.UNVRSL_AUDIT_OUTPUT||'/workspace/unvrsl-audit';
 const base=process.env.UNVRSL_AUDIT_URL||'http://127.0.0.1:8780/unvrsl-fit/';
 (async()=>{
- const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
+ const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||(fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),args:['--no-sandbox']});
  try{
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),page=await context.newPage();
   await page.route('**/*',r=>r.request().url().startsWith(new URL(base).origin)?r.continue():r.abort());
@@ -21,7 +22,7 @@ const base=process.env.UNVRSL_AUDIT_URL||'http://127.0.0.1:8780/unvrsl-fit/';
   assert.equal(offline.programReturned,false);assert.equal(offline.trash,true);assert.equal(offline.draft,'offline-draft');assert.equal(offline.weight,80);assert.equal(offline.assigned,95);assert.equal(offline.history,before.history);
   await page.evaluate(async()=>{await restoreDeletedProgram('offline-plan');await persistWorkoutState()});await page.reload();await page.waitForFunction(()=>window.__unvrslStartupComplete,{timeout:25000});
   assert.equal(await page.evaluate(()=>st.programs.some(p=>p.id==='offline-plan')),true);
-  fs.mkdirSync('/workspace/unvrsl-audit',{recursive:true});fs.writeFileSync('/workspace/unvrsl-audit/pwa-results.json',JSON.stringify({before,offline,restoredOffline:true},null,2));
+  fs.mkdirSync(output,{recursive:true});fs.writeFileSync(output+'/pwa-results.json',JSON.stringify({before,offline,restoredOffline:true},null,2));
   console.log('PASS production PWA: actual Service Worker cache, offline deletion/reload, active draft/actual weights, history and explicit offline restore');
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});

@@ -123,7 +123,7 @@
     const y = st.current?.scrollY || 0;
     closeModal();
     nav("start");
-    requestAnimationFrame(() => scrollTo(0, y));
+    requestAnimationFrame(() => (W.unvrslScrollTo || W.scrollTo)(0, y));
   };
   W.inspectWorkoutDraft = () => {
     const s = st.current;
