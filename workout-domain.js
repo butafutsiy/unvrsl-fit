@@ -722,6 +722,26 @@
   function setDecision(e,s,session,p,targetSet=s) {
     const range=repRange(e,targetSet),target=effortTarget(e,targetSet,session);
     const reps=performedReps(e,s),felt=effortRpe(s),used=number(s.w);
+    const adaptive=typeof globalThis!=='undefined'&&globalThis.UNVRSLLoadAdjustment;
+    if(adaptive&&typeof adaptive.adjust==='function') {
+      const proposal=adaptive.adjust({
+        weight:used,actualReps:reps,actualRpe:felt,
+        targetRepMin:range.lo,targetRepMax:range.hi,
+        targetRirMin:10-target.hi,targetRirMax:10-target.lo,
+        exerciseName:e.n||e.name,exerciseKind:exerciseKind(e,reg),
+        loadType:p.loadType,bodyWeight:number(session?.bodyWeight),
+        step:p.step,available:p.available,min:p.min,
+        techniqueFailed:s.techniqueFailed,fullROM:s.fullROM,
+        partial:s.partial,pain:s.pain,warmup:warmup(s),
+        effortUncertain:s.effortUncertain,effortCensored:s.effortCensored
+      });
+      return {
+        ...proposal,
+        state:proposal.action==='down'?'TOO_HARD':proposal.action==='up'?'TOO_EASY':
+          proposal.action==='stop'?'STOP':proposal.confidence==='none'?'UNKNOWN':'TARGET',
+        weight:proposal.weight??used
+      };
+    }
     if(felt==null)return {state:'UNKNOWN',weight:used,action:'hold',reason:'Укажи RPE или RIR: без оценки усилия вес сохранён'};
     const hard=reps<range.lo||s.techniqueFailed===true||(method(e,targetSet)!=='STANDARD'&&felt>target.hi+.5);
     const easy=!hard&&reps>=range.hi&&felt!=null&&felt<target.lo-.5;
@@ -1468,7 +1488,7 @@
       weight,
       series,calibration,reasonCodes,repetitionGoal,
       analogousSessionId:analogous?.[0]?.session.id??null,
-      calculationVersion:469,
+      calculationVersion:470,
       reliable,
       canApply:(!set.weightMode||reliable)&&(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
       allowedWeightRange:corridor?{min:Math.min(...corridor),max:Math.max(...corridor)}:null,
@@ -1476,7 +1496,7 @@
       weeklyCalculated:!!weeklyCalculated,
       profileWarnings:prescription.warnings,
       scope:nextSetSuggestion?'next_set':'next_session',
-      proposalKey:proposalFingerprint([469,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
+      proposalKey:proposalFingerprint([470,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
       raw,
       previous: prior,
       basis:ids.length?{date:sessionDate(latest[0]?.session??strength.source?.session),weight:prior??number(strength.source?.set.w),planned:seed||null,estimatedOneRepMax:latestOneRepMax!=null?Number(latestOneRepMax.toFixed(1)):null,sets:latest.map(x=>({weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effort(x)}))}:null,
