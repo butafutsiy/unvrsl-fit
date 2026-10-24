@@ -9,9 +9,8 @@ if(typeof canonicalSettingsSheet==='function'){
     const result=canonicalSettingsSheet.apply(this,arguments),sheet=document.getElementById('sheet');
     if(!sheet||sheet.querySelector('[data-cloud-settings]'))return result;
     const account=document.createElement('div');account.dataset.cloudSettings='1';
-    account.innerHTML=`<div class="section">АККАУНТ И ОБЛАКО</div><div class="settings-card"><div class="setting"><div><b>UNVRSL Cloud</b><div class="muted small">${esc(cloudSettingsLabel())}</div></div><button class="btn tiny" onclick="openCloudAccount()">${window.cloud?.user?'Открыть':'Войти'}</button></div>${window.cloud?.user?`<div class="setting"><div><b>Облачная копия</b><div class="muted small">Тренировки, прогресс, вес, программы и настройки</div></div><button class="btn tiny" onclick="accountSyncNow?.()">Синхронизировать</button></div>`:''}</div>`;
+    account.innerHTML=`<div class="section">АККАУНТ И ОБЛАКО</div><div class="settings-card"><div class="setting"><div><b>UNVRSL Cloud</b><div class="muted small">${esc(cloudSettingsLabel())}</div></div><button class="btn tiny" onclick="openCloudAccount()">${window.cloud?.user?'Открыть':'Войти'}</button></div></div>`;
     const firstSection=sheet.querySelector('.section');if(firstSection)firstSection.before(account);else sheet.append(account);
-    const sync=document.createElement('p');sync.className='muted small';sync.dataset.accountSyncStatus='1';sync.textContent=window.accountSyncStatusText?.()||'Проверяем состояние синхронизации…';account.append(sync);
     window.dispatchEvent(new CustomEvent('unvrsl:settings-opened'));
     return result;
   };

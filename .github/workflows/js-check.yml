@@ -129,6 +129,8 @@ jobs:
           node tests/runtime-template-visibility.cjs
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
           node tests/runtime-load-policy-audit.cjs
+          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
+          node tests/runtime-management-cleanup.cjs
       - name: Audit traceable nutrition catalog
         run: node scripts/audit-nutrition.cjs
       - name: Audit catalog fields
@@ -178,6 +180,7 @@ jobs:
           export UNVRSL_AUDIT_OUTPUT="$RUNNER_TEMP/unvrsl-layout-proof"
           node tests/browser-program-audit.cjs
           node tests/browser-pwa-persistence.cjs
+          node tests/browser-management-cleanup.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -102,7 +102,6 @@
   const base = save;
   let pending = Promise.resolve();
   let durable = Promise.resolve(true),
-    fallbackNoticeShown = false,
     fallbackErrorShown = false;
   W.save = save = function (options = {}) {
     if (hydrating) {
@@ -140,10 +139,6 @@
       durable = pending.then(
         () => {
           W.__unvrslStorageModeV393 = "indexeddb";
-          if (!fallbackNoticeShown) {
-            fallbackNoticeShown = true;
-            toast("Данные сохранены в резервное хранилище");
-          }
           return true;
         },
         (error) => {

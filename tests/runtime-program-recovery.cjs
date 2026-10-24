@@ -8,7 +8,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
   await w.addSemenTrainingPlan();
   assert.match(w.document.getElementById('sheet').textContent,/Сохранить программу/);
   await w.saveProgram('semen-upper-lower-8');
-  assert.match(w.document.getElementById('saveProgramStatus').textContent,/сохранена на устройстве/);
+  assert.equal(w.document.getElementById('modal').classList.contains('show'),false);assert.match(w.document.getElementById('toast').textContent,/Программа сохранена/);
   w.st.programs.find(p=>p.seedId==='semen-upper-lower-8').weeks[0].days[0].ex[0].sets[0].w=95;
   await w.trainerDeleteOwnProgram('semen-upper-lower-8');
   assert.equal(w.st.programs.some(p=>p.seedId==='semen-upper-lower-8'),false);

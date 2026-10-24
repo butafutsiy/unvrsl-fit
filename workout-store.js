@@ -16,10 +16,12 @@
   };
   function mergeProgramLifecycle(target,local){
     if(!target||!local||target.accountOwnerId&&local.accountOwnerId&&target.accountOwnerId!==local.accountOwnerId)return target;
-    for(const field of ['programDeletedAt','programRestoredAt']){
+    for(const field of ['programDeletedAt','programRestoredAt','programPurgedAt','templateDeletedAt']){
       target[field]={...(target[field]||{})};
       for(const [key,value] of Object.entries(local[field]||{}))target[field][key]=Math.max(Number(value)||0,Number(target[field][key])||0);
     }
+    target.builtinProgramPurgedAt=Math.max(Number(target.builtinProgramPurgedAt||0),Number(local.builtinProgramPurgedAt||0));
+    const templates=new Map();for(const t of [...(target.programTemplates||[]),...(local.programTemplates||[])]){const old=templates.get(String(t.id));if(!target.templateDeletedAt['saved:'+t.id]&&(!old||Number(t.updated||t.created||0)>Number(old.updated||old.created||0)))templates.set(String(t.id),clone(t))}target.programTemplates=[...templates.values()];
     target.deletedProgramKeys=[...new Set([...(target.deletedProgramKeys||[]),...(local.deletedProgramKeys||[]),...Object.keys(target.programDeletedAt)])].filter(key=>Number(target.programRestoredAt[key]||0)<=Number(target.programDeletedAt[key]||0));
     const deleted=new Set(target.deletedProgramKeys),keys=p=>[p.id&&'id:'+p.id,!p.independentCopy&&p.seedId&&'seed:'+p.seedId,p.cloudPlanId&&'cloud:'+p.cloudPlanId,!p.independentCopy&&p.templateKey&&'template:'+p.templateKey,!p.independentCopy&&p.isMasterPlan&&'seed:master-trainer-plan',!p.independentCopy&&(p.seedId||p.internetTemplate||p.femaleTemplate||p.templateKey)&&p.name&&'name:'+String(p.name).toLowerCase().replace(/[·•]/g,' ').replace(/\s+/g,' ').trim()].filter(Boolean);
     const programs=new Map(),trash=new Map();
@@ -29,7 +31,7 @@
       const old=programs.get(String(p.id)),stamp=x=>Math.max(Number(x.updated||0),Number(x.updatedAt||0),Number(x.created||0));
       if(!old||stamp(p)>stamp(old))programs.set(String(p.id),clone(p));
     }
-    target.programs=[...programs.values()];target.programTrash=[...trash.values()].filter(entry=>keys(entry.program).some(key=>deleted.has(key)));
+    target.programs=[...programs.values()];target.programTrash=[...trash.values()].filter(entry=>entry.program&&keys(entry.program).some(key=>deleted.has(key))&&Math.max(0,...keys(entry.program).map(key=>Number(target.programPurgedAt[key]||0)))<Number(entry.deletedAt||1));
     target.templateVisibility={...(target.templateVisibility||{})};
     for(const [key,value] of Object.entries(local.templateVisibility||{}))if(!target.templateVisibility[key]||Number(value.at||0)>Number(target.templateVisibility[key].at||0))target.templateVisibility[key]=clone(value);
     for(const field of ['primaryProgram','clientPrimaryProgram']){

@@ -30,3 +30,29 @@ html body.keyboard-open>.nav{visibility:hidden!important;pointer-events:none!imp
 html:root.unvrsl-floating-viewport{scroll-padding-top:100px;scroll-padding-bottom:var(--app-controls-clearance,100px)}
 html:root.unvrsl-floating-viewport body>.nav{position:fixed!important;top:auto!important}
 html:root.unvrsl-floating-viewport body #start .workout-head{position:static!important;top:auto!important}
+/* Consistent action alignment in settings, editors and program management. */
+html body .program-unified-card .btn,html body .program-more>summary,html body .program-action-row .btn,html body #modal .sheet .btn{display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:1.3}
+html body .program-unified-card>.row{align-items:flex-start}
+html body .program-card-footer{align-items:stretch}
+html body .program-card-footer>.btn,html body .program-more>summary{min-height:52px!important}
+html body .program-more>summary{width:100%;height:100%}
+html body .program-more[open]>summary{height:auto}
+html body .program-card-actions>.btn:last-child:nth-child(odd){grid-column:1 / -1}
+html body .program-action-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+html body .program-action-row>.btn{min-width:0;min-height:52px;padding:10px;font-size:14px;white-space:normal;border-radius:14px}
+html body .program-trash-card,html body .program-template-card{overflow-wrap:anywhere}
+html body .programs-toolbar>.row>div{flex:1;min-width:0}
+html body .programs-toolbar>.row>.btn{width:48px;height:48px;min-width:48px;padding:0;display:flex;align-items:center;justify-content:center}
+html body .programs-toolbar .coach-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+html body #modal .settings-card .setting .seg{display:grid!important;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px}
+html body #modal .settings-card .setting .seg button{display:flex;align-items:center;justify-content:center;gap:4px;text-align:center;min-height:48px;line-height:1.3}
+html body #modal .settings-card .colors{display:grid;grid-template-columns:repeat(4,44px);justify-content:space-between;gap:16px;padding:6px}
+html body #modal .settings-card .color{width:44px;height:44px;margin:0}
+html body #modal .program-ex>.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+html body #modal .program-ex>.row>.grow{flex:1 0 100%;min-width:0}
+html body #modal .program-ex>.row>.btn{flex:1;min-width:0}
+html body #modal .program-ex .mini-actions{display:grid;grid-template-columns:44px 44px minmax(0,1fr);gap:8px;align-items:stretch}
+html body #modal .program-ex .mini-actions>button{display:flex;align-items:center;justify-content:center;min-height:44px;text-align:center}
+html body #modal .program-ex>.row>.program-ex-edit-actions{flex:1 0 100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+html body #modal .program-ex-edit-actions>.btn{width:100%;min-height:44px}
+html body .program-card-footer:has(.program-more[open]){display:grid;grid-template-columns:minmax(0,1fr);align-items:start}

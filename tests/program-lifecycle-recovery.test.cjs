@@ -16,3 +16,8 @@ test('explicit restore beats old backup deletion; unrelated copies remain indepe
 test('backup recovery never combines lifecycle state across different owners',()=>{
  const out=mergeProgramLifecycle({accountOwnerId:'a',programs:[{id:'a'}]},{accountOwnerId:'b',deletedProgramKeys:['id:a']});assert.equal(out.programs.length,1);assert.equal(out.deletedProgramKeys,undefined);
 });
+test('IndexedDB cannot refill permanently cleared trash or deleted templates',()=>{
+ const p={id:'p',seedId:'seed'},local={deletedProgramKeys:['id:p'],programDeletedAt:{'id:p':10},programPurgedAt:{'id:p':20},templateDeletedAt:{'saved:t':20},builtinProgramPurgedAt:20};
+ const stale={programs:[p],programTrash:[{id:'p',program:p,deletedAt:10}],programTemplates:[{id:'t'}],sessions:[{id:'history'}]};
+ const out=mergeProgramLifecycle(stale,local);assert.equal(out.programs.length,0);assert.equal(out.programTrash.length,0);assert.equal(out.programTemplates.length,0);assert.equal(out.sessions[0].id,'history');assert.equal(out.builtinProgramPurgedAt,20);
+});

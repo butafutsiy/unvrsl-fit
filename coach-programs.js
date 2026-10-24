@@ -73,15 +73,10 @@ async function saveProgram(id){
   p.updated=p.updatedAt=Date.now();
   const ok=window.persistWorkoutState?await window.persistWorkoutState():save();
   if(ok===false)throw Error('Не удалось сохранить программу на устройстве. Повтори попытку.');
-  if(status)status.textContent='Программа сохранена на устройстве';
+  if(button&&document.getElementById('saveProgramButton')===button)programEditorCloseV386();
   toast('Программа сохранена');
-  if(window.cloud?.user&&window.accountSyncNow){
-   if(status)status.textContent='Сохранено на устройстве · синхронизация…';
-   const synced=await window.accountSyncNow({quiet:true});
-   if(status)status.textContent=synced?'Программа сохранена и синхронизирована':'Сохранено на устройстве. Облачная синхронизация не завершена — повтори при подключении к сети.';
-  }
   return true;
- }catch(error){if(status)status.textContent=error.message;else toast(error.message);return false}
+ }catch(error){const message='Не удалось сохранить программу. Освободи место на устройстве и повтори попытку.';if(status)status.textContent=message;else toast(message);return false}
  finally{programSaveBusy=false;if(button)button.disabled=false}
 }
 function renderProgramEditor(){
@@ -204,12 +199,13 @@ window.addIndependentTemplate=async function(key,factory){
 };
 window.registerTemplateOption=(key,title)=>templateOptions.set(String(key),String(title));
 window.templateIsHidden=key=>{
+ if(st.templateDeletedAt?.[key])return true;
  const value=st.templateVisibility?.[key],all=st.templateVisibility?.['catalog:custom'];
  return value&&Number(value.at||0)>=Number(all?.at||0)?value.hidden===true:all?.hidden===true;
 };
 const templateToken=key=>encodeURIComponent(key).replace(/'/g,'%27');
 window.templateHideButton=key=>`<button class="btn tiny" style="margin-top:10px" onclick="hideTemplateOption('${templateToken(key)}')">Убрать из шаблонов</button>`;
-function allTemplateOptions(){return new Map([...templateOptions,...(st.programTemplates||[]).map(t=>['saved:'+t.id,t.name||'Шаблон'])])}
+function allTemplateOptions(){return new Map([...templateOptions,...(st.programTemplates||[]).map(t=>['saved:'+t.id,t.name||'Шаблон'])].filter(([key])=>!st.templateDeletedAt?.[key]))}
 let templateVisibilityBusy=false;
 async function changeTemplateVisibility(keys,hidden){
  if(templateVisibilityBusy)return false;
@@ -230,8 +226,24 @@ window.restoreTemplateOption=token=>changeTemplateVisibility([decodeURIComponent
 window.keepOnlyPopularTemplates=()=>changeTemplateVisibility([...allTemplateOptions().keys(),'catalog:custom'],true);
 window.hiddenTemplateOptionsSheet=function(){
  const hidden=[...allTemplateOptions()].filter(([key])=>window.templateIsHidden(key));
- modal(`<div class="row between"><h2>Скрытые шаблоны</h2><button class="btn tiny" onclick="templatesSheet()">Назад</button></div><p class="muted small">Скрытие не удаляет добавленные программы.</p>${hidden.map(([key,title])=>`<div class="card"><b>${esc(title)}</b><button class="btn full" style="margin-top:10px" onclick="restoreTemplateOption('${templateToken(key)}')">Вернуть в шаблоны</button></div>`).join('')||'<p class="muted">Скрытых шаблонов нет.</p>'}`);
+ modal(`<div class="row between"><h2>Скрытые шаблоны</h2><button class="btn tiny" onclick="templatesSheet()">Назад</button></div><p class="muted small">Добавленные программы сохранятся при удалении шаблона.</p>${hidden.length?'<button class="btn danger full" onclick="clearHiddenTemplates()">Удалить все скрытые</button>':''}${hidden.map(([key,title])=>`<div class="card program-template-card"><b>${esc(title)}</b><div class="program-action-row"><button class="btn" onclick="restoreTemplateOption('${templateToken(key)}')">Вернуть в шаблоны</button><button class="btn danger" onclick="deleteHiddenTemplate('${templateToken(key)}')">Удалить</button></div></div>`).join('')||'<p class="muted">Скрытых шаблонов нет.</p>'}`);
 };
+async function removeTemplateOptions(keys){
+ if(templateVisibilityBusy)return false;
+ const catalog=allTemplateOptions(),valid=keys.filter(key=>catalog.has(key));if(!valid.length)return false;
+ if(!confirm(valid.length===1?`Удалить шаблон «${catalog.get(valid[0])}» навсегда? Добавленные программы сохранятся.`:`Удалить все скрытые шаблоны (${valid.length})? Добавленные программы сохранятся.`))return false;
+ templateVisibilityBusy=true;
+ const previous={programTemplates:st.programTemplates,templateDeletedAt:st.templateDeletedAt};
+ st.templateDeletedAt={...(st.templateDeletedAt||{})};
+ for(const key of valid)st.templateDeletedAt[key]=Math.max(Date.now(),Number(st.templateDeletedAt[key]||0)+1);
+ st.programTemplates=(st.programTemplates||[]).filter(t=>!valid.includes('saved:'+t.id));
+ try{if((window.persistWorkoutState?await window.persistWorkoutState():save())===false)throw Error('Не удалось удалить шаблоны. Повтори попытку.');window.hiddenTemplateOptionsSheet();toast(valid.length===1?'Шаблон удалён':'Скрытые шаблоны удалены');return true}
+ catch(error){Object.assign(st,previous);toast('Не удалось удалить шаблоны. Повтори попытку.');return false}
+ finally{templateVisibilityBusy=false}
+}
+window.deleteHiddenTemplate=token=>removeTemplateOptions([decodeURIComponent(token)]);
+window.clearHiddenTemplates=()=>removeTemplateOptions([...allTemplateOptions().keys()].filter(window.templateIsHidden));
+
 function templatesSheet(){
  const visible=(st.programTemplates||[]).filter(t=>!window.templateIsHidden('saved:'+t.id)),hidden=[...allTemplateOptions().keys()].filter(window.templateIsHidden).length;
  const cards=visible.map(t=>window.renderTemplateCard({title:t.name,description:t.description||'Ваш сохранённый шаблон',weeks:t.weeks.length,frequency:t.weeks[0]?.days?.length,key:'saved:'+t.id,action:`createFromTemplate('${t.id}')`})).join('');
@@ -246,7 +258,7 @@ function templatesSheet(){
 }
 function createFromTemplate(id){const t=templateById(id);if(!t)return;return window.addIndependentTemplate('saved:'+id,()=>t)}
 
-function deleteTemplate(id){st.programTemplates=st.programTemplates.filter(x=>x.id!==id);save();templatesSheet()}
+function deleteTemplate(id){return removeTemplateOptions(['saved:'+id])}
 function buildBuiltInTemplate(){const weeks=[];for(let wi=1;wi<=8;wi++){const rs=ROUTINES.filter(r=>r.w===wi);weeks.push({n:wi,days:rs.map(r=>({id:uid('day'),name:`${r.c} · ${r.t}`,ex:groupIndexedEntries(routineEntries(r)).map(g=>builtInGroupToProgramExercise(r,g))}))})}const p={id:uid('prog'),name:'Мой 8-недельный цикл — копия',created:Date.now(),updated:Date.now(),weeks};return p}
 let builtinCopyBusy=false;
 async function cloneBuiltInCycle(weightMode){

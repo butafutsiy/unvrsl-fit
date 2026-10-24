@@ -56,3 +56,14 @@ test('a newer primary-program choice survives a later unrelated cloud snapshot',
  const out=merge({primaryProgramId:'chosen',primaryProgramSelectedAt:300,programs:[{id:'chosen'},{id:'other'}]},{primaryProgramId:'other',primaryProgramSelectedAt:100,programs:[{id:'chosen'},{id:'other'}]},10000);
  assert.equal(out.primaryProgramId,'chosen');assert.equal(out.primaryProgramSelectedAt,300);
 });
+test('permanent trash purge survives stale cloud programs and trash payloads',()=>{
+ const p={id:'purged',seedId:'seed',updated:20};
+ const local={deletedProgramKeys:['id:purged','seed:seed'],programDeletedAt:{'id:purged':100,'seed:seed':100},programPurgedAt:{'id:purged':200,'seed:seed':200},programTrash:[],sessions:[{id:'history'}]};
+ const stale={programs:[p],programTrash:[{id:p.id,program:p,deletedAt:100}]};
+ const out=merge(local,stale);assert.equal(out.programs.length,0);assert.equal(out.programTrash.length,0);assert.equal(out.sessions[0].id,'history');assert.equal(merge(stale,out).programTrash.length,0);
+});
+test('deleted templates stay deleted while unrelated templates merge',()=>{
+ const local={templateDeletedAt:{'saved:old':100,'builtin:cycle':100},programTemplates:[{id:'mine',created:50}]};
+ const remote={programTemplates:[{id:'old',created:20},{id:'other',created:30}]};
+ const out=merge(local,remote);assert.deepEqual(out.programTemplates.map(p=>p.id).sort(),['mine','other']);assert.equal(out.templateDeletedAt['builtin:cycle'],100);
+});

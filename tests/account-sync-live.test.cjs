@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 const clone=x=>JSON.parse(JSON.stringify(x));
-async function device(server){
+async function device(server,{quota=false}={}){
  const timers=new Map(),intervals=[],storage=new Map();let timerId=0;
  const local={accountOwnerId:'owner',programs:[],sessions:[],bw:[],current:null};
  const w={save:()=>true,addEventListener(){},dispatchEvent(){}};
@@ -19,7 +19,7 @@ async function device(server){
  }};
  w.cloud={client,user:null};
  const c={window:w,st:local,save:w.save,console:{warn(){}},Date,CustomEvent:class{},
-  localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},
+  localStorage:{getItem:k=>{if(quota)throw Object.assign(new Error('Quota'),{name:'QuotaExceededError'});return storage.get(k)||null},setItem:(k,v)=>{if(quota)throw Object.assign(new Error('Quota'),{name:'QuotaExceededError'});storage.set(k,v)}},
   document:{visibilityState:'visible',addEventListener(){},querySelector(){return null}},
   workoutStore:{activateAccount:s=>s,restore(){},journal:()=>({closed:{}})},restoreAppearance(){},
   setTimeout:(fn,delay)=>{timers.set(++timerId,{fn,delay});return timerId},clearTimeout:id=>timers.delete(id),setInterval:fn=>intervals.push(fn)};
@@ -54,4 +54,9 @@ test('visible installed app polls new programs; failed sync keeps the local copy
  app.intervals[0]();for(let i=0;i<3;i++)await new Promise(resolve=>setImmediate(resolve));
  assert.equal(app.c.st.programs[0].id,'new');server.fail=true;app.c.st.programs[0].name='Local edit';app.w.save();
  assert.equal(await app.w.accountSyncNow({quiet:true}),false);assert.equal(app.c.st.programs[0].name,'Local edit');assert.equal(app.w.__unvrslSyncState.status,'error');
+});
+test('full localStorage quota does not interrupt save metadata or cloud upload',async()=>{
+ const server={writes:0},d=await device(server,{quota:true});d.c.st.programs.push({id:'quota-plan',updated:100});
+ assert.doesNotThrow(()=>d.w.save());assert.equal(await d.w.accountSyncNow({quiet:true}),true);assert.equal(server.row.state.programs[0].id,'quota-plan');assert.match(server.row.device_id,/^d_/);
+ const deviceId=server.row.device_id;d.w.save();assert.equal(await d.w.accountSyncNow({quiet:true}),true);assert.equal(server.row.device_id,deviceId);assert.equal(d.w.__unvrslSyncState.status,'synced');
 });

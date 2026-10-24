@@ -48,7 +48,11 @@
   }
   function isDeleted(p,set=readDeleted()){return keysFor(p).some(k=>set.has(k))}
   const copy=value=>JSON.parse(JSON.stringify(value));
+  function purged(p,deletedAt){return Math.max(0,...keysFor(p).map(key=>Number(st.programPurgedAt?.[key]||0)))>=Number(deletedAt||1)}
+  function trashEntries(){return (Array.isArray(st.programTrash)?st.programTrash:[]).filter(entry=>entry.program&&!purged(entry.program,entry.deletedAt))}
+  function builtinInTrash(){return st.builtinProgramHidden&&(!st.builtinProgramPurgedAt||Number(st.builtinProgramVisibilityUpdatedAt||0)>Number(st.builtinProgramPurgedAt))}
   function archiveProgram(p,deletedAt=Date.now()){
+    if(purged(p,deletedAt))return;
     st.programTrash=Array.isArray(st.programTrash)?st.programTrash:[];
     const entry={id:String(p.id),program:copy(p),deletedAt};
     const i=st.programTrash.findIndex(x=>x.id===entry.id);
@@ -70,13 +74,34 @@
     if(ok===false)throw Error('Не удалось сохранить изменения. Повтори попытку.');
   }
   window.openProgramTrash=function(){
-    const trash=Array.isArray(st.programTrash)?st.programTrash:[];
-    const rows=trash.slice().sort((a,b)=>b.deletedAt-a.deletedAt).map(entry=>`<div class="card"><b>${esc(entry.program?.name||'Программа')}</b><p class="muted small">${entry.program?.weeks?.length||0} нед. · удалена ${esc(new Date(entry.deletedAt).toLocaleDateString('ru-RU'))}</p><button class="btn primary full" onclick="restoreDeletedProgram('${encodeURIComponent(entry.id)}')">Восстановить</button></div>`).join('');
-    modal(`<div class="row between"><h2>Корзина программ</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><p class="muted small">Удалённые программы хранятся здесь до восстановления.</p>${st.builtinProgramHidden?'<button class="btn full" onclick="restoreBuiltinProgram()">Восстановить встроенный цикл</button>':''}${rows||'<p class="muted">В корзине пока нет программ. Программы, удалённые до появления корзины, могут отсутствовать.</p>'}<p id="programTrashStatus" role="status"></p>`);
+    const trash=trashEntries();
+    const rows=trash.slice().sort((a,b)=>b.deletedAt-a.deletedAt).map(entry=>{
+      const date=Number(entry.deletedAt)>=946684800000?'удалена '+new Date(entry.deletedAt).toLocaleDateString('ru-RU'):'дата удаления неизвестна';
+      return `<div class="card program-trash-card"><b>${esc(entry.program?.name||'Программа')}</b><p class="muted small">${entry.program?.weeks?.length||0} нед. · ${esc(date)}</p><div class="program-action-row"><button class="btn primary" onclick="restoreDeletedProgram('${encodeURIComponent(entry.id)}')">Восстановить</button><button class="btn danger" onclick="purgeDeletedProgram('${encodeURIComponent(entry.id)}')">Удалить</button></div></div>`;
+    }).join('');
+    modal(`<div class="row between"><h2>Корзина программ</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><p class="muted small">Программы можно восстановить или удалить навсегда. История тренировок сохраняется.</p>${trash.length||builtinInTrash()?'<button class="btn danger full" onclick="clearProgramTrash()">Очистить корзину</button>':''}${builtinInTrash()?`<div class="card program-trash-card"><b>Встроенный цикл</b><div class="program-action-row"><button class="btn primary" onclick="restoreBuiltinProgram()">Восстановить</button><button class="btn danger" onclick="purgeDeletedProgram('${BUILTIN}')">Удалить</button></div></div>`:''}${rows||(!builtinInTrash()?'<p class="muted">Корзина пуста.</p>':'')}<p id="programTrashStatus" role="status"></p>`);
   };
+  let purgeBusy=false;
+  async function purgeTrash(id=null){
+    if(purgeBusy||restoreBusy)return false;
+    const entries=trashEntries().filter(entry=>id==null||String(entry.id)===id),builtin=builtinInTrash()&&(id==null||id===BUILTIN);
+    if(!entries.length&&!builtin)return false;
+    if(!confirm(id==null?'Очистить корзину навсегда? История тренировок сохранится.':'Удалить программу из корзины навсегда? История тренировок сохранится.'))return false;
+    purgeBusy=true;
+    const previous={programTrash:st.programTrash,programPurgedAt:st.programPurgedAt,builtinProgramPurgedAt:st.builtinProgramPurgedAt};
+    st.programPurgedAt={...(st.programPurgedAt||{})};
+    for(const entry of entries)for(const key of keysFor(entry.program))st.programPurgedAt[key]=Math.max(Date.now(),Number(entry.deletedAt||0)+1,Number(st.programPurgedAt[key]||0)+1);
+    const ids=new Set(entries.map(entry=>String(entry.id)));st.programTrash=(st.programTrash||[]).filter(entry=>!ids.has(String(entry.id)));
+    if(builtin)st.builtinProgramPurgedAt=Math.max(Date.now(),Number(st.builtinProgramVisibilityUpdatedAt||0)+1);
+    try{await persist();refreshViews();window.openProgramTrash();toast(id==null?'Корзина очищена':'Программа удалена навсегда');return true}
+    catch(error){Object.assign(st,previous);const status=document.getElementById('programTrashStatus');if(status)status.textContent='Не удалось очистить корзину. Повтори попытку.';return false}
+    finally{purgeBusy=false}
+  }
+  window.purgeDeletedProgram=token=>purgeTrash(decodeURIComponent(token));
+  window.clearProgramTrash=()=>purgeTrash();
   let restoreBusy=false;
   window.restoreDeletedProgram=async function(token){
-    if(restoreBusy)return;const entry=(st.programTrash||[]).find(x=>x.id===decodeURIComponent(token));if(!entry)return;
+    if(restoreBusy||purgeBusy)return;const entry=(st.programTrash||[]).find(x=>x.id===decodeURIComponent(token));if(!entry)return;
     restoreBusy=true;const backup=copy(st),deleted=readDeleted();
     try{
       const p=copy(entry.program);p.archived=false;p.updated=p.updatedAt=Date.now();
@@ -190,7 +215,7 @@
     if(typeof trainerIsTrainer==='function'&&!trainerIsTrainer()){el.innerHTML='<div class="card"><div class="title">Раздел тренера</div></div>';return}
     applyTombstones(false);
     const list=builtinCard()+visiblePrograms().map(p=>programCard(p)).join('');
-    el.innerHTML=`<div class="card"><div class="row between"><div><div class="title">Программы</div><div class="muted">Создание, шаблоны и отправка клиентам</div></div><button class="btn primary" onclick="newProgramSheet()">＋</button></div><p class="muted small" data-account-sync-status>${esc(window.accountSyncStatusText?.()||'Состояние синхронизации ещё загружается')}</p><div class="coach-actions"><button class="btn" onclick="accountSyncNow?.()">Синхронизировать программы</button><button class="btn" onclick="templatesSheet()">Шаблоны</button><button class="btn" onclick="openProgramTrash()">Корзина · ${(st.programTrash||[]).length+(st.builtinProgramHidden?1:0)}</button></div></div><div class="section">МОИ ПРОГРАММЫ</div>${list||'<div class="card muted">Пока нет программ. Создай новую или выбери шаблон.</div>'}`;
+    el.innerHTML=`<div class="card programs-toolbar"><div class="row between"><div><div class="title">Программы</div><div class="muted">Создание, шаблоны и отправка клиентам</div></div><button class="btn primary" onclick="newProgramSheet()">＋</button></div><div class="coach-actions"><button class="btn" onclick="templatesSheet()">Шаблоны</button><button class="btn" onclick="openProgramTrash()">Корзина · ${trashEntries().length+(builtinInTrash()?1:0)}</button></div></div><div class="section">МОИ ПРОГРАММЫ</div>${list||'<div class="card muted">Пока нет программ. Создай новую или выбери шаблон.</div>'}`;
   };
   try{trainerProgramsPage=window.trainerProgramsPage}catch(e){}
 

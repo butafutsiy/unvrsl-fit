@@ -31,7 +31,7 @@ const output=process.env.UNVRSL_AUDIT_OUTPUT||'/workspace/unvrsl-floating-audit'
    assert.ok(overflow.scroll<=overflow.client+1,JSON.stringify(overflow));
    await page.screenshot({path:`${output}/templates-${theme}-${width}.png`,fullPage:true});
    await page.evaluate(()=>settingsSheet());await page.waitForTimeout(80);
-   const settings=await page.locator('#sheet').innerText();assert.ok(!/Версия приложения|Проверить обновление/.test(settings));assert.match(settings,/UNVRSL Cloud/);assert.match(settings,/Синхронизировать/);
+   const settings=await page.locator('#sheet').innerText();assert.ok(!/Версия приложения|Проверить обновление/.test(settings));assert.match(settings,/UNVRSL Cloud/);assert.doesNotMatch(settings,/Синхронизировать|Облачная копия|Синхронизация/);
    await page.screenshot({path:`${output}/settings-${theme}-${width}.png`,fullPage:true});
    await page.evaluate(async()=>{
     closeModal();programBeginDayCoreV382('visual-plan',0,0);await trainingEngine200Tick();

@@ -88,5 +88,5 @@ test("iOS quota fallback remains durable and does not interrupt navigation", asy
     indexed.stores.get("state").get("drafts").state.owners.local.id,
     "active-ios",
   );
-  assert.ok(notices.includes("Данные сохранены в резервное хранилище"));
+  assert.deepEqual(notices, []);
 });

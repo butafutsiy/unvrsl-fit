@@ -11,14 +11,20 @@
 
   const clone=x=>{try{return JSON.parse(JSON.stringify(x))}catch(e){return null}};
   const parse=x=>{try{return x?JSON.parse(x):null}catch(e){return null}};
+  const metadataCache=new Map();let memoryDeviceId=null;
+  function readLocal(key){try{return localStorage.getItem(key)}catch(_){return null}}
   function deviceId(){
-    let id=localStorage.getItem(DEVICE_KEY);
-    if(!id){id='d_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10);localStorage.setItem(DEVICE_KEY,id)}
-    return id;
+    let id=memoryDeviceId||readLocal(DEVICE_KEY);
+    if(!id){id='d_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10);try{localStorage.setItem(DEVICE_KEY,id)}catch(_){}}
+    memoryDeviceId=id;return id;
   }
   function metaKey(){return META_KEY+':'+String(typeof window!=='undefined'?window.cloud?.user?.id||window.st?.accountOwnerId||'local':'local')}
-  function meta(){return parse(localStorage.getItem(metaKey()))||{localModifiedAt:0,lastSyncedAt:0,lastUserId:typeof window!=='undefined'?window.st?.accountOwnerId||null:null}}
-  function setMeta(patch){const m={...meta(),...patch};localStorage.setItem(metaKey(),JSON.stringify(m));return m}
+  function meta(){
+    const key=metaKey(),value=metadataCache.get(key)||parse(readLocal(key))||{localModifiedAt:0,lastSyncedAt:0,lastUserId:typeof window!=='undefined'?window.st?.accountOwnerId||null:null};
+    if(typeof window!=='undefined'&&window.__unvrslStorageModeV393==='indexeddb')return{...value,localModifiedAt:Math.max(Number(value.localModifiedAt||0),Number(window.st?.storageRevision||0))};
+    return value;
+  }
+  function setMeta(patch){const key=metaKey(),m={...meta(),...patch};metadataCache.set(key,m);try{localStorage.setItem(key,JSON.stringify(m))}catch(_){}return m}
   function markLocal(){if(!suppress){localRevision++;setMeta({localModifiedAt:Date.now()});window.__unvrslSyncState={status:'pending',owner:window.cloud?.user?.id||st?.accountOwnerId||null};window.dispatchEvent(new CustomEvent('unvrsl:sync-state'))}}
   function arr(x){return Array.isArray(x)?x:[]}
   function doneCount(session){return arr(session?.ex).reduce((sum,e)=>sum+arr(e?.set).filter(x=>x?.ok).length,0)}
@@ -49,10 +55,12 @@
     base.deletedSessionIds=[...new Set([...arr(local.deletedSessionIds),...arr(remote.deletedSessionIds)])];
     const deletedSessions=new Set(base.deletedSessionIds.map(String));base.sessions=base.sessions.filter(x=>!deletedSessions.has(String(x.id)));
     base.mealNutritionV1=(typeof window!=='undefined'?window.UNVRSLNutritionState:null)?.merge(local.mealNutritionV1,remote.mealNutritionV1,preferRemote)||base.mealNutritionV1;
-    for(const field of ['programDeletedAt','programRestoredAt']){
+    for(const field of ['programDeletedAt','programRestoredAt','programPurgedAt','templateDeletedAt']){
       base[field]={...local[field]};
       for(const [key,stamp] of Object.entries(remote[field]||{}))base[field][key]=Math.max(Number(stamp)||0,Number(base[field][key])||0);
     }
+    base.builtinProgramPurgedAt=Math.max(Number(local.builtinProgramPurgedAt||0),Number(remote.builtinProgramPurgedAt||0));
+    base.programTemplates=mergeByKey(first.programTemplates,second.programTemplates,x=>String(x.id||''),x=>Math.max(Number(x.updated||0),Number(x.created||0))).filter(x=>!base.templateDeletedAt['saved:'+x.id]);
     base.deletedProgramKeys=[...new Set([...arr(local.deletedProgramKeys),...arr(remote.deletedProgramKeys),...Object.keys(base.programDeletedAt)])]
       .filter(key=>Number(base.programRestoredAt[key]||0)<=Number(base.programDeletedAt[key]||0));
     const deletedPrograms=new Set(base.deletedProgramKeys);
@@ -61,7 +69,7 @@
     const recovered=[...arr(local.programs),...arr(remote.programs)].filter(p=>programKeys(p).some(k=>deletedPrograms.has(k)))
       .map(p=>({id:String(p.id),program:p,deletedAt:Math.max(1,...programKeys(p).map(k=>Number(base.programDeletedAt[k]||0)))}));
     base.programTrash=mergeByKey([...arr(first.programTrash),...recovered],second.programTrash,x=>String(x.id||''),x=>Number(x.deletedAt||0))
-      .filter(x=>x.program&&programKeys(x.program).some(k=>deletedPrograms.has(k)));
+      .filter(x=>x.program&&programKeys(x.program).some(k=>deletedPrograms.has(k))&&Math.max(0,...programKeys(x.program).map(k=>Number(base.programPurgedAt[k]||0)))<Number(x.deletedAt||1));
     base.seededPrograms={...(remote.seededPrograms||{}),...(local.seededPrograms||{})};
     base.templateVisibility={...(local.templateVisibility||{})};
     for(const [key,value] of Object.entries(remote.templateVisibility||{})){
