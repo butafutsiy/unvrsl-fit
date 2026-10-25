@@ -65,6 +65,7 @@
     running = true;
     let changed = false, weightsChanged = false;
     try {
+      changed=A.repairLegacyEffortTargets(cur)||changed;
       W.equipmentAttachDefaults405?.(cur);
       W.trainingInitializeSetWeights?.(cur);
       for (const ex of cur.ex || []) {
@@ -115,7 +116,7 @@
               !set.dismissedRecommendation && !rec.planPreserved && !set.autoInitialApplied) {
             const before = set.w;
             const initialBase=rec.nextSetSuggestion?(ex.set||[]).filter(s=>s.ok&&!s.warmup).at(-1)?.w:null;
-            const initialRec=rec.nextSetSuggestion?{...rec,weeklyCalculated:false,nextSetSuggestion:null,weight:initialBase}:rec;
+            const initialRec=rec.nextSetSuggestion&&rec.nextSetSuggestion.policyVersion!==541?{...rec,weeklyCalculated:false,nextSetSuggestion:null,weight:initialBase}:rec;
             if ((!rec.nextSetSuggestion||A.number(initialBase)>0)&&A.applyAuto(set, initialRec)) {
               set.plannedW = set.w;
               set.selectedW=set.w;set.autoInitialWeight=set.w;set.autoInitialApplied=true;

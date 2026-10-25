@@ -34,6 +34,7 @@
     return ownMin!=null&&ownMax!=null?{min:Math.min(ownMin,ownMax),max:Math.max(ownMin,ownMax)}:base;
   }
   function annotate(cur){
+    W.WorkoutDomain?.repairLegacyEffortTargets?.(cur);
     const range=currentRange(cur);if(!range)return false;let changed=false;
     const rpeLabel=label(range.min,range.max),rirMin=Math.max(0,10-range.max),rirMax=Math.max(0,10-range.min),rirLabel=label(rirMin,rirMax);
     const put=(o,k,v)=>{if(o[k]===v)return;o[k]=v;changed=true};
