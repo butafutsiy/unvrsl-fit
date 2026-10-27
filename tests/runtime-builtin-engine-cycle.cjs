@@ -52,6 +52,11 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
       if([3,5].includes(row.week)){
         assert.deepEqual(Array.from(row.bench,s=>s.role),['heavy','light','heavy','light','heavy','light','middle','middle']);
         assert.deepEqual(Array.from(row.bench,s=>s.reps.lo),[3,9,3,9,3,9,6,6]);
+      }else if([4,6].includes(row.week)){
+        assert.equal(row.bench.length,9);
+        assert.ok(row.bench.every(s=>s.method==='SLDR'));
+        assert.deepEqual(Array.from(row.bench,s=>s.reps.lo),[12,10,8,12,10,8,12,10,8]);
+        for(const set of row.bench)assert.deepEqual(Array.from(set.rpe),Array.from(row.base.rpe));
       }else if(row.week===8){
         assert.equal(row.bench.length,3);assert.deepEqual(Array.from(row.bench,s=>s.reps.lo),[2,2,1]);
         assert.equal(row.bench.at(-1).role,'test_attempt');assert.equal(row.iso,undefined);
