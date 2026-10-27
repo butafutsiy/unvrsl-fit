@@ -114,6 +114,8 @@ jobs:
           UNVRSL_CANVAS="$RUNNER_TEMP/unvrsl-tests/node_modules/@napi-rs/canvas" \
           node tests/runtime-periodization.cjs
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
+          node tests/runtime-percentage-weeks.cjs
+          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
           node tests/runtime-semen-plan.cjs
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
           node tests/runtime-builtin-engine-cycle.cjs

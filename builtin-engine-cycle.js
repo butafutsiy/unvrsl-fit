@@ -154,7 +154,7 @@
     queueMicrotask(()=>{try{save()}catch(error){console.warn('Personal cycle migration',error)}});
     return true;
   };
-  const upgradeSaved=()=>{for(const p of st.programs||[])W.upgradeBuiltinEngineCycleV502(p);};
+  const upgradeSaved=()=>{let changed=false;for(const p of st.programs||[]){W.upgradeBuiltinEngineCycleV502(p);changed=WorkoutDomain.upgradePercentageWeeks(p)||changed;}if(changed){try{save()}catch(error){console.warn('Percentage table migration',error)}}};
   ['unvrsl:storage-hydrated','unvrsl:app-ready','unvrsl:cloud-ready','unvrsl:history-updated'].forEach(event=>W.addEventListener(event,upgradeSaved));
   setTimeout(upgradeSaved,0);
 

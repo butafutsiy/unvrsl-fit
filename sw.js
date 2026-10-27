@@ -1,6 +1,6 @@
 "use strict";
-// Refresh the shell after the shoulder-press media presentation update.
-const SW_RELEASE = "v542",
+// Refresh the shell for the unified percentage table and saved-cycle upgrade.
+const SW_RELEASE = "v543",
   CACHE_PREFIX = "unvrsl-",
   SHELL = `${CACHE_PREFIX}shell-${SW_RELEASE}`,
   MEDIA = `${CACHE_PREFIX}media-${SW_RELEASE}`;
@@ -16,7 +16,7 @@ self.addEventListener("install", (event) => {
         ...[...html.matchAll(/<script src="([^"]+)"/g)].map((x) => x[1]),
         ...[...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((x) => x[1]),
       ];
-      await cache.addAll([...urls,"assets/story-plates-v472.png","assets/story-atlas-gym-v473.png","assets/story-atlas-vehicles-v473.png","assets/story-atlas-animals-v473.png","assets/story-atlas-heavy-v473.png","intake.html","intake.css?v=542","intake-page.js?v=542","intake-wizard.js?v=542","data/anatome-body-paths.json"]);
+      await cache.addAll([...urls,"assets/story-plates-v472.png","assets/story-atlas-gym-v473.png","assets/story-atlas-vehicles-v473.png","assets/story-atlas-animals-v473.png","assets/story-atlas-heavy-v473.png","intake.html","intake.css?v=543","intake-page.js?v=543","intake-wizard.js?v=543","data/anatome-body-paths.json"]);
       // The boot gate also needs dynamically loaded local owners when offline.
       // Resolve their exact current URLs from the installed loader itself.
       const loader = await cache.match(`frequent-patch.js?v=${SW_RELEASE.slice(1)}`);

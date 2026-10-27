@@ -9,12 +9,12 @@ for(const weeks of [3,4,6,8,10,11,12])for(const days of [3,4])test(`${weeks} wee
  const p=A.generateCycle({weeks,daysPerWeek:days,startDate:'2026-10-07',exercises:[{exerciseId:'bench',kind:'base',dayIndices:[0,1,2]},{exerciseId:'curl',kind:'isolation',dayIndices:[0,1]}]});
  assert.equal(p.weeks.length,weeks);assert.ok(p.weeks.at(-1).testWeek);assert.equal(p.weeks[0].days.length,days);
  assert.deepEqual(p.weeks[0].days.map(d=>d.role),A.dayRoles(days));
- if(weeks>4)assert.ok(p.weeks.some(w=>w.deload));
+ if(weeks>4)assert.ok(p.weeks.some(w=>w.phase==='deload'));
  for(const w of p.weeks){for(const id of ['bench','curl']){const all=w.days.flatMap(d=>d.ex.filter(e=>e.exerciseId===id));const count=all.reduce((n,e)=>n+e.sets.length,0);assert.equal(count,w.weeklyLoadProfile[id==='bench'?'base':'isolation'].sets);}}
 });
-test('eight-week canonical phases, real deload and no ordinary isolation during test',()=>{
+test('eight-week phases use one percentage table and no ordinary isolation during test',()=>{
  const p=A.cycleProfiles(8);assert.deepEqual(p.map(x=>x.phase),['volume','work','intensification','deload','heavy','recovery','strength','test']);
- for(const i of [3,5]){assert.deepEqual(p[i].base.rpe,[4,6]);assert.equal(p[i].isolation.sets,2);}
+ for(const i of [3,5]){assert.deepEqual(p[i].base,A.bandPrescription(p[i].pct));assert.deepEqual(p[i].isolation,A.bandPrescription(p[i].pct,true));assert.equal(p[i].deload,false);}
  assert.equal(p[7].isolation.sets,0);
  assert.equal(A.cycleProfiles(3,{testWeek:false}).at(-1).phase,'strength');
  assert.equal(A.cycleProfiles(3,{testWeek:false,priority:'hypertrophy'}).at(-1).phase,'strength');
@@ -51,9 +51,9 @@ test('manual weight and dismissed proposals survive recalculation',()=>{
  const manual=target({manualOverride:true,weightSource:'manual'});assert.equal(A.applyAuto(manual,{weight:105}),false);assert.equal(manual.w,100);
  const s=target({dismissedRecommendation:'a'});assert.equal(A.applyAuto(s,{weight:105,proposalKey:'a'}),false);assert.equal(s.w,100);
 });
-test('methods keep their recipes and deload disables special methods',()=>{
+test('methods keep their recipes regardless of low-percentage phase',()=>{
  const p=A.generateCycle({weeks:4,daysPerWeek:3,startDate:'2026-10-07',exercises:[{exerciseId:'bench',method:'DS',sets:[{w:100,r:10},{w:80,r:10},{w:60,r:10}]}]});
- assert.deepEqual(p.weeks[0].days[0].ex[0].sets.map(s=>s.w),[100,80,60]);assert.equal(p.weeks[2].days[0].ex[0].method,'STANDARD');
+ assert.deepEqual(p.weeks[0].days[0].ex[0].sets.map(s=>s.w),[100,80,60]);assert.equal(p.weeks[2].days[0].ex[0].method,'DS');
  for(const method of ['AMRAP','EMOM','AFAP','HIIT'])assert.equal(A.e1rm({...ex(),method},work(100,8,8),{},reg),null);
 });
 test('two independent fatigue signs suggest early deload, one does not',()=>{
@@ -79,7 +79,7 @@ test('ten-week progression has two working blocks, recovery and an explicit fina
  const profiles=A.cycleProfiles(10);
  assert.deepEqual(profiles.map(p=>p.sourceWeek),[1,2,3,4,2,3,5,6,7,8]);
  assert.deepEqual(profiles.map(p=>p.base.pct),[[70,75],[75,80],[80,85],[60,65],[75,80],[80,85],[85,88],[65,70],[88,90],[90,100]]);
- assert.deepEqual(profiles.map(p=>p.isolation.reps),[[10,12],[12,15],[15,20],[15,20],[12,15],[15,20],[15,20],[15,20],[15,20],[0,0]]);
+ assert.deepEqual(profiles.map(p=>p.isolation.reps),[[10,12],[12,15],[15,20],[6,8],[12,15],[15,20],[15,20],[8,10],[15,20],[0,0]]);
  assert.deepEqual(profiles.map(p=>p.base.reps),[[10,12],[8,10],[6,8],[10,12],[8,10],[6,8],[4,6],[10,12],[3,5],[2,3]]);
  const cycle=A.generateCycle({weeks:10,daysPerWeek:5,startDate:'2026-10-11',exercises:[{n:'Присед',kind:'compound',dayIndices:[0],sets:[{w:100}]},{n:'Разгибание ног',kind:'isolation',dayIndices:[0],sets:[{w:50}]}]});
  for(const week of cycle.weeks)for(const day of week.days)for(const e of day.ex){

@@ -9,9 +9,9 @@
     1:{pct:[70,75],rpe:[7,8],tempo:'3-1-2',baseRest:[120,180],isoRest:[60,90],focus:'Техника, базовый объём'},
     2:{pct:[75,80],rpe:[7,8],tempo:'3-1-2',baseRest:[120,180],isoRest:[60,90],focus:'Рабочий объём'},
     3:{pct:[80,85],rpe:[8,9],tempo:'2-0-2',baseRest:[90,150],isoRest:[45,75],focus:'Интенсификация'},
-    4:{pct:[60,65],rpe:[4,6],tempo:'2-0-2',baseRest:[60,90],isoRest:[30,60],focus:'Разгрузка'},
+    4:{pct:[60,65],rpe:[6,8],tempo:'2-0-2',baseRest:[60,90],isoRest:[30,60],focus:'Разгрузка'},
     5:{pct:[85,88],rpe:[8,9],tempo:'2-0-2',baseRest:[120,180],isoRest:[60,90],focus:'Тяжёлый стимул'},
-    6:{pct:[65,70],rpe:[4,6],tempo:'3-1-2',baseRest:[60,90],isoRest:[30,60],focus:'Восстановление'},
+    6:{pct:[65,70],rpe:[6,8],tempo:'3-1-2',baseRest:[60,90],isoRest:[30,60],focus:'Восстановление'},
     7:{pct:[88,90],rpe:[8.5,9.5],tempo:'2-0-1 / 2-0-X',baseRest:[180,240],isoRest:[90,120],focus:'Силовая неделя'},
     8:{pct:[90,100],rpe:[9,10],tempo:'2-0-X',baseRest:[240,360],isoRest:[90,120],focus:'Контроль результатов',test:true}
   };
@@ -36,9 +36,9 @@
   }
   const phaseNames=['volume','work','intensification','deload','heavy','recovery','strength','test'];
   for(const [i,p] of Object.entries(weekProfiles)) {
-    p.phase=phaseNames[Number(i)-1];p.deload=[4,6].includes(Number(i));
+    // Phase names describe the schedule; only the percentage table prescribes load.
+    p.phase=phaseNames[Number(i)-1];p.deload=false;
     p.base=bandPrescription(p.pct);p.isolation=bandPrescription(p.pct,true);
-    if(p.deload){p.base={pct:p.pct,sets:3,reps:[10,12],rpe:[4,6],rir:[4,6]};p.isolation={pct:[60,70],sets:2,reps:[15,20],rpe:[4,6],rir:[4,6]};}
     if(p.test){p.base={pct:[90,100],sets:3,reps:[2,3],rpe:[9,9.5],rir:[.5,1]};p.isolation={pct:[0,0],sets:0,reps:[0,0],rpe:[0,0],rir:[0,0]};}
   }
   const cloneProfile=p=>JSON.parse(JSON.stringify(p));
@@ -117,22 +117,74 @@
         }
         const kind=exerciseKind(source),spec=p[kind];if(!spec.sets)return;
         if(p.test)selected=[selected.at(-1)];
-        else if(!p.deload&&method(source)!=='STANDARD')selected=[selected[0]];
-        const budget=p.test?3:p.deload?spec.sets:Math.max(0,Math.round(number(source.weeklySetsOverride)??spec.sets));
+        else if(method(source)!=='STANDARD')selected=[selected[0]];
+        const budget=p.test?3:Math.max(0,Math.round(number(source.weeklySetsOverride)??spec.sets));
         selected.forEach((di,j)=>{
           const count=Math.floor(budget/selected.length)+(j<budget%selected.length?1:0);if(!count)return;
-          const e=cloneProfile(source);e.kind=kind;e.cycleOriginalMethod=source.cycleOriginalMethod||source.method||'STANDARD';e.cycleOriginalSets=cloneProfile(source.cycleOriginalSets||source.sets||[]);e.method=p.deload&&!source.preserveMethodOnDeload?'STANDARD':e.cycleOriginalMethod;e.weeklySets=budget;e.cycleManaged=true;
+          const e=cloneProfile(source);e.kind=kind;e.cycleOriginalMethod=source.cycleOriginalMethod||source.method||'STANDARD';e.cycleOriginalSets=cloneProfile(source.cycleOriginalSets||source.sets||[]);e.method=e.cycleOriginalMethod;e.weeklySets=budget;e.cycleManaged=true;
           e.reps=source.reps?.mode==='manual'?cloneProfile(source.reps):{mode:'auto',min:null,max:null};e.parameterOverrides={...e.parameterOverrides,reps:source.parameterOverrides?.reps?.mode==='manual'?cloneProfile(source.parameterOverrides.reps):{mode:'auto'},effort:source.parameterOverrides?.effort?.mode==='manual'?cloneProfile(source.parameterOverrides.effort):{mode:'auto'}};
           e.targetIntensityMin=spec.pct[0];e.targetIntensityMax=spec.pct[1];
           e.rpe=(spec.rpe[0]+spec.rpe[1])/2;
           delete e.repLabel;delete e.rpeLabel;delete e.displayPrescription;
           e.sets=Array.from({length:count},(_,k)=>({...source.sets?.[k],w:number(source.sets?.[k]?.w??source.sets?.[0]?.w)??0,r:spec.reps[0],targetRepMin:spec.reps[0],targetRepMax:spec.reps[1],targetRpeMin:spec.rpe[0],targetRpeMax:spec.rpe[1],allowFailure:false}));
-           if((!p.deload||source.preserveMethodOnDeload)&&!p.test&&e.method!=='STANDARD'){e.sets=cloneProfile(e.cycleOriginalSets);e.cycleManaged=false;e.reps={mode:'method',min:null,max:null};}
+           if(!p.test&&e.method!=='STANDARD'){e.sets=cloneProfile(e.cycleOriginalSets);e.cycleManaged=false;e.reps={mode:'method',min:null,max:null};}
           if(p.test){e.method='STANDARD';e.sets.forEach((s,k)=>Object.assign(s,k===count-1?{role:'test_attempt',targetRepMin:1,targetRepMax:1,r:1,targetRpeMin:9.5,targetRpeMax:10,allowFailure:true}:{role:'test_preparation',targetRepMin:2,targetRepMax:3}));}
           week.days[di].ex.push(e);
         });
       });
     return week.days;
+  }
+  // Upgrade saved automatic low-percentage weeks without touching workout snapshots.
+  // Manual week profiles and explicit per-exercise rep/effort overrides remain authored.
+  function upgradePercentageWeeks(program) {
+    if(!program?.weeks||program.cycleOptions?.periodizationMode==='manual')return false;
+    let changed=false;
+    for(const [wi,w] of program.weeks.entries()) {
+      const old=w.weeklyLoadProfile;
+      if(!old||old.test||w.testWeek||w.loadProfileManual||w.repGuidanceManual||
+        !['deload','recovery'].includes(old.phase)||w.percentageTableRevision>=543)continue;
+      const p=cloneProfile(old);p.deload=false;
+      p.base=bandPrescription(p.pct);p.isolation=bandPrescription(p.pct,true);p.rpe=p.base.rpe.slice();
+      applyWeekProfile(w,p);w.percentageTableRevision=543;
+      const update=(e,spec)=>{
+        e.targetIntensityMin=spec.pct[0];e.targetIntensityMax=spec.pct[1];
+        const autoEffort=e.parameterOverrides?.effort?.mode!=='manual'&&e.effortSourceMode!=='manual';
+        const autoReps=e.parameterOverrides?.reps?.mode!=='manual'&&e.reps?.mode!=='manual';
+        if(autoEffort){e.rpe=(spec.rpe[0]+spec.rpe[1])/2;delete e.rpeLabel;}
+        for(const set of e.sets||[]) {
+          if(autoEffort){set.targetRpeMin=spec.rpe[0];set.targetRpeMax=spec.rpe[1];set.targetRirMin=spec.rir[0];set.targetRirMax=spec.rir[1];}
+          if(autoReps&&method(e)==='STANDARD'){set.r=spec.reps[0];set.targetRepMin=spec.reps[0];set.targetRepMax=spec.reps[1];delete set.targetRepLabel;}
+        }
+        delete e.displayPrescription;delete e.repLabel;
+      };
+      const groups=new Map();
+      for(const day of w.days||[])for(const e of day.ex||[]) {
+        if(e.kind==='cardio'||e.workMode==='timer'||['time','distance'].includes(e.loadType))continue;
+        const spec=p[exerciseKind(e)];
+        // Restore a method recipe suppressed by the old phase exception.
+        if(e.cycleOriginalMethod&&e.cycleOriginalMethod!=='STANDARD'&&method(e)==='STANDARD'&&e.cycleOriginalSets?.length&&program.specialSetsMode!=='none'){
+          const weights=(e.sets||[]).map(s=>s.w);
+          e.method=e.cycleOriginalMethod;e.sets=cloneProfile(e.cycleOriginalSets);
+          e.sets.forEach((s,i)=>{s.w=weights[e.method==='SLDR'?Math.floor(i/3):0]??weights[0]??s.w;});
+          e.reps={mode:'method',min:null,max:null};e.cycleManaged=false;
+        }
+        const key=[e.exerciseId||e.sourceId||e.n,e.equipmentProfileId||'',e.techniqueId||'',e.loadType||'',method(e)].join('|');
+        if(method(e)==='STANDARD'&&e.cycleManaged!==false){if(!groups.has(key))groups.set(key,[]);groups.get(key).push(e);}
+        update(e,spec);
+      }
+      for(const group of groups.values()) {
+        const spec=p[exerciseKind(group[0])],budget=number(group[0].weeklySetsOverride)??spec.sets;
+        group.forEach((e,i)=>{
+          const count=Math.floor(budget/group.length)+(i<budget%group.length?1:0),prior=e.sets||[];
+          e.sets=Array.from({length:count},(_,j)=>cloneProfile(prior[j]||prior.at(-1)||{w:0,r:spec.reps[0]}));
+          e.weeklySets=budget;update(e,spec);
+        });
+      }
+      for(const e of program.cycleWeekSources?.[wi]||[])if(e.kind!=='cardio'&&e.workMode!=='timer')update(e,p[exerciseKind(e)]);
+      changed=true;
+    }
+    if(changed){program.updated=program.updatedAt=Date.now();}
+    return changed;
   }
   function fatigueSignals(rows) {
     const recent=rows.slice(-2),signals=new Set();
@@ -1987,7 +2039,7 @@
     setRole,
     loadComparable,
     weekProfiles,
-    allocateWeek,bandPrescription,cycleProfiles,dayRoles,validatePrescription,exerciseKind,applyWeekProfile,generateCycle,fatigueSignals,boundedProgression,
+    upgradePercentageWeeks,allocateWeek,bandPrescription,cycleProfiles,dayRoles,validatePrescription,exerciseKind,applyWeekProfile,generateCycle,fatigueSignals,boundedProgression,
     strengthEstimate,
     setDecision,
     effortTarget,

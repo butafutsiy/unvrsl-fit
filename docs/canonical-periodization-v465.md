@@ -1,5 +1,7 @@
 # Periodization and recommendation audit, v465
 
+Updated in v543: all non-test phases use the single percentage table in [periodization.md](periodization.md). Low-percentage phases have no separate set/RPE reduction, and authored special methods remain intact. The older deload exception is removed.
+
 ## Canonical owners
 
 `workout-domain.js` remains the owner of strength estimation, method strategies, recommendations and rounding. Its `weekProfiles`, `bandPrescription`, `cycleProfiles`, `generateCycle` and `allocateWeek` now own generated periodization. No new Readiness Engine was introduced.

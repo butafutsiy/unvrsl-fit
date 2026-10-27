@@ -19,8 +19,8 @@ test('personal plan preserves both original days and glute bridge replacement ac
   assert.equal(plan.weeks[0].days[0].ex[2].sets.length,4);
   assert.equal(plan.weeks[0].days[0].ex[7].sets.length,2);
   for(const wi of [3,5]){
-    assert.ok(plan.weeks[wi].deload);
-    assert.ok(plan.weeks[wi].days.flatMap(d=>d.ex).every(e=>e.sets.every(s=>s.targetRpeMax===6)));
+    assert.equal(plan.weeks[wi].deload,false);
+    for(const e of plan.weeks[wi].days.flatMap(d=>d.ex)){const spec=plan.weeks[wi].weeklyLoadProfile[domain.exerciseKind(e)];assert.ok(e.sets.every(s=>s.targetRpeMin===spec.rpe[0]&&s.targetRpeMax===spec.rpe[1]));}
   }
   assert.equal(plan.cycleOptions.testWeek,false);
   assert.equal(plan.weeks[0].days[1].ex[2].loadType,'bodyweight_added');
