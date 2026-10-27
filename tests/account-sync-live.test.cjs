@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 const clone=x=>JSON.parse(JSON.stringify(x));
-async function device(server,{quota=false}={}){
+async function device(server,{quota=false,realStore=false}={}){
  const timers=new Map(),intervals=[],storage=new Map();let timerId=0;
  const local={accountOwnerId:'owner',programs:[],sessions:[],bw:[],current:null};
  const w={save:()=>true,addEventListener(){},dispatchEvent(){}};
@@ -23,6 +23,7 @@ async function device(server,{quota=false}={}){
   document:{visibilityState:'visible',addEventListener(){},querySelector(){return null}},
   workoutStore:{activateAccount:s=>s,restore(){},journal:()=>({closed:{}})},restoreAppearance(){},
   setTimeout:(fn,delay)=>{timers.set(++timerId,{fn,delay});return timerId},clearTimeout:id=>timers.delete(id),setInterval:fn=>intervals.push(fn)};
+ if(realStore)c.workoutStore=require('../workout-store.js').create({getItem:k=>storage.get(k)||null,setItem:c.localStorage.setItem});
  Object.defineProperty(w,'st',{get:()=>c.st});vm.createContext(c);vm.runInContext(fs.readFileSync('account-sync.js','utf8'),c);
  await new Promise(resolve=>setImmediate(resolve));w.cloud.user={id:'owner',email:'owner@example.test'};
  return{c,w,timers,intervals};
@@ -59,4 +60,11 @@ test('full localStorage quota does not interrupt save metadata or cloud upload',
  const server={writes:0},d=await device(server,{quota:true});d.c.st.programs.push({id:'quota-plan',updated:100});
  assert.doesNotThrow(()=>d.w.save());assert.equal(await d.w.accountSyncNow({quiet:true}),true);assert.equal(server.row.state.programs[0].id,'quota-plan');assert.match(server.row.device_id,/^d_/);
  const deviceId=server.row.device_id;d.w.save();assert.equal(await d.w.accountSyncNow({quiet:true}),true);assert.equal(server.row.device_id,deviceId);assert.equal(d.w.__unvrslSyncState.status,'synced');
+});
+test('real account activation bypasses full localStorage write and uploads all programs',async()=>{
+ const server={writes:0},d=await device(server,{quota:true,realStore:true});
+ d.c.st.programs=[{id:'manual',updated:1},{id:'auto',updated:2},{id:'ordinary',updated:3}];
+ assert.equal(await d.w.accountSyncNow({quiet:true}),true);
+ assert.deepEqual(server.row.state.programs.map(p=>p.id),['manual','auto','ordinary']);
+ assert.equal(d.w.__unvrslSyncState.status,'synced');
 });

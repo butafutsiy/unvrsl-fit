@@ -121,7 +121,7 @@
       if (!s) return;
       close(state, s, "discarded");
     }
-    function activateAccount(state, userId, previousOwner) {
+    function activateAccount(state, userId, previousOwner, { persist = true } = {}) {
       const previous = state.accountOwnerId || previousOwner;
       if (previous && previous !== userId) {
         save(state);
@@ -157,7 +157,10 @@
       }
       state.accountOwnerId = userId;
       restore(state, userId);
-      save(state);
+      // Full-account sync persists through the canonical save/IndexedDB owner
+      // after merging. A raw localStorage write here can exceed Safari's quota
+      // and abort the upload before its error handling has even started.
+      if (persist) save(state);
       return state;
     }
     let completing = null;

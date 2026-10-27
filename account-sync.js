@@ -146,10 +146,10 @@
     if(!c?.client||!user||window.__workoutFinishing)return false;
     if(inflight)return inflight;
     window.__unvrslSyncState={status:'loading',owner:user.id};window.dispatchEvent(new CustomEvent('unvrsl:sync-state'));
-    st=workoutStore.activateAccount(st,user.id,meta().lastUserId);workoutStore.restore(st,user.id);
     inflight=(async()=>{
       let completed=false;
       try{
+        st=workoutStore.activateAccount(st,user.id,meta().lastUserId,{persist:false});workoutStore.restore(st,user.id);
         const [stateRes,structured]=await Promise.all([
           c.client.from('user_app_state').select('state,client_updated_at,updated_at,device_id').eq('user_id',user.id).maybeSingle(),
           fetchStructuredCloud(c,user,!quiet)
