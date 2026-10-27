@@ -1,7 +1,7 @@
 "use strict";
 const SW_RELEASE = "v541",
   CACHE_PREFIX = "unvrsl-",
-  SHELL = `${CACHE_PREFIX}shell-${SW_RELEASE}`,
+  SHELL = `${CACHE_PREFIX}shell-${SW_RELEASE}-shoulder1`,
   MEDIA = `${CACHE_PREFIX}media-${SW_RELEASE}`;
 // Exact versioned URLs only: never return an asset from another release.
 self.addEventListener("install", (event) => {
