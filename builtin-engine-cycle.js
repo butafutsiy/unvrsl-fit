@@ -19,6 +19,8 @@
       });
       [...groups.values()].forEach((group,order)=>{
         const exercise=builtInGroupToProgramExercise(routine,group);
+        // These are explicit authored recipes, including SLDR/FST-7 in W4/W6.
+        if(exercise.method!=='STANDARD')exercise.preserveMethodOnDeload=true;
         exercise.builtinOrderByDay={[di]:order};
         if(exercise.kind==='cardio'){cardio[di].push(exercise);return;}
         const record=workoutRegistry.resolve(exercise);
@@ -163,7 +165,7 @@
       const recipe=week.find(e=>movement(e)===movement(source));
       if(!recipe||recipe.method==='STANDARD'||source.kind==='cardio')return copy(source);
       return {...copy(source),method:recipe.method,sets:copy(recipe.sets),cycleOriginalMethod:recipe.method,
-        cycleOriginalSets:copy(recipe.sets),targetIntensityMin:recipe.targetIntensityMin,targetIntensityMax:recipe.targetIntensityMax};
+        cycleOriginalSets:copy(recipe.sets),preserveMethodOnDeload:recipe.preserveMethodOnDeload===true,targetIntensityMin:recipe.targetIntensityMin,targetIntensityMax:recipe.targetIntensityMax};
     }));
   };
   W.createBuiltinEngineCycle=function(){

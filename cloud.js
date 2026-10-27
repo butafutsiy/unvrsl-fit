@@ -82,7 +82,22 @@ function renderCloudAffordances(){
 function cloudAvgRpe(s){const vals=[];(s?.ex||[]).forEach(e=>(e.set||[]).forEach(x=>{if(x.ok&&x.rpe!==''&&Number.isFinite(+x.rpe))vals.push(+x.rpe)}));return vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length*10)/10:null}
 async function cloudSyncSession(s){if(!cloud.ready||!cloud.user||!s)return false;if(s.userId&&s.userId!==cloud.user.id)return false;try{const r=await cloud.client.from('workouts').upsert({user_id:cloud.user.id,trainer_id:s.trainerId||null,plan_id:s.planId||null,external_id:String(s.id),workout_date:s.date||iso(),payload:s,avg_rpe:cloudAvgRpe(s),completed_sets:done(s),total_sets:total(s),updated_at:new Date().toISOString()},{onConflict:'user_id,external_id'});if(r.error){cloudMarkDegraded(r.error);return false}cloudMarkHealthy();return true}catch(e){cloudMarkDegraded(e);return false}}
 async function cloudSyncBodyweights(){if(!cloud.ready||!cloud.user)return;const deleted=[...new Set((st.deletedBodyweights||[]).map(x=>String(x?.d||x||'').slice(0,10)).filter(Boolean))];if(deleted.length){const del=await cloud.client.from('bodyweights').delete().eq('user_id',cloud.user.id).in('measure_date',deleted);if(del.error){cloudMarkDegraded(del.error);console.warn('sync deleted bodyweights',del.error)}}const blocked=new Set(deleted),rows=(st.bw||[]).filter(x=>x.d&&x.w&&!blocked.has(String(x.d).slice(0,10))).map(x=>({user_id:cloud.user.id,measure_date:String(x.d).slice(0,10),weight_kg:Number(x.w)}));if(rows.length){const up=await cloud.client.from('bodyweights').upsert(rows,{onConflict:'user_id,measure_date'});if(up.error){cloudMarkDegraded(up.error);console.warn('sync bodyweights',up.error)}else cloudMarkHealthy()}}
-async function cloudSyncAll(){if(!cloud.user)return cloudAccountSheet();toast('Синхронизация…');for(const s of st.sessions||[])await cloudSyncSession(s);await cloudSyncBodyweights();toast(cloud.degraded?'Облако пока недоступно. Данные сохранены на устройстве':'Синхронизировано')}
+async function cloudSyncAll(){
+ if(!cloud.user)return cloudAccountSheet();
+ toast('Синхронизация…');
+ try{
+  // Never report success after uploading only workouts/bodyweight. This entry
+  // point must also work when the full-account module loads after cloud.js.
+  if(typeof window.accountSyncNow!=='function'){
+   if(typeof window.loadExternalScript!=='function')throw Error('Модуль синхронизации ещё не загружен');
+   await window.loadExternalScript('account-sync.js');
+  }
+  if(typeof window.accountSyncNow!=='function')throw Error('Модуль синхронизации недоступен');
+  const ok=await window.accountSyncNow({quiet:true});
+  toast(ok?'Синхронизировано: программы, тренировки и вес':'Синхронизация не завершена. Данные сохранены на устройстве');
+  return ok;
+ }catch(error){console.warn('UNVRSL full account sync',error);toast('Синхронизация не завершена. Данные сохранены на устройстве');return false}
+}
 
 
 function inviteNeedsCloudSheet(){modal(`<div class="sheet-grabber"></div><h2>Вам отправили программу</h2><div class="muted">Чтобы принять её и синхронизировать результаты с тренером, нужно подключить облачную часть UNVRSL FIT.</div><button class="btn primary full" onclick="cloudSetupSheet()">Настроить</button>`)}

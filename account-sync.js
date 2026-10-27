@@ -200,17 +200,6 @@
     try{save=window.save}catch(e){}
   }
 
-  const originalSync=typeof window.cloudSyncAll==='function'?window.cloudSyncAll:null;
-  if(originalSync){
-    window.cloudSyncAll=async function(){
-      if(!window.cloud?.user)return originalSync.apply(this,arguments);
-      try{toast('Синхронизация…')}catch(e){}
-      const ok=await window.accountSyncNow({quiet:true});
-      try{toast(ok?'Синхронизировано':'Синхронизация не завершена')}catch(e){}
-    };
-    try{cloudSyncAll=window.cloudSyncAll}catch(e){}
-  }
-
   window.accountSyncNow=async options=>{
     const quiet=options?.quiet===true;
     const failed=()=>{if(!quiet)try{toast('Не удалось синхронизировать аккаунт')}catch(_){}return false};
