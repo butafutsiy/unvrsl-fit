@@ -1,7 +1,8 @@
 "use strict";
+// Refresh the shell after the shoulder-press media presentation update.
 const SW_RELEASE = "v541",
   CACHE_PREFIX = "unvrsl-",
-  SHELL = `${CACHE_PREFIX}shell-${SW_RELEASE}-shoulder1`,
+  SHELL = `${CACHE_PREFIX}shell-${SW_RELEASE}`,
   MEDIA = `${CACHE_PREFIX}media-${SW_RELEASE}`;
 // Exact versioned URLs only: never return an asset from another release.
 self.addEventListener("install", (event) => {
