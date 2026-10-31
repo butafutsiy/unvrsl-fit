@@ -99,9 +99,11 @@
   // settings, specialist methods, historical sessions or assigned plans.
   function upgradeLegacyIndependentCopy(program){
     const domain=typeof window!=='undefined'?window.WorkoutDomain:null;
-    if(!domain||!program||program.cycleOptions||
-       program.legacyCopyLoadRevision>=549||program.weeks?.length!==8||
-       program.assignedUserId||program.clientId||program.cloudPlanId||program.trainerId)return false;
+    if(!domain||!program||program.legacyCopyLoadRevision>=550||
+       program.weeks?.length!==8||program.assignedUserId||program.clientId||
+       program.cloudPlanId||program.trainerId)return false;
+    // Automatically generated cycles can have cycleOptions too.
+    if(program.cycleOptions?.periodizationMode==='manual')return false;
     const titles=(program.weeks[0]?.days||[]).map(d=>String(d?.name||''));
     const builtinDayCodes=titles.map(name=>name.match(/^(A1|A2|B|C|D)\s*[·.]/i)?.[1]).filter(Boolean);
     if(builtinDayCodes.length<3||(!program.independentCopy&&builtinDayCodes.length<5))return false;
@@ -164,12 +166,13 @@
           changed=true;
         }
       }
-      // Keep the approved profile visible in the editor and preview. No
-      // change to exercise methods, manually entered kilograms or tempo.
-      domain.applyWeekProfile(week,clone(profile));
-      changed=true;
+      // Preview and constructor read this profile too. Skip unchanged weeks.
+      if(JSON.stringify(week.weeklyLoadProfile)!==JSON.stringify(profile)){
+        domain.applyWeekProfile(week,clone(profile));
+        changed=true;
+      }
     }
-    program.legacyCopyLoadRevision=549;
+    program.legacyCopyLoadRevision=550;
     if(changed)program.updated=Date.now();
     return changed;
   }
