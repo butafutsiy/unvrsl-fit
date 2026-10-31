@@ -177,6 +177,64 @@
     if(changed)program.updated=Date.now();
     return changed;
   }
+  // Targeted repair for the owner's eight-week triceps cable extension.
+  // An older allocator split three sets across days, leaving this exercise
+  // with just one set. All other movements and completed workouts are ignored.
+  function repairOwnerRopePushdown(program){
+    if(!domain||!program||!Array.isArray(program.weeks)||
+       program.weeks.length!==8||program.ropePushdownVolumeRevision>=551||
+       program.cycleOptions?.periodizationMode==='manual'||
+       program.assignedUserId||program.clientId||program.cloudPlanId||
+       program.trainerId||program.femaleTemplate||program.internetTemplate)return false;
+    let changed=false;
+    for(let wi=0;wi<7;wi++){
+      const week=program.weeks[wi],spec=domain.weekProfiles[wi+1]?.isolation;
+      if(!week||!spec||week.loadProfileManual||week.repGuidanceManual)continue;
+      if(week.intensityMin!=null&&week.intensityMax!=null&&
+         (Number(week.intensityMin)!==domain.weekProfiles[wi+1].pct[0]||
+          Number(week.intensityMax)!==domain.weekProfiles[wi+1].pct[1]))continue;
+      for(const day of week.days||[])for(const ex of day.ex||[]){
+        if(!/^разгибание рук на верхнем блоке с канатом$/i.test(String(ex?.n||'').trim())||
+           String(ex.method||'STANDARD').toUpperCase()!=='STANDARD'||
+           !Array.isArray(ex.sets)||!ex.sets.length||
+           ex.setCountManual===true||ex.manualSetCount===true||
+           ex.repsManual===true||ex.parameterOverrides?.reps?.mode==='manual'||
+           ex.parameterOverrides?.effort?.mode==='manual'||
+           ex.effortSourceMode==='manual'||ex.weightMode==='auto'&&ex.sets.some(s=>s.ok))continue;
+        // Explicit repetition targets outside the old/new defaults are authored.
+        const manual=ex.reps?.mode==='manual'?ex.reps:null;
+        const oldRange=wi===0?[10,12]:wi===1?[12,15]:wi===2?[15,20]:
+          wi===3?[6,8]:wi===4?[15,20]:wi===5?[8,10]:[15,20];
+        if(manual?.min!=null&&manual?.max!=null&&
+           ![oldRange,spec.reps].some(([lo,hi])=>Number(manual.min)===lo&&Number(manual.max)===hi))continue;
+        const authoredSet=ex.sets.some(s=>s?.manualOverride||s?.ok||s?.skipped);
+        if(authoredSet)continue;
+        const old=ex.sets,needsVolume=old.length!==spec.sets;
+        const needsReps=old.some(s=>Number(s.targetRepMin??s.r)!==spec.reps[0]||
+          Number(s.targetRepMax??s.r)!==spec.reps[1]);
+        const needsRpe=old.some(s=>Number(s.targetRpeMin)!==spec.rpe[0]||
+          Number(s.targetRpeMax)!==spec.rpe[1]);
+        if(!needsVolume&&!needsReps&&!needsRpe)continue;
+        ex.sets=Array.from({length:spec.sets},(_,i)=>{
+          const s={...old[i]||old.at(-1)};
+          // Retain every authored kilogram and equipment detail. Never recompute weight.
+          s.r=spec.reps[0];s.targetRepMin=spec.reps[0];s.targetRepMax=spec.reps[1];
+          s.targetRpeMin=spec.rpe[0];s.targetRpeMax=spec.rpe[1];
+          s.targetRirMin=spec.rir[0];s.targetRirMax=spec.rir[1];
+          return s;
+        });
+        ex.reps={mode:'auto',min:null,max:null};
+        ex.cycleManaged=true;
+        ex.weeklySets=spec.sets;
+        ex.rpe=(spec.rpe[0]+spec.rpe[1])/2;
+        ex.targetIntensityMin=spec.pct[0];ex.targetIntensityMax=spec.pct[1];
+        changed=true;
+      }
+    }
+    program.ropePushdownVolumeRevision=551;
+    if(changed)program.updated=Date.now();
+    return changed;
+  }
   function normalizeProgram(program,idFactory=fallbackId){
     if(!program||typeof program!=='object')program={};
     if(typeof window!=='undefined')window.upgradeBuiltinEngineCycleV502?.(program,idFactory);
@@ -184,6 +242,7 @@
     program.name=String(program.name||'Программа');
     if(!Array.isArray(program.weeks))program.weeks=[];
     upgradeLegacyIndependentCopy(program);
+    repairOwnerRopePushdown(program);
     program.weeks.forEach((week,weekIndex)=>{
       if(!week||typeof week!=='object')week=program.weeks[weekIndex]={};
       week.n=Number(week.n)||weekIndex+1;
