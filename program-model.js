@@ -134,6 +134,8 @@
         })
       })
     });
+    // Re-sync saved automatic cycle templates, not manual weeks or workout history.
+    if(typeof window!=='undefined')window.WorkoutDomain?.upgradeSessionVolume?.(program);
     program.schemaVersion=SCHEMA_VERSION;
     return program
   }
