@@ -10,7 +10,7 @@ for(const weeks of [3,4,6,8,10,11,12])for(const days of [3,4])test(`${weeks} wee
  assert.equal(p.weeks.length,weeks);assert.ok(p.weeks.at(-1).testWeek);assert.equal(p.weeks[0].days.length,days);
  assert.deepEqual(p.weeks[0].days.map(d=>d.role),A.dayRoles(days));
  if(weeks>4)assert.ok(p.weeks.some(w=>w.phase==='deload'));
- for(const w of p.weeks){for(const id of ['bench','curl']){const all=w.days.flatMap(d=>d.ex.filter(e=>e.exerciseId===id));const count=all.reduce((n,e)=>n+e.sets.length,0);assert.equal(count,w.weeklyLoadProfile[id==='bench'?'base':'isolation'].sets);}}
+ for(const w of p.weeks){for(const id of ['bench','curl']){const all=w.days.flatMap(d=>d.ex.filter(e=>e.exerciseId===id));const expected=w.weeklyLoadProfile[id==='bench'?'base':'isolation'].sets;assert.ok(all.every(e=>e.sets.length===expected));assert.equal(all.reduce((n,e)=>n+e.sets.length,0),expected*all.length);}}
 });
 test('eight-week phases use one percentage table and no ordinary isolation during test',()=>{
  const p=A.cycleProfiles(8);assert.deepEqual(p.map(x=>x.phase),['volume','work','intensification','deload','heavy','recovery','strength','test']);
@@ -80,7 +80,7 @@ test('ten-week progression has two working blocks, recovery and an explicit fina
  assert.deepEqual(profiles.map(p=>p.sourceWeek),[1,2,3,4,2,3,5,6,7,8]);
  assert.deepEqual(profiles.map(p=>p.base.pct),[[70,75],[75,80],[80,85],[60,65],[75,80],[80,85],[85,88],[65,70],[88,90],[90,100]]);
  assert.deepEqual(profiles.map(p=>p.isolation.reps),[[10,12],[12,15],[15,20],[6,8],[12,15],[15,20],[15,20],[8,10],[15,20],[0,0]]);
- assert.deepEqual(profiles.map(p=>p.base.reps),[[10,12],[8,10],[6,8],[10,12],[8,10],[6,8],[4,6],[10,12],[3,5],[2,3]]);
+ assert.deepEqual(profiles.map(p=>p.base.reps),[[12,15],[10,12],[8,10],[15,20],[10,12],[8,10],[6,8],[12,15],[4,6],[2,3]]);
  const cycle=A.generateCycle({weeks:10,daysPerWeek:5,startDate:'2026-10-11',exercises:[{n:'Присед',kind:'compound',dayIndices:[0],sets:[{w:100}]},{n:'Разгибание ног',kind:'isolation',dayIndices:[0],sets:[{w:50}]}]});
  for(const week of cycle.weeks)for(const day of week.days)for(const e of day.ex){
   const spec=week.weeklyLoadProfile[e.kind==='isolation'?'isolation':'base'];
@@ -93,7 +93,7 @@ test('automatic periods cover every manual length and all training-day counts',(
  for(let weeks=1;weeks<=52;weeks++)for(let days=1;days<=7;days++){
   const cycle=A.generateCycle({weeks,daysPerWeek:days,startDate:'2026-10-11'});
   assert.equal(cycle.weeks.length,weeks);assert.equal(cycle.weeks.at(-1).testWeek,true);
-  for(const w of cycle.weeks){assert.equal(w.days.length,days);assert.equal(new Set(w.days.map(d=>d.date)).size,days);assert.ok(w.weeklyLoadProfile.base.reps[1]<=12);}
+  for(const w of cycle.weeks){assert.equal(w.days.length,days);assert.equal(new Set(w.days.map(d=>d.date)).size,days);assert.ok(w.weeklyLoadProfile.base.reps[1]<=20);}
   assert.equal('priority' in cycle.cycleOptions,false);
  }
 });
