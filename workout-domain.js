@@ -772,9 +772,17 @@
     }
     return value;
   }
-  function strengthEstimate(e,rows,reg,weights=[],set={}) {
-    // Fatigued superset results must not raise an isolated exercise's baseline.
-    const compatible=rows.filter(x=>(!x.exercise.superGroup||!!e.superGroup)&&loadComparable(e,x.exercise,reg,set,x.set)&&method(e,set)===method(x.exercise,x.set));
+  function strengthEstimate(e,rows,reg,weights=[],set={},basisMethod=method(e,set)) {
+    // Callers may explicitly use ordinary sets as the reference for a
+    // different method on the SAME exercise, equipment and technique.
+    // Never fold fatigued supersets into an ordinary strength baseline.
+    const compatible=rows.filter(x=>
+      (!x.exercise.superGroup||basisMethod!=='STANDARD'&&!!e.superGroup||
+       method(e,set)==='STANDARD'&&!!e.superGroup)&&
+      loadComparable(e,x.exercise,reg,set,x.set)&&
+      basisMethod===method(x.exercise,x.set)&&
+      (basisMethod!=='STANDARD'||method(e,set)==='STANDARD'||setRole(x.exercise,x.set)==='standard')
+    );
     const points=[];
     const newest=Math.max(0,...compatible.map(x=>sessionTime(x.session)));
     for(const x of compatible) {
@@ -910,7 +918,7 @@
   }
   function plannedWeight(s) {return [s.programW,s.launchW,s.baselineW,s.plannedW,s.w].map(number).find(x=>x>0)??0}
   // One method prescription drives every stage; no separate legacy autoweight owner.
-  function methodPrescription(e,set,session,allHistory,reg,p,strength) {
+  function methodPrescription(e,set,session,allHistory,reg,p,strength,baselineFromStandard=false) {
     const m=method(e,set);if(m==='STANDARD'||['time','distance','bodyweight_only','repetitions_only'].includes(p.loadType))return null;
     const current=methodRows(e,session,reg),index=current.findIndex(x=>x.set===set);
     if(index<0)return null;
@@ -932,7 +940,7 @@
       if(band&&base>0){const pct=units(base*average(band.lo,band.hi));if(pct!=null)candidate=candidate==null?pct:easier(candidate,pct)}
       if(reference==null)return candidate??plannedWeight(first.set);
       const oldBand=intensityBand(lastSession);
-      if(oldBand&&band&&base>0){
+      if(!baselineFromStandard&&oldBand&&band&&base>0){
         const previousEffective=loadForEstimate(last[0].exercise,last[0].set,lastSession,reg);
         const scaled=units(previousEffective*average(band.lo,band.hi)/average(oldBand.lo,oldBand.hi));
         if(scaled!=null)candidate=scaled;
@@ -1254,9 +1262,18 @@
         excludeId: session.id,
         before: sessionTime(session)>1e11?sessionTime(session):undefined,
       }),
-      strengthRows=method(e,set)==='STANDARD'&&setRole(e,set)==='standard'?allHistory:
+      activeMethod=method(e,set),
+      strengthRows=activeMethod==='STANDARD'&&setRole(e,set)==='standard'?allHistory:
         [...allHistory,...(session.ex||[]).flatMap(ex=>(ex.set||[]).filter(s=>complete(ex,s,reg)).map(s=>({exercise:ex,set:s,session})))],
-      strength=strengthEstimate(e,strengthRows,reg,[],set),
+      // The ordinary movement provides the strength baseline for UNVRSL,
+      // SLDR, drop sets and FST-7, regardless of their method label.
+      // Exercise identity, equipment, loading mode and technique still match.
+      standardRows=activeMethod!=='STANDARD'&&['UNVRSL','SLDR','DS','FST-7'].includes(activeMethod)
+        ?allHistory.filter(x=>loadComparable(e,x.exercise,reg,set,x.set)&&method(x.exercise,x.set)==='STANDARD'&&setRole(x.exercise,x.set)==='standard'&&!x.exercise.superGroup&&!warmup(x.set))
+        :[],
+      standardStrength=standardRows.length?strengthEstimate(e,standardRows,reg,[],set,'STANDARD'):null,
+      baselineFromStandard=!!(standardStrength?.estimate>0),
+      strength=baselineFromStandard?standardStrength:strengthEstimate(e,strengthRows,reg,[],set),
       rows=allHistory.filter((x) => method(e,set)==='STANDARD'
         ? loadComparable(e,x.exercise,reg,set,x.set)&&method(x.exercise,x.set)==='STANDARD'
         : comparable(e, x.exercise, reg, set, x.set));
@@ -1532,10 +1549,10 @@
     }
     if(testAttempt&&currentRows.some(x=>setRole(x.exercise,x.set)==='test_attempt'&&performedReps(x.exercise,x.set)===0))action='stop';
     if(action==='stop')reason='Тест завершён: предыдущая попытка достигла RPE 9,5–10. Перейди к back-off';
-    const methodRec=methodPrescription(e,set,session,allHistory,reg,p,strength);
+    const methodRec=methodPrescription(e,set,session,allHistory,reg,p,strength,baselineFromStandard);
     if(methodRec) {
       raw=methodRec.weight;projected=methodRec.raw;anomalous=false;
-      reason=methodRec.reason;action='method';
+      reason=methodRec.reason+(baselineFromStandard?'; исходная сила рассчитана по обычным подходам этого упражнения':'');action='method';
       for(const id of methodRec.sessionIds)if(!ids.includes(id))ids.push(id);
       if(methodRec.live)nextSetSuggestion={weight:methodRec.weight,action:'method',reason:methodRec.reason};
     }
@@ -1623,7 +1640,7 @@
     const requiresEffort=ordinary&&ids.length>0&&effortKnown===0&&(!lastToday||effortRpe(lastToday.set)==null);
     if(requiresEffort){weight=seed;action='hold';reasonCodes.push('EFFORT_REQUIRED');reason='Укажи RPE или RIR: история сохранена, вес по усилию пока не рассчитывается';}
     if(ordinary&&ids.length>=3&&action==='hold'&&!strong&&!weak&&new Set(ids.slice(0,3).map(id=>JSON.stringify(recent.filter(x=>x.session.id===id).map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)])))).size===1){trend='plateau';reason+='; три сопоставимые тренировки без прироста';}
-    const confidence =
+    const confidence = baselineFromStandard?strength.confidence:
         anomalous||effortKnown===0?"низкая":ids.length >= 3 && effortKnown === recent.length
           ? projected!=null?"средняя":"высокая"
           : ids.length >= 2 && effortKnown
@@ -1631,9 +1648,12 @@
             : latestOneRepMax!=null?"средняя":"низкая";
     // Some isolation machines intentionally do not expose an e1RM. Their
     // completed working sets and effort still provide valid load evidence.
-    const reliable=effortKnown>0&&recent.length>0||!!lastToday&&effortRpe(lastToday.set)!=null||testWeekSuggestion&&ids.length>0;
+    const reliable=effortKnown>0&&recent.length>0||!!lastToday&&effortRpe(lastToday.set)!=null||
+      testWeekSuggestion&&ids.length>0||
+      (baselineFromStandard&&strength.points.some(x=>effortRpe(x.set)!=null));
     return {
       weight,
+      strengthBasis:baselineFromStandard?'standard':activeMethod==='STANDARD'?'standard':'method',
       series,calibration,reasonCodes,repetitionGoal,
       analogousSessionId:analogous?.[0]?.session.id??null,
       calculationVersion:p.correctionPolicy?541:469,
@@ -1648,7 +1668,7 @@
       proposalKey:proposalFingerprint([p.correctionPolicy?541:469,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
       raw,
       previous: prior,
-      basis:ids.length?{date:sessionDate(latest[0]?.session??strength.source?.session),weight:prior??number(strength.source?.set.w),planned:seed||null,estimatedOneRepMax:latestOneRepMax!=null?Number(latestOneRepMax.toFixed(1)):null,sets:latest.map(x=>({weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effort(x)}))}:null,
+      basis:ids.length?{date:sessionDate(latest[0]?.session??strength.source?.session),weight:prior??number(strength.source?.set.w),planned:seed||null,estimatedOneRepMax:baselineFromStandard?Number(strength.estimate.toFixed(1)):latestOneRepMax!=null?Number(latestOneRepMax.toFixed(1)):null,sets:latest.map(x=>({weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effort(x)}))}:null,
       delta: prior == null ? 0 : Number((weight - prior).toFixed(6)),
       step: p.step,
       action,
