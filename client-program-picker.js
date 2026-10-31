@@ -102,9 +102,9 @@
   function findProgram(key){return allClientPrograms().find(x=>x.key===key)||ensurePrimary()}
   function weekNumber(p,index){return p.kind==='remote'?(p.weekNumbers?.[index]||index+1):index+1}
   function weekDays(p,wi){
-    if(p.kind==='coach')return (p.p?.weeks?.[wi]?.days||[]).map((d,di)=>({name:d.name||`День ${di+1}`,count:d.ex?.length||0,rpe:d.ex?.[0]?.rpe??d.ex?.[0]?.target??8,start:()=>beginProgramDay(p.id,wi,di)}));
+    if(p.kind==='coach'){const week=p.p?.weeks?.[wi];return (week?.days||[]).map((d,di)=>({name:d.name||`День ${di+1}`,count:d.ex?.length||0,effort:window.unvrslDayEffortV545?.summary(week,d)||'RPE по упражнениям',start:()=>beginProgramDay(p.id,wi,di)}))}
     const wn=weekNumber(p,wi),rs=p.p?.snapshot?.routines||[];
-    return rs.map((r,i)=>({r,i})).filter(x=>(Number(x.r.w)||1)===wn).map(x=>({name:`${x.r.c||''}${x.r.t?' · '+x.r.t:''}`.replace(/^ · | · $/g,''),count:x.r.e?.length||0,rpe:(typeof RPE!=='undefined'?RPE[wn]:null)||8,start:()=>beginRemotePlan(p.id,x.i)}));
+    return rs.map((r,i)=>({r,i})).filter(x=>(Number(x.r.w)||1)===wn).map(x=>({name:`${x.r.c||''}${x.r.t?' · '+x.r.t:''}`.replace(/^ · | · $/g,''),count:x.r.e?.length||0,effort:`RPE ${(typeof RPE!=='undefined'?RPE[wn]:null)||8} · по плану`,start:()=>beginRemotePlan(p.id,x.i)}));
   }
   function weekCount(p){return p?.weeks||1}
   function savedWeek(p){
@@ -128,7 +128,7 @@
     const w=Math.max(1,Math.min(weekCount(p),picker.week||savedWeek(p)));picker.week=w;
     const cards=ps.map(x=>`<button class="client-program-choice ${x.key===p.key?'on':''}" onclick="clientSelectStartProgram('${encodeURIComponent(x.key)}')">${badges(x,x.key===primary?.key)}<b>${escx(x.name)}</b><span>${weekCount(x)} нед. · ${escx(weightInfo(x).detail)}</span></button>`).join('');
     const weeks=Array.from({length:weekCount(p)},(_,i)=>i+1).map(n=>`<button class="weekbtn ${n===w?'on':''}" onclick="clientSelectStartWeek(${n})">W${n}</button>`).join('');
-    const days=weekDays(p,w-1).map((d,di)=>`<div class="client-plan-day row between"><div class="grow"><b>${escx(d.name)}</b><div class="muted small">RPE ${d.rpe} · ${d.count} упражнений</div></div><button class="btn tiny primary" data-client-start-day="${di}">Старт</button></div>`).join('')||'<div class="card muted">В этой неделе тренировок нет.</div>';
+    const days=weekDays(p,w-1).map((d,di)=>`<div class="client-plan-day row between"><div class="grow"><b>${escx(d.name)}</b><div class="muted small">${escx(d.effort)} · ${d.count} упражнений</div></div><button class="btn tiny primary" data-client-start-day="${di}">Старт</button></div>`).join('')||'<div class="card muted">В этой неделе тренировок нет.</div>';
     const html=`<div class="row between"><h2>Выбрать тренировку</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="section" style="margin-top:16px">ПРОГРАММА</div><div class="client-program-strip">${cards}</div><div class="muted small" style="margin:4px 0 9px">Выбрано: <b style="color:var(--text)">${escx(p.name)}</b></div><div id="clientPickerWeeks" class="weekbar">${weeks}</div><div id="clientPickerDays">${days}</div>`;
     const sh=document.getElementById('sheet');
     if(document.getElementById('modal')?.classList.contains('show')&&sh)sh.innerHTML=html;else modal(html);
