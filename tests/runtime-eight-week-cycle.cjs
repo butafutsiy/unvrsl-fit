@@ -75,8 +75,8 @@ function trackedRuntime(seed){
   assert.equal(result.migrated,8);assert.ok(result.retainedCurrent);assert.equal(result.duplicates,1);assert.equal(result.uniqueDays,40);
   assert.match(result.name,/8-недельный/);
   const preview=plain(result.preview),squat=preview.find(x=>/high-bar/.test(x.name)),isolation=preview.find(x=>/Разгибание ног/.test(x.name)),cardio=preview.find(x=>/Аэробайк/.test(x.name));
-  assert.match(squat.text,/3×3–5/);assert.match(squat.text,/88–90%/);assert.match(squat.text,/RPE 8,5–9,5/);
-  assert.match(isolation.text,/4×15–20/);assert.match(isolation.text,/60–65%/);assert.match(isolation.text,/RPE 7–8/);
+  assert.match(squat.text,/3×4–6/);assert.match(squat.text,/88–90%/);assert.match(squat.text,/RPE 8,5–9,5/);
+  assert.match(isolation.text,/3×15–20/);assert.match(isolation.text,/60–65%/);assert.match(isolation.text,/RPE 7–8/);
   for(const row of preview)assert.equal((row.text.match(/RPE/g)||[]).length,1,'one effort prescription per exercise');
   assert.doesNotMatch(cardio.text,/темп|кг|%/);assert.match(cardio.text,/RPE 5/);
   for(const row of plain(result.audit))for(const e of row.exercises){
@@ -91,7 +91,7 @@ function trackedRuntime(seed){
     assert.deepEqual(set.rpe,row.test&&set.role==='test_attempt'?[9.5,10]:spec.rpe);
    }
   }
-  assert.match(result.constructorText,/3×3–5/);assert.match(result.constructorText,/4×15–20/);
+  assert.match(result.constructorText,/3×4–6/);assert.match(result.constructorText,/3×15–20/);
   assert.deepEqual(plain(result.manual),{reps:[7,9],rpe:[6,7]});
   assert.deepEqual(Array.from(result.choices),['4','6','8','10','12','manual']);assert.equal(result.resized,11);
   assert.deepEqual(Array.from(result.phases),['volume','work','intensification','deload','heavy','recovery','strength','test']);

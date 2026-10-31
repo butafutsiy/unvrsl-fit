@@ -16,7 +16,7 @@ test('week-specific method recipes use the same canonical profiles and allocator
   for(const [i,w] of p.weeks.entries()){
     assert.deepEqual(w.weeklyLoadProfile,A.cycleProfiles(8)[i]);
     const curlSets=w.days.flatMap(d=>d.ex.filter(e=>e.exerciseId==='curl')).reduce((n,e)=>n+e.sets.length,0);
-    assert.equal(curlSets,w.weeklyLoadProfile.isolation.sets);
+    assert.equal(curlSets,w.weeklyLoadProfile.isolation.sets*(w.testWeek?0:2));
     assert.equal(w.days[0].ex.find(e=>e.kind==='cardio').sets[0].workSeconds,480);
   }
   assert.deepEqual(p.weeks[2].days[1].ex[0].sets,stages);

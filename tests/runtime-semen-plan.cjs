@@ -21,7 +21,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
     })()`);
     for(const s of result){assert.equal(s.ex.length,10);assert.equal(s.programId,'semen-upper-lower-8');}
     assert.equal(result[1].ex[5].n,'Ягодичный мост со штангой');
-    assert.equal(result[2].ex[0].set[0].targetRpeMax,6);
+    assert.equal(result[2].ex[0].set[0].targetRpeMax,8);
     assert.ok(result[3].ex.every(e=>e.set.every(s=>s.role!=='test_attempt')));
     assert.deepEqual(errors,[]);
     console.log('Personal plan: linked preview, import, both day launches, deload and final week passed');

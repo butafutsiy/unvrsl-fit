@@ -17,7 +17,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
   return {migrated,preserved,idempotent,base:profile.base,iso:profile.isolation,deload:st.current.deload,benchEffort};
  })()`);
  assert.ok(result.migrated&&result.preserved&&result.idempotent,JSON.stringify(result));assert.equal(result.deload,false);
- assert.equal(result.base.sets,4);assert.deepEqual(Array.from(result.base.rpe),[6,8]);assert.deepEqual(Array.from(result.iso.pct),[80,85]);assert.equal(result.iso.sets,3);
+ assert.equal(result.base.sets,4);assert.deepEqual(Array.from(result.base.rpe),[6,8]);assert.deepEqual(Array.from(result.iso.pct),[80,85]);assert.equal(result.iso.sets,4);
  assert.ok(result.benchEffort.every(a=>a[0]===6&&a[1]===8));assert.deepEqual(errors,[]);
  console.log('Saved-cycle event migration, idempotence, active/history protection and W4 launch targets passed');
  }finally{dom.window.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
