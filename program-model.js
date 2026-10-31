@@ -112,8 +112,10 @@
     const permitted=(exercise,spec,oldCount)=>{
       if(exercise.setCountManual===true||exercise.manualSetCount===true||
          exercise.repsManual===true||exercise.parameterOverrides?.reps?.mode==='manual'||
-         (exercise.parameterOverrides?.version!=null&&exercise.reps?.mode==='manual')||
          exercise.effortSourceMode==='manual'||exercise.parameterOverrides?.effort?.mode==='manual')return false;
+      // Older builders accidentally marked an inherited preset as manual
+      // when only the kilogram value was explicitly edited. A matching old
+      // preset can migrate; a distinct authored repetition range cannot.
       const count=exercise.sets?.length||0;
       if(count!==oldCount&&count!==spec.sets)return false;
       const manual=exercise.reps?.mode==='manual'?exercise.reps:null;
