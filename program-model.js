@@ -1,9 +1,9 @@
 'use strict';
 (function(root,factory){
-  const api=factory();
+  const api=factory(typeof module==='object'&&module.exports?require('./workout-domain.js'):root?.WorkoutDomain);
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root)root.unvrslProgramModelV386=api;
-})(typeof window!=='undefined'?window:globalThis,function(){
+})(typeof window!=='undefined'?window:globalThis,function(domain){
   const SCHEMA_VERSION=386;
   const MANUAL='manual',AUTO='auto',METHOD='method';
   const number=value=>{
@@ -98,7 +98,6 @@
   // them. Repair only inherited STANDARD prescriptions, never user-edited
   // settings, specialist methods, historical sessions or assigned plans.
   function upgradeLegacyIndependentCopy(program){
-    const domain=typeof window!=='undefined'?window.WorkoutDomain:null;
     if(!domain||!program||program.legacyCopyLoadRevision>=550||
        program.weeks?.length!==8||program.assignedUserId||program.clientId||
        program.cloudPlanId||program.trainerId)return false;
@@ -221,7 +220,7 @@
       })
     });
     // Re-sync saved automatic cycle templates, not manual weeks or workout history.
-    if(typeof window!=='undefined')window.WorkoutDomain?.upgradeSessionVolume?.(program);
+    domain?.upgradeSessionVolume?.(program);
     program.schemaVersion=SCHEMA_VERSION;
     return program
   }
