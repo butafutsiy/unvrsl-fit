@@ -81,10 +81,10 @@
     let days='';
     if(p.builtin){
       const rows=routineList().filter(r=>r.w===w);
-      days=rows.map(r=>`<div class="start-picker-day row between"><div class="grow"><b>${esc(r.c)} · ${esc(r.t)}</b><div class="muted small">RPE ${RPE[w]} · ${r.e.length} упражнений</div></div><button class="btn tiny primary" onclick="startPickedBuiltin(${w},'${escId(r.c)}')">Старт</button></div>`).join('');
+      days=rows.map(r=>{const profile=window.WorkoutDomain?.weekProfiles?.[w]||null,effort=window.unvrslDayEffortV545?.summary(profile,{ex:r.e})||'RPE по упражнениям';return `<div class="start-picker-day row between"><div class="grow"><b>${esc(r.c)} · ${esc(r.t)}</b><div class="muted small">${esc(effort)} · ${r.e.length} упражнений</div></div><button class="btn tiny primary" onclick="startPickedBuiltin(${w},'${escId(r.c)}')">Старт</button></div>`}).join('');
     }else{
       const week=p.p?.weeks?.[w-1],rows=week?.days||[];
-      days=rows.map((d,di)=>{const rr=d?.ex?.[0]?.rpe??d?.ex?.[0]?.target??8;return `<div class="start-picker-day row between"><div class="grow"><b>${esc(d.name||`День ${di+1}`)}</b><div class="muted small">RPE ${rr} · ${d.ex?.length||0} упражнений</div></div><button class="btn tiny primary" onclick="startPickedProgram('${escId(p.id)}',${w-1},${di})">Старт</button></div>`}).join('');
+      days=rows.map((d,di)=>{const effort=window.unvrslDayEffortV545?.summary(week,d)||'RPE по упражнениям';return `<div class="start-picker-day row between"><div class="grow"><b>${esc(d.name||`День ${di+1}`)}</b><div class="muted small">${esc(effort)} · ${d.ex?.length||0} упражнений</div></div><button class="btn tiny primary" onclick="startPickedProgram('${escId(p.id)}',${w-1},${di})">Старт</button></div>`}).join('');
     }
     const html=`<div class="row between"><h2>Выбрать тренировку</h2><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="section" style="margin-top:16px">ПРОГРАММА</div><div class="start-program-strip">${programHtml}</div><div class="start-picker-current">Выбрано: <b style="color:var(--text)">${esc(p.name)}</b></div><div id="startPickerWeeks" class="weekbar">${weeks}</div><div id="startPickerDays">${days||'<div class="card muted">В этой неделе тренировок нет.</div>'}</div>`;
     const sh=document.getElementById('sheet');
