@@ -74,3 +74,27 @@ test('a manually configured cycle stays untouched',()=>{
   Program.normalizeProgram(p);
   assert.equal(JSON.stringify(p.weeks),snapshot);
 });
+
+test('legacy copied exercise with manual kilograms and inherited old rep range is repaired',()=>{
+  const p=oldCopy(true);
+  const e=p.weeks[0].days[3].ex[0];
+  e.reps={mode:'manual',min:12,max:15};
+  e.parameterOverrides={version:386,weight:{mode:'manual',value:120},effort:{mode:'auto'}};
+  Program.normalizeProgram(p);
+  const updated=p.weeks[0].days[3].ex[0];
+  assert.equal(updated.reps.mode,'auto');
+  assert.equal(updated.sets[0].w,120);
+  assert.equal(updated.sets[0].r,10);
+});
+test('a deliberately different manual rep range is not overwritten',()=>{
+  const p=oldCopy(true);
+  const e=p.weeks[0].days[3].ex[0];
+  e.reps={mode:'manual',min:6,max:8};
+  e.parameterOverrides={version:386,weight:{mode:'manual',value:120},effort:{mode:'auto'}};
+  Program.normalizeProgram(p);
+  const updated=p.weeks[0].days[3].ex[0];
+  assert.equal(updated.reps.mode,'manual');
+  assert.deepEqual([updated.reps.min,updated.reps.max],[6,8]);
+  assert.equal(updated.sets.length,4);
+  assert.equal(updated.sets[0].w,120);
+});
