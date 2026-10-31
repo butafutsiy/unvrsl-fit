@@ -81,9 +81,13 @@
   function weeklyDefaults(pid,wi,kind){
     const p=programById(pid),w=p?.weeks?.[Number(wi)]||{},profile=typeof window.unvrslWeekLoadProfileV263==='function'?window.unvrslWeekLoadProfileV263(p,Number(wi),true):null;
     const canonical=w.weeklyLoadProfile?.[kind==='isolation'?'isolation':'base'];
-    if(canonical&&!w.loadProfileManual)return {week:Number(w.n)||Number(wi)+1,reps:w.repGuidanceManual?orderedPair(kind==='isolation'?w.isolationRepMin:w.baseRepMin,kind==='isolation'?w.isolationRepMax:w.baseRepMax,canonical.reps):canonical.reps,rpe:canonical.rpe,rir:canonical.rir,tempo:w.weeklyLoadProfile.tempo||recommendedTempo(kind),rest:kind==='isolation'?w.weeklyLoadProfile.isoRest:w.weeklyLoadProfile.baseRest,intensity:canonical.pct};
+    // The stored week profile is authoritative for BOTH exercise kinds,
+    // including a deliberately manually configured isolation profile.
+    if(canonical)return {week:Number(w.n)||Number(wi)+1,reps:w.repGuidanceManual?orderedPair(kind==='isolation'?w.isolationRepMin:w.baseRepMin,kind==='isolation'?w.isolationRepMax:w.baseRepMax,canonical.reps):canonical.reps,rpe:canonical.rpe,rir:canonical.rir,tempo:w.weeklyLoadProfile.tempo||recommendedTempo(kind),rest:kind==='isolation'?w.weeklyLoadProfile.isoRest:w.weeklyLoadProfile.baseRest,intensity:canonical.pct};
+    const fallbackBand=orderedPair(w.intensityMin??profile?.intensityMin,w.intensityMax??profile?.intensityMax,[70,75]);
+    const fallbackSpec=WorkoutDomain.bandPrescription(fallbackBand,kind==='isolation');
     const fallbackReps=repDefaultsFromIntensity(w,kind),reps=orderedPair(kind==='isolation'?(profile?.isolationRepMin??w.isolationRepMin):(profile?.baseRepMin??w.baseRepMin),kind==='isolation'?(profile?.isolationRepMax??w.isolationRepMax):(profile?.baseRepMax??w.baseRepMax),fallbackReps);
-    const rpe=orderedPair(profile?.rpeMin??w.rpeMin,profile?.rpeMax??w.rpeMax,[7,8]),rir=[Math.max(0,10-rpe[1]),Math.max(0,10-rpe[0])];
+    const rpe=kind==='isolation'?orderedPair(profile?.isolation?.rpe?.[0],profile?.isolation?.rpe?.[1],fallbackSpec.rpe):orderedPair(profile?.rpeMin??w.rpeMin,profile?.rpeMax??w.rpeMax,fallbackSpec.rpe),rir=[Math.max(0,10-rpe[1]),Math.max(0,10-rpe[0])];
     const rest=orderedPair(kind==='isolation'?(profile?.isolationRestMin??w.isolationRestMin):(profile?.baseRestMin??w.baseRestMin),kind==='isolation'?(profile?.isolationRestMax??w.isolationRestMax):(profile?.baseRestMax??w.baseRestMax),[autoRest(kind,'STANDARD'),autoRest(kind,'STANDARD')]);
     return {week:Number(w?.n)||Number(wi)+1,reps,rpe,rir,tempo:String(profile?.tempo||w.tempo||recommendedTempo(kind)),rest,intensity:orderedPair(profile?.intensityMin??w.intensityMin,profile?.intensityMax??w.intensityMax,[70,75])}
   }
