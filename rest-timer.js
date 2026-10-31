@@ -10,15 +10,16 @@
   const style=document.createElement('style');
   style.id='unvrsl-rest-timer-v2-style';
   style.textContent=`
-    #timer.timer{left:16px!important;right:16px!important;bottom:calc(118px + env(safe-area-inset-bottom))!important;z-index:96!important;background:rgba(31,32,36,.98)!important;border:1px solid #3a3c42!important;border-radius:22px!important;padding:13px 14px!important;box-shadow:0 16px 50px rgba(0,0,0,.62),0 0 0 1px rgba(10,132,255,.08) inset!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+    #timer.timer{left:16px!important;right:16px!important;bottom:calc(118px + env(safe-area-inset-bottom))!important;z-index:96!important;background:rgba(31,32,36,.98)!important;border:1px solid #3a3c42!important;border-radius:18px!important;padding:8px 10px!important;box-shadow:0 10px 28px rgba(0,0,0,.35)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
     #timer.timer.show{display:flex!important}
     #timer .rest-v2-main{display:flex;align-items:center;gap:11px;min-width:0}
-    #timer .rest-v2-icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:rgba(10,132,255,.16);color:#2997ff;font-size:21px;flex:0 0 auto}
-    #timer #tt{font-size:28px!important;line-height:1;font-variant-numeric:tabular-nums;color:#fff}
-    #timer .rest-v2-label{font-size:12px;color:#9a9ba2;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:48vw}
+    #timer .rest-v2-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:rgba(10,132,255,.16);color:#2997ff;font-size:18px;flex:0 0 auto}
+    #timer #tt{font-size:24px!important;line-height:1;font-variant-numeric:tabular-nums;color:#fff}
+    #timer .rest-v2-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
     #timer .rest-v2-actions{display:flex;align-items:center;gap:7px}
-    #timer .rest-v2-actions .btn{padding:9px 11px!important;border-radius:13px!important;white-space:nowrap}
+    #timer .rest-v2-actions .btn{padding:8px 10px!important;border-radius:11px!important;white-space:nowrap}
     #timer .rest-v2-actions .rest-v2-minus{display:none}
+    html.unvrsl-rest-open #start{padding-bottom:calc(210px + env(safe-area-inset-bottom))!important}
     #start .rest-v2-live{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:10px 12px;border-radius:15px;background:rgba(10,132,255,.10);border:1px solid rgba(10,132,255,.28);min-height:44px}
     #start .rest-v2-live b{font-variant-numeric:tabular-nums;color:#2997ff;white-space:nowrap}
     #start .rest-v2-live.rest-v2-total{background:rgba(10,132,255,.10);border-color:rgba(10,132,255,.28)}
@@ -85,6 +86,7 @@
   }
   function tickV2(){
     const sec=secondsLeft(),el=build();if(!el)return;
+    document.documentElement.classList.toggle('unvrsl-rest-open',el.classList.contains('show'));
     updateLabel(el);const out=el.querySelector('#tt');if(out)out.textContent=text(sec);headTotal();if(sec<=0&&end>0)done();
   }
   function start(sec,label){
@@ -98,7 +100,7 @@
   function stop(clear=true){
     const stopped=snapshot();
     if(id)clearInterval(id);id=null;if(activeStarted)commitActiveRest(Math.min(Date.now(),end||Date.now()));
-    end=0;sessionStorage.removeItem(KEY);sessionStorage.removeItem(LABEL_KEY);build()?.classList.remove('show');currentLabel='Отдых между подходами';saveTotals();headTotal();
+    end=0;sessionStorage.removeItem(KEY);sessionStorage.removeItem(LABEL_KEY);build()?.classList.remove('show');document.documentElement.classList.remove('unvrsl-rest-open');currentLabel='Отдых между подходами';saveTotals();headTotal();
     if(clear&&stopped.end>0)window.dispatchEvent(new CustomEvent('unvrsl:rest-stopped',{detail:stopped}));
   }
 
