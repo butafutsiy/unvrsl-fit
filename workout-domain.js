@@ -16,8 +16,8 @@
     8:{pct:[90,100],rpe:[9,10],tempo:'2-0-X',baseRest:[240,360],isoRest:[90,120],focus:'Контроль результатов',test:true}
   };
   // Weekly prescriptions live here. UI adapters must not maintain their own tables.
-  // Sets are per occurrence of an exercise, not a weekly pool by default.
-  // Isolation has its own loading percentages and reps, but mirrors set volume.
+  // Working sets are the weekly total for each exercise; repeated days split it.
+  // Base and isolation have independent percentages, repetitions and set volumes.
   const loadBands = [
     [60,65,4,10,12,6,8,80,85,3,6,8,8,9],
     [65,70,4,10,12,6,8,75,80,3,8,10,8,9],
@@ -94,7 +94,7 @@
     return /isol/i.test(reg?.resolve(e)?.type||'')?'isolation':'base';
   }
   function applyWeekProfile(week,p) {
-    Object.assign(week,{weeklyLoadProfile:cloneProfile(p),phase:p.phase,deload:p.deload,testWeek:!!p.test,intensityMin:p.pct[0],intensityMax:p.pct[1],rpeMin:p.rpe[0],rpeMax:p.rpe[1],rirMin:10-p.rpe[1],rirMax:10-p.rpe[0],baseRepMin:p.base.reps[0],baseRepMax:p.base.reps[1],isolationRepMin:p.isolation.reps[0],isolationRepMax:p.isolation.reps[1],focus:p.focus,useIntensity:true,loadProfileRevision:547});
+    Object.assign(week,{weeklyLoadProfile:cloneProfile(p),phase:p.phase,deload:p.deload,testWeek:!!p.test,intensityMin:p.pct[0],intensityMax:p.pct[1],rpeMin:p.rpe[0],rpeMax:p.rpe[1],rirMin:10-p.rpe[1],rirMax:10-p.rpe[0],baseRepMin:p.base.reps[0],baseRepMax:p.base.reps[1],isolationRepMin:p.isolation.reps[0],isolationRepMax:p.isolation.reps[1],focus:p.focus,useIntensity:true,loadProfileRevision:548});
     return week;
   }
   function generateCycle(options) {
@@ -121,15 +121,13 @@
         if(p.test)selected=[selected.at(-1)];
         else if(method(source)!=='STANDARD')selected=[selected[0]];
         // Explicit weeklySetsOverride remains a WEEKLY total for backwards compatibility.
-        // Without an override, the table prescribes sets for each selected day.
+        // The canonical table and explicit overrides both set a WEEKLY budget.
         const explicitWeeklyBudget=number(source.weeklySetsOverride);
         const budget=p.test?3:Math.max(0,Math.round(explicitWeeklyBudget??spec.sets));
         selected.forEach((di,j)=>{
-          const count=p.test||explicitWeeklyBudget!=null
-            ?Math.floor(budget/selected.length)+(j<budget%selected.length?1:0)
-            :budget;
+          const count=Math.floor(budget/selected.length)+(j<budget%selected.length?1:0);
           if(!count)return;
-          const e=cloneProfile(source);e.kind=kind;e.cycleOriginalMethod=source.cycleOriginalMethod||source.method||'STANDARD';e.cycleOriginalSets=cloneProfile(source.cycleOriginalSets||source.sets||[]);e.method=e.cycleOriginalMethod;e.weeklySets=p.test||explicitWeeklyBudget!=null?budget:budget*selected.length;e.cycleManaged=true;
+          const e=cloneProfile(source);e.kind=kind;e.cycleOriginalMethod=source.cycleOriginalMethod||source.method||'STANDARD';e.cycleOriginalSets=cloneProfile(source.cycleOriginalSets||source.sets||[]);e.method=e.cycleOriginalMethod;e.weeklySets=budget;e.cycleManaged=true;
           e.reps=source.reps?.mode==='manual'?cloneProfile(source.reps):{mode:'auto',min:null,max:null};e.parameterOverrides={...e.parameterOverrides,reps:source.parameterOverrides?.reps?.mode==='manual'?cloneProfile(source.parameterOverrides.reps):{mode:'auto'},effort:source.parameterOverrides?.effort?.mode==='manual'?cloneProfile(source.parameterOverrides.effort):{mode:'auto'}};
           e.targetIntensityMin=spec.pct[0];e.targetIntensityMax=spec.pct[1];
           e.rpe=(spec.rpe[0]+spec.rpe[1])/2;
@@ -149,7 +147,7 @@
     let changed=false;
     for(const week of program.weeks){
       const p=week?.weeklyLoadProfile;
-      if(!p||p.test||week.testWeek||week.loadProfileManual||week.repGuidanceManual||week.sessionVolumeRevision>=547)continue;
+      if(!p||p.test||week.testWeek||week.loadProfileManual||week.repGuidanceManual||week.sessionVolumeRevision>=548)continue;
       const oldBase=cloneProfile(p.base),oldIso=cloneProfile(p.isolation);
       const nextBase=bandPrescription(p.pct),nextIso=bandPrescription(p.pct,true);
       const groups=new Map();
@@ -166,16 +164,25 @@
         if(!(priorBudget>0))continue;
         const oldCounts=group.map((e,i)=>Math.floor(priorBudget/group.length)+(i<priorBudget%group.length?1:0));
         if(group.some((e,i)=>!Array.isArray(e.sets)||!e.sets.length||e.sets.length!==oldCounts[i]))continue;
-        for(const e of group){
+        for(const [index,e] of group.entries()){
+          const count=Math.floor(spec.sets/group.length)+(index<spec.sets%group.length?1:0);
+          if(!count){
+            // No work sets remain for this occurrence in the weekly budget.
+            for(const day of week.days||[]){
+              const at=day.ex?.indexOf(e)??-1;
+              if(at>=0)day.ex.splice(at,1);
+            }
+            changed=true;continue;
+          }
           const old=e.sets,manualReps=e.reps?.mode==='manual'||e.parameterOverrides?.reps?.mode==='manual';
           const manualEffort=e.parameterOverrides?.effort?.mode==='manual'||e.effortSourceMode==='manual';
-          e.sets=Array.from({length:spec.sets},(_,i)=>{
+          e.sets=Array.from({length:count},(_,i)=>{
             const set=cloneProfile(old[i]||old.at(-1));
             if(!manualReps){set.r=spec.reps[0];set.targetRepMin=spec.reps[0];set.targetRepMax=spec.reps[1];}
             if(!manualEffort){set.targetRpeMin=spec.rpe[0];set.targetRpeMax=spec.rpe[1];}
             return set;
           });
-          e.weeklySets=spec.sets*group.length;
+          e.weeklySets=spec.sets;
           e.targetIntensityMin=spec.pct[0];e.targetIntensityMax=spec.pct[1];
           changed=true;
         }
@@ -187,7 +194,7 @@
         week.isolationRepMin=nextIso.reps[0];week.isolationRepMax=nextIso.reps[1];
         changed=true;
       }
-      week.sessionVolumeRevision=547;
+      week.sessionVolumeRevision=548;
       changed=true;
     }
     if(changed)program.updated=program.updatedAt=Date.now();
