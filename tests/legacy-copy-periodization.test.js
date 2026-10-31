@@ -56,3 +56,21 @@ test('manually authored program and active sessions are unchanged',()=>{
   assert.equal(q.weeks[0].days[3].ex[2].sets.length,4);
   assert.equal(JSON.stringify(q.weeks),original);
 });
+
+test('auto cycleOptions on a five-day saved program do not block migration',()=>{
+  const p=oldCopy(false);
+  p.cycleOptions={weeks:8,periodizationMode:'auto',testWeek:true};
+  const before=JSON.stringify(p.sessions);
+  Program.normalizeProgram(p);
+  assert.deepEqual(p.weeks[0].days[3].ex.map(e=>e.sets.length),[4,4,3,4,4,3]);
+  assert.equal(p.weeks[0].days[3].ex[0].sets[0].w,120);
+  assert.deepEqual(p.weeks[0].weeklyLoadProfile.base.reps,[10,12]);
+  assert.equal(JSON.stringify(p.sessions),before);
+});
+test('a manually configured cycle stays untouched',()=>{
+  const p=oldCopy(false);
+  p.cycleOptions={weeks:8,periodizationMode:'manual'};
+  const snapshot=JSON.stringify(p.weeks);
+  Program.normalizeProgram(p);
+  assert.equal(JSON.stringify(p.weeks),snapshot);
+});
