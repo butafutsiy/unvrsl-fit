@@ -11,7 +11,7 @@ test('saved low-percentage weeks migrate once, split the weekly budget and prese
   const w=p.weeks[i],base=w.days.flatMap(d=>d.ex.filter(e=>e.exerciseId==='bench'));
   assert.equal(w.deload,false);assert.deepEqual(w.weeklyLoadProfile.base,D.bandPrescription(w.weeklyLoadProfile.pct));
   assert.deepEqual(base.map(e=>e.sets.length),[2,2]);assert.ok(base.every(e=>e.sets.every(s=>s.w===0&&s.targetRpeMin===6&&s.targetRpeMax===8)));
-  const iso=w.days[0].ex.find(e=>e.exerciseId==='curl');assert.equal(iso.sets.length,3);assert.ok(iso.sets.every(s=>s.w===''&&s.targetRpeMin===8&&s.targetRpeMax===9));
+  const iso=w.days[0].ex.find(e=>e.exerciseId==='curl');assert.equal(iso.sets.length,4);assert.ok(iso.sets.every(s=>s.w===''&&s.targetRpeMin===8&&s.targetRpeMax===9));
   assert.equal(base[0].id,before.weeks[i].days[0].ex[0].id);
  }
  assert.deepEqual(p.weeks[0],before.weeks[0]);assert.deepEqual(p.weeks[7],before.weeks[7]);
