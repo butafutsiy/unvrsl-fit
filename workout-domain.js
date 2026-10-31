@@ -777,11 +777,11 @@
     // different method on the SAME exercise, equipment and technique.
     // Never fold fatigued supersets into an ordinary strength baseline.
     const compatible=rows.filter(x=>
-      (!x.exercise.superGroup||basisMethod!=='STANDARD'&&!!e.superGroup)&&
+      (!x.exercise.superGroup||basisMethod!=='STANDARD'&&!!e.superGroup||
+       method(e,set)==='STANDARD'&&!!e.superGroup)&&
       loadComparable(e,x.exercise,reg,set,x.set)&&
       basisMethod===method(x.exercise,x.set)&&
-      (basisMethod!=='STANDARD'||setRole(x.exercise,x.set)==='standard')&&
-      !warmup(x.set)
+      (basisMethod!=='STANDARD'||method(e,set)==='STANDARD'||setRole(x.exercise,x.set)==='standard')
     );
     const points=[];
     const newest=Math.max(0,...compatible.map(x=>sessionTime(x.session)));
