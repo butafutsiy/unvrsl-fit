@@ -38,15 +38,14 @@
       if(ex?.mode==='cardio')return;
       const name=String(ex.n||'');
       const isolation=/(разгибан|сгибан|подъ[её]м штанги на бицепс|супинац|молотков|мах|разведен|сведен|бицеп|трицеп|кроссов|икр|дельт|бабоч|канат|французск)/i.test(name);
-      const effort=Number(cur.w)===8?(/тест/i.test(name)?[9,10]:isolation?[6,8]:[7,8]):p.rpe;
+      const effort=Number(cur.w)===8?(/тест/i.test(name)?[9,10]:isolation?[6,8]:[7,8]):isolation?p.isolation.rpe:p.base.rpe;
       (ex.set||[]).forEach(set=>{
+        if(set.ok||set.manualOverride||ex.effortSourceMode==='manual')return;
         const setTarget=mid(effort);
         changed=put(set,'targetRpeResolved',setTarget)||changed;
         changed=put(set,'targetRir',Math.max(0,10-setTarget))||changed;
-        if(Number(cur.w)===8){
-          changed=put(set,'targetRpeMin',effort[0])||changed;
-          changed=put(set,'targetRpeMax',effort[1])||changed;
-        }
+        changed=put(set,'targetRpeMin',effort[0])||changed;
+        changed=put(set,'targetRpeMax',effort[1])||changed;
       });
     });
     if(changed)saveState();
@@ -99,13 +98,13 @@
     D.head?.appendChild(s)
   }
   function gridHtml(){
-    const cells=Object.entries(PROFILE).map(([w,p])=>`<div class="builtin-load-v296-cell"><b>W${w}</b><span class="pct">${range(p.pct)}%</span><span>RPE ${range(p.rpe)}</span></div>`).join('');
+    const cells=Object.entries(PROFILE).map(([w,p])=>`<div class="builtin-load-v296-cell"><b>W${w}</b><span class="pct">${range(p.pct)}%</span><span>Б. RPE ${range(p.base.rpe)}</span>${!p.test?`<span>И. RPE ${range(p.isolation.rpe)}</span>`:''}</div>`).join('');
     return `<div class="builtin-load-v296" data-builtin-load-profile="296"><div class="builtin-load-v296-title">Интенсивность и RPE по неделям</div><div class="builtin-load-v296-grid">${cells}</div></div>`
   }
   W.unvrslBuiltinLoadGridHtmlV296=gridHtml;
   function weekHtml(w){
     const p=PROFILE[w];if(!p)return'';
-    return `<div class="builtin-week-profile-v296" data-builtin-week-profile="${w}"><b>W${w} · ${range(p.pct)}% · RPE ${range(p.rpe)}</b><span>${p.focus}</span></div>`
+    return `<div class="builtin-week-profile-v296" data-builtin-week-profile="${w}"><b>W${w} · ${range(p.pct)}% · База RPE ${range(p.base.rpe)}${p.test?'':` · Изоляция RPE ${range(p.isolation.rpe)}`}</b><span>${p.focus}</span></div>`
   }
   function activeWeek(root){
     const m=String(root?.querySelector('.weekbtn.on')?.textContent||'').match(/W\s*(\d+)/i);
@@ -122,13 +121,9 @@
     const meta=preview.querySelector('.rp281-meta');if(!meta)return false;
     const raw=String(meta.textContent||'').trim(),m=raw.match(/W\s*(\d+)/i),w=Math.max(1,Math.min(8,Number(m?.[1])||0)),p=PROFILE[w];if(!p)return false;
     const tempoMatch=raw.match(/темп\s+(.+)$/i),tempoText=tempoMatch?.[1]?.trim();
-    const next=`W${w} · ${range(p.pct)}% · RPE ${range(p.rpe)}${tempoText?` · темп ${tempoText}`:''}`;
+    const next=`W${w} · ${range(p.pct)}% · База RPE ${range(p.base.rpe)}${p.test?'':` · Изоляция RPE ${range(p.isolation.rpe)}`}${tempoText?` · темп ${tempoText}`:''}`;
     if(meta.textContent!==next)meta.textContent=next;
-    preview.querySelectorAll('.rp281-rule').forEach(el=>{
-      const text=String(el.textContent||'');
-      const replaced=text.replace(/RPE\s+\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?/i,`RPE ${range(p.rpe)}`);
-      if(replaced!==text)el.textContent=replaced
-    });
+    // Preserve each exercise's own RPE target in the preview.
     preview.dataset.loadProfileTextRevision=String(REV);
     return true
   }
@@ -156,17 +151,13 @@
     const text=String(sh.textContent||'');
     if(text.includes('Встроенная программа · 8 недель')||text.includes(builtInName())){
       const w=activeWeek(sh),p=PROFILE[w];
-      if(p){setRpeChips(sh,p);const weekbar=sh.querySelector('.weekbar');if(weekbar&&!sh.querySelector('[data-builtin-week-profile]'))weekbar.insertAdjacentHTML('afterend',weekHtml(w))}
+      if(p){const weekbar=sh.querySelector('.weekbar');if(weekbar&&!sh.querySelector('[data-builtin-week-profile]'))weekbar.insertAdjacentHTML('afterend',weekHtml(w))}
     }
     if(!/Выбрать тренировку/i.test(text))return;
     const selected=sh.querySelector('.start-program-choice.on b');
     if(!selected||String(selected.textContent||'').trim()!==builtInName())return;
     const w=activeWeek(sh),p=PROFILE[w];if(!p)return;
-    sh.querySelectorAll('.start-picker-day .muted.small').forEach(el=>{
-      const m=String(el.textContent||'').match(/·\s*(\d+)\s+упражнен/i);
-      const next=`${range(p.pct)}% · RPE ${range(p.rpe)}${m?` · ${m[1]} упражнений`:''}`;
-      if(el.textContent!==next)el.textContent=next
-    })
+    // The start picker already displays base/isolation RPE per day. Do not flatten it.
   }
 
   let uiQueued=false;
