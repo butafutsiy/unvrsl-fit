@@ -36,6 +36,7 @@ jobs:
           node --test \
             tests/periodization-table.test.js \
             tests/legacy-copy-periodization.test.js \
+            tests/owner-rope-pushdown-volume.test.js \
             tests/program-day-effort-v545.test.cjs \
             tests/program-save.test.cjs \
             tests/program-flow-v386.test.cjs \
