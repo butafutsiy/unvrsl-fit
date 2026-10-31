@@ -99,18 +99,19 @@
   // settings, specialist methods, historical sessions or assigned plans.
   function upgradeLegacyIndependentCopy(program){
     const domain=typeof window!=='undefined'?window.WorkoutDomain:null;
-    if(!domain||!program?.independentCopy||program.cycleOptions||
+    if(!domain||!program||program.cycleOptions||
        program.legacyCopyLoadRevision>=549||program.weeks?.length!==8||
-       program.assignedUserId||program.clientId)return false;
+       program.assignedUserId||program.clientId||program.cloudPlanId||program.trainerId)return false;
     const titles=(program.weeks[0]?.days||[]).map(d=>String(d?.name||''));
-    if(!titles.some(name=>/^(?:A1|A2|B|C|D)\s*[·.]/i.test(name)))return false;
+    const builtinDayCodes=titles.map(name=>name.match(/^(A1|A2|B|C|D)\s*[·.]/i)?.[1]).filter(Boolean);
+    if(builtinDayCodes.length<3||(!program.independentCopy&&builtinDayCodes.length<5))return false;
     const oldSets={1:[4,4],2:[4,4],3:[3,3],4:[4,4],5:[3,3],6:[4,4],7:[3,3]};
     const clone=x=>JSON.parse(JSON.stringify(x));
     const permitted=(exercise,spec,oldCount)=>{
-      if(exercise.parameterOverrides?.version!=null||exercise.setCountManual===true||
-         exercise.manualSetCount===true||exercise.repsManual===true||
-         exercise.parameterOverrides?.reps?.mode==='manual'||exercise.effortSourceMode==='manual'||
-         exercise.parameterOverrides?.effort?.mode==='manual')return false;
+      if(exercise.setCountManual===true||exercise.manualSetCount===true||
+         exercise.repsManual===true||exercise.parameterOverrides?.reps?.mode==='manual'||
+         (exercise.parameterOverrides?.version!=null&&exercise.reps?.mode==='manual')||
+         exercise.effortSourceMode==='manual'||exercise.parameterOverrides?.effort?.mode==='manual')return false;
       const count=exercise.sets?.length||0;
       if(count!==oldCount&&count!==spec.sets)return false;
       const manual=exercise.reps?.mode==='manual'?exercise.reps:null;
