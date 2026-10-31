@@ -196,3 +196,24 @@ jobs:
         with:
           name: mobile-layout-proof
           path: ${{ runner.temp }}/unvrsl-layout-proof
+
+  cycle-regressions:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated DOM checks
+        run: npm install --prefix "$RUNNER_TEMP/unvrsl-cycle" --no-audit --no-fund jsdom@26.1.0 @napi-rs/canvas@0.1.80
+      - name: Run program cycle and live-session regression scenarios
+        env:
+          UNVRSL_JSDOM: ${{ runner.temp }}/unvrsl-cycle/node_modules/jsdom
+          UNVRSL_CANVAS: ${{ runner.temp }}/unvrsl-cycle/node_modules/@napi-rs/canvas
+        run: |
+          node tests/runtime-periodization.cjs
+          node tests/runtime-percentage-weeks.cjs
+          node tests/runtime-semen-plan.cjs
+          node tests/runtime-builtin-engine-cycle.cjs
+          node tests/runtime-eight-week-cycle.cjs
+          node tests/runtime-cycle-settings.cjs
