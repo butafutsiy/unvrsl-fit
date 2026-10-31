@@ -93,12 +93,92 @@
     return exercise
   }
   const fallbackId=prefix=>`${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+  // Legacy independent copies of the five-day builtin cycle do not have
+  // cycleOptions/cycleManaged markers, so the cycle-template migration misses
+  // them. Repair only inherited STANDARD prescriptions, never user-edited
+  // settings, specialist methods, historical sessions or assigned plans.
+  function upgradeLegacyIndependentCopy(program){
+    const domain=typeof window!=='undefined'?window.WorkoutDomain:null;
+    if(!domain||!program?.independentCopy||program.cycleOptions||
+       program.legacyCopyLoadRevision>=549||program.weeks?.length!==8||
+       program.assignedUserId||program.clientId)return false;
+    const titles=(program.weeks[0]?.days||[]).map(d=>String(d?.name||''));
+    if(!titles.some(name=>/^(?:A1|A2|B|C|D)\s*[·.]/i.test(name)))return false;
+    const oldSets={1:[4,4],2:[4,4],3:[3,3],4:[4,4],5:[3,3],6:[4,4],7:[3,3]};
+    const clone=x=>JSON.parse(JSON.stringify(x));
+    const permitted=(exercise,spec,oldCount)=>{
+      if(exercise.parameterOverrides?.version!=null||exercise.setCountManual===true||
+         exercise.manualSetCount===true||exercise.repsManual===true||
+         exercise.parameterOverrides?.reps?.mode==='manual'||exercise.effortSourceMode==='manual'||
+         exercise.parameterOverrides?.effort?.mode==='manual')return false;
+      const count=exercise.sets?.length||0;
+      if(count!==oldCount&&count!==spec.sets)return false;
+      const manual=exercise.reps?.mode==='manual'?exercise.reps:null;
+      if(manual?.min!=null&&manual?.max!=null&&Number(manual.min)!==Number(manual.max)){
+        // A hand-entered range may be different from the obsolete profile.
+        const knownOld={
+          1:{base:[12,15],isolation:[10,12]},2:{base:[10,12],isolation:[12,15]},
+          3:{base:[8,10],isolation:[15,20]},4:{base:[15,20],isolation:[6,8]},
+          5:{base:[6,8],isolation:[15,20]},6:{base:[12,15],isolation:[8,10]},
+          7:{base:[4,6],isolation:[15,20]}
+        }[spec.week]?.[spec.kind];
+        if(!knownOld||Number(manual.min)!==knownOld[0]||Number(manual.max)!==knownOld[1])return false;
+      }
+      return true;
+    };
+    let changed=false;
+    for(let wi=0;wi<7;wi++){
+      const week=program.weeks[wi],profile=domain.weekProfiles[wi+1];
+      if(!week||!profile||week.loadProfileManual||week.repGuidanceManual)continue;
+      if(week.intensityMin!=null&&week.intensityMax!=null&&
+         (Number(week.intensityMin)!==profile.pct[0]||Number(week.intensityMax)!==profile.pct[1]))continue;
+      const groups=new Map();
+      for(const day of week.days||[])for(const ex of day.ex||[]){
+        if(!ex||!Array.isArray(ex.sets)||!ex.sets.length||
+           String(ex.method||'STANDARD').toUpperCase()!=='STANDARD'||
+           ex.kind==='cardio'||ex.workMode==='timer'||ex.loadType==='time')continue;
+        const kind=domain.exerciseKind(ex)==='isolation'?'isolation':'base';
+        const key=[ex.sourceId||ex.exerciseId||ex.n,ex.equipmentProfileId||'',ex.techniqueId||'',kind].join('|');
+        if(!groups.has(key))groups.set(key,[]);
+        groups.get(key).push({ex,kind});
+      }
+      for(const occurrences of groups.values()){
+        const kind=occurrences[0].kind,spec=profile[kind],index=kind==='isolation'?1:0;
+        if(!spec?.sets||occurrences.length>spec.sets||
+           occurrences.some(({ex})=>!permitted(ex,{...spec,kind,week:wi+1},oldSets[wi+1][index])))continue;
+        for(let i=0;i<occurrences.length;i++){
+          const ex=occurrences[i].ex,existing=ex.sets;
+          const count=Math.floor(spec.sets/occurrences.length)+(i<spec.sets%occurrences.length?1:0);
+          ex.sets=Array.from({length:count},(_,j)=>{
+            const set=clone(existing[j]||existing.at(-1));
+            set.r=spec.reps[0];set.targetRepMin=spec.reps[0];set.targetRepMax=spec.reps[1];
+            set.targetRpeMin=spec.rpe[0];set.targetRpeMax=spec.rpe[1];
+            return set;
+          });
+          ex.weeklySets=spec.sets;
+          ex.reps={mode:'auto',min:null,max:null};
+          ex.effortSourceMode='auto';
+          ex.rpe=(spec.rpe[0]+spec.rpe[1])/2;
+          ex.targetIntensityMin=spec.pct[0];ex.targetIntensityMax=spec.pct[1];
+          changed=true;
+        }
+      }
+      // Keep the approved profile visible in the editor and preview. No
+      // change to exercise methods, manually entered kilograms or tempo.
+      domain.applyWeekProfile(week,clone(profile));
+      changed=true;
+    }
+    program.legacyCopyLoadRevision=549;
+    if(changed)program.updated=Date.now();
+    return changed;
+  }
   function normalizeProgram(program,idFactory=fallbackId){
     if(!program||typeof program!=='object')program={};
     if(typeof window!=='undefined')window.upgradeBuiltinEngineCycleV502?.(program,idFactory);
     program.id=program.id==null||program.id===''?idFactory('prog'):String(program.id);
     program.name=String(program.name||'Программа');
     if(!Array.isArray(program.weeks))program.weeks=[];
+    upgradeLegacyIndependentCopy(program);
     program.weeks.forEach((week,weekIndex)=>{
       if(!week||typeof week!=='object')week=program.weeks[weekIndex]={};
       week.n=Number(week.n)||weekIndex+1;
