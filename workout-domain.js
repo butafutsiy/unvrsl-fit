@@ -19,15 +19,15 @@
   // Sets are per occurrence of an exercise, not a weekly pool by default.
   // Isolation has its own loading percentages and reps, but mirrors set volume.
   const loadBands = [
-    [60,65,4,15,20,6,8,80,85,4,6,8,8,9],
-    [65,70,4,12,15,6,8,75,80,4,8,10,8,9],
-    [70,75,4,12,15,7,8,70,75,4,10,12,8,9],
-    [75,80,4,10,12,7,8,65,70,4,12,15,8,9],
-    [80,85,3,8,10,8,9,60,65,3,15,20,7,8],
-    [85,88,3,6,8,8,9,60,65,3,15,20,7,8],
-    [88,90,3,4,6,8.5,9.5,60,65,3,15,20,7,8],
-    [90,95,2,2,3,9,9.5,60,65,2,15,20,6,7],
-    [95,100,2,1,2,9.5,10,60,65,2,15,20,5,6],
+    [60,65,4,10,12,6,8,80,85,3,6,8,8,9],
+    [65,70,4,10,12,6,8,75,80,3,8,10,8,9],
+    [70,75,4,10,12,7,8,70,75,3,10,12,8,9],
+    [75,80,4,8,10,7,8,65,70,3,12,15,8,9],
+    [80,85,3,6,8,8,9,60,65,4,15,20,7,8],
+    [85,88,3,4,6,8,9,60,65,4,15,20,7,8],
+    [88,90,3,3,5,8.5,9.5,60,65,4,15,20,7,8],
+    [90,95,2,2,3,9,9.5,60,65,5,15,20,6,7],
+    [95,100,2,1,2,9.5,10,60,65,5,15,20,5,6],
     [100,105,1,1,1,10,10,0,0,0,0,0,0,0]
   ];
   function bandPrescription(pct, isolation=false) {
@@ -94,7 +94,7 @@
     return /isol/i.test(reg?.resolve(e)?.type||'')?'isolation':'base';
   }
   function applyWeekProfile(week,p) {
-    Object.assign(week,{weeklyLoadProfile:cloneProfile(p),phase:p.phase,deload:p.deload,testWeek:!!p.test,intensityMin:p.pct[0],intensityMax:p.pct[1],rpeMin:p.rpe[0],rpeMax:p.rpe[1],rirMin:10-p.rpe[1],rirMax:10-p.rpe[0],baseRepMin:p.base.reps[0],baseRepMax:p.base.reps[1],isolationRepMin:p.isolation.reps[0],isolationRepMax:p.isolation.reps[1],focus:p.focus,useIntensity:true,loadProfileRevision:465});
+    Object.assign(week,{weeklyLoadProfile:cloneProfile(p),phase:p.phase,deload:p.deload,testWeek:!!p.test,intensityMin:p.pct[0],intensityMax:p.pct[1],rpeMin:p.rpe[0],rpeMax:p.rpe[1],rirMin:10-p.rpe[1],rirMax:10-p.rpe[0],baseRepMin:p.base.reps[0],baseRepMax:p.base.reps[1],isolationRepMin:p.isolation.reps[0],isolationRepMax:p.isolation.reps[1],focus:p.focus,useIntensity:true,loadProfileRevision:547});
     return week;
   }
   function generateCycle(options) {
@@ -149,7 +149,7 @@
     let changed=false;
     for(const week of program.weeks){
       const p=week?.weeklyLoadProfile;
-      if(!p||p.test||week.testWeek||week.loadProfileManual||week.repGuidanceManual||week.sessionVolumeRevision>=544)continue;
+      if(!p||p.test||week.testWeek||week.loadProfileManual||week.repGuidanceManual||week.sessionVolumeRevision>=547)continue;
       const oldBase=cloneProfile(p.base),oldIso=cloneProfile(p.isolation);
       const nextBase=bandPrescription(p.pct),nextIso=bandPrescription(p.pct,true);
       const groups=new Map();
@@ -187,7 +187,7 @@
         week.isolationRepMin=nextIso.reps[0];week.isolationRepMax=nextIso.reps[1];
         changed=true;
       }
-      week.sessionVolumeRevision=544;
+      week.sessionVolumeRevision=547;
       changed=true;
     }
     if(changed)program.updated=program.updatedAt=Date.now();
