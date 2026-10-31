@@ -772,9 +772,17 @@
     }
     return value;
   }
-  function strengthEstimate(e,rows,reg,weights=[],set={}) {
-    // Fatigued superset results must not raise an isolated exercise's baseline.
-    const compatible=rows.filter(x=>(!x.exercise.superGroup||!!e.superGroup)&&loadComparable(e,x.exercise,reg,set,x.set)&&method(e,set)===method(x.exercise,x.set));
+  function strengthEstimate(e,rows,reg,weights=[],set={},basisMethod=method(e,set)) {
+    // Callers may explicitly use ordinary sets as the reference for a
+    // different method on the SAME exercise, equipment and technique.
+    // Never fold fatigued supersets into an ordinary strength baseline.
+    const compatible=rows.filter(x=>
+      (!x.exercise.superGroup||basisMethod!=='STANDARD'&&!!e.superGroup)&&
+      loadComparable(e,x.exercise,reg,set,x.set)&&
+      basisMethod===method(x.exercise,x.set)&&
+      (basisMethod!=='STANDARD'||setRole(x.exercise,x.set)==='standard')&&
+      !warmup(x.set)
+    );
     const points=[];
     const newest=Math.max(0,...compatible.map(x=>sessionTime(x.session)));
     for(const x of compatible) {
@@ -1254,9 +1262,18 @@
         excludeId: session.id,
         before: sessionTime(session)>1e11?sessionTime(session):undefined,
       }),
-      strengthRows=method(e,set)==='STANDARD'&&setRole(e,set)==='standard'?allHistory:
+      activeMethod=method(e,set),
+      strengthRows=activeMethod==='STANDARD'&&setRole(e,set)==='standard'?allHistory:
         [...allHistory,...(session.ex||[]).flatMap(ex=>(ex.set||[]).filter(s=>complete(ex,s,reg)).map(s=>({exercise:ex,set:s,session})))],
-      strength=strengthEstimate(e,strengthRows,reg,[],set),
+      // The ordinary movement provides the strength baseline for UNVRSL,
+      // SLDR, drop sets and FST-7, regardless of their method label.
+      // Exercise identity, equipment, loading mode and technique still match.
+      standardRows=activeMethod!=='STANDARD'&&['UNVRSL','SLDR','DS','FST-7'].includes(activeMethod)
+        ?allHistory.filter(x=>loadComparable(e,x.exercise,reg,set,x.set)&&method(x.exercise,x.set)==='STANDARD'&&setRole(x.exercise,x.set)==='standard'&&!x.exercise.superGroup&&!warmup(x.set))
+        :[],
+      standardStrength=standardRows.length?strengthEstimate(e,standardRows,reg,[],set,'STANDARD'):null,
+      baselineFromStandard=!!(standardStrength?.estimate>0),
+      strength=baselineFromStandard?standardStrength:strengthEstimate(e,strengthRows,reg,[],set),
       rows=allHistory.filter((x) => method(e,set)==='STANDARD'
         ? loadComparable(e,x.exercise,reg,set,x.set)&&method(x.exercise,x.set)==='STANDARD'
         : comparable(e, x.exercise, reg, set, x.set));
@@ -1535,7 +1552,7 @@
     const methodRec=methodPrescription(e,set,session,allHistory,reg,p,strength);
     if(methodRec) {
       raw=methodRec.weight;projected=methodRec.raw;anomalous=false;
-      reason=methodRec.reason;action='method';
+      reason=methodRec.reason+(baselineFromStandard?'; исходная сила рассчитана по обычным подходам этого упражнения':'');action='method';
       for(const id of methodRec.sessionIds)if(!ids.includes(id))ids.push(id);
       if(methodRec.live)nextSetSuggestion={weight:methodRec.weight,action:'method',reason:methodRec.reason};
     }
@@ -1631,9 +1648,12 @@
             : latestOneRepMax!=null?"средняя":"низкая";
     // Some isolation machines intentionally do not expose an e1RM. Their
     // completed working sets and effort still provide valid load evidence.
-    const reliable=effortKnown>0&&recent.length>0||!!lastToday&&effortRpe(lastToday.set)!=null||testWeekSuggestion&&ids.length>0;
+    const reliable=effortKnown>0&&recent.length>0||!!lastToday&&effortRpe(lastToday.set)!=null||
+      testWeekSuggestion&&ids.length>0||
+      (baselineFromStandard&&strength.points.some(x=>effortRpe(x.set)!=null));
     return {
       weight,
+      strengthBasis:baselineFromStandard?'standard':activeMethod==='STANDARD'?'standard':'method',
       series,calibration,reasonCodes,repetitionGoal,
       analogousSessionId:analogous?.[0]?.session.id??null,
       calculationVersion:p.correctionPolicy?541:469,
