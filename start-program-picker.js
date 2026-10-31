@@ -47,14 +47,23 @@
       list.push({id:BUILTIN,name:builtInName(),weeks:8,days:routineList().length,builtin:true,kind:'Встроенная'});
       seen.add(BUILTIN);
     }
+    let upgraded=false;
     (Array.isArray(st.programs)?st.programs:[]).forEach(p=>{
       if(!p||p.archived||!Array.isArray(p.weeks)||!p.weeks.length)return;
       if(clientMode()&&(!p.cloudPlanId||!p.trainerId||!hasActiveAssignment(p.cloudPlanId)))return;
+      // A program may be hydrated after the initial local migration. Sync
+      // private auto programs before building their day cards and preview.
+      if(!p.cloudPlanId&&!p.assignedUserId&&!p.clientId&&window.unvrslProgramModelV386){
+        const before=JSON.stringify(p);
+        window.unvrslProgramModelV386.normalizeProgram(p);
+        if(JSON.stringify(p)!==before)upgraded=true;
+      }
       const id=String(p.id||'');
       if(!id||seen.has(id))return;
       seen.add(id);
       list.push({id,name:p.name||'Программа',weeks:p.weeks.length,days:p.weeks.reduce((a,w)=>a+(w?.days?.length||0),0),p,builtin:false,kind:clientMode()?'Назначена тренером':'Моя программа'});
     });
+    if(upgraded)queueMicrotask(()=>{try{save()}catch(error){console.warn('Program week sync',error)}});
     return list;
   }
   function selected(){
