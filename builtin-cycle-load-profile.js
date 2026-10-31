@@ -155,9 +155,22 @@
     }
     if(!/Выбрать тренировку/i.test(text))return;
     const selected=sh.querySelector('.start-program-choice.on b');
-    if(!selected||String(selected.textContent||'').trim()!==builtInName())return;
-    const w=activeWeek(sh),p=PROFILE[w];if(!p)return;
-    // The start picker already displays base/isolation RPE per day. Do not flatten it.
+    if(!selected)return;
+    const w=activeWeek(sh),chosen=String(selected.textContent||'').trim(),s=state();
+    const builtin=chosen===builtInName();
+    const selectedId=String(s?.startProgramId||s?.primaryProgramId||'');
+    const saved=(s?.programs||[]).find(x=>String(x?.id||'')===selectedId&&x?.name===chosen)
+      ||(s?.programs||[]).find(x=>x?.name===chosen);
+    const days=builtin?(W.UNVRSL_ROUTINES||[]).filter(r=>Number(r?.w)===w)
+      .map(r=>({week:PROFILE[w],ex:r.e||[]})):
+      (saved?.weeks?.[w-1]?.days||[]).map(d=>({week:saved.weeks[w-1],ex:d.ex||[]}));
+    const labels=sh.querySelectorAll('#startPickerDays .start-picker-day .muted.small');
+    labels.forEach((el,i)=>{
+      const item=days[i],summary=item&&W.unvrslDayEffortV545?.summary(item.week,{ex:item.ex});
+      if(!summary)return;
+      const next=`${summary} · ${item.ex.length} упражнений`;
+      if(el.textContent!==next)el.textContent=next;
+    });
   }
 
   let uiQueued=false;
