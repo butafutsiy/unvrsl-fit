@@ -46,7 +46,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
     assert.ok(result.currentPreserved&&result.originalPreserved&&result.historyPreserved);
     assert.match(result.editor,/Периодизация/);assert.match(result.editor,/Изоляция:/);
     assert.deepEqual(Array.from(result.firstNames),['A1','B','C','A2','D']);
-    assert.equal(result.french,'isolation');assert.equal(result.ropeSets,3);
+    assert.equal(result.french,'isolation');assert.equal(result.ropeSets,4);
     assert.deepEqual(JSON.parse(JSON.stringify(result.cardio)),{mode:'timer',seconds:480});
     for(const row of result.summary){
       if([3,5].includes(row.week)){
