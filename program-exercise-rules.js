@@ -87,7 +87,8 @@
     const fallbackBand=orderedPair(w.intensityMin??profile?.intensityMin,w.intensityMax??profile?.intensityMax,[70,75]);
     const fallbackSpec=WorkoutDomain.bandPrescription(fallbackBand,kind==='isolation');
     const fallbackReps=repDefaultsFromIntensity(w,kind),reps=orderedPair(kind==='isolation'?(profile?.isolationRepMin??w.isolationRepMin):(profile?.baseRepMin??w.baseRepMin),kind==='isolation'?(profile?.isolationRepMax??w.isolationRepMax):(profile?.baseRepMax??w.baseRepMax),fallbackReps);
-    const rpe=kind==='isolation'?orderedPair(profile?.isolation?.rpe?.[0],profile?.isolation?.rpe?.[1],fallbackSpec.rpe):orderedPair(profile?.rpeMin??w.rpeMin,profile?.rpeMax??w.rpeMax,fallbackSpec.rpe),rir=[Math.max(0,10-rpe[1]),Math.max(0,10-rpe[0])];
+    const savedRpe=orderedPair(profile?.rpeMin??w.rpeMin,profile?.rpeMax??w.rpeMax,fallbackSpec.rpe);
+    const rpe=kind==='isolation'&&profile?.isolation?.rpe?orderedPair(profile.isolation.rpe[0],profile.isolation.rpe[1],savedRpe):savedRpe,rir=[Math.max(0,10-rpe[1]),Math.max(0,10-rpe[0])];
     const rest=orderedPair(kind==='isolation'?(profile?.isolationRestMin??w.isolationRestMin):(profile?.baseRestMin??w.baseRestMin),kind==='isolation'?(profile?.isolationRestMax??w.isolationRestMax):(profile?.baseRestMax??w.baseRestMax),[autoRest(kind,'STANDARD'),autoRest(kind,'STANDARD')]);
     return {week:Number(w?.n)||Number(wi)+1,reps,rpe,rir,tempo:String(profile?.tempo||w.tempo||recommendedTempo(kind)),rest,intensity:orderedPair(profile?.intensityMin??w.intensityMin,profile?.intensityMax??w.intensityMax,[70,75])}
   }
