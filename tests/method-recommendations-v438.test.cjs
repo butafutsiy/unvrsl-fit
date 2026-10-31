@@ -49,10 +49,14 @@ test('SLDR keeps one weight within the round and lowers the next round after fai
   Object.assign(s.ex[0].set[1],work(100,8,9));assert.equal(rec(s,0,2).weight,100);
   Object.assign(s.ex[0].set[2],work(100,5,10));assert.equal(rec(s,0,3).weight,97.5);
 });
-test('SLDR without method history preserves its seed instead of importing ordinary e1RM',()=>{
+test('SLDR without a method-specific session uses ordinary strength across percentage weeks',()=>{
   const a=now([sldr()],{programWeekIntensityMin:60,programWeekIntensityMax:65});
   const b=now([sldr()],{programWeekIntensityMin:70,programWeekIntensityMax:75});
-  assert.equal(rec(a).weight,rec(b).weight);assert.ok(rec(a).weight>0);
+  const low=rec(a,0,0,[old]),high=rec(b,0,0,[old]);
+  assert.equal(low.strengthBasis,'standard');
+  assert.equal(high.strengthBasis,'standard');
+  assert.ok(low.weight>0&&high.weight>0);
+  assert.ok(high.weight>=low.weight,'changing the base intensity range must not lower the SLDR anchor');
 });
 test('test back-off cannot be replaced by the normal next-set suggestion',()=>{
   const s=now([bench([work(150,1,9)],{n:'Жим лёжа — тест 1–3ПМ'}),bench([waiting(0,5)],{n:'Жим лёжа — back-off 70%'})],{w:8,c:'B'});
