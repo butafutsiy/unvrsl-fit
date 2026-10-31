@@ -16,16 +16,18 @@
     8:{pct:[90,100],rpe:[9,10],tempo:'2-0-X',baseRest:[240,360],isoRest:[90,120],focus:'Контроль результатов',test:true}
   };
   // Weekly prescriptions live here. UI adapters must not maintain their own tables.
+  // Sets are per occurrence of an exercise, not a weekly pool by default.
+  // Isolation has its own loading percentages and reps, but mirrors set volume.
   const loadBands = [
-    [60,65,4,10,12,6,8,80,85,3,6,8,8,9],
-    [65,70,4,10,12,6,8,75,80,3,8,10,8,9],
-    [70,75,4,10,12,7,8,70,75,3,10,12,8,9],
-    [75,80,4,8,10,7,8,65,70,3,12,15,8,9],
-    [80,85,3,6,8,8,9,60,65,4,15,20,7,8],
-    [85,88,3,4,6,8,9,60,65,4,15,20,7,8],
-    [88,90,3,3,5,8.5,9.5,60,65,4,15,20,7,8],
-    [90,95,2,2,3,9,9.5,60,65,5,15,20,6,7],
-    [95,100,2,1,2,9.5,10,60,65,5,15,20,5,6],
+    [60,65,4,15,20,6,8,80,85,4,6,8,8,9],
+    [65,70,4,12,15,6,8,75,80,4,8,10,8,9],
+    [70,75,4,12,15,7,8,70,75,4,10,12,8,9],
+    [75,80,4,10,12,7,8,65,70,4,12,15,8,9],
+    [80,85,3,8,10,8,9,60,65,3,15,20,7,8],
+    [85,88,3,6,8,8,9,60,65,3,15,20,7,8],
+    [88,90,3,4,6,8.5,9.5,60,65,3,15,20,7,8],
+    [90,95,2,2,3,9,9.5,60,65,2,15,20,6,7],
+    [95,100,2,1,2,9.5,10,60,65,2,15,20,5,6],
     [100,105,1,1,1,10,10,0,0,0,0,0,0,0]
   ];
   function bandPrescription(pct, isolation=false) {
@@ -118,10 +120,16 @@
         const kind=exerciseKind(source),spec=p[kind];if(!spec.sets)return;
         if(p.test)selected=[selected.at(-1)];
         else if(method(source)!=='STANDARD')selected=[selected[0]];
-        const budget=p.test?3:Math.max(0,Math.round(number(source.weeklySetsOverride)??spec.sets));
+        // Explicit weeklySetsOverride remains a WEEKLY total for backwards compatibility.
+        // Without an override, the table prescribes sets for each selected day.
+        const explicitWeeklyBudget=number(source.weeklySetsOverride);
+        const budget=p.test?3:Math.max(0,Math.round(explicitWeeklyBudget??spec.sets));
         selected.forEach((di,j)=>{
-          const count=Math.floor(budget/selected.length)+(j<budget%selected.length?1:0);if(!count)return;
-          const e=cloneProfile(source);e.kind=kind;e.cycleOriginalMethod=source.cycleOriginalMethod||source.method||'STANDARD';e.cycleOriginalSets=cloneProfile(source.cycleOriginalSets||source.sets||[]);e.method=e.cycleOriginalMethod;e.weeklySets=budget;e.cycleManaged=true;
+          const count=p.test||explicitWeeklyBudget!=null
+            ?Math.floor(budget/selected.length)+(j<budget%selected.length?1:0)
+            :budget;
+          if(!count)return;
+          const e=cloneProfile(source);e.kind=kind;e.cycleOriginalMethod=source.cycleOriginalMethod||source.method||'STANDARD';e.cycleOriginalSets=cloneProfile(source.cycleOriginalSets||source.sets||[]);e.method=e.cycleOriginalMethod;e.weeklySets=p.test||explicitWeeklyBudget!=null?budget:budget*selected.length;e.cycleManaged=true;
           e.reps=source.reps?.mode==='manual'?cloneProfile(source.reps):{mode:'auto',min:null,max:null};e.parameterOverrides={...e.parameterOverrides,reps:source.parameterOverrides?.reps?.mode==='manual'?cloneProfile(source.parameterOverrides.reps):{mode:'auto'},effort:source.parameterOverrides?.effort?.mode==='manual'?cloneProfile(source.parameterOverrides.effort):{mode:'auto'}};
           e.targetIntensityMin=spec.pct[0];e.targetIntensityMax=spec.pct[1];
           e.rpe=(spec.rpe[0]+spec.rpe[1])/2;
@@ -133,6 +141,57 @@
         });
       });
     return week.days;
+  }
+  // Repairs auto-generated PROGRAM TEMPLATES only; never completed or active sessions.
+  // Explicit weekly budgets, manually edited weeks, manual set counts and methods stay intact.
+  function upgradeSessionVolume(program) {
+    if(!program?.cycleOptions||!Array.isArray(program.weeks)||program.cycleOptions.periodizationMode==='manual')return false;
+    let changed=false;
+    for(const week of program.weeks){
+      const p=week?.weeklyLoadProfile;
+      if(!p||p.test||week.testWeek||week.loadProfileManual||week.repGuidanceManual||week.sessionVolumeRevision>=544)continue;
+      const oldBase=cloneProfile(p.base),oldIso=cloneProfile(p.isolation);
+      const nextBase=bandPrescription(p.pct),nextIso=bandPrescription(p.pct,true);
+      const groups=new Map();
+      for(const day of week.days||[])for(const e of day.ex||[]){
+        if(e.cycleManaged!==true||method(e)!=='STANDARD'||number(e.weeklySetsOverride)!=null||
+           e.kind==='cardio'||e.workMode==='timer'||['time','distance'].includes(e.loadType))continue;
+        const key=[e.exerciseId||e.sourceId||e.n,e.equipmentProfileId||'',e.techniqueId||'',e.loadType||''].join('|');
+        if(!groups.has(key))groups.set(key,[]);
+        groups.get(key).push(e);
+      }
+      for(const group of groups.values()){
+        const kind=exerciseKind(group[0]),oldSpec=kind==='isolation'?oldIso:oldBase,spec=kind==='isolation'?nextIso:nextBase;
+        const priorBudget=number(group[0].weeklySets)??oldSpec?.sets;
+        if(!(priorBudget>0))continue;
+        const oldCounts=group.map((e,i)=>Math.floor(priorBudget/group.length)+(i<priorBudget%group.length?1:0));
+        if(group.some((e,i)=>!Array.isArray(e.sets)||!e.sets.length||e.sets.length!==oldCounts[i]))continue;
+        for(const e of group){
+          const old=e.sets,manualReps=e.reps?.mode==='manual'||e.parameterOverrides?.reps?.mode==='manual';
+          const manualEffort=e.parameterOverrides?.effort?.mode==='manual'||e.effortSourceMode==='manual';
+          e.sets=Array.from({length:spec.sets},(_,i)=>{
+            const set=cloneProfile(old[i]||old.at(-1));
+            if(!manualReps){set.r=spec.reps[0];set.targetRepMin=spec.reps[0];set.targetRepMax=spec.reps[1];}
+            if(!manualEffort){set.targetRpeMin=spec.rpe[0];set.targetRpeMax=spec.rpe[1];}
+            return set;
+          });
+          e.weeklySets=spec.sets*group.length;
+          e.targetIntensityMin=spec.pct[0];e.targetIntensityMax=spec.pct[1];
+          changed=true;
+        }
+      }
+      // Auto weeks inherit the canonical table. Do not rewrite manual profiles.
+      if(JSON.stringify(p.base)!==JSON.stringify(nextBase)||JSON.stringify(p.isolation)!==JSON.stringify(nextIso)){
+        p.base=nextBase;p.isolation=nextIso;
+        week.baseRepMin=nextBase.reps[0];week.baseRepMax=nextBase.reps[1];
+        week.isolationRepMin=nextIso.reps[0];week.isolationRepMax=nextIso.reps[1];
+        changed=true;
+      }
+      week.sessionVolumeRevision=544;
+      changed=true;
+    }
+    if(changed)program.updated=program.updatedAt=Date.now();
+    return changed;
   }
   // Upgrade saved automatic low-percentage weeks without touching workout snapshots.
   // Manual week profiles and explicit per-exercise rep/effort overrides remain authored.
@@ -2039,7 +2098,7 @@
     setRole,
     loadComparable,
     weekProfiles,
-    upgradePercentageWeeks,allocateWeek,bandPrescription,cycleProfiles,dayRoles,validatePrescription,exerciseKind,applyWeekProfile,generateCycle,fatigueSignals,boundedProgression,
+    upgradePercentageWeeks,upgradeSessionVolume,allocateWeek,bandPrescription,cycleProfiles,dayRoles,validatePrescription,exerciseKind,applyWeekProfile,generateCycle,fatigueSignals,boundedProgression,
     strengthEstimate,
     setDecision,
     effortTarget,
