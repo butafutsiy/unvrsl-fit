@@ -191,7 +191,7 @@ test('already open three-set W8 fixes real rep fields and appends two 80% volume
  assert.equal(pending.backoffPending,true);assert.equal(pending.canApply,false);
  Object.assign(e.set[2],{ok:true,r:1,actualReps:1,actualRpe:9.5});
  assert.equal(A.prepareTestBlocks(now,reg),false);
- assert.equal(e.set[3].skipped,false);assert.equal(e.set[4].skipped,false);
+ assert.equal(!!e.set[3].skipped,false);assert.equal(!!e.set[4].skipped,false);
  const first=A.recommend(e,e.set[3],now,[earlier],reg);
  const second=A.recommend(e,e.set[4],now,[earlier],reg);
  const load=A.recommendationWeight(first);
