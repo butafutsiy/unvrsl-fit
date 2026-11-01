@@ -270,6 +270,28 @@
     #workout-focus[data-cardio=true] .wf-cardio-links button{font-size:12px!important;text-decoration:none!important;color:var(--muted)}
     #workout-focus[data-cardio=true] .wf-cardio-nav:not([open]){display:none!important}
     @media(max-width:360px){#workout-focus[data-cardio=true] .wf-cardio-clock-card{padding:14px!important}#workout-focus[data-cardio=true] .wf-cardio-more>summary span{font-size:9px!important}}
+    /* Cardio focus v2: time-first layout, no nested outlined cards. */
+    #workout-focus[data-cardio=true] .wf-cardio-screen{gap:13px!important;max-width:520px}
+    #workout-focus[data-cardio=true] .wf-cardio-clock-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:12px 0 0!important}
+    #workout-focus[data-cardio=true] .wf-cardio-clock-top{padding:0 1px!important;font-size:12px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-countdown{font-size:clamp(64px,18vw,88px)!important;letter-spacing:-.065em!important;padding:15px 0 0!important;line-height:1.08!important}
+    #workout-focus[data-cardio=true] .wf-cardio-caption{margin:2px 0 23px!important;font-size:12px!important;letter-spacing:0!important}
+    #workout-focus[data-cardio=true] .wf-cardio-track{height:5px!important;background:color-mix(in srgb,var(--text) 10%,var(--bg))!important}
+    #workout-focus[data-cardio=true] .wf-cardio-controls{margin-top:20px!important;grid-template-columns:minmax(0,1fr) 112px!important;gap:10px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-main-btn{background:var(--action)!important;color:var(--action-text)!important;border:0!important;border-radius:14px!important;font-weight:800!important}
+    #workout-focus[data-cardio=true] .wf-cardio-reset{background:transparent!important;color:var(--muted)!important;border:0!important;border-radius:14px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-metrics{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px 7px!important;padding:17px 0!important;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    #workout-focus[data-cardio=true] .wf-cardio-metrics>div{border:0!important;background:transparent!important;border-radius:0!important;padding:2px 0!important;min-width:0!important}
+    #workout-focus[data-cardio=true] .wf-cardio-metrics small{font-size:11px!important;margin-bottom:5px!important;line-height:1.2!important}
+    #workout-focus[data-cardio=true] .wf-cardio-metrics b{font-size:15px!important;line-height:1.22!important;white-space:normal!important;overflow-wrap:anywhere;font-weight:750!important}
+    #workout-focus[data-cardio=true] .wf-cardio-more{border:0!important;background:transparent!important;border-radius:0!important;padding:0!important;margin:0!important}
+    #workout-focus[data-cardio=true] .wf-cardio-more>summary{min-height:49px!important;padding:0 1px!important;font-size:13px!important;font-weight:750!important}
+    #workout-focus[data-cardio=true] .wf-cardio-more>summary span{font-size:10px!important;text-align:right!important;max-width:56%!important}
+    #workout-focus[data-cardio=true] .wf-cardio-fields{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-save{display:block!important;width:100%!important;min-height:50px!important;margin:6px 0 0!important;background:var(--action)!important;color:var(--action-text)!important;border:0!important;border-radius:14px!important;font-size:14px!important;font-weight:800!important}
+    #workout-focus[data-cardio=true] .wf-cardio-links{justify-content:space-between!important;margin-top:1px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-links button{font-size:12px!important;min-height:36px!important}
+    @media(max-width:370px){#workout-focus[data-cardio=true] .wf-cardio-countdown{font-size:62px!important}#workout-focus[data-cardio=true] .wf-cardio-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
     @media(min-width:760px){#workout-focus{padding-left:30px;padding-right:30px}}@media(prefers-reduced-motion:reduce){#workout-focus *{scroll-behavior:auto!important}}
   `;D.head.appendChild(style);
   function save(){try{if(W.save?.({draftOnly:true})===false)throw Error('Не удалось сохранить черновик');return true}catch(error){message(error.message||'Не удалось сохранить данные');return false}}
