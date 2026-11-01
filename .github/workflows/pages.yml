@@ -39,6 +39,7 @@ jobs:
             tests/owner-rope-pushdown-volume.test.js \
             tests/cardio-machines-v552.test.cjs \
             tests/client-free-workout-v554.test.cjs \
+            tests/persistent-load-calibration-v557.test.cjs \
             tests/program-day-effort-v545.test.cjs \
             tests/program-save.test.cjs \
             tests/program-flow-v386.test.cjs \
