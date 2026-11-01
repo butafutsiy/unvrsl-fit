@@ -23,10 +23,11 @@
     const cells=[['Темп',tempo||'—']];
     if(treadmill||explicitIncline)cells.push(['Наклон',num(c.inclinePct)!=null?`${fmt(c.inclinePct)} %`:'—']);
     if(treadmill||ready(c.speedKmh))cells.push(['Скорость',ready(c.speedKmh)?`${fmt(c.speedKmh)} км/ч`:'—']);
-    if(ready(c.distanceKm))cells.push(['Дистанция',`${fmt(c.distanceKm,2)} км`]);
+    if(ready(c.distanceKm))cells.push([c.mode==='distance'?'Цель':'Дистанция',`${fmt(c.distanceKm,2)} км`]);
+   if(c.mode==='calories'&&ready(c.targetKcal))cells.push(['Цель',`${fmt(c.targetKcal,0)} ккал`]);
     if(ready(c.powerWatts))cells.push(['Мощность',`${fmt(c.powerWatts,0)} Вт`]);
     if(ready(c.resistance))cells.push(['Сопротивление',fmt(c.resistance)]);
-    cells.push(['Калории',kcal?.kcal!=null?`${kcal.source==='met'?'≈ ':''}${fmt(kcal.kcal,0)} ккал`:'—']);
+    cells.push(['Оценка ккал',kcal?.kcal!=null?`${kcal.source==='met'?'≈ ':''}${fmt(kcal.kcal,0)} ккал`:'—']);
     if(ready(c.heartRate))cells.push(['Пульс',`${fmt(c.heartRate,0)} уд/мин`]);
     const fieldValues={...c,durationMin:c.durationMin};
     const inputs=fields.filter(([key])=>key!=='inclinePct'||treadmill||explicitIncline)
@@ -35,7 +36,7 @@
       <div class="uw-cardio-facts">${cells.map(([label,value])=>`<div><small>${esc(label)}</small><strong>${esc(value)}</strong></div>`).join('')}</div>
       <details class="uw-cardio-edit"><summary>Параметры кардио <span>Изменить</span></summary>
         <div class="uw-cardio-edit-grid" style="background:transparent!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important">${inputs}</div>
-        <p>Калории с тренажёра имеют приоритет. Значение с символом ≈ рассчитано по MET и массе тела.</p>
+        <p>Цель по калориям не равна фактическому расходу. Значение с символом ≈ рассчитано по MET и массе тела, а не измерено тренажёром.</p>
       </details>
     </div>`;
   }
