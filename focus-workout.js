@@ -496,6 +496,8 @@
     const e=s.ex[row.ei],set=e.set[row.si];if(set.ok||set.skipped)return;
     if(row.group){const unknown=F.groupCalibration(s,row,A,reg);if(unknown)return beginCalibration(unknown.ei);}
     const d=readForm(form),type=A.loadType(e,reg),weighted=!['bodyweight_only','repetitions_only','time','distance'].includes(type);
+    if(d.cardio&&e.cardio?.mode==='calories'&&C.num(d.cardio.reportedKcal)==null)return message('Укажи фактические ккал с тренажёра. Целевое значение не считается потраченным.');
+    if(d.cardio&&e.cardio?.mode==='distance'&&C.num(d.cardio.distanceKm)==null)return message('Укажи фактически пройденную дистанцию.');
     if(d.pain){
       for(const ex of s.ex)if(A.loadComparable(e,ex,reg,set,ex.set?.[0]||{}))for(const x of ex.set||[])if(!x.ok){x.skipped=true;x.skipReason='pain';}
       (s.exerciseStops||(s.exerciseStops=[])).push({exerciseIndex:row.ei,reason:'pain',at:Date.now()});s.focusState.notice='Упражнение остановлено после сообщения о боли. Его оставшиеся подходы пропущены.';delete s.focusState.inputs;
