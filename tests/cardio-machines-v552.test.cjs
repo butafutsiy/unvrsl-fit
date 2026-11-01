@@ -16,7 +16,7 @@ function context(extra={}){
 test('eleven machines have unique IDs, linked barefoot static illustrations, and safe coaching',()=>{
   const w=context(),rows=Array.from(w.UNVRSL_EXERCISES).filter(x=>x.id.startsWith('cardio:'));
   assert.equal(rows.length,11);
-  assert.equal(new Set(rows.map(x=>x.id)).size,13);
+  assert.equal(new Set(rows.map(x=>x.id)).size,11);
   for(const e of rows){
     assert.equal(e.bp,'cardio');assert.equal(e.loadType,'time');
     assert.equal(e.weightProfile.step,0);
