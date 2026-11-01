@@ -7,7 +7,7 @@
   const num=v=>v==null||String(v).trim()===''?null:(Number.isFinite(Number(v))?Number(v):null);
   const fmt=(v,d=1)=>Number(v).toLocaleString('ru-RU',{maximumFractionDigits:d});
   const ready=v=>num(v)!=null&&num(v)>0;
-  const cardios=e=>e&&(e.kind==='cardio'||e.mode==='cardio'||e.workMode==='timer'&&/байк|кардио|дорож|велотренаж|эллип|гребн|лыжн|лестниц|stepper|stairmaster/i.test(String(e.n||''))||W.UNVRSLCardio?.isCardio?.(e));
+  const cardios=e=>e&&(e.kind==='cardio'||e.mode==='cardio'||((e.workMode==='timer'||e.mode==='timer')&&/байк|кардио|дорож|велотренаж|эллип|гребн|лыжн|лестниц|stepper|stairmaster/i.test(String(e.n||'')))||W.UNVRSLCardio?.isCardio?.(e));
   const isTreadmill=e=>/дорож|treadmill|ходьб.*наклон/i.test(String(e.n||'')+' '+String(e.cardioMachineId||''));
   const time=v=>{const n=Math.max(0,Math.round(Number(v)||0)),m=Math.floor(n/60),s=n%60;return n>=3600?`${Math.floor(n/3600)}:${String(m%60).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;};
   const fields=[['durationMin','Время, мин','0.5'],['distanceKm','Дистанция, км','0.01'],['speedKmh','Скорость, км/ч','0.1'],['inclinePct','Наклон, %','0.5'],['resistance','Сопротивление','1'],['powerWatts','Мощность, Вт','1'],['heartRate','Пульс, уд/мин','1'],['reportedKcal','Калории с тренажёра','1'],['weightKg','Масса тела, кг','0.1']];
@@ -47,19 +47,23 @@
       if(!cardios(e))continue;
       let card=root.querySelector(`[data-cardio-exercise="${ei}"]`);
       if(!card){
-        const names=[String(e.n||'').trim(),String(W.displayExerciseName?.(e.n)||'').trim()];
-        card=[...root.querySelectorAll('.exercise')].find(el=>{
-          if(used.has(el))return false;
-          const label=el.querySelector('.exname')?.textContent?.trim()||'';
-          return label&&names.some(n=>n&&(label===n||label.includes(n)));
+        const clean=n=>String(n||'').trim().replace(/\s*[—–-]\s*W\d+$/i,'').trim().toLowerCase();
+        const names=[clean(e.n),clean(W.displayExerciseName?.(e.n))].filter(Boolean);
+        card=[...root.querySelectorAll('.cardio-compact-ex,.cardio-program-ex,.cardio-workout,.exercise,.card')].find(el=>{
+          if(used.has(el)||el.classList.contains('workout-head')||el.classList.contains('workout-finish-card'))return false;
+          const label=clean(el.querySelector('.exname,.cardio-name,.cardio-compact-title')?.textContent
+            ||el.querySelector('h2,h3,h4,strong')?.textContent||'');
+          return label&&names.some(n=>label===n||label.includes(n)||n.includes(label));
         });
       }
       if(!card||used.has(card))continue;
       used.add(card);
       let holder=card.querySelector(`[data-cardio-brief-ei="${ei}"]`);
       if(holder){const doc=D.createElement('div');doc.innerHTML=brief(e,s,ei);holder.querySelector('.uw-cardio-facts')?.replaceWith(doc.firstElementChild.querySelector('.uw-cardio-facts'));continue;}
-      const first=card.querySelector(':scope > .row.between')||card.querySelector('.cardio-compact-row')||card.firstElementChild;
-      if(first)first.insertAdjacentHTML('afterend',brief(e,s,ei));
+      const compactRow=card.querySelector('.cardio-compact-row');
+      const first=card.querySelector(':scope > .row.between')||card.querySelector('.exname,.cardio-name,.cardio-compact-title')||card.firstElementChild;
+      if(compactRow)compactRow.insertAdjacentHTML('beforebegin',brief(e,s,ei));
+      else if(first)first.insertAdjacentHTML('afterend',brief(e,s,ei));
       else card.insertAdjacentHTML('beforeend',brief(e,s,ei));
       // The existing detailed grid stays available where a legacy workout card already provides it.
       if(card.querySelector('.cardio-form-grid'))card.querySelector('.uw-cardio-edit')?.remove();
@@ -67,6 +71,7 @@
   }
   const style=D.createElement('style');style.id='unvrsl-cardio-workout-brief-v1';style.textContent=`
     #start .uw-cardio-brief{margin:12px 0 5px;padding:13px 0 0;border-top:1px solid var(--line);min-width:0}
+    #start .cardio-compact-ex .uw-cardio-brief{margin:11px 0 2px;padding-top:12px}
     #start .uw-cardio-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:12px;row-gap:13px}
     #start .uw-cardio-facts>div{min-width:0}
     #start .uw-cardio-facts small{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;line-height:1.2}
@@ -86,4 +91,5 @@
   const base=W.unvrslCardioEdit;
   if(typeof base==='function')W.unvrslCardioEdit=function(){const value=base.apply(this,arguments);mount();return value;};
   queueMicrotask(mount);
+  window.addEventListener('pageshow',()=>queueMicrotask(mount));
 })();
