@@ -47,7 +47,7 @@
       if(!cardios(e))continue;
       let card=root.querySelector(`[data-cardio-exercise="${ei}"]`);
       if(!card){
-        const clean=n=>String(n||'').trim().replace(/\\s*[—–-]\\s*W\\d+$/i,'').trim().toLowerCase();
+        const clean=n=>String(n||'').trim().replace(/\s*[—–-]\s*W\d+$/i,'').trim().toLowerCase();
         const names=[clean(e.n),clean(W.displayExerciseName?.(e.n))].filter(Boolean);
         card=[...root.querySelectorAll('.cardio-compact-ex,.cardio-program-ex,.cardio-workout,.exercise,.card')].find(el=>{
           if(used.has(el)||el.classList.contains('workout-head')||el.classList.contains('workout-finish-card'))return false;
