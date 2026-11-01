@@ -114,17 +114,52 @@ function builder(){
     function readNumber(id,fallback,min,max){const n=N(D.getElementById(id)?.value);return n==null?fallback:Math.max(min,Math.min(max,n))}
   W.clientFreeWorkoutOpenV334=builder;
   W.clientFreeWorkoutAddV334=function(){
-    const match=selectedExercise;if(!match)return W.toast?.('Выбери упражнение из списка');
+  const selected=selectedExercise;
+  if(!selected)return W.toast?.('Выбери упражнение из списка');
+  const common={id:`cfw-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`,name:selected.name,exerciseId:selected.id,kind:selected.kind};
+  if(selected.kind==='cardio'){
+    const value=id=>D.getElementById(id)?.value;
+    const positiveOptional=(id,max)=>{const n=N(value(id));return n==null||n<=0?null:Math.min(n,max)};
+    const zeroOptional=(id,max)=>{const raw=value(id);const n=N(raw);return raw==null||raw===''||n==null?null:Math.max(0,Math.min(n,max))};
+    const mode=value('cfwCardioMode')||'steady';
+    const cardio={mode,intensity:value('cfwCardioIntensity')||'moderate',durationMin:mode==='interval'?null:positiveOptional('cfwCardioMinutes',1440),rpe:readNumber('cfwCardioRpe',5,1,10),rounds:Math.round(readNumber('cfwCardioRounds',8,1,100)),workSeconds:Math.round(readNumber('cfwCardioWork',30,1,3600)),restSeconds:Math.round(readNumber('cfwCardioRest',60,0,3600)),distanceKm:positiveOptional('cfwCardioDistance',1000),speedKmh:positiveOptional('cfwCardioSpeed',40),inclinePct:zeroOptional('cfwCardioIncline',25),resistance:zeroOptional('cfwCardioResistance',100),powerWatts:positiveOptional('cfwCardioPower',3000),heartRate:positiveOptional('cfwCardioHr',250),reportedKcal:positiveOptional('cfwCardioKcal',10000),weightKg:positiveOptional('cfwCardioMass',500)};
+    if(mode!=='interval'&&!cardio.durationMin)return W.toast?.('Укажи длительность кардио');
+    if(mode==='distance'&&!cardio.distanceKm)return W.toast?.('Укажи дистанцию');
+    draft().push({...common,cardioMachineId:selected.cardioMachineId,cardio});
+  }else{
     const repMin=Math.round(readNumber('cfwRepMin',8,1,100)),repMax=Math.max(repMin,Math.round(readNumber('cfwRepMax',repMin,1,100)));
-    draft().push({id:`cfw-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`,name:match.name,exerciseId:match.id,weightMode:D.getElementById('cfwWeightMode')?.value||'manual',sets:Math.round(readNumber('cfwSets',3,1,12)),repMin,repMax,weight:readNumber('cfwWeight',0,0,999),rpe:readNumber('cfwRpe',8,5,10),rest:Math.round(readNumber('cfwRest',90,15,600))});persist();const host=D.getElementById('cfwRows');if(host)host.innerHTML=rows();builder()
-  };
+    draft().push({...common,weightMode:D.getElementById('cfwWeightMode')?.value||'manual',sets:Math.round(readNumber('cfwSets',3,1,12)),repMin,repMax,weight:readNumber('cfwWeight',0,0,999),rpe:readNumber('cfwRpe',8,5,10),rest:Math.round(readNumber('cfwRest',90,15,600))});
+  }
+  persist();
+  builder();
+};
   W.clientFreeWorkoutRemoveV334=function(index){draft().splice(Number(index),1);persist();builder()};
   W.clientFreeWorkoutClearV334=function(){if(!draft().length||!W.confirm('Очистить список упражнений?'))return;draft().splice(0);persist();builder()};
   function program(){
-    const id=`free-workout-v335-${userId()}`,items=draft(),ex=items.map(item=>{const meta=workoutRegistry.resolve({exerciseId:item.exerciseId,n:item.name})||{};return{id:item.id,n:item.name,exerciseId:meta.id||item.exerciseId,sourceId:meta.id||null,loadType:meta.loadType,implementCount:meta.implementCount,bp:meta?.bp||'',tg:meta?.tg||'',eq:meta?.eq||'',method:'STANDARD',rpe:item.rpe,tempo:'2-0-2',rest:item.rest,note:'Свободная тренировка',weightMode:item.weightMode||(item.weight>0?'manual':'auto'),programWeightMode:(item.weightMode==='manual'||item.weight>0)?'prescribed':'autoweight',repMin:item.repMin,repMax:item.repMax,sets:Array.from({length:item.sets},(_,i)=>({label:String(i+1),w:item.weight,r:item.repMin,rMin:item.repMin,rMax:item.repMax,rest:item.rest}))}}),value={id,name:'Свободная тренировка',isFreeWorkout:true,isClientFreeWorkout:true,ownerUserId:userId(),created:Date.now(),updated:Date.now(),weeks:[{n:1,useIntensity:false,days:[{id:`${id}-day`,name:'Свободная тренировка',ex}]}]};
-    if(!Array.isArray(st.programs))st.programs=[];const index=st.programs.findIndex(x=>x?.id===id);if(index>=0)value.created=st.programs[index].created||value.created,st.programs[index]=value;else st.programs.push(value);persist();return value
-  }
-  W.clientFreeWorkoutStartV334=function(){if(st.current){W.nav('start');return W.toast('У вас есть незавершённая тренировка')}if(!draft().length)return W.toast?.('Сначала добавь упражнения');const p=program();if(typeof W.beginProgramDay!=='function'&&typeof beginProgramDay!=='function')return W.toast?.('Экран тренировки ещё загружается');(W.beginProgramDay||beginProgramDay)(p.id,0,0)};
+  const id=`free-workout-v335-${userId()}`,items=draft();
+  const ex=items.map(item=>{
+    const meta=workoutRegistry.resolve({exerciseId:item.exerciseId,n:item.name})||{};
+    const isCardio=item.kind==='cardio'||!!W.UNVRSLCardio?.lookup(item.name)?.cardioMachine;
+    if(isCardio){
+      const cardio={mode:'steady',intensity:'moderate',durationMin:30,rpe:5,...item.cardio};
+      const durationSec=cardio.mode==='interval'
+        ? Math.max(1,Math.round(cardio.rounds||1))*Math.max(1,Math.round(cardio.workSeconds||60))
+          +Math.max(0,Math.round((cardio.rounds||1)-1))*Math.max(0,Math.round(cardio.restSeconds||0))
+        : Math.round(Math.max(1,Number(cardio.durationMin)||30)*60);
+      const machineId=item.cardioMachineId||meta.cardioMachine?.id||W.UNVRSLCardio?.lookup(item.name)?.cardioMachine?.id||null;
+      return {id:item.id,n:item.name,exerciseId:meta.id||item.exerciseId,sourceId:meta.id||null,bp:'cardio',kind:'cardio',loadType:'time',workMode:'timer',method:'STANDARD',cardioMachineId:machineId,cardio,durationSec,workSeconds:durationSec,rpe:cardio.rpe,rest:0,note:'Свободная тренировка',sets:[{label:'1',w:0,r:0,workSeconds:durationSec,reportedKcal:cardio.reportedKcal??null,weightKg:cardio.weightKg??null}]};
+    }
+    return{id:item.id,n:item.name,exerciseId:meta.id||item.exerciseId,sourceId:meta.id||null,loadType:meta.loadType,implementCount:meta.implementCount,bp:meta?.bp||'',tg:meta?.tg||'',eq:meta?.eq||'',method:'STANDARD',rpe:item.rpe,tempo:'2-0-2',rest:item.rest,note:'Свободная тренировка',weightMode:item.weightMode||(item.weight>0?'manual':'auto'),programWeightMode:(item.weightMode==='manual'||item.weight>0)?'prescribed':'autoweight',repMin:item.repMin,repMax:item.repMax,sets:Array.from({length:item.sets},(_,i)=>({label:String(i+1),w:item.weight,r:item.repMin,rMin:item.repMin,rMax:item.repMax,rest:item.rest}))};
+  });
+  const value={id,name:'Свободная тренировка',isFreeWorkout:true,isClientFreeWorkout:true,ownerUserId:userId(),created:Date.now(),updated:Date.now(),weeks:[{n:1,useIntensity:false,days:[{id:`${id}-day`,name:'Свободная тренировка',ex}]}]};
+  if(!Array.isArray(st.programs))st.programs=[];
+  const index=st.programs.findIndex(x=>x?.id===id);
+  if(index>=0){value.created=st.programs[index].created||value.created;st.programs[index]=value;}
+  else st.programs.push(value);
+  persist();
+  return value;
+}
+    W.clientFreeWorkoutStartV334=function(){if(st.current){W.nav('start');return W.toast('У вас есть незавершённая тренировка')}if(!draft().length)return W.toast?.('Сначала добавь упражнения');const p=program();if(typeof W.beginProgramDay!=='function'&&typeof beginProgramDay!=='function')return W.toast?.('Экран тренировки ещё загружается');(W.beginProgramDay||beginProgramDay)(p.id,0,0)};
   function inject(){
     const root=D.getElementById('plan');if(!root||!canUse()||root.querySelector('[data-client-free-v334]'))return;const card=D.createElement('div');card.dataset.clientFreeV334='1';card.innerHTML=`<div class="section">СВОБОДНАЯ ТРЕНИРОВКА</div><button type="button" class="card cfw-plan-card" onclick="clientFreeWorkoutOpenV334()"><div><span>Свой набор упражнений</span><b>Свободная тренировка</b><small>${draft().length?`${draft().length} упражнений уже выбрано`:'Собери тренировку из нашей базы'}</small></div><strong>Собрать ›</strong></button>`;const profile=root.querySelector('#clientPlanProfileV255,.trainer-self-profile-v111');if(profile)profile.after(card);else root.prepend(card)
   }
