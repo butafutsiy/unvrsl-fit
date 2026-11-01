@@ -196,7 +196,20 @@
     "canon:barbell_hip_thrust":{"name":"Ягодичный мост со штангой","status":"needs_equipment","loadType":"external_total","step":2.5,"aliases":["","Ягодичный мост со штангой","Хип-траст со штангой","Ягодичный мост","Хип траст","Хип-траст","Ягодичный мостик","Ягодичный мостик со штангой"],"response":{"L1":3,"L2":5,"H1":5,"H2":8,"H3":12},"hardCapUpPct":9,"hardCapDownPct":16,"maxStepsUp":4,"maxStepsDown":8,"minDeltaRatio":0.5,"family":"BB","tolerance":0.5,"percentageBasis":"stored_load"},
     "og:0276":{"name":"Dead Bug","status":"nonweighted","loadType":"bodyweight_only","step":0,"aliases":["0276","dead bug","Dead Bug"]},
     "og:0749":{"name":"Наклоны в Смите (гудморнинг)","status":"needs_equipment","loadType":"external_total","step":2.5,"aliases":["0749","smith bent knee good morning","Good Morning в Смите","Наклоны в Смите (гудморнинг)","Наклоны в Смите"],"response":{"L1":1.5,"L2":2.5,"H1":3,"H2":5,"H3":7.5},"hardCapUpPct":4,"hardCapDownPct":10,"maxStepsUp":2,"maxStepsDown":4,"minDeltaRatio":0.5,"family":"AX","tolerance":0.5,"percentageBasis":"stored_load"},
-    "og:0044":{"name":"Наклоны со штангой (гудморнинг)","status":"needs_equipment","loadType":"external_total","step":2.5,"aliases":["0044","barbell good morning","Good Morning со штангой","Наклоны со штангой (гудморнинг)","Наклоны со штангой"],"response":{"L1":1.5,"L2":2.5,"H1":3,"H2":5,"H3":7.5},"hardCapUpPct":4,"hardCapDownPct":10,"maxStepsUp":2,"maxStepsDown":4,"minDeltaRatio":0.5,"family":"AX","tolerance":0.5,"percentageBasis":"stored_load"}
+    "og:0044":{"name":"Наклоны со штангой (гудморнинг)","status":"needs_equipment","loadType":"external_total","step":2.5,"aliases":["0044","barbell good morning","Good Morning со штангой","Наклоны со штангой (гудморнинг)","Наклоны со штангой"],"response":{"L1":1.5,"L2":2.5,"H1":3,"H2":5,"H3":7.5},"hardCapUpPct":4,"hardCapDownPct":10,"maxStepsUp":2,"maxStepsDown":4,"minDeltaRatio":0.5,"family":"AX","tolerance":0.5,"percentageBasis":"stored_load"},
+    "cardio:treadmill":{"name":"Беговая дорожка","status":"special_handler","loadType":"time","step":0,"aliases":["treadmill","Беговая дорожка"]},
+    "cardio:upright-bike":{"name":"Велотренажёр вертикальный","status":"special_handler","loadType":"time","step":0,"aliases":["upright-bike","Велотренажёр вертикальный"]},
+    "cardio:recumbent-bike":{"name":"Велотренажёр горизонтальный","status":"special_handler","loadType":"time","step":0,"aliases":["recumbent-bike","Велотренажёр горизонтальный"]},
+    "cardio:spin-bike":{"name":"Сайкл / Spin Bike","status":"special_handler","loadType":"time","step":0,"aliases":["spin-bike","Сайкл / Spin Bike"]},
+    "cardio:air-bike":{"name":"Air Bike / Assault Bike","status":"special_handler","loadType":"time","step":0,"aliases":["air-bike","Air Bike / Assault Bike"]},
+    "cardio:elliptical":{"name":"Эллиптический тренажёр","status":"special_handler","loadType":"time","step":0,"aliases":["elliptical","Эллиптический тренажёр"]},
+    "cardio:stepper":{"name":"Степпер","status":"special_handler","loadType":"time","step":0,"aliases":["stepper","Степпер"]},
+    "cardio:stair-climber":{"name":"Лестница / StairMaster","status":"special_handler","loadType":"time","step":0,"aliases":["stair-climber","Лестница / StairMaster"]},
+    "cardio:rower":{"name":"Гребной тренажёр","status":"special_handler","loadType":"time","step":0,"aliases":["rower","Гребной тренажёр"]},
+    "cardio:skierg":{"name":"SkiErg","status":"special_handler","loadType":"time","step":0,"aliases":["skierg","SkiErg"]},
+    "cardio:curved-treadmill":{"name":"Изогнутая беговая дорожка","status":"special_handler","loadType":"time","step":0,"aliases":["curved-treadmill","Изогнутая беговая дорожка"]},
+    "cardio:upper-body-ergometer":{"name":"Ручной эргометр","status":"special_handler","loadType":"time","step":0,"aliases":["upper-body-ergometer","Ручной эргометр"]},
+    "cardio:versaclimber":{"name":"VersaClimber","status":"special_handler","loadType":"time","step":0,"aliases":["versaclimber","VersaClimber"]}
   };
   const copy=x=>JSON.parse(JSON.stringify(x));
   const number=v=>v==null||String(v).trim()===''?null:Number.isFinite(Number(String(v).replace(',','.')))?Number(String(v).replace(',','.')):null;
