@@ -1405,8 +1405,12 @@
     const corridor=stableOneRepMax>0&&prescription.corridor?prescription.corridor.map(x=>fromEstimateLoad(stableOneRepMax*x/100,e,session,reg)):null;
     // A new 90%+ prescription is a fresh intensity target, not a 5% step
     // from the last high-rep working load. Stage loads use the robust mean e1RM.
+    const highIntensityWeek=!!band&&band.lo>=.9;
+    const legacyTestWeek=Number(session.programWeekNumber??session.w)===8&&
+      (weekEight||session.testWeek||session.weeklyLoadProfile?.test);
     const peakRebase=eligible&&method(e,set)==='STANDARD'&&setRole(e,set)==='standard'&&
-      !!band&&band.lo>=.9&&stableOneRepMax>0&&!!corridor&&corridor.every(x=>x!=null);
+      (highIntensityWeek||legacyTestWeek&&range.lo>=1&&range.hi<=3&&targetMin>=8.5)&&
+      stableOneRepMax>0&&!!corridor&&corridor.every(x=>x!=null);
     if(eligible&&corridor&&corridor.every(x=>x!=null)){
       const role=session.dayRole||session.role||'Middle',position=role==='Heavy'?.85:role==='Light'?.15:.5;
       projected=Math.max(corridor[0],Math.min(corridor[1],(corridor[0]+(corridor[1]-corridor[0])*position)*calibration.factor));
@@ -1708,8 +1712,8 @@
       reasonCodes.push('WEEKLY_CALCULATED_WEIGHT');
       if(!nextSetSuggestion)action='range_adjust';
     }
-    if(ordinary&&!weeklyCalculated&&corridor&&weight!=null&&(weight<Math.min(...corridor)-p.step/2||weight>Math.max(...corridor)+p.step/2)){conflict='Лимит коррекции или сохранённый рабочий вес выходит за расчётный коридор: проверь цель по повторам и усилию';if(!reason.includes(conflict))reason+='. '+conflict;}
-    const requiresEffort=ordinary&&ids.length>0&&effortKnown===0&&(!lastToday||effortRpe(lastToday.set)==null);
+    if(ordinary&&!weeklyCalculated&&!peakRebase&&corridor&&weight!=null&&(weight<Math.min(...corridor)-p.step/2||weight>Math.max(...corridor)+p.step/2)){conflict='Лимит коррекции или сохранённый рабочий вес выходит за расчётный коридор: проверь цель по повторам и усилию';if(!reason.includes(conflict))reason+='. '+conflict;}
+    const requiresEffort=ordinary&&!peakRebase&&ids.length>0&&effortKnown===0&&(!lastToday||effortRpe(lastToday.set)==null);
     if(requiresEffort){weight=seed;action='hold';reasonCodes.push('EFFORT_REQUIRED');reason='Укажи RPE или RIR: история сохранена, вес по усилию пока не рассчитывается';}
     if(ordinary&&ids.length>=3&&action==='hold'&&!strong&&!weak&&new Set(ids.slice(0,3).map(id=>JSON.stringify(recent.filter(x=>x.session.id===id).map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)])))).size===1){trend='plateau';reason+='; три сопоставимые тренировки без прироста';}
     const confidence = baselineFromStandard?strength.confidence:
