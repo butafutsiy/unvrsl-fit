@@ -21,6 +21,23 @@
       border-radius:0!important;
       box-shadow:none!important;
     }
+    /* The white strips are separate direct children, not the main surface. */
+    html[data-theme="light"] body #workout-focus[data-cardio=true] .wf-cardio-heading,
+    html[data-theme="light"] body #workout-focus[data-cardio=true] .wf-cardio-links{
+      background:transparent!important;
+      background-color:transparent!important;
+      background-image:none!important;
+      border:0!important;
+      box-shadow:none!important;
+      outline:0!important;
+    }
+    html[data-theme="light"] body #workout-focus[data-cardio=true] .wf-cardio-heading::before,
+    html[data-theme="light"] body #workout-focus[data-cardio=true] .wf-cardio-heading::after,
+    html[data-theme="light"] body #workout-focus[data-cardio=true] .wf-cardio-links::before,
+    html[data-theme="light"] body #workout-focus[data-cardio=true] .wf-cardio-links::after{
+      background:transparent!important;
+      box-shadow:none!important;
+    }
     /* Keep the timer and collapsible metrics as genuine raised cards. */
         /* Clean up the focus screen without changing its element order or behaviour. */
     #workout-focus{font-variant-numeric:tabular-nums}
