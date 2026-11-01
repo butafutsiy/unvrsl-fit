@@ -232,7 +232,7 @@
   }
   if(W.document){
     const style=W.document.createElement('style');
-    style.textContent='.cardio-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}.cardio-field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-secondary,#94989d);min-width:0}.cardio-field input,.cardio-field select{width:100%;min-width:0;padding:12px;border-radius:12px;background:var(--input-bg,#1f2126);border:1px solid #43464d;color:inherit;font-size:15px}.cardio-workout{padding:16px}.cardio-energy{font-size:14px}@media(max-width:360px){.cardio-form-grid{grid-template-columns:1fr}}';
+    style.textContent='.cardio-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}.cardio-field[hidden]{display:none!important}.cardio-field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-secondary,#94989d);min-width:0}.cardio-field input,.cardio-field select{width:100%;min-width:0;padding:12px;border-radius:12px;background:var(--input-bg,#1f2126);border:1px solid #43464d;color:inherit;font-size:15px}.cardio-workout{padding:16px}.cardio-energy{font-size:14px}@media(max-width:360px){.cardio-form-grid{grid-template-columns:1fr}}';
     W.document.head.appendChild(style);
     const original=W.programExerciseForm;
     if(typeof original==='function'){
