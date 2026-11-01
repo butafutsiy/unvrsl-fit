@@ -29,9 +29,11 @@
       if(!rows.some(z=>z.sec>0))return base.apply(this,arguments);
       const title=typeof displayExerciseName==='function'?displayExerciseName(group.base):group.base;
       const last=entries.at(-1),restSec=Number(last?.rest||0),target=Number(rows[0]?.e?.target??s?.target??6),firstSec=rows.find(z=>z.sec>0)?.sec||60;
-      const tempo=String(rows[0]?.e?.tempo||'').trim(),showTempo=tempo&&!/^\d+(?:[-–]\d+){2,3}$/.test(tempo);
-      const rule=`${fmt(firstSec)}${showTempo?` · темп ${tempo}`:''}${restSec?` · отдых ${restSec} сек`:''}`;
-      return `<div class="exercise cardio-compact-ex"><div class="row between cardio-compact-head"><div class="grow"><div class="exname">${esc(title)}</div><div class="muted small">${esc(rule)}</div></div><div class="cardio-compact-effort"><span class="chip green">RPE ${target}</span></div></div>${rows.map(z=>`<div class="cardio-compact-row"><span class="setnum">${esc(z.label)}</span><b>${fmt(z.sec||60)}</b><button class="btn tiny cardio-compact-timer" onclick="unvrslCardioWorkTimerV2(${z.sec||60},'${encodeURIComponent(title)}')">▶ Таймер</button><input inputmode="decimal" value="${z.x?.rpe||''}" placeholder="${z.e?.target||target}" onchange="editSet(${z.ei},${z.si},'rpe',this.value)"><button class="check ${z.x?.ok?'done':''}" onclick="toggleSet(${z.ei},${z.si})">${z.x?.ok?'✓':'○'}</button></div>`).join('')}</div>`
+      const tempo=String(rows[0]?.e?.tempo||'').trim(),uniform=/равномер|steady/i.test(tempo);
+      const duration=fmt(firstSec),clock=sec=>{sec=Math.max(0,Math.round(Number(sec)||0));return `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`};
+      const pieces=[duration,rows.length>1?`${rows.length} интервалов`:uniform?'Равномерно':'Кардио',`RPE ${target}`];
+      if(rows.length>1&&restSec>0)pieces.push(`отдых ${restSec} сек`);
+      return `<section class="exercise cardio-compact-ex" data-cardio-compact="true"><div class="cardio-compact-head"><div class="grow"><div class="exname">${esc(title)}</div><div class="cardio-compact-meta">${esc(pieces.join(' · '))}</div></div></div><div class="cardio-compact-body">${rows.map(z=>`<div class="cardio-compact-row"><span class="cardio-compact-clock">${rows.length>1?`<small>${esc(z.label)}</small>`:''}<b>${clock(z.sec||60)}</b></span><button type="button" class="btn cardio-compact-timer" onclick="unvrslCardioWorkTimerV2(${z.sec||60},'${encodeURIComponent(title)}')">▶ Таймер</button><button type="button" aria-label="Отметить завершение кардио" class="check ${z.x?.ok?'done':''}" onclick="toggleSet(${z.ei},${z.si})">${z.x?.ok?'✓':'○'}</button></div>`).join('')}</div></section>`
     };
     wrapped.__cardioBothModes=true;wrapped.__cardioBase=base;window.exerciseGroupCard=wrapped;try{exerciseGroupCard=wrapped}catch(e){};
     if(document.querySelector('#start.page.active')&&typeof startPage==='function')try{startPage()}catch(e){}
@@ -39,27 +41,19 @@
   }
 
   const style=document.createElement('style');style.id='unvrsl-cardio-compact-style';style.textContent=`
-    #start .cardio-compact-ex{border-color:#303034!important;background:#1c1c1e!important;padding:13px 14px!important;margin:8px 0!important;border-radius:20px!important}
-    #start .cardio-compact-head{align-items:center!important;gap:8px}
-    #start .cardio-compact-head .exname{font-size:17px!important;line-height:1.12!important}
-    #start .cardio-compact-head .muted.small{font-size:12.5px!important;margin-top:3px!important}
-    #start .cardio-compact-effort{display:flex;gap:5px;align-items:center;justify-content:flex-end;flex:0 0 auto}
-    #start .cardio-compact-effort .chip{padding:5px 9px!important;font-size:11.5px!important}
-    #start .cardio-compact-row{display:grid;grid-template-columns:28px minmax(62px,.75fr) minmax(96px,1.08fr) minmax(60px,.72fr) 38px;gap:7px;align-items:center;margin-top:10px}
-    #start .cardio-compact-row .setnum{color:#8e8e93;text-align:center;font-size:15px}
-    #start .cardio-compact-row>b{text-align:center;font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
-    #start .cardio-compact-row input{width:100%;min-width:0;background:#111113;border:1px solid #343438;border-radius:13px;color:#fff;padding:10px 6px;text-align:center;font-size:15px;min-height:42px}
-    #start .cardio-compact-row .check{width:38px!important;height:38px!important;border-radius:12px!important}
-    #start .cardio-compact-timer{min-height:42px!important;padding:9px 8px!important;background:#252529!important;color:#fff!important;border-color:#37373c!important;border-radius:13px!important;font-size:13px!important;font-weight:750!important;white-space:nowrap}
-    #start .cardio-compact-timer:active{background:#303036!important}
-    @media(max-width:390px){
-      #start .cardio-compact-ex{padding:12px!important}
-      #start .cardio-compact-row{grid-template-columns:24px 58px minmax(84px,1fr) 58px 36px;gap:5px;margin-top:9px}
-      #start .cardio-compact-row>b{font-size:14px}
-      #start .cardio-compact-timer{padding:8px 5px!important;font-size:11.5px!important;min-height:40px!important}
-      #start .cardio-compact-row input{font-size:13.5px;padding:9px 4px;min-height:40px}
-      #start .cardio-compact-row .check{width:36px!important;height:36px!important}
-    }
+    #start .cardio-compact-ex{padding:16px!important;margin:10px 0!important;border:1px solid var(--line)!important;border-radius:19px!important;background:var(--panel)!important;min-width:0}
+    #start .cardio-compact-head{display:flex;align-items:center;gap:8px;min-width:0}
+    #start .cardio-compact-head .exname{font-size:17px!important;font-weight:750!important;line-height:1.25!important;color:var(--text)!important}
+    #start .cardio-compact-meta{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+    #start .cardio-compact-body{display:grid;gap:10px;margin-top:14px}
+    #start .cardio-compact-row{display:grid;grid-template-columns:minmax(75px,.9fr) minmax(95px,1fr) 44px;gap:10px;align-items:center;min-width:0}
+    #start .cardio-compact-clock{display:flex;align-items:baseline;gap:5px;min-width:0;font-variant-numeric:tabular-nums}
+    #start .cardio-compact-clock small{font-size:11px;color:var(--muted)}
+    #start .cardio-compact-clock b{font-size:23px;color:var(--text);font-weight:800;line-height:1.15;letter-spacing:-.045em;white-space:nowrap}
+    #start .cardio-compact-timer{min-height:44px!important;padding:10px 8px!important;font-size:13px!important;font-weight:700!important;background:var(--panel2)!important;color:var(--text)!important;border:1px solid var(--line)!important;border-radius:13px!important;white-space:nowrap}
+    #start .cardio-compact-row .check{width:44px!important;height:44px!important;border:1px solid var(--line)!important;border-radius:13px!important}
+    #start .cardio-compact-ex .eq405-control{display:none!important}
+    @media(max-width:375px){#start .cardio-compact-ex{padding:13px!important}#start .cardio-compact-row{grid-template-columns:minmax(63px,.8fr) minmax(82px,1fr) 40px;gap:6px}#start .cardio-compact-clock b{font-size:20px}#start .cardio-compact-row .check{width:40px!important;height:40px!important}#start .cardio-compact-timer{font-size:12px!important}}
   `;document.head.appendChild(style);
 
   function removeRmSection(){
