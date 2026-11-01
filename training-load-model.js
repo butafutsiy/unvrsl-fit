@@ -11,7 +11,10 @@
   function recommendationHistory() {
     const userId = W.cloud?.user?.id;
     const local = Array.isArray(st.sessions) ? st.sessions : [];
-    if (!userId || cloudHistory.userId !== userId) return A.recommendationSessions(local,st.current);
+    if (!userId || cloudHistory.userId !== userId) {
+      const base=W.unvrslCalibrationLibrary?.sessions(st,local,st.current,userId)||local;
+      return A.recommendationSessions(base,st.current);
+    }
     const deleted = new Set((st.deletedSessionIds || []).map(String));
     const byId = new Map();
     for (const session of cloudHistory.sessions) {
@@ -23,7 +26,8 @@
       if (!previous || (session.userId === userId || !session.userId) && completedCount(session) > completedCount(previous))
         byId.set(String(session.id), session);
     }
-    return A.recommendationSessions([...byId.values()],st.current);
+    const base=W.unvrslCalibrationLibrary?.sessions(st,[...byId.values()],st.current,userId)||[...byId.values()];
+    return A.recommendationSessions(base,st.current);
   }
   async function refreshOwnedHistory(force = false) {
     const userId = W.cloud?.user?.id, client = W.cloud?.client;
