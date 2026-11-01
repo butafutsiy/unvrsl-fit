@@ -19,7 +19,7 @@
       const equipment=typeof EQ_RU==='object'?EQ_RU[e.eq]||e.eq:e.eq;
       const target=typeof W.ruTarget==='function'?W.ruTarget(e.tg):e.tg;
       const aliases=W.UNVRSL_EXERCISE_REGISTRY_V331?.aliases?.(name)||[];
-      return{id,name,body:String(body||''),equipment:String(equipment||''),target:String(target||''),search:norm([name,e.n,e.sourceName,...(Array.isArray(e.aliases)?e.aliases:[]),...aliases,body,equipment,target].join(' '))};
+      return{id,name,kind:e.bp==='cardio'||!!e.cardioMachine?'cardio':'strength',cardioMachineId:e.cardioMachine?.id||null,body:String(body||''),equipment:String(equipment||''),target:String(target||''),search:norm([name,e.n,e.sourceName,...(Array.isArray(e.aliases)?e.aliases:[]),...aliases,body,equipment,target].join(' '))};
     }).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name,'ru'));
   }
   function rows(){const items=draft();return items.length?items.map((x,i)=>`<article class="cfw-row"><div><b>${E(x.name)}</b><span>${x.sets} × ${x.repMin===x.repMax?x.repMin:`${x.repMin}–${x.repMax}`} · ${x.weightMode==='auto'?'автовес':E(WorkoutDomain.setLabel({exerciseId:x.exerciseId,n:x.name},{w:x.weight,r:x.repMin},workoutRegistry).split(' × ')[0])} · RPE ${String(x.rpe).replace('.',',')} · отдых ${x.rest} сек</span></div><button type="button" onclick="clientFreeWorkoutRemoveV334(${i})" aria-label="Удалить ${E(x.name)}">×</button></article>`).join(''):'<div class="cfw-empty">Добавь первое упражнение из нашей базы.</div>'}
