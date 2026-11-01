@@ -162,8 +162,8 @@ test('single TEST matches its target effort, preview back-off uses that attempt,
   const s=now([e,b],{w:8,c:'B',programWeekRpeMin:9,programWeekRpeMax:10});
   const attempt=rec(s),back=rec(s,1);
   assert.ok(attempt.weight>=attempt.strength.estimate*.95);
-  assert.equal(back.weight,Math.floor(attempt.weight*.7/2.5)*2.5);
-  assert.equal(back.backoffPreview,true);assert.deepEqual(back.targetEffort,{lo:7,hi:8});
+  assert.equal(back.weight,0,'no volume weight before the actual test');
+  assert.equal(back.backoffPending,true);assert.equal(back.canApply,false);assert.deepEqual(back.targetEffort,{lo:7,hi:8});
   Object.assign(e.set[0],work(150,1,9));
   const actual=rec(s,1);assert.equal(actual.weight,105);assert.equal(actual.backoffPreview,false);
 });
