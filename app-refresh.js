@@ -2,6 +2,35 @@
 (()=>{
   const W=window,D=document;
   let available=null,busy=false,checking=null,lastCheck=0;
+  // The notice is a sibling of .page, so it does not inherit page gutters.
+  // Match the same responsive horizontal spacing as the home cards.
+  const noticeStyle=D.createElement('style');
+  noticeStyle.id='app-update-notice-layout';
+  noticeStyle.textContent=`
+    .app > #app-update-notice.card{
+      display:block;
+      width:auto;
+      max-width:calc(100% - 30px);
+      margin:10px 15px!important;
+      box-sizing:border-box;
+      min-width:0;
+      overflow-wrap:anywhere;
+    }
+    .app > #app-update-notice .btn{
+      width:100%;
+      max-width:100%;
+      min-width:0;
+      white-space:normal;
+    }
+    @media (max-width:380px){
+      .app > #app-update-notice.card{
+        max-width:calc(100% - 24px);
+        margin-left:12px!important;
+        margin-right:12px!important;
+      }
+    }
+  `;
+  D.head.appendChild(noticeStyle);
   const current=()=>String(W.__unvrslRelease||'');
   const newer=release=>/^v\d+$/.test(release)&&Number(release.slice(1))>Number(current().slice(1)||0);
   function offer(release){
