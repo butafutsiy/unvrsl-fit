@@ -28,9 +28,9 @@ function rows(){
   if(!items.length)return '<div class="cfw-empty">Пока нет упражнений. Выбери первое движение выше.</div>';
   return items.map((x,i)=>{
     const cardio=identity(x);
-    const cfg=x.cardio||{durationMin:30,mode:'steady',intensity:'moderate',rpe:5};
+    const cfg=x.cardio||{durationMin:30,mode:'steady',intensity:'moderate'};
     const data=cardio
-      ? W.UNVRSLCardio?.summary({n:x.name,cardio:cfg,cardioMachineId:x.cardioMachineId})||`${cfg.durationMin||30} мин · RPE ${cfg.rpe||5}`
+      ? W.UNVRSLCardio?.summary({n:x.name,cardio:cfg,cardioMachineId:x.cardioMachineId})||`${cfg.durationMin||30} мин`
       : `${x.sets} × ${x.repMin===x.repMax?x.repMin:`${x.repMin}–${x.repMax}`} · ${x.weightMode==='auto'?'Автовес':E(WorkoutDomain.setLabel({exerciseId:x.exerciseId,n:x.name},{w:x.weight,r:x.repMin},workoutRegistry).split(' × ')[0])} · RPE ${String(x.rpe).replace('.',',')} · RIR ${String(x.rir??Math.max(0,10-Number(x.rpe))).replace('.',',')}`;
     return `<article class="cfw-row"><div class="cfw-row-icon" aria-hidden="true">${cardio?'◷':'⌑'}</div><div class="cfw-row-info"><small>${cardio?'Кардио':'Силовое'}</small><b>${E(x.name)}</b><span>${E(data)}</span></div><button type="button" onclick="clientFreeWorkoutRemoveV334(${i})" aria-label="Удалить ${E(x.name)}">×</button></article>`;
   }).join('');
@@ -55,7 +55,6 @@ function builder(){
       <div class="cfw-section-title"><span class="cfw-step">02</span><b>Кардионагрузка</b></div>
       <div class="cfw-form"><label class="cfw-wide"><span>Режим</span><select id="cfwCardioMode"><option value="steady">Непрерывное кардио</option><option value="interval">Интервальное кардио</option><option value="distance">По дистанции</option></select></label>
       <label id="cfwCardioMinutesBox"><span>Время, мин</span><input id="cfwCardioMinutes" type="number" inputmode="decimal" min="1" max="1440" step="0.5" value="30"></label>
-      <label><span>Целевой RPE</span><select id="cfwCardioRpe">${[2,3,4,5,6,7,8,9,10].map(x=>`<option value="${x}" ${x===5?'selected':''}>${x}</option>`).join('')}</select></label>
       <label class="cfw-wide"><span>Интенсивность</span><select id="cfwCardioIntensity"><option value="light">Лёгкая</option><option value="moderate" selected>Умеренная</option><option value="vigorous">Высокая</option></select></label></div>
       <div id="cfwCardioIntervalFields" class="cfw-form cfw-interval-form" hidden><label><span>Раундов</span><input id="cfwCardioRounds" type="number" inputmode="numeric" min="1" max="100" value="8"></label><label><span>Работа, сек</span><input id="cfwCardioWork" type="number" inputmode="numeric" min="1" max="3600" value="30"></label><label><span>Отдых, сек</span><input id="cfwCardioRest" type="number" inputmode="numeric" min="0" max="3600" value="60"></label></div>
       <details class="cfw-more"><summary>Дополнительные показатели</summary><div class="cfw-form">
@@ -137,7 +136,7 @@ function builder(){
     const positiveOptional=(id,max)=>{const n=N(value(id));return n==null||n<=0?null:Math.min(n,max)};
     const zeroOptional=(id,max)=>{const raw=value(id);const n=N(raw);return raw==null||raw===''||n==null?null:Math.max(0,Math.min(n,max))};
     const mode=value('cfwCardioMode')||'steady';
-    const cardio={mode,intensity:value('cfwCardioIntensity')||'moderate',durationMin:mode==='interval'?null:positiveOptional('cfwCardioMinutes',1440),rpe:readNumber('cfwCardioRpe',5,1,10),rounds:Math.round(readNumber('cfwCardioRounds',8,1,100)),workSeconds:Math.round(readNumber('cfwCardioWork',30,1,3600)),restSeconds:Math.round(readNumber('cfwCardioRest',60,0,3600)),distanceKm:positiveOptional('cfwCardioDistance',1000),speedKmh:positiveOptional('cfwCardioSpeed',40),inclinePct:zeroOptional('cfwCardioIncline',25),resistance:zeroOptional('cfwCardioResistance',100),powerWatts:positiveOptional('cfwCardioPower',3000),heartRate:positiveOptional('cfwCardioHr',250),reportedKcal:positiveOptional('cfwCardioKcal',10000),weightKg:positiveOptional('cfwCardioMass',500)};
+    const cardio={mode,intensity:value('cfwCardioIntensity')||'moderate',durationMin:mode==='interval'?null:positiveOptional('cfwCardioMinutes',1440),rounds:Math.round(readNumber('cfwCardioRounds',8,1,100)),workSeconds:Math.round(readNumber('cfwCardioWork',30,1,3600)),restSeconds:Math.round(readNumber('cfwCardioRest',60,0,3600)),distanceKm:positiveOptional('cfwCardioDistance',1000),speedKmh:positiveOptional('cfwCardioSpeed',40),inclinePct:zeroOptional('cfwCardioIncline',25),resistance:zeroOptional('cfwCardioResistance',100),powerWatts:positiveOptional('cfwCardioPower',3000),heartRate:positiveOptional('cfwCardioHr',250),reportedKcal:positiveOptional('cfwCardioKcal',10000),weightKg:positiveOptional('cfwCardioMass',500)};
     if(mode!=='interval'&&!cardio.durationMin)return W.toast?.('Укажи длительность кардио');
     if(mode==='distance'&&!cardio.distanceKm)return W.toast?.('Укажи дистанцию');
     draft().push({...common,cardioMachineId:selected.cardioMachineId,cardio});
@@ -157,13 +156,15 @@ function builder(){
     const meta=workoutRegistry.resolve({exerciseId:item.exerciseId,n:item.name})||{};
     const isCardio=item.kind==='cardio'||!!W.UNVRSLCardio?.lookup(item.name)?.cardioMachine;
     if(isCardio){
-      const cardio={mode:'steady',intensity:'moderate',durationMin:30,rpe:5,...item.cardio};
+      const cardio={mode:'steady',intensity:'moderate',durationMin:30,...item.cardio};
+       // Remove obsolete effort metrics from saved cardio drafts.
+       delete cardio.rpe;delete cardio.rir;
       const durationSec=cardio.mode==='interval'
         ? Math.max(1,Math.round(cardio.rounds||1))*Math.max(1,Math.round(cardio.workSeconds||60))
           +Math.max(0,Math.round((cardio.rounds||1)-1))*Math.max(0,Math.round(cardio.restSeconds||0))
         : Math.round(Math.max(1,Number(cardio.durationMin)||30)*60);
       const machineId=item.cardioMachineId||meta.cardioMachine?.id||W.UNVRSLCardio?.lookup(item.name)?.cardioMachine?.id||null;
-      return {id:item.id,n:item.name,exerciseId:meta.id||item.exerciseId,sourceId:meta.id||null,bp:'cardio',kind:'cardio',loadType:'time',workMode:'timer',method:'STANDARD',cardioMachineId:machineId,cardio,durationSec,workSeconds:durationSec,rpe:cardio.rpe,rest:0,note:'Свободная тренировка',sets:[{label:'1',w:0,r:0,workSeconds:durationSec,reportedKcal:cardio.reportedKcal??null,weightKg:cardio.weightKg??null}]};
+      return {id:item.id,n:item.name,exerciseId:meta.id||item.exerciseId,sourceId:meta.id||null,bp:'cardio',kind:'cardio',loadType:'time',workMode:'timer',method:'STANDARD',cardioMachineId:machineId,cardio,durationSec,workSeconds:durationSec,rest:0,note:'Свободная тренировка',sets:[{label:'1',w:0,r:0,workSeconds:durationSec,reportedKcal:cardio.reportedKcal??null,weightKg:cardio.weightKg??null}]};
     }
     return{id:item.id,n:item.name,exerciseId:meta.id||item.exerciseId,sourceId:meta.id||null,loadType:meta.loadType,implementCount:meta.implementCount,bp:meta?.bp||'',tg:meta?.tg||'',eq:meta?.eq||'',method:'STANDARD',rpe:item.rpe,rir:item.rir??Math.max(0,10-item.rpe),tempo:'2-0-2',rest:item.rest,note:'Свободная тренировка',weightMode:item.weightMode||(item.weight>0?'manual':'auto'),programWeightMode:(item.weightMode==='manual'||item.weight>0)?'prescribed':'autoweight',repMin:item.repMin,repMax:item.repMax,sets:Array.from({length:item.sets},(_,i)=>({label:String(i+1),w:item.weight,r:item.repMin,rMin:item.repMin,rMax:item.repMax,rest:item.rest,targetRpeMin:item.rpe,targetRpeMax:item.rpe,targetRirMin:item.rir??Math.max(0,10-item.rpe),targetRirMax:item.rir??Math.max(0,10-item.rpe)}))};
   });
