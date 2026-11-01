@@ -424,6 +424,7 @@
     root.innerHTML=`<div class="wf-shell"><div class="wf-head"><div class="wf-brand">UNVRSL <span>FIT</span></div><div class="wf-live" hidden><span data-wf-countdown></span><button type="button" data-wf-action="stop-timer" aria-label="Остановить таймер">×</button></div><button class="wf-close" data-wf-close aria-label="Закрыть режим фокуса">×</button></div>${view==='calibration'?calibrationMarkup():focusMarkup()}<p class="wf-error" data-wf-status role="status" aria-live="polite"></p></div>`;
     const row=activeRow(),ex=row?session()?.ex?.[row.ei]:null;
     root.dataset.cardio=view==='focus'&&ex&&C?.cardio(ex,A.loadType(ex,reg))?'true':'false';
+    if(root.dataset.cardio==='true'){const brand=root.querySelector('.wf-brand');if(brand)brand.innerHTML=`<span class="wf-focus-mark" aria-hidden="true">◎</span> Фокус <span class="wf-head-progress">${F.queue(session()).filter(r=>session().ex[r.ei].set[r.si].ok||session().ex[r.ei].set[r.si].skipped).length} / ${F.queue(session()).length}</span>`;}
     if(view==='focus'&&root.dataset.cardio!=='true')compactLayout();else root.dataset.compact='false';
     root.scrollTop=0;tickTimer();
   }
