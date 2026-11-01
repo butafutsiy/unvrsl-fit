@@ -29,7 +29,7 @@
    :`<button type="button" class="wf-cardio-main-btn" data-wf-cardio-action="${started?'resume':'start'}">${started?'Продолжить':'Начать кардио'}</button>`;
   const status=snap.completed?'Цель выполнена':running?'Идёт тренировка':started?'На паузе':'Готов к началу';
   return `<main class="wf-cardio-screen">
-    <div class="wf-cardio-heading" style="background:transparent!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important"><div class="wf-cardio-overline" style="background:var(--bg)!important;background-color:var(--bg)!important;background-image:none!important;border:0!important;box-shadow:none!important">Кардио <span>·</span> ${mode} ${C.num(info.rpe)>0?`<span>·</span> RPE ${fmt(info.rpe)}`:''}</div>
+    <div class="wf-cardio-heading" style="background:transparent!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important"><div class="wf-cardio-overline" style="background:var(--bg)!important;background-color:var(--bg)!important;background-image:none!important;border:0!important;box-shadow:none!important">Кардио <span>·</span> ${mode}</div>
     <h2 id="focus-title">${esc(W.displayExerciseName?.(e.n)||e.n)}</h2>
     <p>Блок ${done+1} из ${all.length} <span>·</span> Цель ${C.clock(goal)}</p></div>
     <section class="wf-cardio-clock-card" aria-label="Кардио-таймер">
@@ -41,7 +41,7 @@
       <div class="wf-cardio-controls">${buttons}<button type="button" class="wf-cardio-reset" data-wf-cardio-action="reset" ${started?'':'disabled'}>Сбросить</button></div>
     </section>
     <form class="wf-cardio-result" data-wf-form="cardio" data-token="${row.ei}:${row.si}">
-      <details class="wf-cardio-more"><summary>Фактические показатели <span>Время · Наклон · Ккал · RPE</span></summary>
+      <details class="wf-cardio-more"><summary>Фактические показатели <span>Время · Пульс · Ккал</span></summary>
       ${metrics?`<div class="wf-cardio-plan-label">По плану</div><section class="wf-cardio-metrics">${metrics}</section>`:''}
       <div class="wf-cardio-fields">
         ${field('minutes','Время, мин','Автоматически','0.1')}
@@ -52,7 +52,7 @@
         ${field('resistance','Сопротивление','Необязательно')}
         ${field('heartRate','Пульс, уд/мин','Необязательно')}
         ${field('reportedKcal','Ккал с тренажёра','Необязательно')}
-        ${field('rpe','RPE (факт)','1–10','0.5')}
+        
       </div></details>
       <button type="submit" class="wf-primary wf-cardio-save">Завершить и сохранить ✓</button>
     </form>
@@ -70,7 +70,7 @@
     distanceKm:C.num(form.elements.distanceKm?.value),speedKmh:C.num(form.elements.speedKmh?.value),
     inclinePct:C.num(form.elements.inclinePct?.value),powerWatts:C.num(form.elements.powerWatts?.value),
     resistance:C.num(form.elements.resistance?.value),heartRate:C.num(form.elements.heartRate?.value),
-    reportedKcal:C.num(form.elements.reportedKcal?.value),rpe:C.num(form.elements.rpe?.value)}};
+    reportedKcal:C.num(form.elements.reportedKcal?.value)}};
  }
  function action({name,session:s,row,save,render,message}){
    const ex=s?.ex?.[row?.ei],set=ex?.set?.[row?.si],goal=C.duration(ex,set);

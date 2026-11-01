@@ -20,7 +20,7 @@ test('time-based aerobike in ordinary workout renders one slim row without RPE e
  const html=W.exerciseGroupCard({},{base:e.n,indices:[0],entries:[e]});
  assert.match(html,/cardio-compact-ex/);
  assert.match(html,/08:00/);
- assert.match(html,/RPE 5/);
+ assert.doesNotMatch(html,/RPE|RIR/);
  assert.match(html,/Таймер/);
  assert.match(html,/toggleSet\(0,0\)/);
  assert.doesNotMatch(html,/\<input|sethead|Оборудование|отдых 90 сек/);
@@ -62,4 +62,18 @@ test('RPE and RIR are visually grouped without changing the RIR recording source
  assert.ok(view.includes("rirMeta.querySelector('.wf-rpe-controls')"));
  assert.ok(view.includes('data-wf-rir="'));
  assert.ok(css.includes('.wf-rpe-controls{'));
+});
+
+test('cardio expanded parameters blend into exercise surface',()=>{
+ const brief=fs.readFileSync(path.join(root,'cardio-workout-brief.js'),'utf8');
+ const styles=fs.readFileSync(path.join(root,'workout-ui-v567.js'),'utf8');
+ assert.ok(brief.includes('class="uw-cardio-edit-grid" style="background:transparent!important;'));
+ assert.ok(styles.includes('html[data-theme="light"] body #start .cardio-compact-ex .uw-cardio-edit-grid'));
+});
+test('no RPE / RIR input for cardio, strength effort UI preserved',()=>{
+ const cardio=fs.readFileSync(path.join(root,'cardio-training.js'),'utf8');
+ const strength=fs.readFileSync(path.join(root,'focus-workout.js'),'utf8');
+ assert.ok(!cardio.includes('cardioRpe'));
+ assert.ok(!cardio.includes("row('rpe'"));
+ assert.ok(strength.includes('wf-rpe-controls'));
 });

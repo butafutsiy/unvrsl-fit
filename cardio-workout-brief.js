@@ -34,7 +34,7 @@
     return `<div class="uw-cardio-brief" data-cardio-brief-ei="${ei}">
       <div class="uw-cardio-facts">${cells.map(([label,value])=>`<div><small>${esc(label)}</small><strong>${esc(value)}</strong></div>`).join('')}</div>
       <details class="uw-cardio-edit"><summary>Параметры кардио <span>Изменить</span></summary>
-        <div class="uw-cardio-edit-grid">${inputs}</div>
+        <div class="uw-cardio-edit-grid" style="background:transparent!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important">${inputs}</div>
         <p>Калории с тренажёра имеют приоритет. Значение с символом ≈ рассчитано по MET и массе тела.</p>
       </details>
     </div>`;
@@ -79,12 +79,12 @@
     #start .uw-cardio-facts>div{display:inline-flex!important;align-items:baseline!important;gap:5px!important;min-width:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
     #start .uw-cardio-facts small{display:inline!important;font-size:11px!important;font-weight:500!important;line-height:1.35!important;color:var(--muted)!important;margin:0!important;white-space:nowrap}
     #start .uw-cardio-facts strong{display:inline!important;font-size:12px!important;line-height:1.35!important;font-weight:720!important;color:var(--text)!important;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-    #start .uw-cardio-edit{margin:5px 0 0!important;background:transparent!important;border:0!important}
+    #start .uw-cardio-edit{margin:5px 0 0!important;background:transparent!important;background-color:transparent!important;border:0!important;box-shadow:none!important}
     #start .uw-cardio-edit summary{list-style:none;min-height:32px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;font-size:11px!important;line-height:1.3!important;font-weight:650!important;color:var(--muted)!important;cursor:pointer}
     #start .uw-cardio-edit summary::-webkit-details-marker{display:none}
     #start .uw-cardio-edit summary span{font-size:11px!important;color:var(--green)!important;font-weight:650!important}
-    #start .uw-cardio-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:8px 0 10px;background:transparent}
-    #start .uw-cardio-edit-grid label{display:flex;flex-direction:column;gap:5px;min-width:0}
+    #start .uw-cardio-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:8px 0 10px;background:transparent!important;background-color:transparent!important;background-image:none!important;border:0!important;box-shadow:none!important}
+    #start .uw-cardio-edit-grid label{display:flex;flex-direction:column;gap:5px;min-width:0;background:transparent!important;background-color:transparent!important;border:0!important;box-shadow:none!important}
     #start .uw-cardio-edit-grid span{font-size:11px;color:var(--muted)}
     #start .uw-cardio-edit-grid input{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:11px;min-width:0;width:100%;padding:10px;font-size:16px}
     #start .uw-cardio-edit p{font-size:11px;color:var(--muted);line-height:1.45;margin:6px 0 2px}

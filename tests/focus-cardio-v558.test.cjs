@@ -32,6 +32,7 @@ test('aerobike 480 sec displays an 08:00 cardio face, not strength field',()=>{
  assert.match(html,/Темп/);
  assert.match(html,/Равномерный/);
  assert.match(html,/Калории/);
+ assert.doesNotMatch(html,/RPE|RIR/);
  assert.match(html,/<div class="wf-cardio-heading" style="background:transparent!important;/);
  assert.match(html,/<div class="wf-cardio-links" style="background:transparent!important;/);
  // Planned metrics remain accessible but do not interrupt the focus timer.
@@ -65,13 +66,14 @@ test('interval time includes only work rounds plus the pauses between rounds',()
 });
 test('cardio result records a timed or manually corrected duration and optional metrics',()=>{
  const s=session(),U=ui();s.focusState.cardioTimers['0:0']={status:'paused',startedAt:null,elapsedMs:120000};
- const elements={minutes:{value:''},distanceKm:{value:'1.5'},heartRate:{value:'130'},reportedKcal:{value:'72'},rpe:{value:'5.5'}};
+ const elements={minutes:{value:''},distanceKm:{value:'1.5'},heartRate:{value:'130'},reportedKcal:{value:'72'}};
  const form={elements,dataset:{wfForm:'cardio'}};
  const result=U.read(form,s,row);
  assert.equal(result.reps,'120');
  assert.equal(result.rir,'unknown');
  assert.equal(result.technique,true);
  assert.equal(result.cardio.reportedKcal,72);
+ assert.equal(Object.hasOwn(result.cardio,'rpe'),false);
  elements.minutes.value='3.5';
  assert.equal(U.read(form,s,row).reps,'210');
 });

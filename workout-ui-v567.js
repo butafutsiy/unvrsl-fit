@@ -122,6 +122,22 @@
     #workout-focus[data-compact=true] .wf-stage>.wf-load{border-radius:19px!important}
     #workout-focus[data-compact=true] .wf-rir button[aria-pressed=true]{background:var(--action)!important;color:var(--action-text)!important}
     #workout-focus[data-compact=true] .wf-toolbar button{border-radius:14px!important}
+    /* No bright inner backdrop inside expanded cardio details. */
+    html[data-theme="light"] body #start .cardio-compact-ex .uw-cardio-edit,
+    html[data-theme="light"] body #start .cardio-compact-ex .uw-cardio-edit-grid,
+    html[data-theme="light"] body #start .cardio-compact-ex .uw-cardio-edit-grid>label{
+      background:transparent!important;
+      background-color:transparent!important;
+      background-image:none!important;
+      box-shadow:none!important;
+      border:0!important;
+    }
+    html[data-theme="light"] body #workout-focus[data-cardio=true] .wf-cardio-fields{
+      background:transparent!important;
+      background-color:transparent!important;
+      background-image:none!important;
+      box-shadow:none!important;
+    }
     /* Normal training: the existing cardio card owns its timer and the extra facts. */
     #start .cardio-compact-ex{min-width:0!important;overflow:hidden!important}
     #start .cardio-compact-ex .cardio-compact-body{gap:10px!important}

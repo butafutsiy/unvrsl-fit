@@ -28,10 +28,10 @@
       entries.forEach((e,local)=>{const ei=group.indices?.[local]??local;(e.set||[]).forEach((x,si)=>{const sec=Number(x?.workSeconds||e?.workSeconds||e?.timedSeconds||(Number(x?.min)>0?Number(x.min)*60:0));rows.push({e,x,ei,si,sec,label:typeof variantLabel==='function'?variantLabel(e.n,si):String(si+1)})})});
       if(!rows.some(z=>z.sec>0))return base.apply(this,arguments);
       const title=typeof displayExerciseName==='function'?displayExerciseName(group.base):group.base;
-      const last=entries.at(-1),restSec=Number(last?.rest||0),target=Number(rows[0]?.e?.target??s?.target??6),firstSec=rows.find(z=>z.sec>0)?.sec||60;
+      const last=entries.at(-1),restSec=Number(last?.rest||0),firstSec=rows.find(z=>z.sec>0)?.sec||60;
       const tempo=String(rows[0]?.e?.tempo||'').trim(),uniform=/равномер|steady/i.test(tempo);
       const duration=fmt(firstSec),clock=sec=>{sec=Math.max(0,Math.round(Number(sec)||0));return `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`};
-      const pieces=[duration,rows.length>1?`${rows.length} интервалов`:uniform?'Равномерно':'Кардио',`RPE ${target}`];
+      const pieces=[duration,rows.length>1?`${rows.length} интервалов`:uniform?'Равномерно':'Кардио'];
       if(rows.length>1&&restSec>0)pieces.push(`отдых ${restSec} сек`);
       return `<section class="exercise cardio-compact-ex" data-cardio-compact="true"><div class="cardio-compact-head"><div class="grow"><div class="exname">${esc(title)}</div><div class="cardio-compact-meta">${esc(pieces.join(' · '))}</div></div></div><div class="cardio-compact-body">${rows.map(z=>`<div class="cardio-compact-row"><span class="cardio-compact-clock">${rows.length>1?`<small>${esc(z.label)}</small>`:''}<b>${clock(z.sec||60)}</b></span><button type="button" class="btn cardio-compact-timer" onclick="unvrslCardioWorkTimerV2(${z.sec||60},'${encodeURIComponent(title)}')">▶ Таймер</button><button type="button" aria-label="Отметить завершение кардио" class="check ${z.x?.ok?'done':''}" onclick="toggleSet(${z.ei},${z.si})">${z.x?.ok?'✓':'○'}</button></div>`).join('')}</div></section>`
     };

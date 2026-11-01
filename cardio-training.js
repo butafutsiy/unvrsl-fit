@@ -17,7 +17,7 @@
   const lookup=name=>catalog().find(x=>x?.cardioMachine?.id===name||x?.n===name||x?.id===name);
   const isCardio=x=>!!(x?.cardioMachineId||x?.cardioMachine||x?.kind==='cardio'||x?.loadType==='time'||lookup(x?.n)?.cardioMachine);
   const machine=ex=>lookup(ex?.cardioMachineId||ex?.n)?.cardioMachine||null;
-  const defaults=Object.freeze({mode:'steady',intensity:'moderate',durationMin:30,distanceKm:null,speedKmh:null,inclinePct:0,resistance:null,powerWatts:null,heartRate:null,rpe:5,rounds:5,workSeconds:60,restSeconds:60,reportedKcal:null,weightKg:null});
+  const defaults=Object.freeze({mode:'steady',intensity:'moderate',durationMin:30,distanceKm:null,speedKmh:null,inclinePct:0,resistance:null,powerWatts:null,heartRate:null,rounds:5,workSeconds:60,restSeconds:60,reportedKcal:null,weightKg:null});
   function settings(ex){
     const old=ex?.cardio||{},first=ex?.sets?.[0]||ex?.set?.[0]||{};
     return {...defaults,...old,
@@ -107,7 +107,7 @@
         ${input('cardioResistance','Уровень сопротивления',data.resistance)}
         ${input('cardioPower','Мощность, Вт',data.powerWatts)}
         ${input('cardioHr','Пульс, уд/мин',data.heartRate)}
-        ${input('cardioRpe','Целевой RPE',data.rpe,'number','0.5','1')}
+        
         ${input('cardioRounds','Интервалов',data.rounds)}
         ${input('cardioWork','Работа, сек',data.workSeconds)}
         ${input('cardioRest','Пауза, сек',data.restSeconds)}
@@ -129,7 +129,7 @@
       distanceKm:n('cardioDistance',1000),speedKmh:n('cardioSpeed',40),
       inclinePct:optional('cardioGrade',25),resistance:optional('cardioResistance',100),
       powerWatts:n('cardioPower',3000),heartRate:n('cardioHr',250),
-      rpe:between(v('cardioRpe'),1,10)??5,rounds:Math.max(1,Math.round(n('cardioRounds',100)||1)),
+      rounds:Math.max(1,Math.round(n('cardioRounds',100)||1)),
       workSeconds:Math.max(1,Math.round(n('cardioWork',3600)||60)),
       restSeconds:Math.round(optional('cardioRest',3600)||0),
       reportedKcal:n('cardioKcal',10000),weightKg:n('cardioMass',500)
@@ -143,9 +143,11 @@
       n:x.name,sourceId:x.sourceId||old?.sourceId||null,
       kind:'cardio',method:'STANDARD',workMode:'timer',loadType:'time',
       cardioMachineId:lookup(x.name)?.cardioMachine?.id||old?.cardioMachineId||null,
-      cardio:data,durationSec,workSeconds:durationSec,rpe:data.rpe,
+      cardio:data,durationSec,workSeconds:durationSec,
       sets:[{...oldSet,w:0,r:0,workSeconds:durationSec,reportedKcal:data.reportedKcal,weightKg:data.weightKg}]
     };
+    // Cardio is recorded using machine and time metrics, without RPE or RIR.
+    delete row.rpe;delete row.rir;delete row.cardio.rpe;
     if(x.existingIndex==null)day.ex.push(row);else day.ex[x.existingIndex]=row;
     p.updated=Date.now();
     W.save?.();
@@ -169,7 +171,7 @@
        ${row('resistance','Сопротивление',data.resistance)}
        ${row('powerWatts','Мощность, Вт',data.powerWatts)}
        ${row('heartRate','Пульс',data.heartRate)}
-       ${row('rpe','RPE (факт)',set.rpe||data.rpe,'0.5')}
+       
        ${row('reportedKcal','Ккал на тренажёре',set.reportedKcal)}
        ${row('weightKg','Вес тела, кг',data.weightKg||bodyweightKg(data,session),'0.1')}
       </div><div class="row between" style="margin:12px 0 7px"><b class="cardio-energy" data-cardio-kcal="${ei}">${esc(info)}</b>
@@ -181,14 +183,14 @@
     if(!ex||!set||set.ok||!isCardio(ex))return;
     const data={...settings(ex),...ex.cardio};
     const optionalKeys=new Set(['inclinePct','resistance','powerWatts','heartRate','distanceKm','speedKmh','reportedKcal','weightKg']);
-    const n=key==='rpe'?between(value,1,10):key==='inclinePct'?between(value,0,25):positive(value,100000);
+    if(key==='rpe'||key==='rir')return;
+    const n=key==='inclinePct'?between(value,0,25):positive(value,100000);
     data[key]=n==null&&optionalKeys.has(key)?null:n;
     if(key==='durationMin'){
       if(n==null){W.toast?.('Укажи положительное время');return;}
       set.workSeconds=Math.round(n*60);
       ex.workSeconds=set.workSeconds;ex.durationSec=set.workSeconds;
     }
-    if(key==='rpe'){set.rpe=n??'';set.actualRpe=n;set.rir=n==null?'':10-n;set.actualRir=n==null?null:10-n;}
     if(key==='reportedKcal')set.reportedKcal=n;
     if(key==='weightKg')set.weightKg=n;
     ex.cardio=data;
