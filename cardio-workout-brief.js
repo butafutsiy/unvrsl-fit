@@ -60,33 +60,36 @@
       used.add(card);
       let holder=card.querySelector(`[data-cardio-brief-ei="${ei}"]`);
       if(holder){const doc=D.createElement('div');doc.innerHTML=brief(e,s,ei);const oldFacts=holder.querySelector('.uw-cardio-facts'),newFacts=doc.firstElementChild.querySelector('.uw-cardio-facts');if(oldFacts&&newFacts&&oldFacts.outerHTML!==newFacts.outerHTML)oldFacts.replaceWith(newFacts);continue;}
-      const compactRow=card.querySelector('.cardio-compact-row');
+      const compactBody=card.querySelector('.cardio-compact-body');
       const first=card.querySelector(':scope > .row.between')||card.querySelector('.exname,.cardio-name,.cardio-compact-title')||card.firstElementChild;
-      if(compactRow)compactRow.insertAdjacentHTML('beforebegin',brief(e,s,ei));
+      // Keep the familiar timer/action row directly under the cardio title.
+      // Supplementary values belong beneath the row inside the same card.
+      if(compactBody)compactBody.insertAdjacentHTML('beforeend',brief(e,s,ei));
       else if(first)first.insertAdjacentHTML('afterend',brief(e,s,ei));
       else card.insertAdjacentHTML('beforeend',brief(e,s,ei));
       // The existing detailed grid stays available where a legacy workout card already provides it.
       if(card.querySelector('.cardio-form-grid'))card.querySelector('.uw-cardio-edit')?.remove();
     }
   }
-  const style=D.createElement('style');style.id='unvrsl-cardio-workout-brief-v1';style.textContent=`
-    #start .uw-cardio-brief{margin:12px 0 5px;padding:13px 0 0;border-top:1px solid var(--line);min-width:0}
-    #start .cardio-compact-ex .uw-cardio-brief{margin:11px 0 2px;padding-top:12px}
-    #start .uw-cardio-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:12px;row-gap:13px}
-    #start .uw-cardio-facts>div{min-width:0}
-    #start .uw-cardio-facts small{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;line-height:1.2}
-    #start .uw-cardio-facts strong{font-size:13px;line-height:1.22;display:block;font-weight:750;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-    #start .uw-cardio-edit{margin-top:12px}
-    #start .uw-cardio-edit summary{list-style:none;min-height:37px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:700;color:var(--text);cursor:pointer}
+  const style=D.createElement('style');style.id='unvrsl-cardio-workout-brief-v567';style.textContent=`
+    /* Keep supplementary cardio parameters inside the original exercise surface. */
+    #start .uw-cardio-brief{box-sizing:border-box;width:100%;min-width:0;margin:4px 0 0!important;padding:10px 0 0!important;border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+    #start .cardio-compact-ex .uw-cardio-brief{margin:3px 0 0!important;padding-top:11px!important;background:transparent!important}
+    #start .uw-cardio-facts{display:flex!important;flex-wrap:wrap!important;align-items:baseline!important;gap:7px 15px!important;min-width:0!important;background:transparent!important;border:0!important}
+    #start .uw-cardio-facts>div{display:inline-flex!important;align-items:baseline!important;gap:5px!important;min-width:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+    #start .uw-cardio-facts small{display:inline!important;font-size:11px!important;font-weight:500!important;line-height:1.35!important;color:var(--muted)!important;margin:0!important;white-space:nowrap}
+    #start .uw-cardio-facts strong{display:inline!important;font-size:12px!important;line-height:1.35!important;font-weight:720!important;color:var(--text)!important;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+    #start .uw-cardio-edit{margin:5px 0 0!important;background:transparent!important;border:0!important}
+    #start .uw-cardio-edit summary{list-style:none;min-height:32px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;font-size:11px!important;line-height:1.3!important;font-weight:650!important;color:var(--muted)!important;cursor:pointer}
     #start .uw-cardio-edit summary::-webkit-details-marker{display:none}
-    #start .uw-cardio-edit summary span{color:var(--muted);font-weight:500}
-    #start .uw-cardio-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:5px 0 10px}
+    #start .uw-cardio-edit summary span{font-size:11px!important;color:var(--green)!important;font-weight:650!important}
+    #start .uw-cardio-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:8px 0 10px;background:transparent}
     #start .uw-cardio-edit-grid label{display:flex;flex-direction:column;gap:5px;min-width:0}
     #start .uw-cardio-edit-grid span{font-size:11px;color:var(--muted)}
     #start .uw-cardio-edit-grid input{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:11px;min-width:0;width:100%;padding:10px;font-size:16px}
-    #start .uw-cardio-edit p{font-size:11px;color:var(--muted);line-height:1.4}
-    @media(max-width:380px){#start .uw-cardio-facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  `;D.head.appendChild(style);
+    #start .uw-cardio-edit p{font-size:11px;color:var(--muted);line-height:1.45;margin:6px 0 2px}
+    @media(max-width:365px){#start .uw-cardio-facts{gap:6px 11px!important}#start .uw-cardio-facts strong{font-size:11.5px!important}}
+`  `;D.head.appendChild(style);
   W.addEventListener('unvrsl:workout-rendered',mount);
   const base=W.unvrslCardioEdit;
   if(typeof base==='function')W.unvrslCardioEdit=function(){const value=base.apply(this,arguments);mount();return value;};
