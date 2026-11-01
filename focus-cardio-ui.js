@@ -87,7 +87,7 @@
  }
  function action({name,session:s,row,save,render,message}){
    const ex=s?.ex?.[row?.ei],set=ex?.set?.[row?.si],goal=C.duration(ex,set);
-   if(!goal){message('Для кардио не задана длительность. Проверь программу.');return;}
+   if(!goal&&!['calories','distance'].includes(ex?.cardio?.mode)){message('Для кардио не задана длительность. Проверь программу.');return;}
    const timers=s.focusState.cardioTimers||={},key=C.key(row);
    timers[key]=C.command(timers[key],name);
    if(name==='reset')delete s.focusState.inputs;
@@ -96,17 +96,18 @@
  function tick({root,session:s,row,save,render}){
    const el=root.querySelector('[data-wf-cardio-clock]');if(!el||!row||!s)return;
    const ex=s.ex[row.ei],set=ex?.set?.[row.si],goal=C.duration(ex,set),timers=s.focusState.cardioTimers||{},key=C.key(row),item=timers[key];
-   const snap=C.snapshot(item,goal);
-   if(snap.completed&&item?.status==='running'){
-     timers[key]=C.command(item,'finish');timers[key].elapsedMs=goal*1000;save();render();return;
+   const snap=C.snapshot(item,goal),metric=objective(ex?.cardio||{},s.focusState.inputs?.key===key?s.focusState.inputs:null);
+   const completed=metric?metric.completed:snap.completed;
+   if(completed&&item?.status==='running'){
+     timers[key]=C.command(item,'finish');if(!metric)timers[key].elapsedMs=goal*1000;save();render();return;
    }
    const started=!!item&&item.status!=='idle';
-   el.textContent=C.clock(started?snap.remaining:goal);
-   const pct=Math.round(snap.progress*100),progress=root.querySelector('[data-wf-cardio-progress]');
+   el.textContent=C.clock(metric?snap.actual:started?snap.remaining:goal);
+   const pct=Math.round((metric?metric.progress:snap.progress)*100),progress=root.querySelector('[data-wf-cardio-progress]');
    if(progress)progress.style.width=pct+'%';
    const label=root.querySelector('[data-wf-cardio-pct]');if(label)label.textContent=pct+'%';
    const status=root.querySelector('[data-wf-cardio-status]');
-   if(status)status.textContent=snap.completed?'Цель выполнена':item?.status==='running'?'Идёт тренировка':started?'На паузе':'Готов к началу';
+   if(status)status.textContent=completed?'Цель выполнена':item?.status==='running'?'Идёт тренировка':started?'На паузе':'Готов к началу';
    root.querySelector('[data-wf-cardio-track]')?.setAttribute('aria-valuenow',String(pct));
    const phase=root.querySelector('[data-wf-cardio-phase]'),p=C.intervalPhase(ex.cardio||{},snap.actual);
    if(phase&&p)phase.textContent=`Раунд ${p.round}/${p.rounds} · ${p.phase==='rest'?'Отдых':p.phase==='work'?'Работа':'Завершено'} · ${C.clock(p.remaining)}`;
