@@ -89,7 +89,7 @@
     #start .uw-cardio-edit-grid input{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:11px;min-width:0;width:100%;padding:10px;font-size:16px}
     #start .uw-cardio-edit p{font-size:11px;color:var(--muted);line-height:1.45;margin:6px 0 2px}
     @media(max-width:365px){#start .uw-cardio-facts{gap:6px 11px!important}#start .uw-cardio-facts strong{font-size:11.5px!important}}
-`  `;D.head.appendChild(style);
+`;D.head.appendChild(style);
   W.addEventListener('unvrsl:workout-rendered',mount);
   const base=W.unvrslCardioEdit;
   if(typeof base==='function')W.unvrslCardioEdit=function(){const value=base.apply(this,arguments);mount();return value;};
