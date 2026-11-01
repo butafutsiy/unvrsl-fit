@@ -1630,7 +1630,7 @@
     const weeklyCalculated=ordinary&&eligible&&weeklyApplied&&weeklyRaw!=null&&!peakRebase;
     if(peakRebase){
       const stages=(e.set||[]).filter(s=>setRole(e,s)==='standard');
-      const index=Math.max(0,stages.indexOf(set)),position=stages.length<=1?.65:.30+.55*index/(stages.length-1);
+      const index=Math.max(0,stages.indexOf(set)),position=stages.length<=1?.5:.10+.80*index/(stages.length-1);
       const low=Math.min(...corridor),high=Math.max(...corridor);
       const estimate=low+(high-low)*position;
       raw=roundWeight(estimate,p,'nearest');
