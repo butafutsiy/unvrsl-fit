@@ -208,8 +208,6 @@
     "cardio:rower":{"name":"Гребной тренажёр","status":"special_handler","loadType":"time","step":0,"aliases":["rower","Гребной тренажёр"]},
     "cardio:skierg":{"name":"SkiErg","status":"special_handler","loadType":"time","step":0,"aliases":["skierg","SkiErg"]},
     "cardio:curved-treadmill":{"name":"Изогнутая беговая дорожка","status":"special_handler","loadType":"time","step":0,"aliases":["curved-treadmill","Изогнутая беговая дорожка"]},
-    "cardio:upper-body-ergometer":{"name":"Ручной эргометр","status":"special_handler","loadType":"time","step":0,"aliases":["upper-body-ergometer","Ручной эргометр"]},
-    "cardio:versaclimber":{"name":"VersaClimber","status":"special_handler","loadType":"time","step":0,"aliases":["versaclimber","VersaClimber"]}
   };
   const copy=x=>JSON.parse(JSON.stringify(x));
   const number=v=>v==null||String(v).trim()===''?null:Number.isFinite(Number(String(v).replace(',','.')))?Number(String(v).replace(',','.')):null;
