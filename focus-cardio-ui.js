@@ -11,8 +11,19 @@
   const phase=C.intervalPhase(info,snap.actual),fraction=Math.round(snap.progress*100);
   const mode=info.mode==='interval'?'Интервалы':info.mode==='distance'?'Дистанция':'Непрерывно';
   const field=(name,label,placeholder,step='1')=>`<label><span>${label}</span><input name="${name}" type="number" inputmode="decimal" step="${step}" min="0" value="${esc(d[name]??'')}" placeholder="${placeholder}"></label>`;
-  const metrics=[['Скорость',info.speedKmh,'км/ч'],['Наклон',info.inclinePct,'%'],['Дистанция',info.distanceKm,'км'],['Пульс',info.heartRate,'уд/мин']]
-   .filter(([_,v])=>C.num(v)>0).map(([label,v,unit])=>`<div><small>${label}</small><b>${fmt(v)} <em>${unit}</em></b></div>`).join('');
+  const planned=[];
+  const add=(label,value,unit='')=>{if(C.num(value)!=null&&C.num(value)>0)planned.push([label,`${fmt(value)}${unit?' '+unit:''}`]);};
+  add('Скорость',info.speedKmh,'км/ч');
+  if(e?.cardio?.inclinePct!=null&&C.num(info.inclinePct)!=null)planned.push(['Наклон',fmt(info.inclinePct)+' %']);
+  add('Дистанция',info.distanceKm,'км');
+  add('Мощность',info.powerWatts,'Вт');
+  add('Сопротивление',info.resistance);
+  add('Пульс',info.heartRate,'уд/мин');
+  const tempo=String(info.tempo||e.tempo||(info.mode==='interval'?'Интервальный':'Равномерный')).trim();
+  if(tempo)planned.unshift(['Темп',tempo]);
+  const estimate=W.UNVRSLCardio?.estimate?.(e,info,s);
+  planned.push(['Калории',estimate?.kcal!=null?`${estimate.source==='met'?'≈ ':''}${fmt(estimate.kcal)} ккал`:'—']);
+  const metrics=planned.map(([label,value])=>`<div><small>${esc(label)}</small><b>${esc(value)}</b></div>`).join('');
   const buttons=snap.completed?'':running
    ?'<button type="button" class="wf-cardio-main-btn" data-wf-cardio-action="pause">Пауза</button>'
    :`<button type="button" class="wf-cardio-main-btn" data-wf-cardio-action="${started?'resume':'start'}">${started?'Продолжить':'Начать кардио'}</button>`;
@@ -24,16 +35,20 @@
     <section class="wf-cardio-clock-card" aria-label="Кардио-таймер">
       <div class="wf-cardio-clock-top"><span data-wf-cardio-status>${status}</span><span data-wf-cardio-pct>${fraction}%</span></div>
       <div class="wf-cardio-countdown" data-wf-cardio-clock role="timer" aria-label="Оставшееся время">${C.clock(started?snap.remaining:goal)}</div>
-      <div class="wf-cardio-caption">Осталось из ${C.clock(goal)}</div>
+      <div class="wf-cardio-caption">Цель ${C.clock(goal)}</div>
       ${phase?`<div class="wf-cardio-phase" data-wf-cardio-phase>Раунд ${phase.round}/${phase.rounds} · ${phase.phase==='rest'?'Отдых':'Работа'} · ${C.clock(phase.remaining)}</div>`:''}
       <div class="wf-cardio-track" data-wf-cardio-track role="progressbar" aria-label="Прогресс кардио" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${fraction}"><i data-wf-cardio-progress style="width:${fraction}%"></i></div>
       <div class="wf-cardio-controls">${buttons}<button type="button" class="wf-cardio-reset" data-wf-cardio-action="reset" ${started?'':'disabled'}>Сбросить</button></div>
     </section>
     ${metrics?`<section class="wf-cardio-metrics">${metrics}</section>`:''}
     <form class="wf-cardio-result" data-wf-form="cardio" data-token="${row.ei}:${row.si}">
-      <details class="wf-cardio-more"><summary>Фактические показатели <span>Дистанция · Пульс · Ккал ⌄</span></summary><div class="wf-cardio-fields">
+      <details class="wf-cardio-more"><summary>Фактические показатели <span>Время · Наклон · Ккал · RPE</span></summary><div class="wf-cardio-fields">
         ${field('minutes','Время, мин','Автоматически','0.1')}
         ${field('distanceKm','Дистанция, км','Необязательно','0.01')}
+        ${field('speedKmh','Скорость, км/ч','Необязательно','0.1')}
+        ${field('inclinePct','Наклон, %','Необязательно','0.5')}
+        ${field('powerWatts','Мощность, Вт','Необязательно')}
+        ${field('resistance','Сопротивление','Необязательно')}
         ${field('heartRate','Пульс, уд/мин','Необязательно')}
         ${field('reportedKcal','Ккал с тренажёра','Необязательно')}
         ${field('rpe','RPE (факт)','1–10','0.5')}
@@ -51,7 +66,9 @@
   const item=session?.focusState?.cardioTimers?.[C.key(row)];
   const minutes=C.num(form.elements.minutes?.value),seconds=minutes>0?Math.round(minutes*60):C.elapsed(item);
   return {weight:'',reps:String(seconds),rir:'unknown',technique:true,pain:false,cardio:{
-    distanceKm:C.num(form.elements.distanceKm?.value),heartRate:C.num(form.elements.heartRate?.value),
+    distanceKm:C.num(form.elements.distanceKm?.value),speedKmh:C.num(form.elements.speedKmh?.value),
+    inclinePct:C.num(form.elements.inclinePct?.value),powerWatts:C.num(form.elements.powerWatts?.value),
+    resistance:C.num(form.elements.resistance?.value),heartRate:C.num(form.elements.heartRate?.value),
     reportedKcal:C.num(form.elements.reportedKcal?.value),rpe:C.num(form.elements.rpe?.value)}};
  }
  function action({name,session:s,row,save,render,message}){
