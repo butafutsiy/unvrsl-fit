@@ -78,7 +78,10 @@ test('only the canonical program flow owns creation, ranges and preparation',()=
   assert.match(readiness,/<h2>Подготовка тренировки<\/h2>/);
   const currentRelease=index.match(/__unvrslRelease='v(\d+)'/)?.[1];
   assert.ok(currentRelease,'Release must be defined in index.html');
-  assert.ok(index.indexOf(`program-model.js?v=${currentRelease}`)<index.indexOf(`coach-programs.js?v=${currentRelease}`));
-  assert.ok(index.indexOf(`training-engine.js?v=${currentRelease}`)<index.indexOf(`readiness-autoregulation.js?v=${currentRelease}`));
+  // Versioned assets may keep their own cache keys when their contents do not change.
+  // The dependency order, not a globally synchronized query version, is the contract.
+  const assetPosition=name=>index.search(new RegExp(`${name.replace(/\./g,'\\.')}\\?v=\\d+`));
+  assert.ok(assetPosition('program-model.js')>=0&&assetPosition('program-model.js')<assetPosition('coach-programs.js'));
+  assert.ok(assetPosition('training-engine.js')>=0&&assetPosition('training-engine.js')<assetPosition('readiness-autoregulation.js'));
   assert.doesNotMatch(index,/v=385/)
 });
