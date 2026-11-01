@@ -883,6 +883,27 @@
   function repairLegacyEffortTargets(session) {
     if(!session||session.ended||session.pendingCompletion)return false;
     let changed=false;
+    // Repair old generated W8 snapshots in-place, without rewriting a finished
+    // workout, manually specified goals or any manually entered kilograms.
+    for(const e of session.ex||[]){
+      if(!session.weeklyLoadProfile?.test&&!session.testWeek&&Number(session.w)!==8)continue;
+      if(e.parameterOverrides?.effort?.mode==='manual'||e.effortSourceMode==='manual')continue;
+      const preps=(e.set||[]).filter(x=>setRole(e,x)==='test_preparation');
+      preps.forEach((x,i)=>{
+        if(x.ok||x.skipped||x.effortTargetSource==='manual')return;
+        const lo=i===0?6:7,hi=i===0?7:8;
+        if(x.targetRpeMin!==lo||x.targetRpeMax!==hi||x.targetRirMin!==10-hi||x.targetRirMax!==10-lo||x.warmup!==true){
+          x.targetRpeMin=lo;x.targetRpeMax=hi;x.targetRirMin=10-hi;x.targetRirMax=10-lo;x.warmup=true;
+          delete x.targetRpeLabel;delete x.targetRirLabel;changed=true;
+        }
+        if(e.reps?.mode!=='manual'&&e.parameterOverrides?.reps?.mode!=='manual'){
+          const a=i===0?2:1,b=i===0?3:2;
+          if(x.targetRepMin!==a||x.targetRepMax!==b){
+            x.targetRepMin=a;x.targetRepMax=b;x.r=a;delete x.targetRepLabel;changed=true;
+          }
+        }
+      });
+    }
     for(const e of session.ex||[]){
       if(!policyContext(e,{},session)||e.parameterOverrides?.effort?.mode==='manual'||e.effortSourceMode==='manual')continue;
       const record=LoadPolicies?.record(e),legacy={AX:-.5,DB:-.25,MC:.25,MI:.5,CI:.5,SI:.5};
@@ -1546,7 +1567,7 @@
       const todayWeight=number(previousTest?.set?.w);
       const todayMax=previousTest?e1rm(previousTest.exercise,previousTest.set,session,reg):null;
       const referenceMax=todayMax??stableOneRepMax;
-      if(referenceMax>0&&["external_total","machine_stack","per_dumbbell","per_side"].includes(p.loadType)){
+      if(referenceMax>0&&["external_total","machine_stack","per_dumbbell","per_side","bodyweight_added","bodyweight_assisted"].includes(p.loadType)){
         const name=String(e.n||"");
         const attempt=number(set.attempt??set.attemptNumber)??Number(name.match(/попытка\s*(\d+)/i)?.[1]||0);
         const stageFraction=[.5,.75,1][Math.min(2,Math.max(0,attempt-1))];
@@ -1555,11 +1576,11 @@
         if(previousTest){
           const used=number(previousTest.set.w),felt=effortRpe(previousTest.set);
           if(used>0){
-            if((felt!=null&&felt>=9.5)||todayReps===0)suggested=Math.min(suggested,used);
+            if((felt!=null&&felt>=9.5)||todayReps===0)suggested=p.loadType==='bodyweight_assisted'?Math.max(suggested,used):Math.min(suggested,used);
             else {
               const futureStages=Math.max(0,attempt-(number(previousTest.set.attemptNumber)||1)-1);
               const increments=(felt==null?1:felt<=7?3:felt<=8?2:1)+futureStages;
-              suggested=used;for(let i=0;i<increments;i++)suggested=moveWeight(suggested,1,p);
+              suggested=used;for(let i=0;i<increments;i++)suggested=moveWeight(suggested,p.loadType==='bodyweight_assisted'?-1:1,p);
             }
           }
         }
@@ -1632,14 +1653,14 @@
       const stages=(e.set||[]).filter(s=>setRole(e,s)==='standard');
       const index=Math.max(0,stages.indexOf(set)),position=stages.length<=1?.5:.10+.80*index/(stages.length-1);
       const low=Math.min(...corridor),high=Math.max(...corridor);
-      const estimate=low+(high-low)*position;
+      const estimate=p.loadType==='bodyweight_assisted'?high-(high-low)*position:low+(high-low)*position;
       raw=roundWeight(estimate,p,'nearest');
       const previous=currentRows.filter(x=>setRole(x.exercise,x.set)==='standard'&&loadComparable(e,x.exercise,reg,set,x.set)).at(-1);
       if(previous){
         const used=number(previous.set.w),felt=effortRpe(previous.set);
         if(used!=null&&(performedReps(previous.exercise,previous.set)<range.lo||felt!=null&&felt>=9.5)){
           const failure=performedReps(previous.exercise,previous.set)<range.lo;
-          raw=Math.min(raw,failure?moveWeight(used,-1,p):used);
+          raw=p.loadType==='bodyweight_assisted'?Math.max(raw,failure?moveWeight(used,1,p):used):Math.min(raw,failure?moveWeight(used,-1,p):used);
         }
       }
       projected=raw;anomalous=false;nextSetSuggestion=null;
@@ -1710,7 +1731,7 @@
       calculationVersion:p.correctionPolicy?541:469,
       correctionPolicy:p.correctionPolicy,
       reliable,
-      canApply:!(ordinary&&p.correctionPolicy?.blocked)&&!(nextSetSuggestion?.policyVersion===541&&['MANUAL_REVIEW','POLICY_REVIEW'].includes(nextSetSuggestion.reasonCode))&&(!set.weightMode||reliable)&&(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
+      canApply:action!=='stop'&&!(ordinary&&p.correctionPolicy?.blocked)&&!(nextSetSuggestion?.policyVersion===541&&['MANUAL_REVIEW','POLICY_REVIEW'].includes(nextSetSuggestion.reasonCode))&&(!set.weightMode||reliable)&&(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
       allowedWeightRange:corridor?{min:Math.min(...corridor),max:Math.max(...corridor)}:null,
       calculatedWeight:weeklyCalculated?weight:projected,
       weeklyCalculated:!!weeklyCalculated,
