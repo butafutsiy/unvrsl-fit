@@ -292,6 +292,20 @@
     #workout-focus[data-cardio=true] .wf-cardio-links{justify-content:space-between!important;margin-top:1px!important}
     #workout-focus[data-cardio=true] .wf-cardio-links button{font-size:12px!important;min-height:36px!important}
     @media(max-width:370px){#workout-focus[data-cardio=true] .wf-cardio-countdown{font-size:62px!important}#workout-focus[data-cardio=true] .wf-cardio-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+    /* Focus clarity: content starts below the header rather than floating in mid-screen. */
+    #workout-focus[data-compact=true] .wf-stage{justify-content:flex-start!important;align-content:flex-start!important;padding-top:8px;scrollbar-width:none}
+    #workout-focus[data-compact=true] .wf-stage::-webkit-scrollbar{display:none}
+    #workout-focus[data-compact=true] .wf-head{min-height:44px!important;flex-basis:44px!important}
+    #workout-focus[data-compact=true] .wf-stage>.wf-load{border:0!important;box-shadow:none!important;border-radius:19px!important;margin-top:4px!important}
+    #workout-focus[data-compact=true] .wf-stage>.wf-entry{border:0!important;box-shadow:none!important;background:transparent!important;border-radius:0!important;padding:12px 3px 6px!important;gap:10px!important}
+    #workout-focus[data-compact=true] .wf-section-heading{margin-bottom:3px!important;font-size:11px!important;letter-spacing:.07em!important}
+    #workout-focus[data-compact=true] .wf-entry .wf-check{border:0!important;border-radius:12px!important;min-width:0!important;background:var(--panel2)!important}
+    #workout-focus[data-compact=true] .wf-entry .wf-check:has(input:checked){background:color-mix(in srgb,var(--action) 8%,var(--panel))!important}
+    #workout-focus[data-compact=true] .wf-entry input:not([type=checkbox]){border-radius:12px!important}
+    #workout-focus[data-compact=true] .wf-toolbar button{border:0!important;background:var(--panel2)!important;border-radius:14px!important;box-shadow:none!important}
+    #workout-focus[data-compact=true] .wf-submit-row{margin-top:8px!important}
+    #workout-focus[data-compact=true] .wf-save{border:0!important}
+    @media(min-height:701px){#workout-focus[data-compact=true] .wf-stage{gap:11px!important}}
     @media(min-width:760px){#workout-focus{padding-left:30px;padding-right:30px}}@media(prefers-reduced-motion:reduce){#workout-focus *{scroll-behavior:auto!important}}
   `;D.head.appendChild(style);
   function save(){try{if(W.save?.({draftOnly:true})===false)throw Error('Не удалось сохранить черновик');return true}catch(error){message(error.message||'Не удалось сохранить данные');return false}}
