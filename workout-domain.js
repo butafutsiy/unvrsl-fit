@@ -41,7 +41,7 @@
     // Phase names describe the schedule; only the percentage table prescribes load.
     p.phase=phaseNames[Number(i)-1];p.deload=false;
     p.base=bandPrescription(p.pct);p.isolation=bandPrescription(p.pct,true);
-    if(p.test){p.base={pct:[90,100],sets:3,reps:[2,3],rpe:[9,9.5],rir:[.5,1]};p.isolation={pct:[0,0],sets:0,reps:[0,0],rpe:[0,0],rir:[0,0]};}
+    if(p.test){p.base={pct:[90,100],sets:5,reps:[1,3],rpe:[7,10],rir:[0,3]};p.isolation={pct:[0,0],sets:0,reps:[0,0],rpe:[0,0],rir:[0,0]};}
   }
   const cloneProfile=p=>JSON.parse(JSON.stringify(p));
   function cycleProfiles(total,{testWeek=true,periodizationMode='auto',phaseSchedule,weekProfiles:manualProfiles}={}) {
@@ -123,7 +123,7 @@
         // Explicit weeklySetsOverride remains a WEEKLY total for backwards compatibility.
         // The canonical table and explicit overrides both set a WEEKLY budget.
         const explicitWeeklyBudget=number(source.weeklySetsOverride);
-        const budget=p.test?3:Math.max(0,Math.round(explicitWeeklyBudget??spec.sets));
+        const budget=p.test?2+Math.max(1,Math.min(5,number(source.testAttempts)??3)):Math.max(0,Math.round(explicitWeeklyBudget??spec.sets));
         selected.forEach((di,j)=>{
           const count=Math.floor(budget/selected.length)+(j<budget%selected.length?1:0);
           if(!count)return;
@@ -134,7 +134,12 @@
           delete e.repLabel;delete e.rpeLabel;delete e.displayPrescription;
           e.sets=Array.from({length:count},(_,k)=>({...source.sets?.[k],w:number(source.sets?.[k]?.w??source.sets?.[0]?.w)??0,r:spec.reps[0],targetRepMin:spec.reps[0],targetRepMax:spec.reps[1],targetRpeMin:spec.rpe[0],targetRpeMax:spec.rpe[1],allowFailure:false}));
            if(!p.test&&e.method!=='STANDARD'){e.sets=cloneProfile(e.cycleOriginalSets);e.cycleManaged=false;e.reps={mode:'method',min:null,max:null};}
-          if(p.test){e.method='STANDARD';e.sets.forEach((s,k)=>Object.assign(s,k===count-1?{role:'test_attempt',targetRepMin:1,targetRepMax:1,r:1,targetRpeMin:9.5,targetRpeMax:10,allowFailure:true}:{role:'test_preparation',targetRepMin:2,targetRepMax:3}));}
+          if(p.test){
+            e.method='STANDARD';
+            e.sets.forEach((s,k)=>Object.assign(s,k>=2
+              ?{role:'test_attempt',setRole:'test_attempt',attemptNumber:k-1,testGenerated:true,targetRepMin:1,targetRepMax:1,r:1,plannedReps:1,targetRpeMin:k===2?9:9.5,targetRpeMax:k===2?9.5:10,allowFailure:true}
+              :{role:'test_preparation',setRole:'test_preparation',preparationNumber:k+1,testGenerated:true,warmup:true,targetRepMin:k===0?2:1,targetRepMax:k===0?3:2,r:k===0?2:1,plannedReps:k===0?2:1,targetRpeMin:k===0?6:7,targetRpeMax:k===0?7:8,allowFailure:false}));
+          }
           week.days[di].ex.push(e);
         });
       });
@@ -411,7 +416,7 @@
     );
   }
   function recommendationWeight(result) {
-    return result.nextSetSuggestion?.policyVersion===541 ? number(result.nextSetSuggestion.weight) : result.weeklyCalculated ? number(result.calculatedWeight) : number(result.nextSetSuggestion?.weight??result.weight);
+    return result.nextSetSuggestion?.policyVersion===541 ? number(result.nextSetSuggestion.weight) : result.peakRebase ? number(result.weight) : result.weeklyCalculated ? number(result.calculatedWeight) : number(result.nextSetSuggestion?.weight??result.weight);
   }
   // Repair only pending generated loads. Recorded history and manual inputs are
   // authoritative, including deliberately entered fractional weights.
@@ -749,6 +754,7 @@
   // Roles are data, with legacy labels used only during normalization.
   function setRole(e, s = {}) {
     if(s.setRole==='isolation_test'||s.role==='isolation_test')return 'isolation_test';
+    if(s.setRole==='test_preparation'||s.role==='test_preparation')return 'test_preparation';
     const label=[s.setRole,s.role,s.phase,s.phaseLabel,s.label,e.phaseRole,e.phaseLabel,e.n].filter(Boolean).join(' ');
     if (/back.?off/i.test(label)) return 'backoff';
     if (/test_attempt|тест|попытка/i.test(label)) return 'test_attempt';
@@ -1168,7 +1174,7 @@
     if (!(lo > 0) || !(hi > 0)) return null;
     if (lo > 1) lo /= 100;
     if (hi > 1) hi /= 100;
-    lo = Math.max(.4, Math.min(1, lo)); hi = Math.max(.4, Math.min(1, hi));
+    lo = Math.max(.4, Math.min(1.1, lo)); hi = Math.max(.4, Math.min(1.1, hi));
     return { lo: Math.min(lo, hi), hi: Math.max(lo, hi) };
   }
   const median = (a) => {
@@ -1360,8 +1366,9 @@
     // accessory performed during week eight.
     const weekEight=Number(session.w)===8&&!session.programId&&!session.planId&&!session.programName;
     const testAttempt=compound&&setRole(e,set)==='test_attempt';
+    const testPreparation=compound&&setRole(e,set)==='test_preparation';
     const isolationTest=setRole(e,set)==='isolation_test';
-    const band=((weekEight||session.testWeek)&&!testAttempt)||isolationTest?null:intensityBand(session,e,set),weekMid=band?((band.lo+band.hi)/2):null;
+    const band=((weekEight||session.testWeek)&&!testAttempt)||isolationTest||testPreparation?null:intensityBand(session,e,set),weekMid=band?((band.lo+band.hi)/2):null;
     const weeklyRaw=stableOneRepMax!=null&&weekMid!=null?fromEstimateLoad(stableOneRepMax*weekMid,e,session,reg):null;
     const weeklyCorridor=stableOneRepMax!=null&&band?{min:fromEstimateLoad(stableOneRepMax*band.lo,e,session,reg),max:fromEstimateLoad(stableOneRepMax*band.hi,e,session,reg)}:null;
     let weeklyApplied=false;
@@ -1374,6 +1381,10 @@
     }
     const prescription=validatePrescription({sets:1,pct:band?[band.lo*100,band.hi*100]:[0,100],reps:[range.lo,range.hi],rpe:[targetMin,target]});
     const corridor=stableOneRepMax>0&&prescription.corridor?prescription.corridor.map(x=>fromEstimateLoad(stableOneRepMax*x/100,e,session,reg)):null;
+    // A new 90%+ prescription is a fresh intensity target, not a 5% step
+    // from the last high-rep working load. Stage loads use the robust mean e1RM.
+    const peakRebase=eligible&&method(e,set)==='STANDARD'&&setRole(e,set)==='standard'&&
+      !!band&&band.lo>=.9&&stableOneRepMax>0&&!!corridor&&corridor.every(x=>x!=null);
     if(eligible&&corridor&&corridor.every(x=>x!=null)){
       const role=session.dayRole||session.role||'Middle',position=role==='Heavy'?.85:role==='Light'?.15:.5;
       projected=Math.max(corridor[0],Math.min(corridor[1],(corridor[0]+(corridor[1]-corridor[0])*position)*calibration.factor));
@@ -1515,6 +1526,19 @@
       const previousBackoff=currentRows.filter(x=>setRole(x.exercise,x.set)==='backoff').at(-1);
       if(previousBackoff){nextSetSuggestion=setDecision(e,previousBackoff.set,session,p,set);raw=nextSetSuggestion.weight;anomalous=false;}
     }
+    if(testPreparation){
+      // Preparatory sets deliberately use different submaximal loads. They
+      // never count as maximal evidence or force an increase past a failed set.
+      const stages=(e.set||[]).filter(s=>setRole(e,s)==='test_preparation');
+      const index=Math.max(0,stages.indexOf(set));
+      const fraction=stages.length<=1?.85:.825+(.90-.825)*index/(stages.length-1);
+      const suggested=stableOneRepMax>0?roundWeight(fromEstimateLoad(stableOneRepMax*fraction,e,session,reg),p,'down'):null;
+      if(suggested!=null){
+        raw=suggested;projected=suggested;anomalous=false;nextSetSuggestion=null;testWeekSuggestion=true;
+        action='test_preparation';
+        reason=`Подготовка ${index+1}/${stages.length}: ${Math.round(fraction*1000)/10}% от среднего расчётного 1ПМ ${Number(stableOneRepMax.toFixed(1))} кг; подход не является максимальной попыткой`;
+      }
+    }
     if(testAttempt){
       const previousTest=currentRows.filter(x=>setRole(x.exercise,x.set)==="test_attempt").at(-1);
       const todayReps=previousTest?performedReps(previousTest.exercise,previousTest.set):null;
@@ -1539,7 +1563,7 @@
           }
         }
         if(suggested>0){
-          raw=suggested;projected=suggested;anomalous=false;testWeekSuggestion=true;
+          raw=suggested;projected=suggested;anomalous=false;nextSetSuggestion=null;testWeekSuggestion=true;
           action=previousTest&&(effortRpe(previousTest.set)>=9.5||todayReps===0)?"stop":"test_attempt";
           reason=`Тест: оценка 1ПМ ≈ ${Number(referenceMax.toFixed(1))} кг; ${Math.round(factor*1000)/10}% с округлением по шагу ${p.step} кг${previousTest?". Учтена выполненная попытка":""}. Следующую попытку выполняй только после оценки предыдущей`;
         }
@@ -1602,7 +1626,26 @@
       }else {raw=prior;action='hold';reason='Сначала заверши всю сопоставимую серию на верхней границе повторов';}
     }
     // The completed series informs strength, but cannot replace this week's target.
-    const weeklyCalculated=ordinary&&eligible&&weeklyApplied&&weeklyRaw!=null;
+    const weeklyCalculated=ordinary&&eligible&&weeklyApplied&&weeklyRaw!=null&&!peakRebase;
+    if(peakRebase){
+      const stages=(e.set||[]).filter(s=>setRole(e,s)==='standard');
+      const index=Math.max(0,stages.indexOf(set)),position=stages.length<=1?.65:.30+.55*index/(stages.length-1);
+      const low=Math.min(...corridor),high=Math.max(...corridor);
+      const estimate=low+(high-low)*position;
+      raw=roundWeight(estimate,p,'nearest');
+      const previous=currentRows.filter(x=>setRole(x.exercise,x.set)==='standard'&&loadComparable(e,x.exercise,reg,set,x.set)).at(-1);
+      if(previous){
+        const used=number(previous.set.w),felt=effortRpe(previous.set);
+        if(used!=null&&(performedReps(previous.exercise,previous.set)<range.lo||felt!=null&&felt>=9.5)){
+          const failure=performedReps(previous.exercise,previous.set)<range.lo;
+          raw=Math.min(raw,failure?moveWeight(used,-1,p):used);
+        }
+      }
+      projected=raw;anomalous=false;nextSetSuggestion=null;
+      action='range_adjust';reasonCodes.length=0;reasonCodes.push('PEAK_REBASE');
+      reason=`Проходка ${index+1}/${stages.length}: расчёт от среднего 1ПМ ${Number(stableOneRepMax.toFixed(1))} кг в коридоре повторов и RPE/RIR, без ограничения прибавки от старых многоповторных подходов`;
+      if(previous&&raw<=number(previous.set.w))reason+='; учтён предыдущий тяжёлый подход, автоматическое повышение остановлено';
+    }
     if(weeklyCalculated){
       raw=weeklyRaw;anomalous=false;reasonCodes.length=0;
       action='range_adjust';reason='Среднее недельного диапазона округлено до ближайшего доступного веса';
@@ -1621,7 +1664,7 @@
       ? 'Процент недели расходится с повторами и целевым усилием; вес подобран по повторам и RPE/RIR' : null;
     if(conflict)reason+=`. ${conflict}`;
     let weight=(ids.length||testWeekSuggestion)&&!anomalous?roundWeight(raw,p,ids.length===1&&projected==null?"down":undefined):raw;
-    if(ordinary&&!weeklyCalculated&&!anomalous&&!deload&&prior!=null&&!reasonCodes.includes('INDIVIDUAL_SERIES_POLICY')){
+    if(ordinary&&!weeklyCalculated&&!peakRebase&&!anomalous&&!deload&&prior!=null&&!reasonCodes.includes('INDIVIDUAL_SERIES_POLICY')){
       const bounded=boundedProgression(weight,prior,p,changedRepBand);
       if(bounded.limited){weight=bounded.weight;reasonCodes.push('STEP_LIMIT');reason+='; прибавка ограничена доступным шагом и размером изменения';}
       // A rounded sub-step estimate is not itself evidence of progression.
@@ -1670,6 +1713,7 @@
       allowedWeightRange:corridor?{min:Math.min(...corridor),max:Math.max(...corridor)}:null,
       calculatedWeight:weeklyCalculated?weight:projected,
       weeklyCalculated:!!weeklyCalculated,
+      peakRebase:!!peakRebase,
       profileWarnings:prescription.warnings,
       scope:nextSetSuggestion?'next_set':'next_session',
       proposalKey:proposalFingerprint([p.correctionPolicy?541:469,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
