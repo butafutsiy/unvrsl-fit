@@ -104,7 +104,7 @@
   }
   function card(e) {
     const src = media(e), gif = exerciseGif(e), animated = src && src === gif && /\.gif(?:\?|$)/i.test(src);
-    return `<article class="card exlib catalog392-row" data-id="${esc(e.id)}"><button class="catalog392-open" onclick="openExerciseDetail('${encodeURIComponent(e.id)}')"><span class="catalog392-thumb">${src ? `<img data-exercise-media ${animated ? 'data-animated="1"' : ''} data-src="${esc(url(src))}" alt="" width="72" height="72" loading="lazy" decoding="async">` : '<span aria-label="Изображение пока отсутствует">◇</span>'}</span><span><b>${esc(e.n)}</b><small>${esc(BP_RU[e.bp] || e.bp)} · ${esc(EQ_RU[e.eq] || e.eq)}</small></span></button><button class="star-btn ${favorite(e) ? "on" : ""}" aria-label="Избранное: ${esc(e.n)}" onclick="toggleFavorite('${esc(e.id)}')">★</button></article>`;
+    return `<article class="card exlib catalog392-row" data-id="${esc(e.id)}"><button class="catalog392-open" onclick="openExerciseDetail('${encodeURIComponent(e.id)}')"><span class="catalog392-thumb">${src ? `<img data-exercise-media ${animated ? 'data-animated="1"' : ''} data-src="${esc(url(src))}" alt="" width="72" height="72" loading="lazy" decoding="async">` : '<span aria-label="Изображение пока отсутствует">◇</span>'}</span><span><b>${esc(e.n)}</b><small>${e.bp === "cardio" ? "Кардио" : `${esc(BP_RU[e.bp] || e.bp)} · ${esc(EQ_RU[e.eq] || e.eq)}`}</small></span></button><button class="star-btn ${favorite(e) ? "on" : ""}" aria-label="Избранное: ${esc(e.n)}" onclick="toggleFavorite('${esc(e.id)}')">★</button></article>`;
   }
   function filtered() {
     const u = usage(),
