@@ -58,8 +58,8 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
         assert.deepEqual(Array.from(row.bench,s=>s.reps.lo),[12,10,8,12,10,8,12,10,8]);
         for(const set of row.bench)assert.deepEqual(Array.from(set.rpe),Array.from(row.base.rpe));
       }else if(row.week===8){
-        assert.equal(row.bench.length,3);assert.deepEqual(Array.from(row.bench,s=>s.reps.lo),[2,2,1]);
-        assert.equal(row.bench.at(-1).role,'test_attempt');assert.equal(row.iso,undefined);
+        assert.equal(row.bench.length,7);assert.deepEqual(Array.from(row.bench,s=>s.reps.lo),[2,1,1,1,1,5,5]);
+        assert.equal(row.bench.at(-1).role,'backoff');assert.equal(row.iso,undefined);
       }else{
         assert.equal(row.bench.length,row.base.sets);
         for(const set of row.bench){assert.deepEqual(Array.from(set.pct),Array.from(row.base.pct));assert.deepEqual([set.reps.lo,set.reps.hi],Array.from(row.base.reps));}
@@ -73,7 +73,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
     assert.equal(result.summary[0].bench[0].w,110,'authored manual weight is retained');
     assert.equal(result.regenerated.method,'UNVRSL');assert.equal(result.regenerated.count,8);
     assert.deepEqual(JSON.parse(JSON.stringify(result.configured)),{start:'2026-11-01',phase:'strength',test:false});
-    assert.deepEqual(Array.from(result.savedTest),[2,2,1]);assert.deepEqual(errors,[]);
+    assert.deepEqual(Array.from(result.savedTest),[2,1,1,1,1,5,5]);assert.deepEqual(errors,[]);
     console.log('Built-in engine cycle: 8 weeks, 5 days, base/isolation, method roles, weekly volume, cardio, manual weights, regeneration and history protection passed');
   }finally{dom.window.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

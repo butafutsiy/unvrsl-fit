@@ -70,6 +70,7 @@
     let changed = false, weightsChanged = false;
     try {
       changed=A.repairLegacyEffortTargets(cur)||changed;
+      changed=A.prepareTestBlocks(cur,workoutRegistry)||changed;
       W.equipmentAttachDefaults405?.(cur);
       W.trainingInitializeSetWeights?.(cur);
       for (const ex of cur.ex || []) {
@@ -119,18 +120,22 @@
           // maths becomes available. Completed/manual/accepted weights stay.
           const livePeakUpgrade=rec.peakRebase===true&&set.weightSource==='auto'&&
             set.peakAutoRevision!==575&&!set.manualOverride&&!set.ok&&!set.skipped;
+          const liveBackoffUpdate=A.setRole(ex,set)==='backoff'&&set.weightSource==='auto'&&
+            !rec.backoffPending&&rec.canApply!==false&&
+            rec.proposalKey!==set.backoffAutoKey&&!set.ok&&!set.skipped&&!set.manualOverride;
           if ((set.weightMode==='auto'||(!set.weightMode&&ex.programWeightMode === "adaptive")) &&
               suggested > 0 && (rec.sessionIds.length > 0 || rec.nextSetSuggestion || rec.strength?.estimate > 0) &&
               set.recommendationDecision?.status !== 'applied' &&
               !set.dismissedRecommendation && !rec.planPreserved &&
-              (!set.autoInitialApplied||livePeakUpgrade)) {
+              (!set.autoInitialApplied||livePeakUpgrade||liveBackoffUpdate)) {
             const before = set.w;
             const initialBase=rec.nextSetSuggestion?(ex.set||[]).filter(s=>s.ok&&!s.warmup).at(-1)?.w:null;
-            const initialRec=rec.nextSetSuggestion&&rec.nextSetSuggestion.policyVersion!==541?{...rec,weeklyCalculated:false,nextSetSuggestion:null,weight:initialBase}:rec;
+            const initialRec=rec.nextSetSuggestion&&rec.nextSetSuggestion.policyVersion!==541&&A.setRole(ex,set)!=='backoff'?{...rec,weeklyCalculated:false,nextSetSuggestion:null,weight:initialBase}:rec;
             if ((!rec.nextSetSuggestion||A.number(initialBase)>0)&&A.applyAuto(set, initialRec)) {
               set.plannedW = set.w;
               set.selectedW=set.w;set.autoInitialWeight=set.w;set.autoInitialApplied=true;
               if(rec.peakRebase)set.peakAutoRevision=575;
+              if(A.setRole(ex,set)==='backoff')set.backoffAutoKey=rec.proposalKey;
               if (before !== set.w) changed = weightsChanged = true;
             }
           }

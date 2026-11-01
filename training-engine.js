@@ -1,11 +1,11 @@
 'use strict';
 (()=>{
- const W=window,REV=296,MATH_OWNER='workout-domain';
- if(W.__unvrslTrainingEngineV296)return;
+ const W=window,REV=297,MATH_OWNER='workout-domain';
+ if(W.__unvrslTrainingEngineV297)return;
  let STATE=W.st||null;
  try{if(typeof st!=='undefined')STATE=st}catch(_){}
  if(!STATE)return;
- W.st=STATE;W.__unvrslTrainingEngineV296=true;W.__unvrslTrainingEngineV295=true;W.__unvrslTrainingEngineV259=true;W.__unvrslTrainingEngineV257=true;W.__unvrslTrainingEngineV200=true;W.__unvrslRecommendationMathOwner=MATH_OWNER;
+ W.st=STATE;W.__unvrslTrainingEngineV297=true;W.__unvrslTrainingEngineV296=true;W.__unvrslTrainingEngineV295=true;W.__unvrslTrainingEngineV259=true;W.__unvrslTrainingEngineV257=true;W.__unvrslTrainingEngineV200=true;W.__unvrslRecommendationMathOwner=MATH_OWNER;
  const N=v=>{if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)?n:null};
  const UNVRSL=W.UNVRSL_METHOD_V211||null;
  const num=v=>N(v)??0,mean=a=>{a=(a||[]).filter(Number.isFinite);return a.length?a.reduce((s,x)=>s+x,0)/a.length:null};
@@ -87,7 +87,7 @@
  W.trainingInitializeSetWeights=initializeSetWeights;
  async function ensureLoadModel(){
   if(W.trainingLoadModel292?.run)return true;
-  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=575';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
+  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=576';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
   for(let i=0;i<40;i++){if(W.trainingLoadModel292?.run)return true;await new Promise(r=>setTimeout(r,50))}
   return !!W.trainingLoadModel292?.run
  }
@@ -184,6 +184,10 @@
    const liveHint=item.s.recommendation?.nextSetSuggestion;
    const el=document.createElement('div');el.className='te200-rec';el.dataset.recommendationOwner=MATH_OWNER;
    const showHint=()=>{};
+   if(rec.backoffPending){
+     el.textContent='Два объёмных подхода · 80% от подтверждённого результата. Выполни контрольную попытку и запиши реальные повторы, затем появится рабочий вес.';
+     card.querySelector('.row')?.insertAdjacentElement('afterend',el);return;
+   }
    if(!rec.sessionIds?.length&&!rec.nextSetSuggestion&&!rec.testWeekSuggestion){el.textContent=rec.excludedHistory?`Тренировка ${rec.excludedHistory.date} не объединена с текущей: ${rec.excludedHistory.reason}. Проверь оборудование или тип нагрузки.`:group.entries.some(e=>e.programWeightMode==='prescribed')?'Плановый вес сохранён. После первого выполненного подхода запиши повторы и RPE – следующая тренировка получит рекомендацию.':'С этим оборудованием пока нет истории – укажи комфортный вес, затем фактические повторы и RPE. После тренировки появится рекомендация.';if(W.WorkoutFocusFlow?.needsCalibration(item.e,item.s,WorkoutDomain,workoutRegistry)){const button=document.createElement('button');button.type='button';button.className='wf-launch';button.textContent='Тестовые подходы · рассчитать вес';button.onclick=()=>W.openLoadCalibration?.(cur.ex.indexOf(item.e));el.appendChild(button)}card.querySelector('.row')?.insertAdjacentElement('afterend',el);showHint();return}
    const fmt=(v,digits=1)=>v!=null&&Number.isFinite(Number(v))?Number(v).toLocaleString('ru-RU',{maximumFractionDigits:digits}):'—',range=rec.repRange,repText=WorkoutDomain.repRangeText(item.e,range);
    const type=WorkoutDomain.loadType(ex,workoutRegistry),suggested=WorkoutDomain.recommendationWeight(rec),weightText=WorkoutDomain.pairedLoad(ex,workoutRegistry,item.s)?`${WorkoutDomain.weightText(ex,suggested,workoutRegistry,item.s)} кг`:type==='bodyweight_only'?'свой вес':type==='per_dumbbell'?`${fmt(suggested,6)} кг на гантель`:type==='per_side'?`${fmt(suggested,6)} кг на сторону`:type==='bodyweight_assisted'?`${fmt(suggested,6)} кг помощи`:`${fmt(suggested,6)} кг`;

@@ -21,11 +21,11 @@ const assert=require('node:assert/strict');const {make,wait,errors}=require('./r
   return {preview,conflictPreview,shape,first,deload,test,replacement,saved};
  })()`);
  assert.deepEqual(Array.from(result.shape,x=>x.phase),['volume','work','deload','test']);
- assert.deepEqual(Array.from(result.shape,x=>x.sets),[8,8,8,5]);
+ assert.deepEqual(Array.from(result.shape,x=>x.sets),[8,8,8,7]);
  assert.match(result.preview,/Периодизация/);assert.match(result.conflictPreview,/конфликтуют/);
  assert.equal(result.first.ex[0].set[0].w,80);assert.equal(result.first.ex[0].set[0].targetRepMin,12);
  assert.equal(result.deload.ex[0].set[0].targetRpeMax,8);assert.equal(result.deload.ex[0].set[0].targetRepMin,15);
- const attempts=result.test.ex.flatMap(e=>e.set);assert.equal(attempts.length,5);assert.equal(attempts.filter(s=>s.role==='test_attempt').length,3);assert.equal(attempts.at(-1).targetRepMin,1);
+ const attempts=result.test.ex.flatMap(e=>e.set);assert.equal(attempts.length,7);assert.equal(attempts.filter(s=>s.role==='test_attempt').length,3);assert.equal(attempts.filter(s=>s.role==='backoff').length,2);assert.equal(attempts.at(-1).targetRepMin,5);
  assert.equal(result.replacement.phase,'deload');assert.equal(result.saved.cycleOptions.weeks,4);
  assert.deepEqual(errors,[]);console.log('Periodization UI: create, preview, distribute, manual load, deload, test, phase replacement, serialization passed');
  }finally{dom.window.close()}})().catch(e=>{console.error(e);process.exitCode=1});

@@ -78,6 +78,9 @@
       const spec=pr[W.WorkoutDomain.exerciseKind(ex,typeof workoutRegistry==='undefined'?null:workoutRegistry)];
       if(!spec||!ex.cycleManaged)continue;
       for(const set of ex.set||[]){if(set.ok)continue;
+        // Preparation and 80% volume sets have their own prescriptions;
+        // do not replace their reps/RPE with the generic W8 test profile.
+        if(['test_preparation','backoff'].includes(set.setRole||set.role))continue;
         const src=sourceBlock(cur,ex),manualReps=src?.reps?.mode==='manual',manualEffort=src?.parameterOverrides?.effort?.mode==='manual';
         const test=set.role==='test_attempt',values={targetIntensityMin:test?95:spec.pct[0],targetIntensityMax:test?100:spec.pct[1],targetRepMin:test?1:spec.reps[0],targetRepMax:test?1:spec.reps[1],targetRpeMin:test?9.5:spec.rpe[0],targetRpeMax:test?10:spec.rpe[1]};
         if(!test&&manualReps){values.targetRepMin=set.targetRepMin;values.targetRepMax=set.targetRepMax;}

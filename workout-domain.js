@@ -42,7 +42,7 @@
     // Phase names describe the schedule; only the percentage table prescribes load.
     p.phase=phaseNames[Number(i)-1];p.deload=false;
     p.base=bandPrescription(p.pct);p.isolation=bandPrescription(p.pct,true);
-    if(p.test){p.base={pct:[90,100],sets:5,reps:[1,3],rpe:[7,10],rir:[0,3]};p.isolation={pct:[0,0],sets:0,reps:[0,0],rpe:[0,0],rir:[0,0]};}
+    if(p.test){p.base={pct:[90,100],sets:7,reps:[1,6],rpe:[6,10],rir:[0,4]};p.isolation={pct:[0,0],sets:0,reps:[0,0],rpe:[0,0],rir:[0,0]};}
   }
   const cloneProfile=p=>JSON.parse(JSON.stringify(p));
   function cycleProfiles(total,{testWeek=true,periodizationMode='auto',phaseSchedule,weekProfiles:manualProfiles}={}) {
@@ -124,7 +124,7 @@
         // Explicit weeklySetsOverride remains a WEEKLY total for backwards compatibility.
         // The canonical table and explicit overrides both set a WEEKLY budget.
         const explicitWeeklyBudget=number(source.weeklySetsOverride);
-        const budget=p.test?2+Math.max(1,Math.min(5,number(source.testAttempts)??3)):Math.max(0,Math.round(explicitWeeklyBudget??spec.sets));
+        const budget=p.test?4+Math.max(1,Math.min(5,number(source.testAttempts)??3)):Math.max(0,Math.round(explicitWeeklyBudget??spec.sets));
         selected.forEach((di,j)=>{
           const count=Math.floor(budget/selected.length)+(j<budget%selected.length?1:0);
           if(!count)return;
@@ -137,9 +137,18 @@
            if(!p.test&&e.method!=='STANDARD'){e.sets=cloneProfile(e.cycleOriginalSets);e.cycleManaged=false;e.reps={mode:'method',min:null,max:null};}
           if(p.test){
             e.method='STANDARD';
-            e.sets.forEach((s,k)=>Object.assign(s,k>=2
-              ?{role:'test_attempt',setRole:'test_attempt',attemptNumber:k-1,testGenerated:true,targetRepMin:1,targetRepMax:1,r:1,plannedReps:1,targetRpeMin:k===2?9:9.5,targetRpeMax:k===2?9.5:10,allowFailure:true}
-              :{role:'test_preparation',setRole:'test_preparation',preparationNumber:k+1,testGenerated:true,warmup:true,targetRepMin:k===0?2:1,targetRepMax:k===0?3:2,r:k===0?2:1,plannedReps:k===0?2:1,targetRpeMin:k===0?6:7,targetRpeMax:k===0?7:8,allowFailure:false}));
+            const testCount=count-4;
+            e.sets.forEach((s,k)=>Object.assign(s,k>=2+testCount
+              ?{role:'backoff',setRole:'backoff',backoffPercent:80,testGenerated:true,
+                w:0,programW:0,plannedW:0,weightMode:'auto',r:'',plannedReps:6,
+                targetRepMin:5,targetRepMax:6,targetRpeMin:7,targetRpeMax:8,allowFailure:false}
+              :k>=2
+                ?{role:'test_attempt',setRole:'test_attempt',attemptNumber:k-1,testGenerated:true,
+                  targetRepMin:1,targetRepMax:1,r:'',plannedReps:1,targetRpeMin:k===2?9:9.5,
+                  targetRpeMax:k===2?9.5:10,allowFailure:true}
+                :{role:'test_preparation',setRole:'test_preparation',preparationNumber:k+1,
+                  testGenerated:true,warmup:true,targetRepMin:k===0?2:1,targetRepMax:k===0?3:2,
+                  r:'',plannedReps:k===0?2:1,targetRpeMin:k===0?6:7,targetRpeMax:k===0?7:8,allowFailure:false}));
           }
           week.days[di].ex.push(e);
         });
@@ -899,7 +908,7 @@
         if(e.reps?.mode!=='manual'&&e.parameterOverrides?.reps?.mode!=='manual'){
           const a=i===0?2:1,b=i===0?3:2;
           if(x.targetRepMin!==a||x.targetRepMax!==b){
-            x.targetRepMin=a;x.targetRepMax=b;x.r=a;delete x.targetRepLabel;changed=true;
+            x.targetRepMin=a;x.targetRepMax=b;delete x.targetRepLabel;changed=true;
           }
         }
       });
@@ -1531,26 +1540,40 @@
     let testWeekSuggestion=false;
     const backoff=setRole(e,set)==="backoff";
     let backoffPreview=false;
+    let backoffPending=false;
     if(backoff){
-      const completedTest=currentRows.filter(x=>['test_attempt','isolation_test'].includes(setRole(x.exercise,x.set))&&performedReps(x.exercise,x.set)>0);
-      let best=completedTest.length?Math.max(...completedTest.map(x=>number(x.set.w)||0)):0;
-      if(!best){
-        const plannedTest=(session.ex||[]).flatMap(ex=>(ex.set||[]).map(s=>({ex,s}))).find(x=>loadComparable(e,x.ex,reg,set,x.s)&&setRole(x.ex,x.s)==='test_attempt');
-        if(plannedTest){const preview=recommend(plannedTest.ex,plannedTest.s,session,sessions,reg,overrides);best=preview.weight;backoffPreview=best>0;}
-      }
-      if(best>0&&!bodyLoad){
-        const fraction=number(set.backoffPercent)!=null?Math.max(.1,Math.min(1,number(set.backoffPercent)/100)):/70%/.test(String(e.n||""))?.70:.72;
+      const completedTest=currentRows.filter(x=>
+        ['test_attempt','isolation_test'].includes(setRole(x.exercise,x.set))&&
+        performedReps(x.exercise,x.set)>0&&!x.set.techniqueFailed);
+      // The volume block is based on a RECORDED result, never a preview
+      // or the prescribed weight of a still-incomplete maximal attempt.
+      const achieved=completedTest.map(x=>{
+        const reps=performedReps(x.exercise,x.set);
+        return setRole(x.exercise,x.set)==='isolation_test'||reps===1
+          ?loadForEstimate(x.exercise,x.set,session,reg):
+          e1rm(x.exercise,x.set,session,reg);
+      }).filter(v=>v>0);
+      const best=achieved.length?Math.max(...achieved):null;
+      if(best>0){
+        const fraction=number(set.backoffPercent)!=null?Math.max(.1,Math.min(1,number(set.backoffPercent)/100)):/70%/.test(String(e.n||''))?.70:.80;
+        const proposed=fromEstimateLoad(best*fraction,e,session,reg);
         const repCap=stableOneRepMax>0?fromEstimateLoad(stableOneRepMax/(1+(targetReps+10-(targetMin+target)/2)/30),e,session,reg):null;
-        const suggested=roundWeight(Math.min(best*fraction,repCap??Infinity),p,"down");
-        if(suggested>0){
+        const inverse=p.loadType==='bodyweight_assisted';
+        const effective=repCap==null?proposed:inverse?Math.max(proposed,repCap):Math.min(proposed,repCap);
+        const suggested=roundWeight(effective,p,inverse?'up':'down');
+        if(suggested!=null&&suggested>=0){
           raw=suggested;projected=suggested;anomalous=false;nextSetSuggestion=null;testWeekSuggestion=true;
-          action="backoff";reason=`Back-off: ${Math.round(fraction*100)}% ${backoffPreview?'от предполагаемой тестовой попытки':'от лучшей выполненной тестовой попытки'} ${best} кг, с учётом шага ${p.step} кг`;
+          action="backoff";
+          reason=`Объём после проходки: ${Math.round(fraction*100)}% от подтверждённого результата ${Number(best.toFixed(1))} кг. ${range.lo}–${range.hi} повторений, RPE ${targetMin}–${target}. Вес округлён по оборудованию`;
         }
+      }else{
+        raw=0;projected=null;anomalous=false;nextSetSuggestion=null;backoffPending=true;
+        action='await_test';reason='Выполни и отметь контрольную попытку: после записи повторений рассчитаются два объёмных подхода';
       }
     }
     if(backoff){
       const previousBackoff=currentRows.filter(x=>setRole(x.exercise,x.set)==='backoff').at(-1);
-      if(previousBackoff){nextSetSuggestion=setDecision(e,previousBackoff.set,session,p,set);raw=nextSetSuggestion.weight;anomalous=false;}
+      if(previousBackoff&&!backoffPending){nextSetSuggestion=setDecision(e,previousBackoff.set,session,p,set);raw=nextSetSuggestion.weight;anomalous=false;}
     }
     if(testPreparation){
       // Preparatory sets deliberately use different submaximal loads. They
@@ -1735,7 +1758,7 @@
       calculationVersion:p.correctionPolicy?541:469,
       correctionPolicy:p.correctionPolicy,
       reliable,
-      canApply:action!=='stop'&&!(ordinary&&p.correctionPolicy?.blocked)&&!(nextSetSuggestion?.policyVersion===541&&['MANUAL_REVIEW','POLICY_REVIEW'].includes(nextSetSuggestion.reasonCode))&&(!set.weightMode||reliable)&&(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
+      canApply:action!=='stop'&&!backoffPending&&!(ordinary&&p.correctionPolicy?.blocked)&&!(nextSetSuggestion?.policyVersion===541&&['MANUAL_REVIEW','POLICY_REVIEW'].includes(nextSetSuggestion.reasonCode))&&(!set.weightMode||reliable)&&(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
       allowedWeightRange:corridor?{min:Math.min(...corridor),max:Math.max(...corridor)}:null,
       calculatedWeight:weeklyCalculated?weight:projected,
       weeklyCalculated:!!weeklyCalculated,
@@ -1752,6 +1775,7 @@
       planPreserved: anomalous,
       testWeekSuggestion,
       backoffPreview,
+      backoffPending,
       wellbeingApplied,
       wellbeingResolved:true,
       nextSetSuggestion,
@@ -1820,7 +1844,7 @@
     return true;
   }
   function prepareTestBlocks(session,reg) {
-    if(!session||session.ended||!reg||session.weeklyLoadProfile?.test)return false;
+    if(!session||session.ended||!reg)return false;
     let changed=false;
     const groups=[];
     for(const ex of session.ex||[]){
@@ -1844,16 +1868,49 @@
       // A completed workout block is immutable. Migrate only pending stages.
       const desired=Math.max(1,Math.min(5,number(group[0].testAttempts)||3));
       const role=setRole(tests[0].ex,tests[0].s);
-      if(tests.length<desired&&tests.some(x=>!x.s.ok)){
+      if(tests.length<desired&&!session.testWeek&&!session.weeklyLoadProfile?.test&&tests.some(x=>!x.s.ok)){
         const last=tests.at(-1),at=last.ex.set.indexOf(last.s)+1;
         last.ex.set.splice(at,0,...Array.from({length:desired-tests.length},(_,i)=>fresh(last.s,role,tests.length+i+1)));changed=true;
       }
       tests=entries().filter(x=>['test_attempt','isolation_test'].includes(setRole(x.ex,x.s)));
-      tests.forEach(({s},i)=>{if(s.attemptNumber!==i+1){s.attemptNumber=i+1;changed=true}if(!s.ok&&role==='test_attempt'&&number(s.plannedReps??s.r)===1){const lo=[7,8,9][Math.min(i,2)];if(s.targetRpeMin!==lo||s.targetRpeMax!==lo+1){s.targetRpeMin=lo;s.targetRpeMax=lo+1;changed=true}}});
+      tests.forEach(({s},i)=>{
+        if(s.attemptNumber!==i+1){s.attemptNumber=i+1;changed=true}
+        if(!s.ok&&role==='test_attempt'&&number(s.plannedReps??s.r)===1&&!session.testWeek&&!session.weeklyLoadProfile?.test){
+          const lo=[7,8,9][Math.min(i,2)];
+          if(s.targetRpeMin!==lo||s.targetRpeMax!==lo+1){s.targetRpeMin=lo;s.targetRpeMax=lo+1;changed=true}
+        }
+      });
+      // Planned reps are placeholders, never performed results. Fix snapshots
+      // generated by older versions only when no actual reps were recorded.
+      for(const {s} of entries()){
+        if(!['test_preparation','test_attempt','backoff'].includes(setRole(tests[0].ex,s)))continue;
+        if(!s.ok&&!s.skipped&&!s.manualOverride&&number(s.actualReps)==null&&number(s.r)>0){
+          s.r='';changed=true;
+        }
+      }
       let backoffs=entries().filter(x=>setRole(x.ex,x.s)==='backoff');
-      if(!backoffs.length&&role==='isolation_test'){
+      if(role==='test_attempt'&&(session.testWeek||session.weeklyLoadProfile?.test||Number(session.w)===8)&&backoffs.length<2&&tests.some(x=>!x.s.skipped)){
+        const last=backoffs.at(-1)||tests.at(-1);
+        for(let i=backoffs.length;i<2;i++){
+          const s=fresh({w:0,programW:0,r:''},'backoff',i+1);
+          Object.assign(s,{w:'',programW:0,plannedW:0,weightMode:'auto',r:'',
+            plannedReps:6,targetRepMin:5,targetRepMax:6,
+            targetRpeMin:7,targetRpeMax:8,backoffPercent:80,testGenerated:true});
+          last.ex.set.push(s);
+        }
+        changed=true;
+      }else if(role==='test_attempt'&&!session.testWeek&&!session.weeklyLoadProfile?.test&&Number(session.w)!==8&&backoffs.length<desired&&tests.some(x=>!x.s.ok)){
+        const last=backoffs.at(-1)||tests.at(-1);
+        for(let i=backoffs.length;i<desired;i++){
+          const added=fresh(last.s,'backoff',i+1);
+          added.backoffPercent=number(last.s.backoffPercent)??70;
+          added.targetRpeMin=7;added.targetRpeMax=8;
+          last.ex.set.push(added);
+        }
+        changed=true;
+      }else if(!backoffs.length&&role==='isolation_test'){
         const last=tests.at(-1);for(let i=0;i<desired;i++){const s=fresh(last.s,'backoff',i+1);s.backoffPercent=90;s.targetRpeMin=7;s.targetRpeMax=8;last.ex.set.push(s)}changed=true;
-      }else if(backoffs.length&&backoffs.length<desired&&tests.some(x=>!x.s.ok)){
+      }else if(backoffs.length&&backoffs.length<desired&&role==='isolation_test'&&tests.some(x=>!x.s.ok)){
         const last=backoffs.at(-1);for(let i=backoffs.length;i<desired;i++){const s=fresh(last.s,'backoff',i+1);s.backoffPercent=last.s.backoffPercent;s.targetRpeMin=7;s.targetRpeMax=8;last.ex.set.push(s)}changed=true;
       }
       backoffs=entries().filter(x=>setRole(x.ex,x.s)==='backoff');
@@ -1861,7 +1918,9 @@
       const stopped=completed.some(x=>performedReps(x.ex,x.s)<repRange(x.ex,x.s).lo||effortRpe(x.s)>=9.5||x.s.techniqueFailed||x.s.stopTest);
       const successful=completed.filter(x=>performedReps(x.ex,x.s)>=repRange(x.ex,x.s).lo&&!x.s.techniqueFailed).length;
       for(const [i,x] of backoffs.entries()){
-        const omit=stopped&&i>=successful;
+        // A hard successful single stops further maximal attempts, not the
+        // two lighter volume sets. Only a test with no valid result omits them.
+        const omit=role==='test_attempt'&&(session.testWeek||session.weeklyLoadProfile?.test||Number(session.w)===8)?stopped&&successful===0:stopped&&i>=successful;
         if(!x.s.ok&&!x.s.manualOverride&&x.s.weightSource!=='manual'&&Boolean(x.s.testOmitted)!==omit){x.s.testOmitted=omit;x.s.skipped=omit;changed=true}
       }
       for(const x of tests){const omit=stopped&&!x.s.ok;if(!x.s.ok&&!x.s.manualOverride&&x.s.weightSource!=='manual'&&Boolean(x.s.testOmitted)!==omit){x.s.testOmitted=omit;x.s.skipped=omit;changed=true}}
