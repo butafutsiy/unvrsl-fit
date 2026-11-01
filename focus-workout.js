@@ -2,7 +2,7 @@
 (()=>{
   const W=window,D=document,A=W.WorkoutDomain,F=W.WorkoutFocusFlow;
   if(!A||!F||W.workoutFocus)return;
-  const reg=workoutRegistry,N=A.number;
+  const reg=workoutRegistry,N=A.number,C=W.UNVRSLFocusCardio,U=W.UNVRSLFocusCardioUI;
   let view=null,openedBy=null,writing=false,panel=null;
   const state=()=>W.st,cur=()=>state()?.current;
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -277,6 +277,7 @@
     const unknownMember=F.groupCalibration(s,row,A,reg);
     const pendingByExercise=all.filter(r=>!s.ex[r.ei].set[r.si].ok&&!s.ex[r.ei].set[r.si].skipped).filter((r,i,a)=>a.findIndex(x=>x.ei===r.ei)===i);
     const unknown=F.needsCalibration(e,set,A,reg);
+    if(C?.cardio(e,type)&&U)return U.render({session:s,row,e,set,d,all,done});
     return `<div class="wf-heading"><h3>Режим «Фокус»</h3><span class="wf-pill">W${s.programWeekNumber||s.w||1}</span></div><div class="wf-sub">UNVRSL FIT · Персональная нагрузка · ${done} / ${all.length}</div>
       <div class="wf-badge">${row.group?`${row.size===3?'Трисет':'Суперсет'} · круг ${row.round} из ${row.rounds} · ${row.pos+1}/${row.size}`:'Фокус'}</div>
       <h2 id="focus-title">${esc(W.displayExerciseName?.(e.n)||e.n)}</h2>
@@ -374,10 +375,12 @@
     if(view==='calibration'&&!cur().loadCalibrationDraft)view='focus';
     root.dataset.view=view;
     root.innerHTML=`<div class="wf-shell"><div class="wf-head"><div class="wf-brand">UNVRSL <span>FIT</span></div><div class="wf-live" hidden><span data-wf-countdown></span><button type="button" data-wf-action="stop-timer" aria-label="Остановить таймер">×</button></div><button class="wf-close" data-wf-close aria-label="Закрыть режим фокуса">×</button></div>${view==='calibration'?calibrationMarkup():focusMarkup()}<p class="wf-error" data-wf-status role="status" aria-live="polite"></p></div>`;
-    if(view==='focus')compactLayout();else root.dataset.compact='false';
+    const row=activeRow(),ex=row?session()?.ex?.[row.ei]:null;
+    root.dataset.cardio=view==='focus'&&ex&&C?.cardio(ex,A.loadType(ex,reg))?'true':'false';
+    if(view==='focus'&&root.dataset.cardio!=='true')compactLayout();else root.dataset.compact='false';
     root.scrollTop=0;tickTimer();
   }
-  function readForm(form){return {weight:form.elements.weight?.value??'',reps:form.elements.reps.value,rir:form.querySelector('[data-wf-rir]')?(view==='calibration'?cur().loadCalibrationDraft.form:cur().focusState.inputs).rir:'unknown',technique:form.elements.technique.checked,pain:form.elements.pain.checked}}
+  function readForm(form){if(form.dataset.wfForm==='cardio')return U.read(form,session(),activeRow());return {weight:form.elements.weight?.value??'',reps:form.elements.reps.value,rir:form.querySelector('[data-wf-rir]')?(view==='calibration'?cur().loadCalibrationDraft.form:cur().focusState.inputs).rir:'unknown',technique:form.elements.technique.checked,pain:form.elements.pain.checked}}
   function record(form,{calibrationAttempt=null}={}){const s=session(),row=activeRow();if(!s||!row||writing||form.dataset.token!==F.token(row))return;
     const e=s.ex[row.ei],set=e.set[row.si];if(set.ok||set.skipped)return;
     if(row.group){const unknown=F.groupCalibration(s,row,A,reg);if(unknown)return beginCalibration(unknown.ei);}
@@ -392,14 +395,15 @@
     if(!reps||weighted&&weight==null||d.rir!=='unknown'&&(rir==null||rir<0||rir>6))return message('Запиши фактический результат, вес и выбери RIR.');
     if(F.needsCalibration(e,set,A,reg)&&weight===0)return message('Рабочий вес пока неизвестен. Подбери его или введи фактическую нагрузку.');
     const actual={...set,w:weight,selectedW:weight,actualWeight:weight,techniqueFailed:!d.technique,pain:false,effortUncertain:d.rir==='unknown',effortCensored:d.rir==='6',rpe:rir==null?'':10-rir,rir:rir??'',actualRpe:rir==null?null:10-rir,actualRir:rir};
-    if(type==='time')actual.seconds=reps;else if(type==='distance')actual.distance=reps;else Object.assign(actual,{r:reps.total,actualReps:reps.total,repEntered:true,manualFields:{...set.manualFields,r:true},...(A.legReps(e)?{repsLeft:reps.left,repsRight:reps.right,repCounting:'total'}:{})});
+    if(type==='time'){actual.seconds=reps;if(d.cardio)actual.workSeconds=reps;}else if(type==='distance')actual.distance=reps;
+    if(d.cardio){actual.reportedKcal=d.cardio.reportedKcal>0?d.cardio.reportedKcal:null;actual.cardioActual={durationMin:reps/60,...d.cardio};if(d.cardio.rpe>=1&&d.cardio.rpe<=10){actual.rpe=d.cardio.rpe;actual.actualRpe=d.cardio.rpe;actual.rir=10-d.cardio.rpe;actual.actualRir=actual.rir;actual.effortUncertain=false;}}else Object.assign(actual,{r:reps.total,actualReps:reps.total,repEntered:true,manualFields:{...set.manualFields,r:true},...(A.legReps(e)?{repsLeft:reps.left,repsRight:reps.right,repCounting:'total'}:{})});
     if(!A.validSet(e,actual,reg))return message('Проверь фактически выполненные повторения, время или дистанцию.');
     if(calibrationAttempt){actual.calibrationAttemptId=calibrationAttempt.id;actual.weightSource='calibrated';actual.manualOverride=false;}
     if(!calibrationAttempt&&weighted&&Math.abs((N(set.w)||0)-weight)>1e-6){actual.manualOverride=true;actual.weightSource='manual';}
     const before=JSON.parse(JSON.stringify(set)),revert=()=>{for(const key of Object.keys(set))delete set[key];Object.assign(set,before)};Object.assign(set,actual);writing=true;
     try{W.toggleSet(row.ei,row.si,{timer:false});if(!set.ok){revert();return message('Подход не записан. Проверь фактические значения.');}
       delete s.focusState.inputs;delete s.focusState.notice;
-      const following=F.next(s,row),rest=F.restAfter(s,row,following);if(calibrationAttempt)rest.seconds=Math.max(0,rest.seconds-Math.floor((Date.now()-calibrationAttempt.at)/1000));s.focusState.token=following?F.token(following):null;
+      const following=F.next(s,row),rest=F.restAfter(s,row,following);if(d.cardio){rest.seconds=0;if(s.focusState.cardioTimers)delete s.focusState.cardioTimers[C.key(row)];}if(calibrationAttempt)rest.seconds=Math.max(0,rest.seconds-Math.floor((Date.now()-calibrationAttempt.at)/1000));s.focusState.token=following?F.token(following):null;
       if(rest.seconds>0){s.focusState.rest={...rest,nextLabel:following?`Далее: ${s.ex[following.ei].n}`:'Все подходы отмечены'};W.timer?.(rest.seconds,rest.label);}
       save();W.trainingLoadModel292?.run();render();return true;
     }catch(error){if(!set.ok)revert();message(error.message||'Не удалось записать подход');}finally{writing=false;}
@@ -468,7 +472,7 @@
     d.committed=true;save();W.startPage?.();render();
   }
   root.addEventListener('toggle',event=>{if(!event.target.matches?.('[data-wf-warmup]')||!session())return;const f=session().focusState;if(f.warmupOpen!==event.target.open){f.warmupOpen=event.target.open;save();}},true);
-  root.addEventListener('submit',event=>{event.preventDefault();if(event.target.dataset.wfForm==='work')record(event.target);else if(event.target.dataset.wfForm==='calibration')recordCalibration(event.target)});
+  root.addEventListener('submit',event=>{event.preventDefault();if(event.target.dataset.wfForm==='work')record(event.target);else if(event.target.dataset.wfForm==='calibration')recordCalibration(event.target);else if(event.target.dataset.wfForm==='cardio')record(event.target)});
   root.addEventListener('input',event=>{if(!session()||!event.target.name)return;if(event.target.dataset.wfWarmupField){const el=event.target.closest('[data-wf-warmup-row]'),f=session().focusState,key=`${el.dataset.ei}:${el.dataset.wfWarmupRow}`;((f.warmupInputs||={})[key]||={})[event.target.dataset.wfWarmupField]=event.target.value;save();return;}const form=event.target.form;if(!form?.dataset.wfForm)return;const d=readForm(form);if(view==='calibration')cur().loadCalibrationDraft.form=d;else cur().focusState.inputs={...cur().focusState.inputs,...d};save()});
   root.addEventListener('change',event=>{if(!event.target.matches('[data-wf-select]'))return;cur().focusState.token=event.target.value;delete cur().focusState.inputs;panel=null;save();render()});
   root.addEventListener('click',event=>{
@@ -487,6 +491,8 @@
     if(b.dataset.wfRir!=null){const value=b.dataset.wfRir,d=view==='calibration'?s.loadCalibrationDraft.form:inputDraft(row);d.rir=value;root.querySelectorAll('[data-wf-rir]').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));root.querySelector('[data-wf-effort]').textContent=effortLabel(value);root.querySelector('[data-wf-effort-word]').textContent=effortWord(value);root.querySelectorAll('[data-wf-rpe],[data-wf-help-rpe]').forEach(x=>x.textContent=value==='unknown'?'RPE –':Number(value)===6?'RPE ≲4':`RPE ${10-Number(value)}`);save();return;}
     if(b.dataset.wfStep){s.loadCalibrationDraft.step=Number(b.dataset.wfStep);s.loadCalibrationDraft.mode='advanced';save();render();return;}
     if(b.dataset.wfMode){s.loadCalibrationDraft.mode=b.dataset.wfMode;if(b.dataset.wfMode==='advanced'&&!s.loadCalibrationDraft.step)s.loadCalibrationDraft.step=12;save();render();return;}
+    if(b.dataset.wfCardioAction)return U.action({name:b.dataset.wfCardioAction,session:s,row,save,render,message});
+    if(b.dataset.wfCardioNavigation){const nav=root.querySelector('.wf-cardio-nav');if(nav){nav.open=true;nav.scrollIntoView?.({block:'nearest'});}return;}
     if(b.dataset.wfWorkSeconds){const sec=Number(b.dataset.wfWorkSeconds);if(sec>0)W.timer?.(sec,'Работа · '+s.ex[row.ei].n);return;}
     switch(b.dataset.wfAction){
       case 'stop-timer':W.stopTimer?.();return tickTimer();
@@ -508,6 +514,7 @@
   root.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();if(panel)closePanel();else close();return;}if(event.key!=='Tab')return;const items=[...root.querySelectorAll('button:not(:disabled),input,select,summary')].filter(e=>!e.disabled&&!e.closest('[hidden],[inert]')&&(!e.closest('details:not([open])')||e.tagName==='SUMMARY'));const first=items[0],last=items.at(-1);if(event.shiftKey&&D.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&D.activeElement===last){event.preventDefault();first?.focus();}});
   function tickTimer(){if(root.hidden)return;const timer=W.workoutTimerSnapshot?.(),sec=timer?.workoutId===String(cur()?.id)?Math.max(0,Math.ceil((timer.end-Date.now())/1000)):0;
     root.querySelectorAll('[data-wf-countdown]').forEach(out=>out.textContent=clock(sec));const live=root.querySelector('.wf-live');if(live)live.hidden=sec<=0;
+    if(root.dataset.cardio==='true'&&U){const row=activeRow(),s=session();if(row&&s)U.tick({root,session:s,row,save,render});}
     const note=root.querySelector('[data-wf-cal-rest]'),button=root.querySelector('[data-wf-cal-save]');if(note)note.textContent=sec?`Отдых ${clock(sec)}`:'';if(button)button.disabled=sec>0;
   }
   function timerEnded(event){const s=session();if(!s||root.hidden||event.detail?.workoutId!==String(s.id))return;if(view==='focus'&&s.focusState?.rest){delete s.focusState.rest;save();render();}else if(view==='calibration')render();}
