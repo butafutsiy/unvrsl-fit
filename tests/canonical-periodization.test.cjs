@@ -171,3 +171,47 @@ test('old three-set W8 live workout rebases both pending 2-3 rep loads from aver
  assert.ok(A.recommendationWeight(second)>A.recommendationWeight(first));
  assert.equal(first.canApply,true);
 });
+
+
+test('already open three-set W8 fixes real rep fields and appends two 80% volume sets after successful single',()=>{
+ const initial=[
+  {w:125,r:2,role:'test_preparation',plannedReps:2,targetRepMin:2,targetRepMax:3,targetRpeMin:6,targetRpeMax:7},
+  {w:135,r:1,role:'test_preparation',plannedReps:1,targetRepMin:1,targetRepMax:2,targetRpeMin:7,targetRpeMax:8},
+  {w:147.5,r:1,role:'test_attempt',plannedReps:1,attemptNumber:1,targetRepMin:1,targetRepMax:1,targetRpeMin:9.5,targetRpeMax:10},
+ ];
+ const e={...ex('bench',initial),equipmentProfile:{weightStep:2.5}};
+ const now={id:'live-w8',w:8,testWeek:true,date:'2026-11-01',ex:[e]};
+ const earlier=past([work(120,8,9),work(120,8,9),work(120,8,9)]);
+ assert.equal(A.prepareTestBlocks(now,reg),true);
+ assert.equal(e.set.length,5);
+ assert.deepEqual(e.set.slice(0,3).map(x=>x.r),['','','']);
+ assert.deepEqual(e.set.slice(3).map(x=>[x.role,x.targetRepMin,x.targetRepMax,x.backoffPercent]),[['backoff',5,6,80],['backoff',5,6,80]]);
+ assert.equal(A.prepareTestBlocks(now,reg),false,'migration remains idempotent');
+ const pending=A.recommend(e,e.set[3],now,[earlier],reg);
+ assert.equal(pending.backoffPending,true);assert.equal(pending.canApply,false);
+ Object.assign(e.set[2],{ok:true,r:1,actualReps:1,actualRpe:9.5});
+ assert.equal(A.prepareTestBlocks(now,reg),false);
+ assert.equal(e.set[3].skipped,false);assert.equal(e.set[4].skipped,false);
+ const first=A.recommend(e,e.set[3],now,[earlier],reg);
+ const second=A.recommend(e,e.set[4],now,[earlier],reg);
+ const load=A.recommendationWeight(first);
+ assert.equal(first.backoffPending,false);assert.equal(first.canApply,true);
+ assert.ok(load>=112.5&&load<=120,'80% of confirmed 147.5 kg must be near 117.5 kg');
+ assert.equal(A.recommendationWeight(second),load,'both back-offs use actual completed single');
+ assert.equal(e.set[4].r,'');
+ e.set[3].r=6;e.set[3].actualReps=6;e.set[3].actualRpe=7.5;e.set[3].ok=true;e.set[3].w=load;
+ const revised=A.recommend(e,e.set[4],now,[earlier],reg);
+ assert.ok(A.recommendationWeight(revised)>0,'second back-off adapts to first completed volume set');
+});
+
+test('manual or completed repetitions of W8 are not erased by pending-set migration',()=>{
+ const e={...ex('bench'),set:[
+  {role:'test_preparation',targetRepMin:2,targetRepMax:3,r:3,actualReps:3,ok:true},
+  {role:'test_preparation',targetRepMin:1,targetRepMax:2,r:1,actualReps:1},
+  {role:'test_attempt',targetRepMin:1,targetRepMax:1,r:1,actualReps:1},
+ ]};
+ const now={id:'manual-test',w:8,testWeek:true,ex:[e]};
+ A.prepareTestBlocks(now,reg);
+ assert.deepEqual(e.set.slice(0,3).map(s=>s.r),[3,1,1]);
+ assert.equal(e.set.length,5);
+});
