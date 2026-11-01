@@ -13,9 +13,9 @@ function context(extra={}){
   vm.runInContext(read('cardio-training.js'),w);
   return w;
 }
-test('thirteen machines have unique IDs, valid time loads, and safe coaching',()=>{
+test('eleven machines have unique IDs, linked barefoot static illustrations, and safe coaching',()=>{
   const w=context(),rows=Array.from(w.UNVRSL_EXERCISES).filter(x=>x.id.startsWith('cardio:'));
-  assert.equal(rows.length,13);
+  assert.equal(rows.length,11);
   assert.equal(new Set(rows.map(x=>x.id)).size,13);
   for(const e of rows){
     assert.equal(e.bp,'cardio');assert.equal(e.loadType,'time');
@@ -23,7 +23,14 @@ test('thirteen machines have unique IDs, valid time loads, and safe coaching',()
     assert.ok(e.coaching.cues.length>=3&&e.coaching.mistakes.length>=3);
     assert.ok(e.cardioMachine.met.moderate>1);
     assert.equal(w.UNVRSLCardio.isCardio(e),true);
+    assert.equal(e.image,`assets/cardio-illustrations.svg#${e.cardioMachine.id}`);
+    assert.equal(e.gif,'');
   }
+  assert.equal(w.UNVRSL_EXERCISES.length,200);
+  assert.ok(!w.UNVRSL_EXERCISES.some(e=>['cardio:upper-body-ergometer','cardio:versaclimber'].includes(e.id)));
+  const fs=require('node:fs'),asset=fs.readFileSync(require('node:path').join(__dirname,'..','assets','cardio-illustrations.svg'),'utf8');
+  assert.ok(asset.includes('data:image/webp;base64,'));
+  for(const e of rows)assert.ok(asset.includes(`id="${e.cardioMachine.id}"`));
 });
 test('gross MET calories require a real body mass and report estimation',()=>{
   const w=context(),ex={n:'Эллиптический тренажёр',cardioMachineId:'elliptical'};
