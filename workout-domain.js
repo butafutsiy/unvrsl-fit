@@ -42,7 +42,7 @@
     // Phase names describe the schedule; only the percentage table prescribes load.
     p.phase=phaseNames[Number(i)-1];p.deload=false;
     p.base=bandPrescription(p.pct);p.isolation=bandPrescription(p.pct,true);
-    if(p.test){p.base={pct:[90,100],sets:5,reps:[1,3],rpe:[7,10],rir:[0,3]};p.isolation={pct:[0,0],sets:0,reps:[0,0],rpe:[0,0],rir:[0,0]};}
+    if(p.test){p.base={pct:[90,100],sets:7,reps:[1,6],rpe:[6,10],rir:[0,4]};p.isolation={pct:[0,0],sets:0,reps:[0,0],rpe:[0,0],rir:[0,0]};}
   }
   const cloneProfile=p=>JSON.parse(JSON.stringify(p));
   function cycleProfiles(total,{testWeek=true,periodizationMode='auto',phaseSchedule,weekProfiles:manualProfiles}={}) {
@@ -124,7 +124,7 @@
         // Explicit weeklySetsOverride remains a WEEKLY total for backwards compatibility.
         // The canonical table and explicit overrides both set a WEEKLY budget.
         const explicitWeeklyBudget=number(source.weeklySetsOverride);
-        const budget=p.test?2+Math.max(1,Math.min(5,number(source.testAttempts)??3)):Math.max(0,Math.round(explicitWeeklyBudget??spec.sets));
+        const budget=p.test?4+Math.max(1,Math.min(5,number(source.testAttempts)??3)):Math.max(0,Math.round(explicitWeeklyBudget??spec.sets));
         selected.forEach((di,j)=>{
           const count=Math.floor(budget/selected.length)+(j<budget%selected.length?1:0);
           if(!count)return;
@@ -137,9 +137,18 @@
            if(!p.test&&e.method!=='STANDARD'){e.sets=cloneProfile(e.cycleOriginalSets);e.cycleManaged=false;e.reps={mode:'method',min:null,max:null};}
           if(p.test){
             e.method='STANDARD';
-            e.sets.forEach((s,k)=>Object.assign(s,k>=2
-              ?{role:'test_attempt',setRole:'test_attempt',attemptNumber:k-1,testGenerated:true,targetRepMin:1,targetRepMax:1,r:1,plannedReps:1,targetRpeMin:k===2?9:9.5,targetRpeMax:k===2?9.5:10,allowFailure:true}
-              :{role:'test_preparation',setRole:'test_preparation',preparationNumber:k+1,testGenerated:true,warmup:true,targetRepMin:k===0?2:1,targetRepMax:k===0?3:2,r:k===0?2:1,plannedReps:k===0?2:1,targetRpeMin:k===0?6:7,targetRpeMax:k===0?7:8,allowFailure:false}));
+            const testCount=count-4;
+            e.sets.forEach((s,k)=>Object.assign(s,k>=2+testCount
+              ?{role:'backoff',setRole:'backoff',backoffPercent:80,testGenerated:true,
+                w:0,programW:0,plannedW:0,weightMode:'auto',r:'',plannedReps:6,
+                targetRepMin:5,targetRepMax:6,targetRpeMin:7,targetRpeMax:8,allowFailure:false}
+              :k>=2
+                ?{role:'test_attempt',setRole:'test_attempt',attemptNumber:k-1,testGenerated:true,
+                  targetRepMin:1,targetRepMax:1,r:'',plannedReps:1,targetRpeMin:k===2?9:9.5,
+                  targetRpeMax:k===2?9.5:10,allowFailure:true}
+                :{role:'test_preparation',setRole:'test_preparation',preparationNumber:k+1,
+                  testGenerated:true,warmup:true,targetRepMin:k===0?2:1,targetRepMax:k===0?3:2,
+                  r:'',plannedReps:k===0?2:1,targetRpeMin:k===0?6:7,targetRpeMax:k===0?7:8,allowFailure:false}));
           }
           week.days[di].ex.push(e);
         });
@@ -899,7 +908,7 @@
         if(e.reps?.mode!=='manual'&&e.parameterOverrides?.reps?.mode!=='manual'){
           const a=i===0?2:1,b=i===0?3:2;
           if(x.targetRepMin!==a||x.targetRepMax!==b){
-            x.targetRepMin=a;x.targetRepMax=b;x.r=a;delete x.targetRepLabel;changed=true;
+            x.targetRepMin=a;x.targetRepMax=b;delete x.targetRepLabel;changed=true;
           }
         }
       });
@@ -1820,7 +1829,7 @@
     return true;
   }
   function prepareTestBlocks(session,reg) {
-    if(!session||session.ended||!reg||session.weeklyLoadProfile?.test)return false;
+    if(!session||session.ended||!reg)return false;
     let changed=false;
     const groups=[];
     for(const ex of session.ex||[]){
@@ -1844,16 +1853,40 @@
       // A completed workout block is immutable. Migrate only pending stages.
       const desired=Math.max(1,Math.min(5,number(group[0].testAttempts)||3));
       const role=setRole(tests[0].ex,tests[0].s);
-      if(tests.length<desired&&tests.some(x=>!x.s.ok)){
+      if(tests.length<desired&&!session.testWeek&&!session.weeklyLoadProfile?.test&&tests.some(x=>!x.s.ok)){
         const last=tests.at(-1),at=last.ex.set.indexOf(last.s)+1;
         last.ex.set.splice(at,0,...Array.from({length:desired-tests.length},(_,i)=>fresh(last.s,role,tests.length+i+1)));changed=true;
       }
       tests=entries().filter(x=>['test_attempt','isolation_test'].includes(setRole(x.ex,x.s)));
-      tests.forEach(({s},i)=>{if(s.attemptNumber!==i+1){s.attemptNumber=i+1;changed=true}if(!s.ok&&role==='test_attempt'&&number(s.plannedReps??s.r)===1){const lo=[7,8,9][Math.min(i,2)];if(s.targetRpeMin!==lo||s.targetRpeMax!==lo+1){s.targetRpeMin=lo;s.targetRpeMax=lo+1;changed=true}}});
+      tests.forEach(({s},i)=>{
+        if(s.attemptNumber!==i+1){s.attemptNumber=i+1;changed=true}
+        if(!s.ok&&role==='test_attempt'&&number(s.plannedReps??s.r)===1&&!session.testWeek&&!session.weeklyLoadProfile?.test){
+          const lo=[7,8,9][Math.min(i,2)];
+          if(s.targetRpeMin!==lo||s.targetRpeMax!==lo+1){s.targetRpeMin=lo;s.targetRpeMax=lo+1;changed=true}
+        }
+      });
+      // Planned reps are placeholders, never performed results. Fix snapshots
+      // generated by older versions only when no actual reps were recorded.
+      for(const {s} of entries()){
+        if(!['test_preparation','test_attempt','backoff'].includes(setRole(tests[0].ex,s)))continue;
+        if(!s.ok&&!s.skipped&&!s.manualOverride&&number(s.actualReps)==null&&number(s.r)>0){
+          s.r='';changed=true;
+        }
+      }
       let backoffs=entries().filter(x=>setRole(x.ex,x.s)==='backoff');
-      if(!backoffs.length&&role==='isolation_test'){
+      if(role==='test_attempt'&&backoffs.length<2&&tests.some(x=>!x.s.skipped)){
+        const last=backoffs.at(-1)||tests.at(-1);
+        for(let i=backoffs.length;i<2;i++){
+          const s=fresh({w:0,programW:0,r:''},'backoff',i+1);
+          Object.assign(s,{w:'',programW:0,plannedW:0,weightMode:'auto',r:'',
+            plannedReps:6,targetRepMin:5,targetRepMax:6,
+            targetRpeMin:7,targetRpeMax:8,backoffPercent:80,testGenerated:true});
+          last.ex.set.push(s);
+        }
+        changed=true;
+      }else if(!backoffs.length&&role==='isolation_test'){
         const last=tests.at(-1);for(let i=0;i<desired;i++){const s=fresh(last.s,'backoff',i+1);s.backoffPercent=90;s.targetRpeMin=7;s.targetRpeMax=8;last.ex.set.push(s)}changed=true;
-      }else if(backoffs.length&&backoffs.length<desired&&tests.some(x=>!x.s.ok)){
+      }else if(backoffs.length&&backoffs.length<desired&&role==='isolation_test'&&tests.some(x=>!x.s.ok)){
         const last=backoffs.at(-1);for(let i=backoffs.length;i<desired;i++){const s=fresh(last.s,'backoff',i+1);s.backoffPercent=last.s.backoffPercent;s.targetRpeMin=7;s.targetRpeMax=8;last.ex.set.push(s)}changed=true;
       }
       backoffs=entries().filter(x=>setRole(x.ex,x.s)==='backoff');
