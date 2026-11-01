@@ -80,13 +80,13 @@ test('ten-week progression has two working blocks, recovery and an explicit fina
  assert.deepEqual(profiles.map(p=>p.sourceWeek),[1,2,3,4,2,3,5,6,7,8]);
  assert.deepEqual(profiles.map(p=>p.base.pct),[[70,75],[75,80],[80,85],[60,65],[75,80],[80,85],[85,88],[65,70],[88,90],[90,100]]);
  assert.deepEqual(profiles.map(p=>p.isolation.reps),[[10,12],[12,15],[15,20],[6,8],[12,15],[15,20],[15,20],[8,10],[15,20],[0,0]]);
- assert.deepEqual(profiles.map(p=>p.base.reps),[[12,15],[10,12],[8,10],[15,20],[10,12],[8,10],[6,8],[12,15],[4,6],[2,3]]);
+ assert.deepEqual(profiles.map(p=>p.base.reps),[[12,15],[10,12],[8,10],[15,20],[10,12],[8,10],[6,8],[12,15],[4,6],[1,3]]);
  const cycle=A.generateCycle({weeks:10,daysPerWeek:5,startDate:'2026-10-11',exercises:[{n:'Присед',kind:'compound',dayIndices:[0],sets:[{w:100}]},{n:'Разгибание ног',kind:'isolation',dayIndices:[0],sets:[{w:50}]}]});
  for(const week of cycle.weeks)for(const day of week.days)for(const e of day.ex){
   const spec=week.weeklyLoadProfile[e.kind==='isolation'?'isolation':'base'];
   assert.deepEqual([e.targetIntensityMin,e.targetIntensityMax],spec.pct);
  }
- assert.deepEqual(cycle.weeks[9].days[0].ex[0].sets.map(s=>[s.role,s.targetRepMin,s.targetRepMax]),[['test_preparation',2,3],['test_preparation',2,3],['test_attempt',1,1]]);
+ assert.deepEqual(cycle.weeks[9].days[0].ex[0].sets.map(s=>[s.role,s.targetRepMin,s.targetRepMax]),[['test_preparation',2,3],['test_preparation',1,2],['test_attempt',1,1],['test_attempt',1,1],['test_attempt',1,1]]);
 });
 
 test('automatic periods cover every manual length and all training-day counts',()=>{
@@ -105,4 +105,46 @@ test('manual phases and separate isolation profiles survive serialization and re
  assert.deepEqual(rebuilt.weeks[0].weeklyLoadProfile.base.pct,[75,80]);
  assert.throws(()=>A.cycleProfiles(5,{periodizationMode:'manual',phaseSchedule:['work']}));assert.throws(()=>A.cycleProfiles(5,{periodizationMode:'manual',phaseSchedule:['bad','work','work','work','work']}));
  assert.throws(()=>A.cycleProfiles(0));assert.throws(()=>A.dayRoles(8));
+});
+
+
+test('peak recommendations use robust average e1RM instead of incomplete prior working weight',()=>{
+ const old={id:'old-peak',date:'2026-10-20',ended:1,ex:[{...ex('bench'),set:[work(120,8,9),work(120,8,9),work(120,8,9)]}]};
+ const sets=Array.from({length:2},()=>({w:120,programW:120,weightMode:'auto',targetRepMin:2,targetRepMax:3,targetRpeMin:9,targetRpeMax:9.5}));
+ const e={...ex('bench',sets),kind:'base',programWeightMode:'adaptive',equipmentProfile:{weightStep:2.5}};
+ const now={id:'peak',date:'2026-11-01',programWeekUseIntensity:true,programWeekIntensityMin:90,programWeekIntensityMax:95,ex:[e]};
+ const recommendations=sets.map(s=>A.recommend(e,s,now,[old],reg));
+ const weights=recommendations.map(A.recommendationWeight);
+ assert.ok(recommendations.every(r=>r.peakRebase&&r.strength.estimate>150&&r.canApply!==false));
+ assert.ok(weights.every(w=>w>120),'heavy target must not be frozen to last 120 kg');
+ assert.ok(weights[1]>=weights[0],'later high-intensity set must not start lighter');
+ assert.ok(weights[0]<=recommendations[0].allowedWeightRange.max+2.5);
+});
+
+test('generated testing ramps have multiple loads and stop escalating after a hard single',()=>{
+ const cycle=A.generateCycle({weeks:8,daysPerWeek:3,startDate:'2026-09-01',exercises:[{exerciseId:'bench',n:'Жим',kind:'base',dayIndices:[0],weightMode:'auto',sets:[{w:120}]}]});
+ const source=cycle.weeks.at(-1).days[0].ex[0];
+ assert.deepEqual(source.sets.map(s=>s.role),['test_preparation','test_preparation','test_attempt','test_attempt','test_attempt']);
+ assert.deepEqual(source.sets.filter(s=>s.role==='test_attempt').map(s=>s.attemptNumber),[1,2,3]);
+ assert.deepEqual(source.sets.filter(s=>s.role==='test_preparation').map(s=>s.warmup),[true,true]);
+ const old={id:'old-test',date:'2026-10-20',ended:1,ex:[{...ex('bench'),set:[work(120,8,9),work(120,8,9),work(120,8,9)]}]};
+ const e={...source,n:'Жим',exerciseId:'bench',equipmentProfile:{weightStep:2.5},set:source.sets};
+ const now={id:'test',date:'2026-11-01',w:8,testWeek:true,weeklyLoadProfile:cycle.weeks.at(-1).weeklyLoadProfile,ex:[e]};
+ const weights=e.set.map(s=>A.recommendationWeight(A.recommend(e,s,now,[old],reg)));
+ assert.ok(weights.every(w=>w>0));
+ assert.ok(weights[0]<weights[1]&&weights[1]<weights[2]&&weights[2]<=weights[3]&&weights[3]<=weights[4],
+   'prep and 1RM attempts must form an increasing staged ramp');
+ const firstTest=e.set[2];Object.assign(firstTest,{w:weights[2],ok:true,r:1,actualReps:1,actualRpe:9.5});
+ const next=A.recommend(e,e.set[3],now,[old],reg);
+ assert.equal(next.action,'stop');assert.equal(next.canApply,false);
+});
+
+test('above 100% input survives normalization without authorizing an unsafe forced PR',()=>{
+ const e=ex('bench'),s={w:120,targetRepMin:1,targetRepMax:1,targetRpeMin:10,targetRpeMax:10};
+ const now={id:'high',date:'2026-11-01',programWeekIntensityMin:105,programWeekIntensityMax:110,ex:[{...e,set:[s]}]};
+ const old={id:'old-high',date:'2026-10-20',ended:1,ex:[{...ex('bench'),set:[work(120,8,9)]}]};
+ const r=A.recommend(now.ex[0],s,now,[old],reg);
+ assert.ok(r.peakRebase);
+ assert.ok(A.recommendationWeight(r)<r.strength.estimate,'no automatic 105–110% attempt from an unverified estimated 1RM');
+ assert.deepEqual(A.bandPrescription([105,110]).pct,[105,110]);
 });

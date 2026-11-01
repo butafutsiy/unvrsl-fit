@@ -28,7 +28,8 @@
     [88,90,3,3,5,8.5,9.5,60,65,4,15,20,7,8],
     [90,95,2,2,3,9,9.5,60,65,5,15,20,6,7],
     [95,100,2,1,2,9.5,10,60,65,5,15,20,5,6],
-    [100,105,1,1,1,10,10,0,0,0,0,0,0,0]
+    [100,105,1,1,1,10,10,0,0,0,0,0,0,0],
+    [105,110,1,1,1,10,10,0,0,0,0,0,0,0]
   ];
   function bandPrescription(pct, isolation=false) {
     const midpoint=(pct[0]+pct[1])/2;
@@ -41,7 +42,7 @@
     // Phase names describe the schedule; only the percentage table prescribes load.
     p.phase=phaseNames[Number(i)-1];p.deload=false;
     p.base=bandPrescription(p.pct);p.isolation=bandPrescription(p.pct,true);
-    if(p.test){p.base={pct:[90,100],sets:3,reps:[2,3],rpe:[9,9.5],rir:[.5,1]};p.isolation={pct:[0,0],sets:0,reps:[0,0],rpe:[0,0],rir:[0,0]};}
+    if(p.test){p.base={pct:[90,100],sets:5,reps:[1,3],rpe:[7,10],rir:[0,3]};p.isolation={pct:[0,0],sets:0,reps:[0,0],rpe:[0,0],rir:[0,0]};}
   }
   const cloneProfile=p=>JSON.parse(JSON.stringify(p));
   function cycleProfiles(total,{testWeek=true,periodizationMode='auto',phaseSchedule,weekProfiles:manualProfiles}={}) {
@@ -123,7 +124,7 @@
         // Explicit weeklySetsOverride remains a WEEKLY total for backwards compatibility.
         // The canonical table and explicit overrides both set a WEEKLY budget.
         const explicitWeeklyBudget=number(source.weeklySetsOverride);
-        const budget=p.test?3:Math.max(0,Math.round(explicitWeeklyBudget??spec.sets));
+        const budget=p.test?2+Math.max(1,Math.min(5,number(source.testAttempts)??3)):Math.max(0,Math.round(explicitWeeklyBudget??spec.sets));
         selected.forEach((di,j)=>{
           const count=Math.floor(budget/selected.length)+(j<budget%selected.length?1:0);
           if(!count)return;
@@ -134,7 +135,12 @@
           delete e.repLabel;delete e.rpeLabel;delete e.displayPrescription;
           e.sets=Array.from({length:count},(_,k)=>({...source.sets?.[k],w:number(source.sets?.[k]?.w??source.sets?.[0]?.w)??0,r:spec.reps[0],targetRepMin:spec.reps[0],targetRepMax:spec.reps[1],targetRpeMin:spec.rpe[0],targetRpeMax:spec.rpe[1],allowFailure:false}));
            if(!p.test&&e.method!=='STANDARD'){e.sets=cloneProfile(e.cycleOriginalSets);e.cycleManaged=false;e.reps={mode:'method',min:null,max:null};}
-          if(p.test){e.method='STANDARD';e.sets.forEach((s,k)=>Object.assign(s,k===count-1?{role:'test_attempt',targetRepMin:1,targetRepMax:1,r:1,targetRpeMin:9.5,targetRpeMax:10,allowFailure:true}:{role:'test_preparation',targetRepMin:2,targetRepMax:3}));}
+          if(p.test){
+            e.method='STANDARD';
+            e.sets.forEach((s,k)=>Object.assign(s,k>=2
+              ?{role:'test_attempt',setRole:'test_attempt',attemptNumber:k-1,testGenerated:true,targetRepMin:1,targetRepMax:1,r:1,plannedReps:1,targetRpeMin:k===2?9:9.5,targetRpeMax:k===2?9.5:10,allowFailure:true}
+              :{role:'test_preparation',setRole:'test_preparation',preparationNumber:k+1,testGenerated:true,warmup:true,targetRepMin:k===0?2:1,targetRepMax:k===0?3:2,r:k===0?2:1,plannedReps:k===0?2:1,targetRpeMin:k===0?6:7,targetRpeMax:k===0?7:8,allowFailure:false}));
+          }
           week.days[di].ex.push(e);
         });
       });
@@ -411,7 +417,7 @@
     );
   }
   function recommendationWeight(result) {
-    return result.nextSetSuggestion?.policyVersion===541 ? number(result.nextSetSuggestion.weight) : result.weeklyCalculated ? number(result.calculatedWeight) : number(result.nextSetSuggestion?.weight??result.weight);
+    return result.nextSetSuggestion?.policyVersion===541 ? number(result.nextSetSuggestion.weight) : result.peakRebase ? number(result.weight) : result.weeklyCalculated ? number(result.calculatedWeight) : number(result.nextSetSuggestion?.weight??result.weight);
   }
   // Repair only pending generated loads. Recorded history and manual inputs are
   // authoritative, including deliberately entered fractional weights.
@@ -749,6 +755,7 @@
   // Roles are data, with legacy labels used only during normalization.
   function setRole(e, s = {}) {
     if(s.setRole==='isolation_test'||s.role==='isolation_test')return 'isolation_test';
+    if(s.setRole==='test_preparation'||s.role==='test_preparation')return 'test_preparation';
     const label=[s.setRole,s.role,s.phase,s.phaseLabel,s.label,e.phaseRole,e.phaseLabel,e.n].filter(Boolean).join(' ');
     if (/back.?off/i.test(label)) return 'backoff';
     if (/test_attempt|тест|попытка/i.test(label)) return 'test_attempt';
@@ -876,6 +883,27 @@
   function repairLegacyEffortTargets(session) {
     if(!session||session.ended||session.pendingCompletion)return false;
     let changed=false;
+    // Repair old generated W8 snapshots in-place, without rewriting a finished
+    // workout, manually specified goals or any manually entered kilograms.
+    for(const e of session.ex||[]){
+      if(!session.weeklyLoadProfile?.test&&!session.testWeek&&Number(session.w)!==8)continue;
+      if(e.parameterOverrides?.effort?.mode==='manual'||e.effortSourceMode==='manual')continue;
+      const preps=(e.set||[]).filter(x=>setRole(e,x)==='test_preparation');
+      preps.forEach((x,i)=>{
+        if(x.ok||x.skipped||x.effortTargetSource==='manual')return;
+        const lo=i===0?6:7,hi=i===0?7:8;
+        if(x.targetRpeMin!==lo||x.targetRpeMax!==hi||x.targetRirMin!==10-hi||x.targetRirMax!==10-lo||x.warmup!==true){
+          x.targetRpeMin=lo;x.targetRpeMax=hi;x.targetRirMin=10-hi;x.targetRirMax=10-lo;x.warmup=true;
+          delete x.targetRpeLabel;delete x.targetRirLabel;changed=true;
+        }
+        if(e.reps?.mode!=='manual'&&e.parameterOverrides?.reps?.mode!=='manual'){
+          const a=i===0?2:1,b=i===0?3:2;
+          if(x.targetRepMin!==a||x.targetRepMax!==b){
+            x.targetRepMin=a;x.targetRepMax=b;x.r=a;delete x.targetRepLabel;changed=true;
+          }
+        }
+      });
+    }
     for(const e of session.ex||[]){
       if(!policyContext(e,{},session)||e.parameterOverrides?.effort?.mode==='manual'||e.effortSourceMode==='manual')continue;
       const record=LoadPolicies?.record(e),legacy={AX:-.5,DB:-.25,MC:.25,MI:.5,CI:.5,SI:.5};
@@ -1166,9 +1194,9 @@
     if (session?.programWeekUseIntensity === false && explicit==null) return null;
     let lo = explicit??number(s.targetIntensityMin??e.targetIntensityMin??session?.programWeekIntensityMin), hi = explicit??number(s.targetIntensityMax??e.targetIntensityMax??session?.programWeekIntensityMax);
     if (!(lo > 0) || !(hi > 0)) return null;
-    if (lo > 1) lo /= 100;
-    if (hi > 1) hi /= 100;
-    lo = Math.max(.4, Math.min(1, lo)); hi = Math.max(.4, Math.min(1, hi));
+    if (lo > 1.1) lo /= 100;
+    if (hi > 1.1) hi /= 100;
+    lo = Math.max(.4, Math.min(1.1, lo)); hi = Math.max(.4, Math.min(1.1, hi));
     return { lo: Math.min(lo, hi), hi: Math.max(lo, hi) };
   }
   const median = (a) => {
@@ -1360,8 +1388,9 @@
     // accessory performed during week eight.
     const weekEight=Number(session.w)===8&&!session.programId&&!session.planId&&!session.programName;
     const testAttempt=compound&&setRole(e,set)==='test_attempt';
+    const testPreparation=compound&&setRole(e,set)==='test_preparation';
     const isolationTest=setRole(e,set)==='isolation_test';
-    const band=((weekEight||session.testWeek)&&!testAttempt)||isolationTest?null:intensityBand(session,e,set),weekMid=band?((band.lo+band.hi)/2):null;
+    const band=((weekEight||session.testWeek)&&!testAttempt)||isolationTest||testPreparation?null:intensityBand(session,e,set),weekMid=band?((band.lo+band.hi)/2):null;
     const weeklyRaw=stableOneRepMax!=null&&weekMid!=null?fromEstimateLoad(stableOneRepMax*weekMid,e,session,reg):null;
     const weeklyCorridor=stableOneRepMax!=null&&band?{min:fromEstimateLoad(stableOneRepMax*band.lo,e,session,reg),max:fromEstimateLoad(stableOneRepMax*band.hi,e,session,reg)}:null;
     let weeklyApplied=false;
@@ -1374,6 +1403,10 @@
     }
     const prescription=validatePrescription({sets:1,pct:band?[band.lo*100,band.hi*100]:[0,100],reps:[range.lo,range.hi],rpe:[targetMin,target]});
     const corridor=stableOneRepMax>0&&prescription.corridor?prescription.corridor.map(x=>fromEstimateLoad(stableOneRepMax*x/100,e,session,reg)):null;
+    // A new 90%+ prescription is a fresh intensity target, not a 5% step
+    // from the last high-rep working load. Stage loads use the robust mean e1RM.
+    const peakRebase=eligible&&method(e,set)==='STANDARD'&&setRole(e,set)==='standard'&&
+      !!band&&band.lo>=.9&&stableOneRepMax>0&&!!corridor&&corridor.every(x=>x!=null);
     if(eligible&&corridor&&corridor.every(x=>x!=null)){
       const role=session.dayRole||session.role||'Middle',position=role==='Heavy'?.85:role==='Light'?.15:.5;
       projected=Math.max(corridor[0],Math.min(corridor[1],(corridor[0]+(corridor[1]-corridor[0])*position)*calibration.factor));
@@ -1515,13 +1548,26 @@
       const previousBackoff=currentRows.filter(x=>setRole(x.exercise,x.set)==='backoff').at(-1);
       if(previousBackoff){nextSetSuggestion=setDecision(e,previousBackoff.set,session,p,set);raw=nextSetSuggestion.weight;anomalous=false;}
     }
+    if(testPreparation){
+      // Preparatory sets deliberately use different submaximal loads. They
+      // never count as maximal evidence or force an increase past a failed set.
+      const stages=(e.set||[]).filter(s=>setRole(e,s)==='test_preparation');
+      const index=Math.max(0,stages.indexOf(set));
+      const fraction=stages.length<=1?.85:.825+(.90-.825)*index/(stages.length-1);
+      const suggested=stableOneRepMax>0?roundWeight(fromEstimateLoad(stableOneRepMax*fraction,e,session,reg),p,'down'):null;
+      if(suggested!=null){
+        raw=suggested;projected=suggested;anomalous=false;nextSetSuggestion=null;testWeekSuggestion=true;
+        action='test_preparation';
+        reason=`Подготовка ${index+1}/${stages.length}: ${Math.round(fraction*1000)/10}% от среднего расчётного 1ПМ ${Number(stableOneRepMax.toFixed(1))} кг; подход не является максимальной попыткой`;
+      }
+    }
     if(testAttempt){
       const previousTest=currentRows.filter(x=>setRole(x.exercise,x.set)==="test_attempt").at(-1);
       const todayReps=previousTest?performedReps(previousTest.exercise,previousTest.set):null;
       const todayWeight=number(previousTest?.set?.w);
       const todayMax=previousTest?e1rm(previousTest.exercise,previousTest.set,session,reg):null;
       const referenceMax=todayMax??stableOneRepMax;
-      if(referenceMax>0&&["external_total","machine_stack","per_dumbbell","per_side"].includes(p.loadType)){
+      if(referenceMax>0&&["external_total","machine_stack","per_dumbbell","per_side","bodyweight_added","bodyweight_assisted"].includes(p.loadType)){
         const name=String(e.n||"");
         const attempt=number(set.attempt??set.attemptNumber)??Number(name.match(/попытка\s*(\d+)/i)?.[1]||0);
         const stageFraction=[.5,.75,1][Math.min(2,Math.max(0,attempt-1))];
@@ -1530,16 +1576,16 @@
         if(previousTest){
           const used=number(previousTest.set.w),felt=effortRpe(previousTest.set);
           if(used>0){
-            if((felt!=null&&felt>=9.5)||todayReps===0)suggested=Math.min(suggested,used);
+            if((felt!=null&&felt>=9.5)||todayReps===0)suggested=p.loadType==='bodyweight_assisted'?Math.max(suggested,used):Math.min(suggested,used);
             else {
               const futureStages=Math.max(0,attempt-(number(previousTest.set.attemptNumber)||1)-1);
               const increments=(felt==null?1:felt<=7?3:felt<=8?2:1)+futureStages;
-              suggested=used;for(let i=0;i<increments;i++)suggested=moveWeight(suggested,1,p);
+              suggested=used;for(let i=0;i<increments;i++)suggested=moveWeight(suggested,p.loadType==='bodyweight_assisted'?-1:1,p);
             }
           }
         }
         if(suggested>0){
-          raw=suggested;projected=suggested;anomalous=false;testWeekSuggestion=true;
+          raw=suggested;projected=suggested;anomalous=false;nextSetSuggestion=null;testWeekSuggestion=true;
           action=previousTest&&(effortRpe(previousTest.set)>=9.5||todayReps===0)?"stop":"test_attempt";
           reason=`Тест: оценка 1ПМ ≈ ${Number(referenceMax.toFixed(1))} кг; ${Math.round(factor*1000)/10}% с округлением по шагу ${p.step} кг${previousTest?". Учтена выполненная попытка":""}. Следующую попытку выполняй только после оценки предыдущей`;
         }
@@ -1563,7 +1609,7 @@
       for(const id of methodRec.sessionIds)if(!ids.includes(id))ids.push(id);
       if(methodRec.live)nextSetSuggestion={weight:methodRec.weight,action:'method',reason:methodRec.reason};
     }
-    const ordinary=method(e,set)==='STANDARD'&&!testAttempt&&!isolationTest&&!backoff;
+    const ordinary=method(e,set)==='STANDARD'&&!testAttempt&&!testPreparation&&!isolationTest&&!backoff;
     const reasonCodes=[];
     let repetitionGoal=null;
     if(ordinary&&prior!=null&&!anomalous&&!deload){
@@ -1602,7 +1648,26 @@
       }else {raw=prior;action='hold';reason='Сначала заверши всю сопоставимую серию на верхней границе повторов';}
     }
     // The completed series informs strength, but cannot replace this week's target.
-    const weeklyCalculated=ordinary&&eligible&&weeklyApplied&&weeklyRaw!=null;
+    const weeklyCalculated=ordinary&&eligible&&weeklyApplied&&weeklyRaw!=null&&!peakRebase;
+    if(peakRebase){
+      const stages=(e.set||[]).filter(s=>setRole(e,s)==='standard');
+      const index=Math.max(0,stages.indexOf(set)),position=stages.length<=1?.5:.10+.80*index/(stages.length-1);
+      const low=Math.min(...corridor),high=Math.max(...corridor);
+      const estimate=p.loadType==='bodyweight_assisted'?high-(high-low)*position:low+(high-low)*position;
+      raw=roundWeight(estimate,p,'nearest');
+      const previous=currentRows.filter(x=>setRole(x.exercise,x.set)==='standard'&&loadComparable(e,x.exercise,reg,set,x.set)).at(-1);
+      if(previous){
+        const used=number(previous.set.w),felt=effortRpe(previous.set);
+        if(used!=null&&(performedReps(previous.exercise,previous.set)<range.lo||felt!=null&&felt>=9.5)){
+          const failure=performedReps(previous.exercise,previous.set)<range.lo;
+          raw=p.loadType==='bodyweight_assisted'?Math.max(raw,failure?moveWeight(used,1,p):used):Math.min(raw,failure?moveWeight(used,-1,p):used);
+        }
+      }
+      projected=raw;anomalous=false;nextSetSuggestion=null;
+      action='range_adjust';reasonCodes.length=0;reasonCodes.push('PEAK_REBASE');
+      reason=`Проходка ${index+1}/${stages.length}: расчёт от среднего 1ПМ ${Number(stableOneRepMax.toFixed(1))} кг в коридоре повторов и RPE/RIR, без ограничения прибавки от старых многоповторных подходов`;
+      if(previous&&raw<=number(previous.set.w))reason+='; учтён предыдущий тяжёлый подход, автоматическое повышение остановлено';
+    }
     if(weeklyCalculated){
       raw=weeklyRaw;anomalous=false;reasonCodes.length=0;
       action='range_adjust';reason='Среднее недельного диапазона округлено до ближайшего доступного веса';
@@ -1621,7 +1686,7 @@
       ? 'Процент недели расходится с повторами и целевым усилием; вес подобран по повторам и RPE/RIR' : null;
     if(conflict)reason+=`. ${conflict}`;
     let weight=(ids.length||testWeekSuggestion)&&!anomalous?roundWeight(raw,p,ids.length===1&&projected==null?"down":undefined):raw;
-    if(ordinary&&!weeklyCalculated&&!anomalous&&!deload&&prior!=null&&!reasonCodes.includes('INDIVIDUAL_SERIES_POLICY')){
+    if(ordinary&&!weeklyCalculated&&!peakRebase&&!anomalous&&!deload&&prior!=null&&!reasonCodes.includes('INDIVIDUAL_SERIES_POLICY')){
       const bounded=boundedProgression(weight,prior,p,changedRepBand);
       if(bounded.limited){weight=bounded.weight;reasonCodes.push('STEP_LIMIT');reason+='; прибавка ограничена доступным шагом и размером изменения';}
       // A rounded sub-step estimate is not itself evidence of progression.
@@ -1666,10 +1731,11 @@
       calculationVersion:p.correctionPolicy?541:469,
       correctionPolicy:p.correctionPolicy,
       reliable,
-      canApply:!(ordinary&&p.correctionPolicy?.blocked)&&!(nextSetSuggestion?.policyVersion===541&&['MANUAL_REVIEW','POLICY_REVIEW'].includes(nextSetSuggestion.reasonCode))&&(!set.weightMode||reliable)&&(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
+      canApply:action!=='stop'&&!(ordinary&&p.correctionPolicy?.blocked)&&!(nextSetSuggestion?.policyVersion===541&&['MANUAL_REVIEW','POLICY_REVIEW'].includes(nextSetSuggestion.reasonCode))&&(!set.weightMode||reliable)&&(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
       allowedWeightRange:corridor?{min:Math.min(...corridor),max:Math.max(...corridor)}:null,
       calculatedWeight:weeklyCalculated?weight:projected,
       weeklyCalculated:!!weeklyCalculated,
+      peakRebase:!!peakRebase,
       profileWarnings:prescription.warnings,
       scope:nextSetSuggestion?'next_set':'next_session',
       proposalKey:proposalFingerprint([p.correctionPolicy?541:469,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
