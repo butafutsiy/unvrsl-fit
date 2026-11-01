@@ -40,9 +40,10 @@
       <div class="wf-cardio-track" data-wf-cardio-track role="progressbar" aria-label="Прогресс кардио" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${fraction}"><i data-wf-cardio-progress style="width:${fraction}%"></i></div>
       <div class="wf-cardio-controls">${buttons}<button type="button" class="wf-cardio-reset" data-wf-cardio-action="reset" ${started?'':'disabled'}>Сбросить</button></div>
     </section>
-    ${metrics?`<section class="wf-cardio-metrics">${metrics}</section>`:''}
     <form class="wf-cardio-result" data-wf-form="cardio" data-token="${row.ei}:${row.si}">
-      <details class="wf-cardio-more"><summary>Фактические показатели <span>Время · Наклон · Ккал · RPE</span></summary><div class="wf-cardio-fields">
+      <details class="wf-cardio-more"><summary>Фактические показатели <span>Время · Наклон · Ккал · RPE</span></summary>
+      ${metrics?`<div class="wf-cardio-plan-label">По плану</div><section class="wf-cardio-metrics">${metrics}</section>`:''}
+      <div class="wf-cardio-fields">
         ${field('minutes','Время, мин','Автоматически','0.1')}
         ${field('distanceKm','Дистанция, км','Необязательно','0.01')}
         ${field('speedKmh','Скорость, км/ч','Необязательно','0.1')}
