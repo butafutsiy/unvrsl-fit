@@ -9,6 +9,7 @@
    record.id!=null&&record.calibrationParentId!=null&&
    Array.isArray(record.ex)&&record.ex.some(e=>(e.set||[]).some(s=>
      s?.ok===true&&Number(s.w)>0&&Number(s.actualReps??s.r)>0&&
+     (s.actualRir??s.rir)!=null&&String(s.actualRir??s.rir).trim()!==''&&
      Number(s.actualRir??s.rir)>=0&&Number(s.actualRir??s.rir)<=4));
  function owner(state,userId){
    return String(userId||state?.accountOwnerId||state?.cloudUserId||'');
