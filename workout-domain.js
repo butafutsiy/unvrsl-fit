@@ -28,7 +28,8 @@
     [88,90,3,3,5,8.5,9.5,60,65,4,15,20,7,8],
     [90,95,2,2,3,9,9.5,60,65,5,15,20,6,7],
     [95,100,2,1,2,9.5,10,60,65,5,15,20,5,6],
-    [100,105,1,1,1,10,10,0,0,0,0,0,0,0]
+    [100,105,1,1,1,10,10,0,0,0,0,0,0,0],
+    [105,110,1,1,1,10,10,0,0,0,0,0,0,0]
   ];
   function bandPrescription(pct, isolation=false) {
     const midpoint=(pct[0]+pct[1])/2;
@@ -1172,8 +1173,8 @@
     if (session?.programWeekUseIntensity === false && explicit==null) return null;
     let lo = explicit??number(s.targetIntensityMin??e.targetIntensityMin??session?.programWeekIntensityMin), hi = explicit??number(s.targetIntensityMax??e.targetIntensityMax??session?.programWeekIntensityMax);
     if (!(lo > 0) || !(hi > 0)) return null;
-    if (lo > 1) lo /= 100;
-    if (hi > 1) hi /= 100;
+    if (lo > 1.1) lo /= 100;
+    if (hi > 1.1) hi /= 100;
     lo = Math.max(.4, Math.min(1.1, lo)); hi = Math.max(.4, Math.min(1.1, hi));
     return { lo: Math.min(lo, hi), hi: Math.max(lo, hi) };
   }
@@ -1587,7 +1588,7 @@
       for(const id of methodRec.sessionIds)if(!ids.includes(id))ids.push(id);
       if(methodRec.live)nextSetSuggestion={weight:methodRec.weight,action:'method',reason:methodRec.reason};
     }
-    const ordinary=method(e,set)==='STANDARD'&&!testAttempt&&!isolationTest&&!backoff;
+    const ordinary=method(e,set)==='STANDARD'&&!testAttempt&&!testPreparation&&!isolationTest&&!backoff;
     const reasonCodes=[];
     let repetitionGoal=null;
     if(ordinary&&prior!=null&&!anomalous&&!deload){
