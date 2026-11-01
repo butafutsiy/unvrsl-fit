@@ -41,6 +41,7 @@ jobs:
             tests/client-free-workout-v554.test.cjs \
             tests/persistent-load-calibration-v557.test.cjs \
             tests/focus-cardio-v558.test.cjs \
+            tests/cardio-compact-v561.test.cjs \
             tests/program-day-effort-v545.test.cjs \
             tests/program-save.test.cjs \
             tests/program-flow-v386.test.cjs \
