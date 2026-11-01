@@ -196,6 +196,53 @@
     }
     @media(max-width:370px){#workout-focus .wf-rir{grid-template-columns:repeat(4,minmax(0,1fr))}}
     @media(max-width:335px){#workout-focus .wf-steps{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    /* Cardio focus: a dedicated, legible time-first experience. */
+    #workout-focus[data-cardio=true]{padding:0 16px calc(24px + env(safe-area-inset-bottom));background:var(--bg);overflow-y:auto}
+    #workout-focus[data-cardio=true] .wf-shell{max-width:520px;min-height:100dvh;padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+    #workout-focus[data-cardio=true] .wf-head{padding:calc(12px + env(safe-area-inset-top)) 0 14px;min-height:62px;margin-bottom:0;border:0;background:var(--bg)}
+    #workout-focus[data-cardio=true] .wf-brand{font-size:14px;letter-spacing:.01em}
+    #workout-focus[data-cardio=true] .wf-cardio-screen{display:flex;flex-direction:column;gap:14px;padding:clamp(12px,4dvh,36px) 0 14px}
+    #workout-focus .wf-cardio-overline{color:var(--wf-accent);font-size:10px;line-height:14px;font-weight:800;letter-spacing:.12em}
+    #workout-focus .wf-cardio-overline span{margin:0 6px;color:var(--muted)}
+    #workout-focus .wf-cardio-heading h2{font-size:clamp(27px,7vw,38px);line-height:1.14;letter-spacing:-.05em;margin:12px 0 8px;overflow-wrap:anywhere}
+    #workout-focus .wf-cardio-heading p{margin:0;color:var(--muted);font-size:13px}
+    #workout-focus .wf-cardio-heading p span{padding:0 4px}
+    #workout-focus .wf-cardio-clock-card{padding:22px 20px 20px;background:color-mix(in srgb,var(--wf-accent) 5%,var(--panel));border:1px solid color-mix(in srgb,var(--wf-accent) 18%,var(--line));border-radius:25px;box-shadow:none}
+    #workout-focus .wf-cardio-clock-top{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--muted);font-size:12px;font-weight:600}
+    #workout-focus .wf-cardio-clock-top span:last-child{color:var(--wf-accent);font-variant-numeric:tabular-nums}
+    #workout-focus .wf-cardio-countdown{font-variant-numeric:tabular-nums;font-size:clamp(68px,17vw,92px);font-weight:820;line-height:1.14;text-align:center;letter-spacing:-.065em;color:var(--text);padding:20px 0 0}
+    #workout-focus .wf-cardio-caption{text-align:center;color:var(--muted);font-size:10px;letter-spacing:.1em;font-weight:700;margin:0 0 22px}
+    #workout-focus .wf-cardio-phase{text-align:center;font-size:12px;font-weight:700;margin:-9px 0 15px;color:var(--wf-accent)}
+    #workout-focus .wf-cardio-track{width:100%;height:6px;border-radius:50px;background:color-mix(in srgb,var(--text) 10%,var(--panel));overflow:hidden}
+    #workout-focus .wf-cardio-track i{display:block;height:100%;border-radius:inherit;background:var(--wf-accent);transition:width .2s linear}
+    #workout-focus .wf-cardio-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,.48fr);gap:9px;margin-top:18px}
+    #workout-focus .wf-cardio-controls button{min-height:51px;border-radius:15px;font-size:14px;font-weight:800}
+    #workout-focus .wf-cardio-main-btn{background:var(--action);color:var(--action-text)}
+    #workout-focus .wf-cardio-reset{background:var(--panel);border:1px solid var(--line);color:var(--text)}
+    #workout-focus .wf-cardio-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:9px}
+    #workout-focus .wf-cardio-metrics>div{min-width:0;border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:13px 12px}
+    #workout-focus .wf-cardio-metrics small{display:block;font-size:11px;color:var(--muted);margin-bottom:6px}
+    #workout-focus .wf-cardio-metrics b{display:block;font-size:17px;font-weight:750;font-variant-numeric:tabular-nums;white-space:nowrap}
+    #workout-focus .wf-cardio-metrics em{font-size:11px;font-weight:500;font-style:normal;color:var(--muted)}
+    #workout-focus .wf-cardio-result{padding:16px;border:1px solid var(--line);border-radius:22px;background:var(--panel)}
+    #workout-focus .wf-cardio-result-title{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    #workout-focus .wf-cardio-result-title b{font-size:16px}
+    #workout-focus .wf-cardio-result-title span{font-size:10px;color:var(--muted);text-align:right;max-width:55%}
+    #workout-focus details.wf-cardio-more{margin:9px 0 0;color:var(--text)}
+    #workout-focus .wf-cardio-more summary{min-height:38px;display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:600}
+    #workout-focus .wf-cardio-more summary span{color:var(--wf-accent)}
+    #workout-focus .wf-cardio-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:12px}
+    #workout-focus .wf-cardio-fields label{min-width:0}
+    #workout-focus .wf-cardio-fields label>span{font-size:11px}
+    #workout-focus .wf-cardio-fields input{min-height:45px!important;font-size:15px!important;padding:10px!important;background:var(--panel)!important}
+    #workout-focus .wf-cardio-save{margin:10px 0 0;min-height:52px;font-size:14px}
+    #workout-focus .wf-cardio-links{display:flex;justify-content:center;gap:18px}
+    #workout-focus .wf-cardio-links button{background:transparent;color:var(--muted);font-size:12px;font-weight:600;text-decoration:underline;text-underline-offset:4px;padding:7px 4px}
+    #workout-focus .wf-cardio-nav{margin:0}
+    #workout-focus .wf-cardio-nav:not([open]){display:none}
+    #workout-focus .wf-cardio-nav summary{font-size:12px}
+    #workout-focus .wf-cardio-nav select{font-size:14px!important}
+    @media(max-width:360px){#workout-focus .wf-cardio-clock-card{padding:18px 15px}#workout-focus .wf-cardio-controls{grid-template-columns:1.15fr .75fr}#workout-focus .wf-cardio-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(min-width:760px){#workout-focus{padding-left:30px;padding-right:30px}}@media(prefers-reduced-motion:reduce){#workout-focus *{scroll-behavior:auto!important}}
   `;D.head.appendChild(style);
   function save(){try{if(W.save?.({draftOnly:true})===false)throw Error('Не удалось сохранить черновик');return true}catch(error){message(error.message||'Не удалось сохранить данные');return false}}
