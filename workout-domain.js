@@ -1899,7 +1899,7 @@
           last.ex.set.push(s);
         }
         changed=true;
-      }else if(role==='test_attempt'&&backoffs.length<desired&&tests.some(x=>!x.s.ok)){
+      }else if(role==='test_attempt'&&!session.testWeek&&!session.weeklyLoadProfile?.test&&Number(session.w)!==8&&backoffs.length<desired&&tests.some(x=>!x.s.ok)){
         const last=backoffs.at(-1)||tests.at(-1);
         for(let i=backoffs.length;i<desired;i++){
           const added=fresh(last.s,'backoff',i+1);
