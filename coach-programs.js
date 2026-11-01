@@ -104,6 +104,7 @@ function prescriptionText(e,pid=programUi?.pid,wi=programUi?.week){
  return s.map(x=>`${x.label||''} ${load(x)}×${x.r||'—'}`.trim()).join(' → ')
 }
 function programExerciseDetails(pid,wi,e){
+ if(e?.kind==='cardio'&&window.UNVRSLCardio)return window.UNVRSLCardio.summary(e);
  const text=prescriptionText(e,pid,wi);
  if(e.kind==='cardio'||e.workMode==='timer'||e.loadType==='time')return text;
  const q=window.programResolveExerciseParametersV381?.(pid,wi,e),pct=q?.defaults?.intensity;
@@ -150,11 +151,16 @@ function beginProgramDay(pid,wi,di){
  const ex=[],resolved=b=>typeof window.programResolveExerciseParametersV381==='function'?window.programResolveExerciseParametersV381(pid,wi,b):null;
  const effort=(b,q)=>{const min=q?.effort?.rpeMin??b.rpeMin??b.rpe??8,max=q?.effort?.rpeMax??b.rpeMax??b.rpe??8;return{target:Math.round(((min+max)/2)*2)/2,targetRpeMin:min,targetRpeMax:max,targetRirMin:Math.max(0,10-max),targetRirMax:Math.max(0,10-min)}};
  (window.WorkoutFocusFlow?.programEntries(d.ex)||d.ex).forEach(b=>{
-  if(b.kind==='cardio'){
+  if(b.kind==='cardio'||b.cardioMachineId){
     const seconds=Number(b.durationSec||b.workSeconds||b.sets?.[0]?.workSeconds)||0;
+    const duration=Math.max(1,Math.round(seconds||Number(b.cardio?.durationMin||30)*60));
     ex.push({n:b.n,d:b.note||'',kind:'cardio',mode:'timer',loadType:'time',sourceId:b.sourceId||null,
-      rest:b.rest||0,target:b.rpe||6,workSeconds:seconds,timedSeconds:seconds,
-      set:(b.sets||[{workSeconds:seconds}]).map((s,i)=>({n:i+1,workSeconds:Number(s.workSeconds)||seconds,rpe:'',ok:false}))});
+      rest:0,target:b.rpe||6,workSeconds:duration,timedSeconds:duration,
+      cardioMachineId:b.cardioMachineId||null,cardio:{...(b.cardio||{}),durationMin:duration/60},
+      set:(b.sets?.length?b.sets:[{workSeconds:duration}]).map((s,i)=>({
+        n:i+1,workSeconds:Number(s.workSeconds)||duration,
+        reportedKcal:s.reportedKcal??b.cardio?.reportedKcal??null,
+        weightKg:s.weightKg??b.cardio?.weightKg??null,rpe:'',ok:false}))});
     return;
   }
   const group=uid('g'),q=resolved(b),ef=effort(b,q),rest=q?.rest?.value??b.rest??90,tempo=(q?.tempo?.value??b.tempo)||'',equipment={programExerciseId:b.id||null,superGroup:b.superGroup||null,superPos:b.superPos,superSize:b.superSize,transitionSec:b.transitionSec,afterGroupRestSec:b.afterGroupRestSec,exerciseId:b.exerciseId||null,techniqueId:b.techniqueId||null,kind:b.kind||null,loadType:b.loadType||null,cycleManaged:b.cycleManaged||false,targetIntensityMin:b.targetIntensityMin,targetIntensityMax:b.targetIntensityMax,equipmentProfileId:b.equipmentProfileId||null,equipmentProfile:b.equipmentProfile||null};
