@@ -50,6 +50,21 @@ test('free workout separates cardio and strength forms and shows focused search'
  t.W.clientFreeWorkoutAddV334();
  assert.equal(t.state.clientFreeWorkoutDraftV334.user[0].kind,'cardio');
 });
+test('min and max repetitions share one accessible field while preserving their separate values',()=>{
+ const t=setup();t.W.clientFreeWorkoutOpenV334();
+ const form=t.output.at(-1);
+ assert.match(form,/class="cfw-reps-field" role="group" aria-label="Повторения"/);
+ assert.match(form,/class="cfw-reps-range"/);
+ assert.match(form,/id="cfwRepMin"[^>]*aria-label="Повторения от"/);
+ assert.match(form,/id="cfwRepMax"[^>]*aria-label="Повторения до"/);
+ assert.doesNotMatch(form,/<span>Повторы от<\/span>/);
+ t.search('жим штанги');
+ t.el('cfwRepMin').value='6';t.el('cfwRepMax').value='10';
+ t.W.clientFreeWorkoutAddV334();t.W.clientFreeWorkoutStartV334();
+ const e=t.state.programs[0].weeks[0].days[0].ex[0];
+ assert.equal(e.repMin,6);assert.equal(e.repMax,10);
+ assert.equal(e.sets[0].rMin,6);assert.equal(e.sets[0].rMax,10);
+});
 test('cardio steady mode creates one timed block without strength reps',()=>{
  const t=setup();t.search('беговая');t.el('cfwCardioMinutes').value='40';
  t.el('cfwCardioSpeed').value='7';t.el('cfwCardioKcal').value='300';
