@@ -86,7 +86,7 @@ test('ten-week progression has two working blocks, recovery and an explicit fina
   const spec=week.weeklyLoadProfile[e.kind==='isolation'?'isolation':'base'];
   assert.deepEqual([e.targetIntensityMin,e.targetIntensityMax],spec.pct);
  }
- assert.deepEqual(cycle.weeks[9].days[0].ex[0].sets.map(s=>[s.role,s.targetRepMin,s.targetRepMax]),[['test_preparation',2,3],['test_preparation',1,2],['test_attempt',1,1],['test_attempt',1,1],['test_attempt',1,1]]);
+ assert.deepEqual(cycle.weeks[9].days[0].ex[0].sets.map(s=>[s.role,s.targetRepMin,s.targetRepMax]),[['test_preparation',2,3],['test_preparation',1,2],['test_attempt',1,1],['test_attempt',1,1],['test_attempt',1,1],['backoff',5,6],['backoff',5,6]]);
 });
 
 test('automatic periods cover every manual length and all training-day counts',()=>{
@@ -124,9 +124,11 @@ test('peak recommendations use robust average e1RM instead of incomplete prior w
 test('generated testing ramps have multiple loads and stop escalating after a hard single',()=>{
  const cycle=A.generateCycle({weeks:8,daysPerWeek:3,startDate:'2026-09-01',exercises:[{exerciseId:'bench',n:'Жим',kind:'base',dayIndices:[0],weightMode:'auto',sets:[{w:120}]}]});
  const source=cycle.weeks.at(-1).days[0].ex[0];
- assert.deepEqual(source.sets.map(s=>s.role),['test_preparation','test_preparation','test_attempt','test_attempt','test_attempt']);
+ assert.deepEqual(source.sets.map(s=>s.role),['test_preparation','test_preparation','test_attempt','test_attempt','test_attempt','backoff','backoff']);
  assert.deepEqual(source.sets.filter(s=>s.role==='test_attempt').map(s=>s.attemptNumber),[1,2,3]);
  assert.deepEqual(source.sets.filter(s=>s.role==='test_preparation').map(s=>s.warmup),[true,true]);
+ assert.deepEqual(source.sets.map(s=>s.r),['','','','','','',''],'planned repetitions must be placeholders');
+ assert.deepEqual(source.sets.filter(s=>s.role==='backoff').map(s=>[s.backoffPercent,s.targetRepMin,s.targetRepMax]),[[80,5,6],[80,5,6]]);
  const old={id:'old-test',date:'2026-10-20',ended:1,ex:[{...ex('bench'),set:[work(120,8,9),work(120,8,9),work(120,8,9)]}]};
  const e={...source,n:'Жим',exerciseId:'bench',equipmentProfile:{weightStep:2.5},set:source.sets};
  const now={id:'test',date:'2026-11-01',w:8,testWeek:true,weeklyLoadProfile:cycle.weeks.at(-1).weeklyLoadProfile,ex:[e]};
