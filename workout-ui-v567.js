@@ -6,7 +6,23 @@
   const s=document.createElement('style');
   s.id='unvrsl-workout-ui-v567';
   s.textContent=`
-    /* Clean up the focus screen without changing its element order or behaviour. */
+    /* Cardio's main element must inherit the exact same canvas as strength focus.
+       A legacy white main/surface rule otherwise paints a full-height rectangle. */
+    html[data-theme="light"] body #workout-focus[data-cardio=true],
+    html[data-theme="light"] body #workout-focus[data-cardio=true] .wf-shell{
+      background-color:var(--bg)!important;
+      background-image:none!important;
+    }
+    html[data-theme="light"] body #workout-focus[data-cardio=true] main.wf-cardio-screen{
+      background:transparent!important;
+      background-color:transparent!important;
+      background-image:none!important;
+      border:0!important;
+      border-radius:0!important;
+      box-shadow:none!important;
+    }
+    /* Keep the timer and collapsible metrics as genuine raised cards. */
+        /* Clean up the focus screen without changing its element order or behaviour. */
     #workout-focus{font-variant-numeric:tabular-nums}
     #workout-focus .wf-close{display:grid;place-items:center;min-width:44px;width:44px;height:44px;border-radius:14px;background:var(--panel2);border:1px solid var(--line)}
     #workout-focus[data-cardio=true] .wf-cardio-screen{gap:12px!important;padding:8px 0 14px!important}
