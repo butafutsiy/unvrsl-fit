@@ -267,8 +267,20 @@
     if(changed){program.updated=program.updatedAt=Date.now();}
     return changed;
   }
+  // Deload/recovery weeks retain their recorded sets for history and tonnage,
+  // but cannot affect baseline strength, progression, fatigue or calibration.
+  // A light workout is not automatically a deload without a programme label.
+  function isRecoveryForAutoweight(session={}) {
+    if(session.deload===true||session.isDeload===true||
+       session.weeklyLoadProfile?.deload===true||session.loadProfile?.deload===true)return true;
+    const phase=String(session.weeklyLoadProfile?.phase||session.loadProfile?.phase||
+      session.phase||session.programWeekPhase||'').trim().toLowerCase();
+    if(phase==='deload'||phase==='recovery')return true;
+    const builtIn=!session.programId&&!session.planId&&!session.programName&&!!session.c;
+    return builtIn&&[4,6].includes(number(session.w??session.programWeekNumber));
+  }
   function fatigueSignals(rows) {
-    const recent=rows.slice(-2),signals=new Set();
+    const recent=rows.filter(x=>!isRecoveryForAutoweight(x.session||x.workout||{})).slice(-2),signals=new Set();
     for(const x of recent){if(x.actualRpe>x.targetRpe+.5)signals.add('effort');if(x.actualReps!=null&&x.actualReps<x.minReps)signals.add('reps');if(x.e1rm>0&&x.previousE1rm>0&&x.e1rm<x.previousE1rm*.95)signals.add('strength');if(x.techniqueFailed)signals.add('technique');if(x.fatigueHigh)signals.add('fatigue');if(x.wellbeing==='poor')signals.add('wellbeing');}
     if(recent.length===2&&recent.every(x=>x.skippedSets>0))signals.add('skipped');
     return {suggestDeload:signals.size>=2,signals:[...signals]};
@@ -800,6 +812,7 @@
     // different method on the SAME exercise, equipment and technique.
     // Never fold fatigued supersets into an ordinary strength baseline.
     const compatible=rows.filter(x=>
+      !isRecoveryForAutoweight(x.session)&&
       (!x.exercise.superGroup||basisMethod!=='STANDARD'&&!!e.superGroup||
        method(e,set)==='STANDARD'&&!!e.superGroup)&&
       loadComparable(e,x.exercise,reg,set,x.set)&&
@@ -816,8 +829,7 @@
       const position=Math.max(0,(x.exercise.set||[]).indexOf(x.set));
       const methodWeight=m==='STANDARD'?1:m==='UNVRSL'?({heavy:1,middle:.7,light:.3}[role]??.15):m==='DS'?(position===0?.55:.025):m==='FST-7'?(position===0?.3:.02):.12;
       const age=Math.max(0,(newest-sessionTime(x.session))/86400000);
-      const deload=x.session.deload||x.session.isDeload||(intensityBand(x.session)?.hi<=.7&&rpe!=null&&rpe<6);
-      const confidenceWeight=methodWeight*(reps<=5?1:reps<=8?.8:.45)*(rpe==null?.4:rpe<6?.04:1)*Math.pow(.5,age/35)*(deload?.02:1)/(1+position*.05);
+      const confidenceWeight=methodWeight*(reps<=5?1:reps<=8?.8:.45)*(rpe==null?.4:rpe<6?.04:1)*Math.pow(.5,age/35)/(1+position*.05);
       points.push({...x,value,confidenceWeight});
     }
     points.sort((a,b)=>sessionTime(b.session)-sessionTime(a.session));
@@ -1262,7 +1274,7 @@
     for(const x of rows){
       const r=performedReps(x.exercise,x.set),felt=effortRpe(x.set);
       if(method(x.exercise,x.set)!=='STANDARD'||setRole(x.exercise,x.set)!==setRole(e,s)||!sameTarget(e,s,x,current)||
-        !(r>=3&&r<=10&&felt>=7&&felt<=10)||x.session.deload||x.session.isDeload||x.session.readinessAdjusted)continue;
+        !(r>=3&&r<=10&&felt>=7&&felt<=10)||isRecoveryForAutoweight(x.session)||x.session.readinessAdjusted)continue;
       const age=sessionTime(current)-sessionTime(x.session);
       if(sessionTime(current)>1e11&&(age<0||age>56*86400000))continue;
       if((e.tempo||'')!==(x.exercise.tempo||'')||(e.rest||'')!==(x.exercise.rest||''))continue;
@@ -1307,25 +1319,29 @@
         before: sessionTime(session)>1e11?sessionTime(session):undefined,
       }),
       activeMethod=method(e,set),
-      strengthRows=activeMethod==='STANDARD'&&setRole(e,set)==='standard'?allHistory:
-        [...allHistory,...(session.ex||[]).flatMap(ex=>(ex.set||[]).filter(s=>complete(ex,s,reg)).map(s=>({exercise:ex,set:s,session})))],
+      // Recovery data remain visible in the workout journal, but cannot be
+      // the "last workout" used to set next week's working kilograms.
+      workingHistory=allHistory.filter(x=>!isRecoveryForAutoweight(x.session)),
+      strengthRows=activeMethod==='STANDARD'&&setRole(e,set)==='standard'?workingHistory:
+        [...workingHistory,...(session.ex||[]).flatMap(ex=>(ex.set||[]).filter(s=>complete(ex,s,reg)).map(s=>({exercise:ex,set:s,session})))],
       // The ordinary movement provides the strength baseline for UNVRSL,
       // SLDR, drop sets and FST-7, regardless of their method label.
       // Exercise identity, equipment, loading mode and technique still match.
       standardRows=activeMethod!=='STANDARD'&&['UNVRSL','SLDR','DS','FST-7'].includes(activeMethod)
-        ?allHistory.filter(x=>loadComparable(e,x.exercise,reg,set,x.set)&&method(x.exercise,x.set)==='STANDARD'&&setRole(x.exercise,x.set)==='standard'&&!x.exercise.superGroup&&!warmup(x.set))
+        ?workingHistory.filter(x=>loadComparable(e,x.exercise,reg,set,x.set)&&method(x.exercise,x.set)==='STANDARD'&&setRole(x.exercise,x.set)==='standard'&&!x.exercise.superGroup&&!warmup(x.set))
         :[],
       standardStrength=standardRows.length?strengthEstimate(e,standardRows,reg,[],set,'STANDARD'):null,
       baselineFromStandard=!!(standardStrength?.estimate>0),
       strength=baselineFromStandard?standardStrength:strengthEstimate(e,strengthRows,reg,[],set),
-      rows=allHistory.filter((x) => method(e,set)==='STANDARD'
+      rows=workingHistory.filter((x) => method(e,set)==='STANDARD'
         ? loadComparable(e,x.exercise,reg,set,x.set)&&method(x.exercise,x.set)==='STANDARD'
         : comparable(e, x.exercise, reg, set, x.set));
     const ids = [...new Set(rows.map((x) => x.session.id))].slice(0, 5),
       recent = rows.filter((x) => ids.includes(x.session.id));
     const latest = recent.filter((x) => x.session.id === ids[0]);
-    const excludedHistory=allHistory
+    const excludedHistory=workingHistory
       .find(x=>sessionTime(x.session)>sessionTime(latest[0]?.session)&&!loadComparable(e,x.exercise,reg,set,x.set));
+    const skippedRecovery=[...new Set(allHistory.filter(x=>isRecoveryForAutoweight(x.session)).map(x=>String(x.session.id||sessionDate(x.session))))];
     const excluded=excludedHistory?(()=>{
       const x=excludedHistory,oldEquipment=x.set.equipmentProfileId||x.exercise.equipmentProfileId||x.exercise.equipmentProfile?.id||x.exercise.machineId||'',newEquipment=set.equipmentProfileId||e.equipmentProfileId||e.equipmentProfile?.id||e.machineId||'';
       const reason=String(oldEquipment)!==String(newEquipment)?'другое оборудование':loadType(e,reg)!==loadType(x.exercise,reg)?'другой тип нагрузки':method(e,set)!==method(x.exercise,x.set)?'другой метод':phase(e,set)!==phase(x.exercise,x.set)?'другая фаза метода':'другая настройка снаряда';
@@ -1364,7 +1380,7 @@
     const analogous=eligible?groups.find(g=>{
       const evidence=seriesEvidence(e,set,session,g[0]?.session,reg);
       return evidence?.full&&evidence.effortKnown&&evidence.sameTarget&&evidence.uniform&&evidence.failed===0&&
-        !g[0].session.deload&&!g[0].session.isDeload&&!g[0].session.readinessAdjusted&&
+        !isRecoveryForAutoweight(g[0].session)&&!g[0].session.readinessAdjusted&&
         g.every(x=>(e.tempo||'')===(x.exercise.tempo||'')&&(e.rest||'')===(x.exercise.rest||''));
     }):null;
     const analogousMax=analogous?median(analogous.map(x=>e1rm(x.exercise,x.set,x.session,reg)).filter(x=>x>0)):null;
@@ -1754,6 +1770,8 @@
       weight,
       strengthBasis:baselineFromStandard?'standard':activeMethod==='STANDARD'?'standard':'method',
       series,calibration,reasonCodes,repetitionGoal,
+      recoveryEvidenceExcluded:skippedRecovery.length,
+      recoveryEvidenceLastDate:allHistory.find(x=>isRecoveryForAutoweight(x.session))?.session?sessionDate(allHistory.find(x=>isRecoveryForAutoweight(x.session)).session):null,
       analogousSessionId:analogous?.[0]?.session.id??null,
       calculationVersion:p.correctionPolicy?541:469,
       correctionPolicy:p.correctionPolicy,
@@ -2254,7 +2272,7 @@
     setRole,
     loadComparable,
     weekProfiles,
-    upgradePercentageWeeks,upgradeSessionVolume,allocateWeek,bandPrescription,cycleProfiles,dayRoles,validatePrescription,exerciseKind,applyWeekProfile,generateCycle,fatigueSignals,boundedProgression,
+    upgradePercentageWeeks,upgradeSessionVolume,allocateWeek,bandPrescription,cycleProfiles,dayRoles,validatePrescription,exerciseKind,applyWeekProfile,generateCycle,fatigueSignals,isRecoveryForAutoweight,boundedProgression,
     strengthEstimate,
     setDecision,
     effortTarget,

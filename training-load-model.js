@@ -97,7 +97,7 @@
             workoutRegistry,
             st.exerciseWeightProfiles || {},
           );
-          const observations=recommendationHistory().filter(x=>!x.isLoadCalibration&&x.id!==cur.id&&!x.pendingCompletion&&(!cur.userId||!x.userId||x.userId===cur.userId)&&(!cur.date||!x.date||x.date<=cur.date)).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).flatMap(old=>{
+          const observations=recommendationHistory().filter(x=>!A.isRecoveryForAutoweight(x)&&!x.isLoadCalibration&&x.id!==cur.id&&!x.pendingCompletion&&(!cur.userId||!x.userId||x.userId===cur.userId)&&(!cur.date||!x.date||x.date<=cur.date)).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).flatMap(old=>{
             const match=(old.ex||[]).find(x=>A.loadComparable(ex,x,workoutRegistry,set,x.set?.[0]||{})&&A.method(ex,set)===A.method(x,x.set?.[0]||{}));if(!match)return [];
             const done=(match.set||[]).filter(x=>A.complete(match,x,workoutRegistry)),target=A.effortTarget(match,done[0]||{},old),range=A.repRange(match,done[0]||{});
             const estimate=A.strengthEstimate(ex,A.history(ex,[old],workoutRegistry),workoutRegistry,[],set).estimate;
@@ -120,6 +120,8 @@
           // maths becomes available. Completed/manual/accepted weights stay.
           const livePeakUpgrade=rec.peakRebase===true&&set.weightSource==='auto'&&
             set.peakAutoRevision!==575&&!set.manualOverride&&!set.ok&&!set.skipped;
+          const recoveryUpgrade=rec.recoveryEvidenceExcluded>0&&set.weightSource==='auto'&&
+            set.recoveryAutoRevision!==577&&!set.manualOverride&&!set.ok&&!set.skipped;
           const liveBackoffUpdate=A.setRole(ex,set)==='backoff'&&set.weightSource==='auto'&&
             !rec.backoffPending&&rec.canApply!==false&&
             rec.proposalKey!==set.backoffAutoKey&&!set.ok&&!set.skipped&&!set.manualOverride;
@@ -127,7 +129,7 @@
               suggested > 0 && (rec.sessionIds.length > 0 || rec.nextSetSuggestion || rec.strength?.estimate > 0) &&
               set.recommendationDecision?.status !== 'applied' &&
               !set.dismissedRecommendation && !rec.planPreserved &&
-              (!set.autoInitialApplied||livePeakUpgrade||liveBackoffUpdate)) {
+              (!set.autoInitialApplied||livePeakUpgrade||liveBackoffUpdate||recoveryUpgrade)) {
             const before = set.w;
             const initialBase=rec.nextSetSuggestion?(ex.set||[]).filter(s=>s.ok&&!s.warmup).at(-1)?.w:null;
             const initialRec=rec.nextSetSuggestion&&rec.nextSetSuggestion.policyVersion!==541&&A.setRole(ex,set)!=='backoff'?{...rec,weeklyCalculated:false,nextSetSuggestion:null,weight:initialBase}:rec;
@@ -135,6 +137,7 @@
               set.plannedW = set.w;
               set.selectedW=set.w;set.autoInitialWeight=set.w;set.autoInitialApplied=true;
               if(rec.peakRebase)set.peakAutoRevision=575;
+              if(rec.recoveryEvidenceExcluded>0)set.recoveryAutoRevision=577;
               if(A.setRole(ex,set)==='backoff')set.backoffAutoKey=rec.proposalKey;
               if (before !== set.w) changed = weightsChanged = true;
             }

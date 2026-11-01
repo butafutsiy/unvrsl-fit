@@ -216,3 +216,54 @@ test('manual or completed repetitions of W8 are not erased by pending-set migrat
  assert.deepEqual(e.set.slice(0,3).map(s=>s.r),[3,1,1]);
  assert.equal(e.set.length,5);
 });
+
+
+test('recovery weeks remain in training history but do not alter e1RM or next working load',()=>{
+ const heavy={id:'heavy',date:'2026-10-05',ended:1,ex:[ex('bench',[
+  work(120,8,8),work(120,8,8.5),work(120,8,9)])]};
+ const easy={id:'recovery',date:'2026-10-12',w:4,c:'Middle',ended:1,
+  weeklyLoadProfile:{phase:'deload',deload:false,pct:[60,65]},
+  ex:[ex('bench',[work(80,12,6),work(80,12,6),work(80,12,6)])]};
+ const extra={id:'recovery-2',date:'2026-10-20',w:6,c:'Middle',ended:1,
+  weeklyLoadProfile:{phase:'recovery',pct:[65,70],deload:false},
+  ex:[ex('bench',[work(85,12,7),work(85,12,7)])]};
+ const s={w:7,id:'now',date:'2026-11-01',ex:[ex('bench',[target({w:120,programW:0,targetRepMin:3,targetRepMax:5,targetRpeMin:8.5,targetRpeMax:9.5})])]};
+ const baseline=A.recommend(s.ex[0],s.ex[0].set[0],s,[heavy],reg);
+ const after=A.recommend(s.ex[0],s.ex[0].set[0],s,[heavy,easy,extra],reg);
+ assert.equal(after.strength.estimate,baseline.strength.estimate);
+ assert.equal(after.previous,120,'last working load is not the deload 85 kg');
+ assert.equal(after.weight,baseline.weight);
+ assert.equal(A.recommendationWeight(after),A.recommendationWeight(baseline));
+ assert.equal(after.recoveryEvidenceExcluded,2);
+ assert.equal(after.recoveryEvidenceLastDate,'2026-10-20');
+ assert.equal(A.history(s.ex[0],[heavy,easy,extra],reg).length,8,'deload sets still exist for history and volume');
+});
+
+test('builtin W4/W6 recoveries are recognized without profile, manual light sessions are not',()=>{
+ assert.equal(A.isRecoveryForAutoweight({w:4,c:'A'}),true);
+ assert.equal(A.isRecoveryForAutoweight({w:6,c:'A'}),true);
+ assert.equal(A.isRecoveryForAutoweight({w:4,c:'A',programId:'custom'}),false);
+ assert.equal(A.isRecoveryForAutoweight({w:4,weeklyLoadProfile:{phase:'work'}}),false);
+ assert.equal(A.isRecoveryForAutoweight({programWeekIntensityMin:60,programWeekIntensityMax:65}),false);
+ assert.equal(A.isRecoveryForAutoweight({weeklyLoadProfile:{phase:'recovery',deload:false}}),true);
+ assert.equal(A.isRecoveryForAutoweight({phase:'deload',deload:false}),true);
+ assert.equal(A.isRecoveryForAutoweight({phase:'volume',deload:false}),false);
+});
+
+test('fatigue detection ignores low-load recovery rows without hiding real hard sessions',()=>{
+ const failure={session:{phase:'heavy'},actualRpe:10,targetRpe:8,actualReps:2,minReps:6};
+ const recovery={session:{phase:'recovery'},actualRpe:10,targetRpe:7,actualReps:4,minReps:10,techniqueFailed:true};
+ assert.equal(A.fatigueSignals([recovery]).suggestDeload,false);
+ assert.equal(A.fatigueSignals([failure,recovery]).suggestDeload,true);
+ assert.deepEqual(A.fatigueSignals([failure,recovery]).signals.sort(),['effort','reps']);
+});
+
+test('deload-only history does not masquerade as reliable strength evidence',()=>{
+ const easy={id:'easy',date:'2026-10-12',ended:1,phase:'deload',ex:[ex('bench',[work(85,10,7)])]};
+ const s={id:'now',date:'2026-10-20',ex:[ex('bench',[target({w:90,programW:90})])]};
+ const r=A.recommend(s.ex[0],s.ex[0].set[0],s,[easy],reg);
+ assert.equal(r.strength.estimate,null);
+ assert.equal(r.previous,null);
+ assert.equal(r.recoveryEvidenceExcluded,1);
+ assert.equal(r.canApply,true);
+});

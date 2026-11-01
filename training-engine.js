@@ -87,7 +87,7 @@
  W.trainingInitializeSetWeights=initializeSetWeights;
  async function ensureLoadModel(){
   if(W.trainingLoadModel292?.run)return true;
-  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=576';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
+  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=577';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
   for(let i=0;i<40;i++){if(W.trainingLoadModel292?.run)return true;await new Promise(r=>setTimeout(r,50))}
   return !!W.trainingLoadModel292?.run
  }
@@ -204,6 +204,7 @@
    if(rec.excludedHistory){const skip=document.createElement('div');skip.className='te410-week';skip.textContent=`Есть более новая тренировка ${rec.excludedHistory.date}, но она не объединена с этой: ${rec.excludedHistory.reason}. Проверь настройки упражнения и оборудования.`;metrics.append(skip)}
    if(rec.weeklyIntensity){const week=document.createElement('div');week.className='te410-week';const wi=rec.weeklyIntensity;week.textContent=`Неделя: ${fmt(wi.min)}–${fmt(wi.max)}%${wi.estimatedMin!=null?` · коридор ≈ ${fmt(wi.estimatedMin)}–${fmt(wi.estimatedMax)} кг`:''}${(rec.testWeekSuggestion||wi.applied)?' · учтено в весе':' · диапазон повторений имеет приоритет'}`;metrics.append(week)}
    if(rec.series){const series=document.createElement('div');series.className='te410-week';series.textContent=`Прошлая серия: ${rec.series.reps.join(' / ')} · ${rec.series.completed} из ${rec.series.planned} подходов${rec.repetitionGoal!=null?` · цель следующей серии: ${rec.repetitionGoal} повторений суммарно при заданном усилии`:''}`;metrics.append(series)}
+   if(rec.recoveryEvidenceExcluded>0){const note=document.createElement('div');note.className='te410-week';note.textContent=`Разгрузочных/восстановительных тренировок пропущено при расчёте: ${rec.recoveryEvidenceExcluded}${rec.recoveryEvidenceLastDate?` · последняя ${rec.recoveryEvidenceLastDate}`:''}. Результаты остаются в истории.`;metrics.append(note)}
    if(rec.calibration?.applied){const calibration=document.createElement('div');calibration.className='te410-week';calibration.textContent=`Личная поправка: ${Math.round((rec.calibration.factor-1)*1000)/10}% · проверено ${rec.calibration.samples} прошлых прогнозов`;metrics.append(calibration)}
    if(rec.conflict){const warning=document.createElement('div');warning.className='te410-week';warning.textContent=rec.conflict;metrics.append(warning)}
 
