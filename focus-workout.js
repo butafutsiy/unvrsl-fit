@@ -243,6 +243,33 @@
     #workout-focus .wf-cardio-nav summary{font-size:12px}
     #workout-focus .wf-cardio-nav select{font-size:14px!important}
     @media(max-width:360px){#workout-focus .wf-cardio-clock-card{padding:18px 15px}#workout-focus .wf-cardio-controls{grid-template-columns:1.15fr .75fr}#workout-focus .wf-cardio-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    /* Cardio focus only: lightweight iPhone layout with one main timer. */
+    #workout-focus[data-cardio=true]{padding:0 16px calc(15px + env(safe-area-inset-bottom))!important}
+    #workout-focus[data-cardio=true] .wf-shell{min-height:0!important;padding:0!important}
+    #workout-focus[data-cardio=true] .wf-head{padding:calc(7px + env(safe-area-inset-top)) 0 9px!important;min-height:54px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-screen{padding:7px 0 10px!important;gap:11px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-heading h2{font-size:clamp(26px,7vw,34px)!important;margin:9px 0 5px!important;line-height:1.13!important}
+    #workout-focus[data-cardio=true] .wf-cardio-heading p{font-size:12px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-overline{font-size:11px!important;letter-spacing:.045em!important;font-weight:750!important;color:var(--wf-accent)}
+    #workout-focus[data-cardio=true] .wf-cardio-clock-card{padding:15px 17px 16px!important;border-radius:22px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-clock-top{font-size:11px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-countdown{font-size:clamp(58px,16vw,76px)!important;padding:13px 0 0!important;letter-spacing:-.06em!important}
+    #workout-focus[data-cardio=true] .wf-cardio-caption{font-size:10px!important;margin-bottom:15px!important;letter-spacing:.035em!important}
+    #workout-focus[data-cardio=true] .wf-cardio-controls{margin-top:14px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-controls button{min-height:47px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-metrics{grid-template-columns:repeat(auto-fit,minmax(82px,1fr))!important;gap:7px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-metrics>div{padding:10px!important;border-radius:13px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-metrics b{font-size:14px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-result{border:0!important;background:transparent!important;padding:0!important;border-radius:0!important;margin:0!important}
+    #workout-focus[data-cardio=true] .wf-cardio-more{border:1px solid var(--line);border-radius:13px;padding:0 13px;margin:0!important;background:var(--panel)}
+    #workout-focus[data-cardio=true] .wf-cardio-more>summary{min-height:43px!important;display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--text);font-size:12px!important;text-align:left}
+    #workout-focus[data-cardio=true] .wf-cardio-more>summary span{font-size:10px!important;color:var(--muted)!important;font-weight:500}
+    #workout-focus[data-cardio=true] .wf-cardio-fields{padding-bottom:12px;gap:9px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-save{min-height:49px!important;margin:10px 0 0!important;border-radius:14px!important}
+    #workout-focus[data-cardio=true] .wf-cardio-links{gap:18px;margin-top:0}
+    #workout-focus[data-cardio=true] .wf-cardio-links button{font-size:12px!important;text-decoration:none!important;color:var(--muted)}
+    #workout-focus[data-cardio=true] .wf-cardio-nav:not([open]){display:none!important}
+    @media(max-width:360px){#workout-focus[data-cardio=true] .wf-cardio-clock-card{padding:14px!important}#workout-focus[data-cardio=true] .wf-cardio-more>summary span{font-size:9px!important}}
     @media(min-width:760px){#workout-focus{padding-left:30px;padding-right:30px}}@media(prefers-reduced-motion:reduce){#workout-focus *{scroll-behavior:auto!important}}
   `;D.head.appendChild(style);
   function save(){try{if(W.save?.({draftOnly:true})===false)throw Error('Не удалось сохранить черновик');return true}catch(error){message(error.message||'Не удалось сохранить данные');return false}}
