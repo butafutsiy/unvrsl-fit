@@ -28,3 +28,25 @@ test('prescribed loads and auto without reliable history stay unchanged',()=>{
  c.st.sessions=[];c.st.current.ex[0].programWeightMode='adaptive';c.st.current.ex[0].equipmentProfile={availableLoads:[20,35,50]};c.st.current.ex[0].set.forEach(s=>{s.w='';s.plannedW=''});
  c.trainingLoadModel292.run();assert.ok(c.st.current.ex[0].set.every(s=>s.w===''));
 });
+
+
+test('already-open W8 replaces stale untouched auto weights once without changing manual/completed',()=>{
+ const c=fixture(),ex=c.st.current.ex[0];
+ c.st.current.w=8;c.st.current.testWeek=true;c.st.current.programWeekIntensityMin=90;c.st.current.programWeekIntensityMax=100;
+ c.st.sessions=[{id:'old',date:'2026-10-02',ended:1,ex:[{...ex,set:[{w:120,r:8,actualReps:8,actualRpe:9,ok:true},{w:120,r:8,actualReps:8,actualRpe:9,ok:true},{w:120,r:8,actualReps:8,actualRpe:9,ok:true},{w:120,ok:false}]}]}];
+ ex.set=[
+  {w:120,weightMode:'auto',weightSource:'auto',autoInitialApplied:true,programW:0,targetRepMin:2,targetRepMax:3,targetRpeMin:9,targetRpeMax:9.5},
+  {w:120,weightMode:'auto',weightSource:'auto',autoInitialApplied:true,programW:0,targetRepMin:2,targetRepMax:3,targetRpeMin:9,targetRpeMax:9.5},
+  {w:147.5,weightMode:'auto',weightSource:'auto',autoInitialApplied:true,role:'test_attempt',attemptNumber:1,plannedReps:1,programW:0,targetRepMin:1,targetRepMax:1,targetRpeMin:9.5,targetRpeMax:10},
+  {w:125,weightMode:'auto',weightSource:'manual',manualOverride:true,programW:0,targetRepMin:2,targetRepMax:3,targetRpeMin:9,targetRpeMax:9.5}
+ ];
+ c.trainingLoadModel292.run();
+ const after=ex.set.map(s=>s.w);
+ assert.ok(after[0]>120&&after[1]>after[0],JSON.stringify(after));
+ assert.equal(ex.set[0].peakAutoRevision,575);
+ assert.equal(ex.set[1].peakAutoRevision,575);
+ assert.equal(after[2],147.5);
+ assert.equal(after[3],125);
+ for(let i=0;i<3;i++)c.trainingLoadModel292.run();
+ assert.deepEqual(ex.set.map(s=>s.w),after,'once upgraded, pending loads stay stable');
+});

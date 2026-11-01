@@ -114,16 +114,23 @@
           }
           // Auto mode fills pending loads; prescribed and manually edited loads
           // still require the explicit recommendation button.
+          // Live W8 sessions may have cached an old auto-generated 120 kg.
+          // Rebase each untouched pending AUTO load once when the new peak
+          // maths becomes available. Completed/manual/accepted weights stay.
+          const livePeakUpgrade=rec.peakRebase===true&&set.weightSource==='auto'&&
+            set.peakAutoRevision!==575&&!set.manualOverride&&!set.ok&&!set.skipped;
           if ((set.weightMode==='auto'||(!set.weightMode&&ex.programWeightMode === "adaptive")) &&
               suggested > 0 && (rec.sessionIds.length > 0 || rec.nextSetSuggestion || rec.strength?.estimate > 0) &&
               set.recommendationDecision?.status !== 'applied' &&
-              !set.dismissedRecommendation && !rec.planPreserved && !set.autoInitialApplied) {
+              !set.dismissedRecommendation && !rec.planPreserved &&
+              (!set.autoInitialApplied||livePeakUpgrade)) {
             const before = set.w;
             const initialBase=rec.nextSetSuggestion?(ex.set||[]).filter(s=>s.ok&&!s.warmup).at(-1)?.w:null;
             const initialRec=rec.nextSetSuggestion&&rec.nextSetSuggestion.policyVersion!==541?{...rec,weeklyCalculated:false,nextSetSuggestion:null,weight:initialBase}:rec;
             if ((!rec.nextSetSuggestion||A.number(initialBase)>0)&&A.applyAuto(set, initialRec)) {
               set.plannedW = set.w;
               set.selectedW=set.w;set.autoInitialWeight=set.w;set.autoInitialApplied=true;
+              if(rec.peakRebase)set.peakAutoRevision=575;
               if (before !== set.w) changed = weightsChanged = true;
             }
           }
