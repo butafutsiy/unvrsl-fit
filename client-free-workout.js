@@ -22,35 +22,96 @@
       return{id,name,kind:e.bp==='cardio'||!!e.cardioMachine?'cardio':'strength',cardioMachineId:e.cardioMachine?.id||null,body:String(body||''),equipment:String(equipment||''),target:String(target||''),search:norm([name,e.n,e.sourceName,...(Array.isArray(e.aliases)?e.aliases:[]),...aliases,body,equipment,target].join(' '))};
     }).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name,'ru'));
   }
-  function rows(){const items=draft();return items.length?items.map((x,i)=>`<article class="cfw-row"><div><b>${E(x.name)}</b><span>${x.sets} × ${x.repMin===x.repMax?x.repMin:`${x.repMin}–${x.repMax}`} · ${x.weightMode==='auto'?'автовес':E(WorkoutDomain.setLabel({exerciseId:x.exerciseId,n:x.name},{w:x.weight,r:x.repMin},workoutRegistry).split(' × ')[0])} · RPE ${String(x.rpe).replace('.',',')} · отдых ${x.rest} сек</span></div><button type="button" onclick="clientFreeWorkoutRemoveV334(${i})" aria-label="Удалить ${E(x.name)}">×</button></article>`).join(''):'<div class="cfw-empty">Добавь первое упражнение из нашей базы.</div>'}
-  let selectedExercise=null;
-  function builder(){
-    selectedExercise=null;
-    const items=catalogItems();
-    W.modal?.(`<div class="sheet-grabber"></div><div class="cfw-head"><div><div class="cfw-kicker">СВОБОДНЫЙ ФОРМАТ</div><h2>Собрать тренировку</h2><p>Упражнения и нагрузку выбираешь сам. Для собственного веса можно указать 0 кг. Автоподбор включается отдельно.</p></div><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="cfw-form"><div class="cfw-wide"><label for="cfwExercise"><span>Упражнение</span></label><input id="cfwExercise" type="search" placeholder="Поиск упражнения..." autocomplete="off" aria-label="Поиск упражнения"><div class="cfw-picker-meta" id="cfwPickerCount"></div><div id="cfwResults" class="cfw-picker-results" role="listbox" aria-label="Упражнения"></div><div id="cfwSelected" class="cfw-selected" hidden><span>Выбрано</span><b id="cfwSelectedName"></b><button type="button" id="cfwChange">Изменить</button></div></div><label><span>Подходы</span><input id="cfwSets" type="number" min="1" max="12" value="3"></label><label><span>Повторы от</span><input id="cfwRepMin" type="number" min="1" max="100" value="8"></label><label><span>Повторы до</span><input id="cfwRepMax" type="number" min="1" max="100" value="12"></label><label><span>Вес, кг</span><input id="cfwWeight" type="number" inputmode="decimal" min="0" max="999" step="any" value="0"></label><label><span>Подбор веса</span><select id="cfwWeightMode"><option value="manual">Вручную, включая 0 кг</option><option value="auto">Автоматически</option></select></label><label><span>RPE</span><select id="cfwRpe">${[7,7.5,8,8.5,9].map(x=>`<option value="${x}"${x===8?' selected':''}>${String(x).replace('.',',')}</option>`).join('')}</select></label><label><span>Отдых, сек</span><input id="cfwRest" type="number" min="15" max="600" step="15" value="90"></label></div><button class="btn full cfw-add" onclick="clientFreeWorkoutAddV334()">＋ Добавить упражнение</button><div id="cfwRows" class="cfw-rows">${rows()}</div><div class="cfw-actions"><button class="btn" onclick="clientFreeWorkoutClearV334()"${draft().length?'':' disabled'}>Очистить</button><button class="btn primary" onclick="clientFreeWorkoutStartV334()"${draft().length?'':' disabled'}>Начать тренировку</button></div>`);
-    const input=D.getElementById('cfwExercise'),results=D.getElementById('cfwResults'),count=D.getElementById('cfwPickerCount'),chosen=D.getElementById('cfwSelected');
-    if(!input||!results)return;
-    let visible=[];
-    const render=()=>{
-      const q=norm(input.value);
-      visible=items.filter(item=>!q||item.search.includes(q)||q.split(' ').every(token=>item.search.includes(token)));
-      count.textContent=q?`Найдено: ${visible.length}`:`Упражнений: ${items.length} · поиск по названию и алиасам`;
-      results.hidden=false;
-      results.innerHTML=visible.length?visible.map((item,i)=>`<button type="button" class="cfw-picker-option" role="option" data-cfw-index="${i}"><b>${E(item.name)}</b><small>${E([item.body,item.equipment,item.target].filter(Boolean).join(' · '))}</small></button>`).join(''):'<div class="cfw-picker-empty">Ничего не найдено</div>';
-    };
-    const choose=item=>{
-      if(!item)return;selectedExercise=item;input.value=item.name;results.hidden=true;chosen.hidden=false;
-      D.getElementById('cfwSelectedName').textContent=item.name;count.textContent='Упражнение выбрано';
-      const e=workoutRegistry.resolve({exerciseId:item.id,n:item.name});
-      if(e)D.getElementById('cfwWeight').step=WorkoutDomain.profile(e,workoutRegistry,st.exerciseWeightProfiles||{}).step;
-    };
-    results.addEventListener('click',event=>{const button=event.target.closest('[data-cfw-index]');if(button)choose(visible[Number(button.dataset.cfwIndex)])});
-    input.addEventListener('input',()=>{selectedExercise=null;chosen.hidden=true;render()});
-    input.addEventListener('keydown',event=>{if(event.key==='Enter'&&visible.length){event.preventDefault();choose(visible[0]);input.blur()}});
-    D.getElementById('cfwChange')?.addEventListener('click',()=>{selectedExercise=null;chosen.hidden=true;input.value='';render();input.focus({preventScroll:true})});
-    render();
-  }
-  function readNumber(id,fallback,min,max){const n=N(D.getElementById(id)?.value);return n==null?fallback:Math.max(min,Math.min(max,n))}
+function rows(){
+  const items=draft();
+  const identity=x=>x.kind==='cardio'||!!(W.UNVRSLCardio?.lookup(x.name)?.cardioMachine);
+  if(!items.length)return '<div class="cfw-empty">Пока нет упражнений. Выбери первое движение выше.</div>';
+  return items.map((x,i)=>{
+    const cardio=identity(x);
+    const cfg=x.cardio||{durationMin:30,mode:'steady',intensity:'moderate',rpe:5};
+    const data=cardio
+      ? W.UNVRSLCardio?.summary({n:x.name,cardio:cfg,cardioMachineId:x.cardioMachineId})||`${cfg.durationMin||30} мин · RPE ${cfg.rpe||5}`
+      : `${x.sets} × ${x.repMin===x.repMax?x.repMin:`${x.repMin}–${x.repMax}`} · ${x.weightMode==='auto'?'Автовес':E(WorkoutDomain.setLabel({exerciseId:x.exerciseId,n:x.name},{w:x.weight,r:x.repMin},workoutRegistry).split(' × ')[0])} · RPE ${String(x.rpe).replace('.',',')}`;
+    return `<article class="cfw-row"><div class="cfw-row-icon" aria-hidden="true">${cardio?'◷':'⌑'}</div><div class="cfw-row-info"><small>${cardio?'Кардио':'Силовое'}</small><b>${E(x.name)}</b><span>${E(data)}</span></div><button type="button" onclick="clientFreeWorkoutRemoveV334(${i})" aria-label="Удалить ${E(x.name)}">×</button></article>`;
+  }).join('');
+}
+    let selectedExercise=null;
+function builder(){
+  selectedExercise=null;
+  const items=catalogItems();
+  W.modal?.(`<div class="sheet-grabber"></div>
+    <div class="cfw-head"><div><div class="cfw-kicker">СВОБОДНАЯ ТРЕНИРОВКА</div><h2>Собрать тренировку</h2></div><button class="btn tiny" onclick="closeModal()" aria-label="Закрыть">✕</button></div>
+    <section class="cfw-surface cfw-pick">
+      <div class="cfw-section-title"><span class="cfw-step">01</span><b>Упражнение</b></div>
+      <div id="cfwSearchBox"><input id="cfwExercise" type="search" placeholder="Найти упражнение..." autocomplete="off" aria-label="Поиск упражнения"><div class="cfw-picker-meta" id="cfwPickerCount">Начни вводить название</div><div id="cfwResults" class="cfw-picker-results" hidden role="listbox" aria-label="Упражнения"></div></div>
+      <div id="cfwSelected" class="cfw-selected" hidden><div><small id="cfwSelectedType">Силовое</small><b id="cfwSelectedName"></b></div><button type="button" id="cfwChange">Изменить</button></div>
+    </section>
+    <section id="cfwStrengthBox" class="cfw-surface" hidden>
+      <div class="cfw-section-title"><span class="cfw-step">02</span><b>Силовая нагрузка</b></div>
+      <div class="cfw-form"><label><span>Подходы</span><input id="cfwSets" type="number" inputmode="numeric" min="1" max="12" value="3"></label><label><span>Повторы от</span><input id="cfwRepMin" type="number" inputmode="numeric" min="1" max="100" value="8"></label><label><span>Повторы до</span><input id="cfwRepMax" type="number" inputmode="numeric" min="1" max="100" value="12"></label><label><span>RPE</span><select id="cfwRpe">${[6,6.5,7,7.5,8,8.5,9,9.5,10].map(x=>`<option value="${x}"${x===8?' selected':''}>${String(x).replace('.',',')}</option>`).join('')}</select></label><label><span>Рабочий вес</span><input id="cfwWeight" type="number" inputmode="decimal" min="0" max="999" step="any" value="0"></label><label><span>Отдых, сек</span><input id="cfwRest" type="number" inputmode="numeric" min="15" max="600" step="15" value="90"></label></div>
+      <label class="cfw-mode-field"><span>Подбор веса</span><select id="cfwWeightMode"><option value="manual">Задать вручную</option><option value="auto">Автоматически по истории</option></select></label><p class="cfw-note" id="cfwWeightNote">Для упражнений с собственным весом можно указать 0 кг.</p>
+    </section>
+    <section id="cfwCardioBox" class="cfw-surface" hidden>
+      <div class="cfw-section-title"><span class="cfw-step">02</span><b>Кардионагрузка</b></div>
+      <div class="cfw-form"><label class="cfw-wide"><span>Режим</span><select id="cfwCardioMode"><option value="steady">Непрерывное кардио</option><option value="interval">Интервальное кардио</option><option value="distance">По дистанции</option></select></label>
+      <label id="cfwCardioMinutesBox"><span>Время, мин</span><input id="cfwCardioMinutes" type="number" inputmode="decimal" min="1" max="1440" step="0.5" value="30"></label>
+      <label><span>Целевой RPE</span><select id="cfwCardioRpe">${[2,3,4,5,6,7,8,9,10].map(x=>`<option value="${x}" ${x===5?'selected':''}>${x}</option>`).join('')}</select></label>
+      <label class="cfw-wide"><span>Интенсивность</span><select id="cfwCardioIntensity"><option value="light">Лёгкая</option><option value="moderate" selected>Умеренная</option><option value="vigorous">Высокая</option></select></label></div>
+      <div id="cfwCardioIntervalFields" class="cfw-form cfw-interval-form" hidden><label><span>Раундов</span><input id="cfwCardioRounds" type="number" inputmode="numeric" min="1" max="100" value="8"></label><label><span>Работа, сек</span><input id="cfwCardioWork" type="number" inputmode="numeric" min="1" max="3600" value="30"></label><label><span>Отдых, сек</span><input id="cfwCardioRest" type="number" inputmode="numeric" min="0" max="3600" value="60"></label></div>
+      <details class="cfw-more"><summary>Дополнительные показатели</summary><div class="cfw-form">
+        <label><span>Дистанция, км</span><input id="cfwCardioDistance" type="number" inputmode="decimal" min="0" max="1000" step=".01"></label>
+        <label><span>Скорость, км/ч</span><input id="cfwCardioSpeed" type="number" inputmode="decimal" min="0" max="40" step=".1"></label>
+        <label><span>Наклон, %</span><input id="cfwCardioIncline" type="number" inputmode="decimal" min="0" max="25" step=".5"></label>
+        <label><span>Сопротивление</span><input id="cfwCardioResistance" type="number" inputmode="decimal" min="0" max="100"></label>
+        <label><span>Мощность, Вт</span><input id="cfwCardioPower" type="number" inputmode="numeric" min="0" max="3000"></label>
+        <label><span>Пульс, уд/мин</span><input id="cfwCardioHr" type="number" inputmode="numeric" min="0" max="250"></label>
+        <label><span>Калории с тренажёра</span><input id="cfwCardioKcal" type="number" inputmode="numeric" min="0" max="10000"></label>
+        <label><span>Масса тела, кг</span><input id="cfwCardioMass" type="number" inputmode="decimal" min="0" max="500" step=".1"></label>
+      </div></details><p class="cfw-note">Калории рассчитываются приблизительно по MET или берутся из показаний тренажёра.</p>
+    </section>
+    <button id="cfwAdd" class="btn full cfw-add" onclick="clientFreeWorkoutAddV334()" disabled>＋ Добавить упражнение</button>
+    <section class="cfw-draft"><div class="cfw-section-title"><b>Твоя тренировка</b><span id="cfwDraftCount">${draft().length} упр.</span></div><div id="cfwRows" class="cfw-rows">${rows()}</div></section>
+    <div class="cfw-actions"><button class="btn cfw-clear" onclick="clientFreeWorkoutClearV334()"${draft().length?'':' disabled'}>Очистить</button><button class="btn primary" onclick="clientFreeWorkoutStartV334()"${draft().length?'':' disabled'}>Начать тренировку</button></div>`);
+  const input=D.getElementById('cfwExercise'),results=D.getElementById('cfwResults'),count=D.getElementById('cfwPickerCount'),chosen=D.getElementById('cfwSelected');
+  if(!input||!results)return;
+  let visible=[];
+  const render=()=>{
+    const q=norm(input.value);
+    if(q.length<2){visible=[];results.hidden=true;count.textContent="Введи минимум 2 символа для поиска";return}
+    visible=items.filter(item=>item.search.includes(q)||q.split(' ').every(token=>item.search.includes(token))).slice(0,35);
+    count.textContent=visible.length?`Найдено: ${visible.length}${visible.length===35?' · уточни запрос':''}`:'Ничего не найдено';
+    results.hidden=false;
+    results.innerHTML=visible.map((item,i)=>`<button type="button" class="cfw-picker-option" role="option" data-cfw-index="${i}"><b>${E(item.name)}</b><small>${E(item.kind==='cardio'?'Кардио':[item.body,item.equipment].filter(Boolean).join(' · '))}</small></button>`).join('');
+  };
+  const choose=item=>{
+    if(!item)return;
+    selectedExercise=item;input.value=item.name;results.hidden=true;
+    D.getElementById('cfwSearchBox').hidden=true;chosen.hidden=false;D.getElementById('cfwSelectedName').textContent=item.name;D.getElementById('cfwSelectedType').textContent=item.kind==='cardio'?'Кардио':'Силовое';
+    D.getElementById('cfwStrengthBox').hidden=item.kind==='cardio';
+    D.getElementById('cfwCardioBox').hidden=item.kind!=='cardio';
+    D.getElementById('cfwAdd').disabled=false;
+    if(item.kind!=='cardio'){
+      const exercise=workoutRegistry.resolve({exerciseId:item.id,n:item.name});
+      if(exercise)D.getElementById('cfwWeight').step=WorkoutDomain.profile(exercise,workoutRegistry,st.exerciseWeightProfiles||{}).step||'any';
+    }
+  };
+  results.addEventListener('click',event=>{const button=event.target.closest('[data-cfw-index]');if(button)choose(visible[Number(button.dataset.cfwIndex)])});
+  input.addEventListener('input',()=>{selectedExercise=null;chosen.hidden=true;render()});
+  input.addEventListener('keydown',event=>{if(event.key==='Enter'&&visible.length){event.preventDefault();choose(visible[0]);input.blur()}});
+  D.getElementById('cfwChange')?.addEventListener('click',()=>{selectedExercise=null;chosen.hidden=true;D.getElementById('cfwSearchBox').hidden=false;D.getElementById('cfwStrengthBox').hidden=true;D.getElementById('cfwCardioBox').hidden=true;D.getElementById('cfwAdd').disabled=true;input.value='';render();input.focus({preventScroll:true})});
+  D.getElementById('cfwCardioMode')?.addEventListener('change',()=>{
+    const interval=D.getElementById('cfwCardioMode').value==='interval';
+    D.getElementById('cfwCardioIntervalFields').hidden=!interval;
+    D.getElementById('cfwCardioMinutesBox').hidden=interval;
+  });
+  D.getElementById('cfwWeightMode')?.addEventListener('change',()=>{
+    const auto=D.getElementById('cfwWeightMode').value==='auto';
+    D.getElementById('cfwWeight').disabled=auto;
+    D.getElementById('cfwWeightNote').textContent=auto?'Рабочий вес будет рекомендован по истории.':'Для упражнений с собственным весом можно указать 0 кг.';
+  });
+  render();
+}
+    function readNumber(id,fallback,min,max){const n=N(D.getElementById(id)?.value);return n==null?fallback:Math.max(min,Math.min(max,n))}
   W.clientFreeWorkoutOpenV334=builder;
   W.clientFreeWorkoutAddV334=function(){
     const match=selectedExercise;if(!match)return W.toast?.('Выбери упражнение из списка');
