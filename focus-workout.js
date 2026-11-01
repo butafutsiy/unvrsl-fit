@@ -459,7 +459,7 @@
           equipmentProfileId:e.equipmentProfileId||null};
         save();
         W.trainingLoadModel292?.run?.(true);
-        const next=e.set?.find(x=>!x.ok&&!x.skipped),suggested=A.recommendationWeight(next?.recommendation);
+        const next=e.set?.find(x=>!x.ok&&!x.skipped),suggested=next?.recommendation?A.recommendationWeight(next.recommendation):null;
         s.focusState.notice=suggested>0
           ?`Тестовые подходы сохранены. Предварительный рабочий вес: ${A.weightText(e,suggested,reg,next)} кг. Дальше уточняем по рабочим подходам.`
           :`Тестовые подходы сохранены для упражнения. Расчётный 1ПМ: ${strength?.estimate?Number(strength.estimate.toFixed(1))+' кг':'пока предварительный'}. Продолжи тренировку.`;
