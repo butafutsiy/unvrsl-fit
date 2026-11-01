@@ -59,7 +59,7 @@
       if(!card||used.has(card))continue;
       used.add(card);
       let holder=card.querySelector(`[data-cardio-brief-ei="${ei}"]`);
-      if(holder){const doc=D.createElement('div');doc.innerHTML=brief(e,s,ei);holder.querySelector('.uw-cardio-facts')?.replaceWith(doc.firstElementChild.querySelector('.uw-cardio-facts'));continue;}
+      if(holder){const doc=D.createElement('div');doc.innerHTML=brief(e,s,ei);const oldFacts=holder.querySelector('.uw-cardio-facts'),newFacts=doc.firstElementChild.querySelector('.uw-cardio-facts');if(oldFacts&&newFacts&&oldFacts.outerHTML!==newFacts.outerHTML)oldFacts.replaceWith(newFacts);continue;}
       const compactRow=card.querySelector('.cardio-compact-row');
       const first=card.querySelector(':scope > .row.between')||card.querySelector('.exname,.cardio-name,.cardio-compact-title')||card.firstElementChild;
       if(compactRow)compactRow.insertAdjacentHTML('beforebegin',brief(e,s,ei));
@@ -90,6 +90,24 @@
   W.addEventListener('unvrsl:workout-rendered',mount);
   const base=W.unvrslCardioEdit;
   if(typeof base==='function')W.unvrslCardioEdit=function(){const value=base.apply(this,arguments);mount();return value;};
+  // Training lists are rebuilt by several independent modules, not all of which
+  // emit the workout-rendered event. Reattach the facts after those rebuilds.
+  let mountScheduled=false;
+  function scheduleMount(){
+    if(mountScheduled)return;
+    mountScheduled=true;
+    requestAnimationFrame(()=>{mountScheduled=false;mount();});
+  }
+  const startRoot=D.getElementById('start');
+  if(startRoot&&typeof MutationObserver==='function'){
+    const observer=new MutationObserver(changes=>{
+      if(!startRoot.classList.contains('active'))return;
+      if(changes.some(change=>change.type==='childList'&&(change.addedNodes.length||change.removedNodes.length)))scheduleMount();
+    });
+    observer.observe(startRoot,{childList:true,subtree:true});
+  }
+  W.addEventListener('unvrsl:modules-ready',scheduleMount);
+  W.addEventListener('unvrsl:app-ready',scheduleMount);
   queueMicrotask(mount);
-  window.addEventListener('pageshow',()=>queueMicrotask(mount));
+  window.addEventListener('pageshow',scheduleMount);
 })();
