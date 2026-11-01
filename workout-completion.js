@@ -33,6 +33,7 @@
         ["Упражнения", r.exerciseCount],
         ["Рабочие подходы", r.setCount],
         ["Объём", volume],
+        ...(W.UNVRSLCardio?.sessionCalories(s)?[["Кардио, ккал",`${W.UNVRSLCardio.sessionCalories(s).estimated?'≈ ':''}${W.UNVRSLCardio.sessionCalories(s).kcal}`]]:[]),
       ]
         .map(([label, v]) => `<div><small>${label}</small><b>${v}</b></div>`)
         .join(
