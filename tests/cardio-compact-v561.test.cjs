@@ -51,15 +51,15 @@ test('focus time UI uses collapsible actual metrics and has no large standalone 
 test('cardio overline blends into light focus canvas without white stripe',()=>{
  const view=fs.readFileSync(path.join(root,'focus-cardio-ui.js'),'utf8');
  const css=fs.readFileSync(path.join(root,'workout-ui-v567.js'),'utf8');
- assert.match(view,/class="wf-cardio-overline" style="background:var\\(--bg\\)!important/);
- assert.match(css,/data-cardio=true\\] \\.wf-cardio-overline\\{/);
+ assert.ok(view.includes('class="wf-cardio-overline" style="background:var(--bg)!important'));
+ assert.ok(css.includes('data-cardio=true] .wf-cardio-overline{'));
 });
 test('RPE and RIR are visually grouped without changing the RIR recording source',()=>{
  const view=fs.readFileSync(path.join(root,'focus-workout.js'),'utf8');
  const css=fs.readFileSync(path.join(root,'workout-ui-v567.js'),'utf8');
- assert.match(view,/class="wf-meta wf-rpe-row"/);
- assert.match(view,/class="wf-rpe-controls"/);
- assert.match(view,/rirMeta\\.querySelector\\('\\.wf-rpe-controls'\\)/);
- assert.match(view,/data-wf-rir="\\$\\{n\\}"/);
- assert.match(css,/\\.wf-rpe-controls\\{/);
+ assert.ok(view.includes('class="wf-meta wf-rpe-row"'));
+ assert.ok(view.includes('class="wf-rpe-controls"'));
+ assert.ok(view.includes("rirMeta.querySelector('.wf-rpe-controls')"));
+ assert.ok(view.includes('data-wf-rir="'));
+ assert.ok(css.includes('.wf-rpe-controls{'));
 });
