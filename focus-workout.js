@@ -446,6 +446,25 @@
       for(const ex of s.ex)for(const x of ex.set||[]){const r=x.recommendation;if(ex.programWeightMode==='adaptive'&&r?.sessionIds?.length&&A.applyAuto(x,r))ex.weightDecision='calibrated';}
       view='focus';
     }
+    // Keep validated test sets across sessions and abandoned workouts.
+    // This stores evidence, not a fake completed workout; exercise, equipment,
+    // technique and user ownership remain part of the saved comparison key.
+    if(ev&&W.unvrslCalibrationLibrary){
+      const registered=W.unvrslCalibrationLibrary.record(state(),ev,W.cloud?.user?.id||state()?.accountOwnerId);
+      if(registered.ok){
+        const strength=A.strengthEstimate(e,A.history(e,[ev],reg),reg,[],target);
+        e.firstLoadCalibration={id:ev.id,date:ev.date,
+          estimatedOneRepMax:strength?.estimate||null,confidence:'низкая',
+          samples:ev.ex?.[0]?.set?.length||0,
+          equipmentProfileId:e.equipmentProfileId||null};
+        save();
+        W.trainingLoadModel292?.run?.(true);
+        const next=e.set?.find(x=>!x.ok&&!x.skipped),suggested=A.recommendationWeight(next?.recommendation);
+        s.focusState.notice=suggested>0
+          ?`Тестовые подходы сохранены. Предварительный рабочий вес: ${A.weightText(e,suggested,reg,next)} кг. Дальше уточняем по рабочим подходам.`
+          :`Тестовые подходы сохранены для упражнения. Расчётный 1ПМ: ${strength?.estimate?Number(strength.estimate.toFixed(1))+' кг':'пока предварительный'}. Продолжи тренировку.`;
+      }
+    }
     d.committed=true;save();W.startPage?.();render();
   }
   root.addEventListener('toggle',event=>{if(!event.target.matches?.('[data-wf-warmup]')||!session())return;const f=session().focusState;if(f.warmupOpen!==event.target.open){f.warmupOpen=event.target.open;save();}},true);
