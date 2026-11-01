@@ -133,7 +133,8 @@ test('generated testing ramps have multiple loads and stop escalating after a ha
  const e={...source,n:'Жим',exerciseId:'bench',equipmentProfile:{weightStep:2.5},set:source.sets};
  const now={id:'test',date:'2026-11-01',w:8,testWeek:true,weeklyLoadProfile:cycle.weeks.at(-1).weeklyLoadProfile,ex:[e]};
  const weights=e.set.map(s=>A.recommendationWeight(A.recommend(e,s,now,[old],reg)));
- assert.ok(weights.every(w=>w>0));
+ assert.ok(weights.slice(0,5).every(w=>w>0));
+ assert.deepEqual(weights.slice(5),[0,0],'back-off weight is unavailable until a real test result');
  assert.ok(weights[0]<weights[1]&&weights[1]<weights[2]&&weights[2]<=weights[3]&&weights[3]<=weights[4],
    'prep and 1RM attempts must form an increasing staged ramp');
  const firstTest=e.set[2];Object.assign(firstTest,{w:weights[2],ok:true,r:1,actualReps:1,actualRpe:9.5});
