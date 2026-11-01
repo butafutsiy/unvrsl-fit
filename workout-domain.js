@@ -1540,26 +1540,39 @@
     let testWeekSuggestion=false;
     const backoff=setRole(e,set)==="backoff";
     let backoffPreview=false;
+    let backoffPending=false;
     if(backoff){
-      const completedTest=currentRows.filter(x=>['test_attempt','isolation_test'].includes(setRole(x.exercise,x.set))&&performedReps(x.exercise,x.set)>0);
-      let best=completedTest.length?Math.max(...completedTest.map(x=>number(x.set.w)||0)):0;
-      if(!best){
-        const plannedTest=(session.ex||[]).flatMap(ex=>(ex.set||[]).map(s=>({ex,s}))).find(x=>loadComparable(e,x.ex,reg,set,x.s)&&setRole(x.ex,x.s)==='test_attempt');
-        if(plannedTest){const preview=recommend(plannedTest.ex,plannedTest.s,session,sessions,reg,overrides);best=preview.weight;backoffPreview=best>0;}
-      }
-      if(best>0&&!bodyLoad){
-        const fraction=number(set.backoffPercent)!=null?Math.max(.1,Math.min(1,number(set.backoffPercent)/100)):/70%/.test(String(e.n||""))?.70:.72;
+      const completedTest=currentRows.filter(x=>
+        ['test_attempt','isolation_test'].includes(setRole(x.exercise,x.set))&&
+        performedReps(x.exercise,x.set)>0&&!x.set.techniqueFailed);
+      // The volume block is based on a RECORDED result, never a preview
+      // or the prescribed weight of a still-incomplete maximal attempt.
+      const achieved=completedTest.map(x=>{
+        const reps=performedReps(x.exercise,x.set);
+        return reps===1?loadForEstimate(x.exercise,x.set,session,reg):
+          e1rm(x.exercise,x.set,session,reg);
+      }).filter(v=>v>0);
+      const best=achieved.length?Math.max(...achieved):null;
+      if(best>0){
+        const fraction=number(set.backoffPercent)!=null?Math.max(.1,Math.min(1,number(set.backoffPercent)/100)):0.8;
+        const proposed=fromEstimateLoad(best*fraction,e,session,reg);
         const repCap=stableOneRepMax>0?fromEstimateLoad(stableOneRepMax/(1+(targetReps+10-(targetMin+target)/2)/30),e,session,reg):null;
-        const suggested=roundWeight(Math.min(best*fraction,repCap??Infinity),p,"down");
-        if(suggested>0){
+        const inverse=p.loadType==='bodyweight_assisted';
+        const effective=repCap==null?proposed:inverse?Math.max(proposed,repCap):Math.min(proposed,repCap);
+        const suggested=roundWeight(effective,p,inverse?'up':'down');
+        if(suggested!=null&&suggested>=0){
           raw=suggested;projected=suggested;anomalous=false;nextSetSuggestion=null;testWeekSuggestion=true;
-          action="backoff";reason=`Back-off: ${Math.round(fraction*100)}% ${backoffPreview?'от предполагаемой тестовой попытки':'от лучшей выполненной тестовой попытки'} ${best} кг, с учётом шага ${p.step} кг`;
+          action="backoff";
+          reason=`Объём после проходки: ${Math.round(fraction*100)}% от подтверждённого результата ${Number(best.toFixed(1))} кг. ${range.lo}–${range.hi} повторений, RPE ${targetMin}–${target}. Вес округлён по оборудованию`;
         }
+      }else{
+        raw=0;projected=null;anomalous=false;nextSetSuggestion=null;backoffPending=true;
+        action='await_test';reason='Выполни и отметь контрольную попытку: после записи повторений рассчитаются два объёмных подхода';
       }
     }
     if(backoff){
       const previousBackoff=currentRows.filter(x=>setRole(x.exercise,x.set)==='backoff').at(-1);
-      if(previousBackoff){nextSetSuggestion=setDecision(e,previousBackoff.set,session,p,set);raw=nextSetSuggestion.weight;anomalous=false;}
+      if(previousBackoff&&!backoffPending){nextSetSuggestion=setDecision(e,previousBackoff.set,session,p,set);raw=nextSetSuggestion.weight;anomalous=false;}
     }
     if(testPreparation){
       // Preparatory sets deliberately use different submaximal loads. They
@@ -1744,7 +1757,7 @@
       calculationVersion:p.correctionPolicy?541:469,
       correctionPolicy:p.correctionPolicy,
       reliable,
-      canApply:action!=='stop'&&!(ordinary&&p.correctionPolicy?.blocked)&&!(nextSetSuggestion?.policyVersion===541&&['MANUAL_REVIEW','POLICY_REVIEW'].includes(nextSetSuggestion.reasonCode))&&(!set.weightMode||reliable)&&(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
+      canApply:action!=='stop'&&!backoffPending&&!(ordinary&&p.correctionPolicy?.blocked)&&!(nextSetSuggestion?.policyVersion===541&&['MANUAL_REVIEW','POLICY_REVIEW'].includes(nextSetSuggestion.reasonCode))&&(!set.weightMode||reliable)&&(!weeklyCalculated||weight!=null)&&!requiresEffort&&!['AMRAP','EMOM','AFAP','HIIT'].includes(method(e,set)),
       allowedWeightRange:corridor?{min:Math.min(...corridor),max:Math.max(...corridor)}:null,
       calculatedWeight:weeklyCalculated?weight:projected,
       weeklyCalculated:!!weeklyCalculated,
@@ -1761,6 +1774,7 @@
       planPreserved: anomalous,
       testWeekSuggestion,
       backoffPreview,
+      backoffPending,
       wellbeingApplied,
       wellbeingResolved:true,
       nextSetSuggestion,
@@ -1894,7 +1908,9 @@
       const stopped=completed.some(x=>performedReps(x.ex,x.s)<repRange(x.ex,x.s).lo||effortRpe(x.s)>=9.5||x.s.techniqueFailed||x.s.stopTest);
       const successful=completed.filter(x=>performedReps(x.ex,x.s)>=repRange(x.ex,x.s).lo&&!x.s.techniqueFailed).length;
       for(const [i,x] of backoffs.entries()){
-        const omit=stopped&&i>=successful;
+        // A hard successful single stops further maximal attempts, not the
+        // two lighter volume sets. Only a test with no valid result omits them.
+        const omit=role==='test_attempt'?stopped&&successful===0:stopped&&i>=successful;
         if(!x.s.ok&&!x.s.manualOverride&&x.s.weightSource!=='manual'&&Boolean(x.s.testOmitted)!==omit){x.s.testOmitted=omit;x.s.skipped=omit;changed=true}
       }
       for(const x of tests){const omit=stopped&&!x.s.ok;if(!x.s.ok&&!x.s.manualOverride&&x.s.weightSource!=='manual'&&Boolean(x.s.testOmitted)!==omit){x.s.testOmitted=omit;x.s.skipped=omit;changed=true}}
