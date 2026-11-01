@@ -32,6 +32,8 @@ test('aerobike 480 sec displays an 08:00 cardio face, not strength field',()=>{
  assert.match(html,/Темп/);
  assert.match(html,/Равномерный/);
  assert.match(html,/Калории/);
+ assert.match(html,/<div class="wf-cardio-heading" style="background:transparent!important;/);
+ assert.match(html,/<div class="wf-cardio-links" style="background:transparent!important;/);
  // Planned metrics remain accessible but do not interrupt the focus timer.
  const detailAt=html.indexOf('<details class="wf-cardio-more"');
  const metricsAt=html.indexOf('<section class="wf-cardio-metrics"');
