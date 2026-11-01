@@ -31,7 +31,7 @@ test('aerobike 480 sec displays an 08:00 cardio face, not strength field',()=>{
  assert.match(html,/class="wf-cardio-metrics"/);
  assert.match(html,/Темп/);
  assert.match(html,/Равномерный/);
- assert.match(html,/Калории/);
+ assert.match(html,/Ккал/);
  assert.doesNotMatch(html,/RPE|RIR/);
  assert.match(html,/<div class="wf-cardio-heading" style="background:transparent!important;/);
  assert.match(html,/<div class="wf-cardio-links" style="background:transparent!important;/);
