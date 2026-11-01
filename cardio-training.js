@@ -17,11 +17,11 @@
   const lookup=name=>catalog().find(x=>x?.cardioMachine?.id===name||x?.n===name||x?.id===name);
   const isCardio=x=>!!(x?.cardioMachineId||x?.cardioMachine||x?.kind==='cardio'||x?.loadType==='time'||lookup(x?.n)?.cardioMachine);
   const machine=ex=>lookup(ex?.cardioMachineId||ex?.n)?.cardioMachine||null;
-  const defaults=Object.freeze({mode:'steady',intensity:'moderate',durationMin:30,distanceKm:null,speedKmh:null,inclinePct:0,resistance:null,powerWatts:null,heartRate:null,rounds:5,workSeconds:60,restSeconds:60,reportedKcal:null,weightKg:null});
+  const defaults=Object.freeze({mode:'steady',intensity:'moderate',durationMin:30,distanceKm:null,targetKcal:null,speedKmh:null,inclinePct:0,resistance:null,powerWatts:null,heartRate:null,rounds:5,workSeconds:60,restSeconds:60,reportedKcal:null,weightKg:null});
   function settings(ex){
     const old=ex?.cardio||{},first=ex?.sets?.[0]||ex?.set?.[0]||{};
     return {...defaults,...old,
-      durationMin:positive(old.durationMin??(numeric(ex?.durationSec)!=null?Number(ex.durationSec)/60:null)??(numeric(first.workSeconds)!=null?Number(first.workSeconds)/60:null),1440)??30,
+      durationMin:['distance','calories'].includes(old.mode)?positive(old.durationMin,1440):(positive(old.durationMin??(numeric(ex?.durationSec)!=null?Number(ex.durationSec)/60:null)??(numeric(first.workSeconds)!=null?Number(first.workSeconds)/60:null),1440)??30),
       reportedKcal:positive(first.reportedKcal??old.reportedKcal,10000),
       weightKg:positive(first.weightKg??old.weightKg,500)};
   }
@@ -74,8 +74,11 @@
     return {kcal:Math.round(gross),activeKcal:Math.round(active),source:'met',met:Number(met.toFixed(1)),weight,minutes:period.totalMin};
   }
   function summary(ex){
-    const c=settings(ex),d=duration(c),parts=[`${fmt(d.totalMin)} мин`];
-    if(positive(c.distanceKm))parts.push(`${fmt(c.distanceKm,2)} км`);
+    const c=settings(ex),d=duration(c),parts=[];
+    if(c.mode==='calories'&&positive(c.targetKcal))parts.push(`Цель ${fmt(c.targetKcal,0)} ккал`);
+    else if(c.mode==='distance'&&positive(c.distanceKm))parts.push(`Цель ${fmt(c.distanceKm,2)} км`);
+    else if(d.totalMin>0)parts.push(`${fmt(d.totalMin)} мин`);
+    if(c.mode!=='distance'&&positive(c.distanceKm))parts.push(`${fmt(c.distanceKm,2)} км`);
     if(positive(c.speedKmh))parts.push(`${fmt(c.speedKmh)} км/ч`);
     if(positive(c.powerWatts))parts.push(`${fmt(c.powerWatts,0)} Вт`);
     if(c.mode==='interval')parts.push(`${c.rounds} интервалов`);
@@ -90,7 +93,7 @@
     const p=W.programById?.(x.pid),day=p?.weeks?.[x.wi]?.days?.[x.di];
     const existing=x.existingIndex!=null?day?.ex?.[x.existingIndex]:null;
     const data=settings(existing||{cardioMachineId:lookup(x.n)?.cardioMachine?.id});
-    const labels={steady:'Непрерывно',interval:'Интервалы',distance:'Дистанция'};
+    const labels={steady:'Непрерывно',interval:'Интервалы',distance:'По дистанции',calories:'По калориям'};
     const modes=Object.entries(labels).map(([v,label])=>`<option value="${v}" ${data.mode===v?'selected':''}>${label}</option>`).join('');
     const levels=[['light','Лёгкая'],['moderate','Умеренная'],['vigorous','Высокая']].map(([v,t])=>`<option value="${v}" ${data.intensity===v?'selected':''}>${t}</option>`).join('');
     const close=`openProgramEditor('${encodeURIComponent(x.pid)}',${x.wi},${x.di})`;
@@ -101,7 +104,8 @@
         <label class="cardio-field"><span>Режим</span><select id="cardioMode">${modes}</select></label>
         <label class="cardio-field"><span>Интенсивность</span><select id="cardioIntensity">${levels}</select></label>
         ${input('cardioMinutes','Длительность, мин',data.durationMin)}
-        ${input('cardioDistance','Дистанция, км',data.distanceKm,'number','0.1')}
+        ${input('cardioDistance','Дистанция, км (цель для режима по дистанции)',data.distanceKm,'number','0.1')}
+        ${input('cardioTargetKcal','Цель, ккал (для режима по калориям)',data.targetKcal,'number','1')}
         ${input('cardioSpeed','Скорость, км/ч',data.speedKmh,'number','0.1')}
         ${input('cardioGrade','Наклон, %',data.inclinePct)}
         ${input('cardioResistance','Уровень сопротивления',data.resistance)}
@@ -125,7 +129,7 @@
     const intensity=v('cardioIntensity')||'moderate';
     const n=(id,max)=>positive(v(id),max),optional=(id,max)=>between(v(id),0,max);
     const data={
-      mode,intensity,durationMin:n('cardioMinutes',1440),
+      mode,intensity,durationMin:['distance','calories'].includes(mode)?null:n('cardioMinutes',1440),targetKcal:mode==='calories'?n('cardioTargetKcal',10000):null,
       distanceKm:n('cardioDistance',1000),speedKmh:n('cardioSpeed',40),
       inclinePct:optional('cardioGrade',25),resistance:optional('cardioResistance',100),
       powerWatts:n('cardioPower',3000),heartRate:n('cardioHr',250),
@@ -134,10 +138,11 @@
       restSeconds:Math.round(optional('cardioRest',3600)||0),
       reportedKcal:n('cardioKcal',10000),weightKg:n('cardioMass',500)
     };
-    if(!data.durationMin&&mode!=='interval'){W.toast?.('Укажи время кардио');return}
+    if(!data.durationMin&&mode==='steady'){W.toast?.('Укажи время кардио');return}
     if(mode==='distance'&&!data.distanceKm){W.toast?.('Укажи дистанцию');return}
+    if(mode==='calories'&&!data.targetKcal){W.toast?.('Укажи цель в ккал');return}
     const old=x.existingIndex!=null?day.ex[x.existingIndex]:null,oldSet=old?.sets?.[0]||{};
-    const durationSec=Math.max(1,Math.round(duration(data).totalMin*60));
+    const durationSec=['distance','calories'].includes(mode)?0:Math.max(1,Math.round(duration(data).totalMin*60));
     const row={
       ...(old||{}),id:old?.id||W.uid?.('pex')||`cardio-${Date.now()}`,
       n:x.name,sourceId:x.sourceId||old?.sourceId||null,
@@ -162,7 +167,7 @@
       estimateResult.source==='machine'?`${fmt(estimateResult.kcal,0)} ккал · тренажёр`:
       `≈ ${fmt(estimateResult.kcal,0)} ккал · MET ${fmt(estimateResult.met)} (оценка)`;
     const row=(key,label,val,step='1')=>`<label class="cardio-field"><span>${label}</span><input type="number" inputmode="decimal" min="0" step="${step}" value="${esc(val??'')}" onchange="unvrslCardioEdit(${ei},'${key}',this.value)"></label>`;
-    return `<div class="exercise cardio-workout" data-cardio-exercise="${ei}"><div class="row between"><div class="grow"><div class="exname">${esc(ex.n)}</div><div class="muted small">${esc(data.mode==='interval'?'Интервалы':data.mode==='distance'?'Дистанция':'Непрерывно')}</div></div></div>
+    return `<div class="exercise cardio-workout" data-cardio-exercise="${ei}"><div class="row between"><div class="grow"><div class="exname">${esc(ex.n)}</div><div class="muted small">${esc(data.mode==='interval'?'Интервалы':data.mode==='distance'?'Дистанция':data.mode==='calories'?'Калории':'Непрерывно')}</div></div></div>
       <div class="cardio-form-grid">
        ${row('durationMin','Время, мин',data.durationMin,'0.5')}
        ${row('distanceKm','Дистанция, км',data.distanceKm,'0.1')}
