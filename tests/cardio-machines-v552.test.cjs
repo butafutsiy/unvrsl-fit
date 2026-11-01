@@ -23,14 +23,17 @@ test('eleven machines have unique IDs, linked barefoot static illustrations, and
     assert.ok(e.coaching.cues.length>=3&&e.coaching.mistakes.length>=3);
     assert.ok(e.cardioMachine.met.moderate>1);
     assert.equal(w.UNVRSLCardio.isCardio(e),true);
-    assert.equal(e.image,`assets/cardio-illustrations.svg#${e.cardioMachine.id}`);
+    assert.equal(e.image,`assets/cardio/${e.cardioMachine.id}.svg`);
     assert.equal(e.gif,'');
   }
   assert.equal(w.UNVRSL_EXERCISES.length,200);
   assert.ok(!w.UNVRSL_EXERCISES.some(e=>['cardio:upper-body-ergometer','cardio:versaclimber'].includes(e.id)));
-  const fs=require('node:fs'),asset=fs.readFileSync(require('node:path').join(__dirname,'..','assets','cardio-illustrations.svg'),'utf8');
-  assert.ok(asset.includes('data:image/webp;base64,'));
-  for(const e of rows)assert.ok(asset.includes(`id="${e.cardioMachine.id}"`));
+  const fs=require('node:fs'),path=require('node:path');
+  for(const e of rows){
+    const asset=fs.readFileSync(path.join(__dirname,'..',e.image),'utf8');
+    assert.ok(asset.includes('data:image/webp;base64,'),e.id);
+    assert.ok(asset.includes('viewBox='),e.id);
+  }
 });
 test('gross MET calories require a real body mass and report estimation',()=>{
   const w=context(),ex={n:'Эллиптический тренажёр',cardioMachineId:'elliptical'};
