@@ -24,7 +24,7 @@ test('W1-W7 use one approved base/isolation prescription table',()=>{
   });
   const testWeek=Domain.weekProfiles[8];
   assert.equal(testWeek.test,true);
-  assert.equal(testWeek.base.sets,5);
+  assert.equal(testWeek.base.sets,7);
   assert.equal(testWeek.isolation.sets,0);
 });
 
