@@ -1549,12 +1549,13 @@
       // or the prescribed weight of a still-incomplete maximal attempt.
       const achieved=completedTest.map(x=>{
         const reps=performedReps(x.exercise,x.set);
-        return reps===1?loadForEstimate(x.exercise,x.set,session,reg):
+        return setRole(x.exercise,x.set)==='isolation_test'||reps===1
+          ?loadForEstimate(x.exercise,x.set,session,reg):
           e1rm(x.exercise,x.set,session,reg);
       }).filter(v=>v>0);
       const best=achieved.length?Math.max(...achieved):null;
       if(best>0){
-        const fraction=number(set.backoffPercent)!=null?Math.max(.1,Math.min(1,number(set.backoffPercent)/100)):0.8;
+        const fraction=number(set.backoffPercent)!=null?Math.max(.1,Math.min(1,number(set.backoffPercent)/100)):/70%/.test(String(e.n||''))?.70:.80;
         const proposed=fromEstimateLoad(best*fraction,e,session,reg);
         const repCap=stableOneRepMax>0?fromEstimateLoad(stableOneRepMax/(1+(targetReps+10-(targetMin+target)/2)/30),e,session,reg):null;
         const inverse=p.loadType==='bodyweight_assisted';
@@ -1888,7 +1889,7 @@
         }
       }
       let backoffs=entries().filter(x=>setRole(x.ex,x.s)==='backoff');
-      if(role==='test_attempt'&&backoffs.length<2&&tests.some(x=>!x.s.skipped)){
+      if(role==='test_attempt'&&(session.testWeek||session.weeklyLoadProfile?.test||Number(session.w)===8)&&backoffs.length<2&&tests.some(x=>!x.s.skipped)){
         const last=backoffs.at(-1)||tests.at(-1);
         for(let i=backoffs.length;i<2;i++){
           const s=fresh({w:0,programW:0,r:''},'backoff',i+1);
@@ -1896,6 +1897,15 @@
             plannedReps:6,targetRepMin:5,targetRepMax:6,
             targetRpeMin:7,targetRpeMax:8,backoffPercent:80,testGenerated:true});
           last.ex.set.push(s);
+        }
+        changed=true;
+      }else if(role==='test_attempt'&&backoffs.length<desired&&tests.some(x=>!x.s.ok)){
+        const last=backoffs.at(-1)||tests.at(-1);
+        for(let i=backoffs.length;i<desired;i++){
+          const added=fresh(last.s,'backoff',i+1);
+          added.backoffPercent=number(last.s.backoffPercent)??70;
+          added.targetRpeMin=7;added.targetRpeMax=8;
+          last.ex.set.push(added);
         }
         changed=true;
       }else if(!backoffs.length&&role==='isolation_test'){
@@ -1910,7 +1920,7 @@
       for(const [i,x] of backoffs.entries()){
         // A hard successful single stops further maximal attempts, not the
         // two lighter volume sets. Only a test with no valid result omits them.
-        const omit=role==='test_attempt'?stopped&&successful===0:stopped&&i>=successful;
+        const omit=role==='test_attempt'&&(session.testWeek||session.weeklyLoadProfile?.test||Number(session.w)===8)?stopped&&successful===0:stopped&&i>=successful;
         if(!x.s.ok&&!x.s.manualOverride&&x.s.weightSource!=='manual'&&Boolean(x.s.testOmitted)!==omit){x.s.testOmitted=omit;x.s.skipped=omit;changed=true}
       }
       for(const x of tests){const omit=stopped&&!x.s.ok;if(!x.s.ok&&!x.s.manualOverride&&x.s.weightSource!=='manual'&&Boolean(x.s.testOmitted)!==omit){x.s.testOmitted=omit;x.s.skipped=omit;changed=true}}
