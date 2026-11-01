@@ -120,6 +120,17 @@
       </div>
       <p class="muted small">Калории: показание тренажёра или оценка по MET и массе тела. Не прибавляются автоматически к калорийности питания.</p>
       <button class="btn primary full" onclick="unvrslCardioSave()">${existing?'Сохранить':'Добавить в программу'}</button>`);
+    const modeSelect=W.document?.getElementById('cardioMode');
+    const syncMode=()=>{
+      const mode=modeSelect?.value;
+      const show=(id,visible)=>{const field=W.document?.getElementById(id)?.closest('label');if(field)field.hidden=!visible;};
+      show('cardioMinutes',mode==='steady');
+      show('cardioTargetKcal',mode==='calories');
+      show('cardioRounds',mode==='interval');
+      show('cardioWork',mode==='interval');
+      show('cardioRest',mode==='interval');
+    };
+    modeSelect?.addEventListener('change',syncMode);syncMode();
   }
   function saveProgram(){
     const x=W.__unvrslCardioEditing,p=W.programById?.(x?.pid),day=p?.weeks?.[x?.wi]?.days?.[x?.di];
@@ -166,8 +177,9 @@
     const info=estimateResult.kcal==null?'Для оценки ккал укажи массу тела':
       estimateResult.source==='machine'?`${fmt(estimateResult.kcal,0)} ккал · тренажёр`:
       `≈ ${fmt(estimateResult.kcal,0)} ккал · MET ${fmt(estimateResult.met)} (оценка)`;
+    const goalText=data.mode==='calories'&&positive(data.targetKcal)?` · Цель ${fmt(data.targetKcal,0)} ккал`:data.mode==='distance'&&positive(data.distanceKm)?` · Цель ${fmt(data.distanceKm,2)} км`:'';
     const row=(key,label,val,step='1')=>`<label class="cardio-field"><span>${label}</span><input type="number" inputmode="decimal" min="0" step="${step}" value="${esc(val??'')}" onchange="unvrslCardioEdit(${ei},'${key}',this.value)"></label>`;
-    return `<div class="exercise cardio-workout" data-cardio-exercise="${ei}"><div class="row between"><div class="grow"><div class="exname">${esc(ex.n)}</div><div class="muted small">${esc(data.mode==='interval'?'Интервалы':data.mode==='distance'?'Дистанция':data.mode==='calories'?'Калории':'Непрерывно')}</div></div></div>
+    return `<div class="exercise cardio-workout" data-cardio-exercise="${ei}"><div class="row between"><div class="grow"><div class="exname">${esc(ex.n)}</div><div class="muted small">${esc(data.mode==='interval'?'Интервалы':data.mode==='distance'?'Дистанция':data.mode==='calories'?'Калории':'Непрерывно')}${esc(goalText)}</div></div></div>
       <div class="cardio-form-grid">
        ${row('durationMin','Время, мин',data.durationMin,'0.5')}
        ${row('distanceKm','Дистанция, км',data.distanceKm,'0.1')}
