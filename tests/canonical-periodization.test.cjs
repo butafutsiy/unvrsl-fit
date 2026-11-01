@@ -148,3 +148,24 @@ test('above 100% input survives normalization without authorizing an unsafe forc
  assert.ok(A.recommendationWeight(r)<r.strength.estimate,'no automatic 105–110% attempt from an unverified estimated 1RM');
  assert.deepEqual(A.bandPrescription([105,110]).pct,[105,110]);
 });
+
+
+test('old three-set W8 live workout rebases both pending 2-3 rep loads from average 1RM',()=>{
+ const history=[{id:'old',date:'2026-10-01',ended:1,ex:[{...ex('bench'),set:[
+  work(120,8,9),work(120,8,9),work(120,8,9),{w:120,ok:false}
+ ]}]}];
+ const sets=[
+  {w:120,weightMode:'auto',weightSource:'auto',autoInitialApplied:true,targetRepMin:2,targetRepMax:3,targetRpeMin:9,targetRpeMax:9.5},
+  {w:120,weightMode:'auto',weightSource:'auto',autoInitialApplied:true,targetRepMin:2,targetRepMax:3,targetRpeMin:9,targetRpeMax:9.5},
+  {w:147.5,weightMode:'auto',weightSource:'auto',role:'test_attempt',attemptNumber:1,plannedReps:1,targetRepMin:1,targetRepMax:1,targetRpeMin:9.5,targetRpeMax:10}
+ ];
+ const e={...ex('bench',sets),kind:'base',programWeightMode:'adaptive',equipmentProfile:{weightStep:2.5}};
+ const now={id:'live',w:8,date:'2026-11-01',testWeek:true,ex:[e]};
+ const first=A.recommend(e,sets[0],now,history,reg);
+ const second=A.recommend(e,sets[1],now,history,reg);
+ assert.equal(first.peakRebase,true);
+ assert.ok(first.strength.estimate>145);
+ assert.ok(A.recommendationWeight(first)>120);
+ assert.ok(A.recommendationWeight(second)>A.recommendationWeight(first));
+ assert.equal(first.canApply,true);
+});
