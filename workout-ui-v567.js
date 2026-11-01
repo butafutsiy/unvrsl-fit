@@ -38,6 +38,20 @@
       background:transparent!important;
       box-shadow:none!important;
     }
+    /* No white strip behind the cardio overline in light mode. */
+    html[data-theme="light"] body #workout-focus[data-cardio=true] .wf-cardio-overline{
+      background:var(--bg)!important;
+      background-color:var(--bg)!important;
+      background-image:none!important;
+      border:0!important;
+      box-shadow:none!important;
+      outline:none!important;
+    }
+    html[data-theme="light"] body #workout-focus[data-cardio=true] .wf-cardio-overline::before,
+    html[data-theme="light"] body #workout-focus[data-cardio=true] .wf-cardio-overline::after{
+      content:none!important;
+      display:none!important;
+    }
     /* Keep the timer and collapsible metrics as genuine raised cards. */
         /* Clean up the focus screen without changing its element order or behaviour. */
     #workout-focus{font-variant-numeric:tabular-nums}
@@ -62,6 +76,47 @@
     #workout-focus[data-cardio=true] .wf-cardio-more .wf-cardio-metrics b{display:inline!important;font-size:12px!important}
     #workout-focus[data-cardio=true] .wf-cardio-save{min-height:49px!important;border-radius:14px!important;margin-top:11px!important}
     #workout-focus[data-cardio=true] .wf-cardio-links{justify-content:space-between!important}
+    /* RIR controls and derived RPE are a single aligned input group. */
+    #workout-focus .wf-rpe-controls{
+      display:inline-flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:6px;
+      flex:0 0 auto;
+      min-width:0;
+    }
+    #workout-focus[data-compact=true] .wf-entry .wf-rpe-row{
+      display:flex!important;
+      align-items:center!important;
+      flex-wrap:wrap!important;
+      gap:6px!important;
+      min-height:32px!important;
+    }
+    #workout-focus[data-compact=true] .wf-rpe-row>strong{
+      flex:1 1 auto!important;
+      min-width:125px!important;
+      font-size:11px!important;
+      line-height:1.25!important;
+    }
+    #workout-focus[data-compact=true] .wf-rpe-controls .wf-pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:30px!important;
+      padding:5px 9px!important;
+      font-size:11px!important;
+      font-weight:700!important;
+      white-space:nowrap;
+      border-radius:10px;
+    }
+    #workout-focus[data-compact=true] .wf-rpe-controls .wf-unknown{
+      min-height:30px!important;
+      margin:0!important;
+      padding:5px 9px!important;
+      font-size:11px!important;
+      border-radius:10px!important;
+      white-space:nowrap;
+    }
     /* Preserve the familiar strength focus cards and full-width record button. */
     #workout-focus[data-compact=true] .wf-current h2{letter-spacing:-.035em;line-height:1.16!important}
     #workout-focus[data-compact=true] .wf-stage>.wf-load{border-radius:19px!important}

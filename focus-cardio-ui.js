@@ -29,7 +29,7 @@
    :`<button type="button" class="wf-cardio-main-btn" data-wf-cardio-action="${started?'resume':'start'}">${started?'Продолжить':'Начать кардио'}</button>`;
   const status=snap.completed?'Цель выполнена':running?'Идёт тренировка':started?'На паузе':'Готов к началу';
   return `<main class="wf-cardio-screen">
-    <div class="wf-cardio-heading" style="background:transparent!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important"><div class="wf-cardio-overline">Кардио <span>·</span> ${mode} ${C.num(info.rpe)>0?`<span>·</span> RPE ${fmt(info.rpe)}`:''}</div>
+    <div class="wf-cardio-heading" style="background:transparent!important;background-color:transparent!important;background-image:none!important;box-shadow:none!important"><div class="wf-cardio-overline" style="background:var(--bg)!important;background-color:var(--bg)!important;background-image:none!important;border:0!important;box-shadow:none!important">Кардио <span>·</span> ${mode} ${C.num(info.rpe)>0?`<span>·</span> RPE ${fmt(info.rpe)}`:''}</div>
     <h2 id="focus-title">${esc(W.displayExerciseName?.(e.n)||e.n)}</h2>
     <p>Блок ${done+1} из ${all.length} <span>·</span> Цель ${C.clock(goal)}</p></div>
     <section class="wf-cardio-clock-card" aria-label="Кардио-таймер">
