@@ -54,7 +54,7 @@ function builder(){
     <section id="cfwCardioBox" class="cfw-surface" hidden>
       <div class="cfw-section-title"><span class="cfw-step">02</span><b>Кардионагрузка</b></div>
       <div class="cfw-form"><label class="cfw-wide"><span>Режим</span><select id="cfwCardioMode"><option value="steady">Непрерывное кардио</option><option value="interval">Интервальное кардио</option><option value="distance">По дистанции</option></select></label>
-      <label id="cfwCardioMinutesBox"><span>Время, мин</span><input id="cfwCardioMinutes" type="number" inputmode="decimal" min="1" max="1440" step="0.5" value="30"></label>
+      <label class="cfw-wide" id="cfwCardioMinutesBox"><span>Время, мин</span><input id="cfwCardioMinutes" type="number" inputmode="decimal" min="1" max="1440" step="0.5" value="30"></label>
       <label class="cfw-wide"><span>Интенсивность</span><select id="cfwCardioIntensity"><option value="light">Лёгкая</option><option value="moderate" selected>Умеренная</option><option value="vigorous">Высокая</option></select></label></div>
       <div id="cfwCardioIntervalFields" class="cfw-form cfw-interval-form" hidden><label><span>Раундов</span><input id="cfwCardioRounds" type="number" inputmode="numeric" min="1" max="100" value="8"></label><label><span>Работа, сек</span><input id="cfwCardioWork" type="number" inputmode="numeric" min="1" max="3600" value="30"></label><label><span>Отдых, сек</span><input id="cfwCardioRest" type="number" inputmode="numeric" min="0" max="3600" value="60"></label></div>
       <details class="cfw-more"><summary>Дополнительные показатели</summary><div class="cfw-form">
