@@ -122,7 +122,7 @@ function builder(){
   D.getElementById('cfwWeightMode')?.addEventListener('change',()=>{
     const auto=D.getElementById('cfwWeightMode').value==='auto';
     D.getElementById('cfwWeight').disabled=auto;
-    D.getElementById('cfwWeightNote').textContent=auto?'Рабочий вес будет рекомендован по истории.':'Для упражнений с собственным весом можно указать 0 кг.';
+    D.getElementById('cfwWeightNote').textContent=auto?'Если истории нет, после запуска появится «Тестовые подходы»: 1–3 пробы с весом, повторениями и RIR. Сохраним расчёт для следующих тренировок.':'Для упражнений с собственным весом можно указать 0 кг.';
   });
   render();
 }
