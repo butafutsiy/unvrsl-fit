@@ -112,5 +112,11 @@
    const phase=root.querySelector('[data-wf-cardio-phase]'),p=C.intervalPhase(ex.cardio||{},snap.actual);
    if(phase&&p)phase.textContent=`Раунд ${p.round}/${p.rounds} · ${p.phase==='rest'?'Отдых':p.phase==='work'?'Работа':'Завершено'} · ${C.clock(p.remaining)}`;
  }
+ const style=W.document?.createElement?.('style');
+ if(style&&!W.document.getElementById('unvrsl-cardio-goals-v573')){
+  style.id='unvrsl-cardio-goals-v573';
+  style.textContent='#workout-focus .wf-cardio-goal-entry{display:block;margin:0 0 12px;padding:13px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:14px}#workout-focus .wf-cardio-goal-entry>span{display:block;margin:0 0 8px;color:var(--text);font-size:12px;font-weight:700}#workout-focus .wf-cardio-goal-entry input{display:block;box-sizing:border-box;width:100%;min-height:44px;border:1px solid var(--line);border-radius:11px;background:var(--panel);color:var(--text);font-size:16px;padding:9px 12px}';
+  W.document.head?.appendChild(style);
+ }
  W.UNVRSLFocusCardioUI=Object.freeze({render,read,action,tick});
 })(window);
