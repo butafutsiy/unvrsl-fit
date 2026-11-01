@@ -7,7 +7,7 @@ const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'..','client-free-workout.js'),'utf8');
 function setup(){
  const map=new Map(),output=[],state={programs:[],clientFreeWorkoutDraftV334:{},sessions:[{id:'historical',ex:[{n:'Жим штанги лёжа',set:[{ok:true,w:100,r:8}]}]}],current:null};
- const defaults={cfwSets:'3',cfwRepMin:'8',cfwRepMax:'12',cfwWeight:'0',cfwWeightMode:'manual',cfwRpe:'8',cfwRest:'90',
+ const defaults={cfwSets:'3',cfwRepMin:'8',cfwRepMax:'12',cfwWeight:'0',cfwWeightMode:'manual',cfwRpe:'8',cfwRir:'2',cfwRest:'90',
   cfwCardioMode:'steady',cfwCardioMinutes:'30',cfwCardioRpe:'5',cfwCardioIntensity:'moderate',cfwCardioRounds:'8',
   cfwCardioWork:'30',cfwCardioRest:'60',cfwCardioDistance:'',cfwCardioSpeed:'',cfwCardioIncline:'',cfwCardioResistance:'',
   cfwCardioPower:'',cfwCardioHr:'',cfwCardioKcal:'',cfwCardioMass:''};
@@ -64,6 +64,25 @@ test('min and max repetitions share one accessible field while preserving their 
  const e=t.state.programs[0].weeks[0].days[0].ex[0];
  assert.equal(e.repMin,6);assert.equal(e.repMax,10);
  assert.equal(e.sets[0].rMin,6);assert.equal(e.sets[0].rMax,10);
+});
+test('paired RPE and RIR controls stay synchronized and keep the same surface styling',()=>{
+ const t=setup();t.W.clientFreeWorkoutOpenV334();
+ const form=t.output.at(-1);
+ assert.match(form,/class="cfw-effort-field" role="group" aria-label="Интенсивность"/);
+ assert.match(form,/id="cfwRpe"[^>]*aria-label="RPE"/);
+ assert.match(form,/id="cfwRir"[^>]*aria-label="RIR"/);
+ assert.match(source,/cfw-effort-range/);
+ assert.match(source,/\.cfw-reps-range\{[^}]*background:var\(--panel\)/);
+ assert.match(source,/\.cfw-effort-range\{[^}]*background:var\(--panel\)/);
+ t.search('жим штанги');
+ t.el('cfwRpe').value='9';t.el('cfwRpe').listeners.change();
+ assert.equal(t.el('cfwRir').value,'1');
+ t.el('cfwRir').value='0.5';t.el('cfwRir').listeners.change();
+ assert.equal(t.el('cfwRpe').value,'9.5');
+ t.W.clientFreeWorkoutAddV334();t.W.clientFreeWorkoutStartV334();
+ const e=t.state.programs[0].weeks[0].days[0].ex[0];
+ assert.equal(e.rpe,9.5);assert.equal(e.rir,0.5);
+ assert.equal(e.sets[0].targetRpeMin,9.5);assert.equal(e.sets[0].targetRirMin,0.5);
 });
 test('cardio steady mode creates one timed block without strength reps',()=>{
  const t=setup();t.search('беговая');t.el('cfwCardioMinutes').value='40';
