@@ -30,7 +30,7 @@ function rows(){
     const cardio=identity(x);
     const cfg=x.cardio||{durationMin:30,mode:'steady',intensity:'moderate'};
     const data=cardio
-      ? W.UNVRSLCardio?.summary({n:x.name,cardio:cfg,cardioMachineId:x.cardioMachineId})||`${cfg.durationMin||30} мин`
+      ? W.UNVRSLCardio?.summary({n:x.name,cardio:cfg,cardioMachineId:x.cardioMachineId})||(cfg.mode==='calories'?`Цель ${cfg.targetKcal||'–'} ккал`:cfg.mode==='distance'?`Цель ${cfg.distanceKm||'–'} км`:`${cfg.durationMin||30} мин`)
       : `${x.sets} × ${x.repMin===x.repMax?x.repMin:`${x.repMin}–${x.repMax}`} · ${x.weightMode==='auto'?'Автовес':E(WorkoutDomain.setLabel({exerciseId:x.exerciseId,n:x.name},{w:x.weight,r:x.repMin},workoutRegistry).split(' × ')[0])} · RPE ${String(x.rpe).replace('.',',')} · RIR ${String(x.rir??Math.max(0,10-Number(x.rpe))).replace('.',',')}`;
     return `<article class="cfw-row"><div class="cfw-row-icon" aria-hidden="true">${cardio?'◷':'⌑'}</div><div class="cfw-row-info"><small>${cardio?'Кардио':'Силовое'}</small><b>${E(x.name)}</b><span>${E(data)}</span></div><button type="button" onclick="clientFreeWorkoutRemoveV334(${i})" aria-label="Удалить ${E(x.name)}">×</button></article>`;
   }).join('');
@@ -53,8 +53,10 @@ function builder(){
     </section>
     <section id="cfwCardioBox" class="cfw-surface" hidden>
       <div class="cfw-section-title"><span class="cfw-step">02</span><b>Кардионагрузка</b></div>
-      <div class="cfw-form"><label class="cfw-wide"><span>Режим</span><select id="cfwCardioMode"><option value="steady">Непрерывное кардио</option><option value="interval">Интервальное кардио</option><option value="distance">По дистанции</option></select></label>
+      <div class="cfw-form"><label class="cfw-wide"><span>Режим</span><select id="cfwCardioMode"><option value="steady">Непрерывное кардио</option><option value="interval">Интервальное кардио</option><option value="distance">По дистанции</option><option value="calories">По калориям</option></select></label>
       <label class="cfw-wide" id="cfwCardioMinutesBox"><span>Время, мин</span><input id="cfwCardioMinutes" type="number" inputmode="decimal" min="1" max="1440" step="0.5" value="30"></label>
+      <label class="cfw-wide" id="cfwCardioDistanceGoalBox" hidden><span>Целевая дистанция, км</span><input id="cfwCardioDistanceGoal" type="number" inputmode="decimal" min="0.01" max="1000" step="0.01" placeholder="Например, 5"></label>
+      <label class="cfw-wide" id="cfwCardioCaloriesGoalBox" hidden><span>Цель, ккал</span><input id="cfwCardioTargetKcal" type="number" inputmode="numeric" min="1" max="10000" step="1" placeholder="Например, 300"></label>
       <label class="cfw-wide"><span>Интенсивность</span><select id="cfwCardioIntensity"><option value="light">Лёгкая</option><option value="moderate" selected>Умеренная</option><option value="vigorous">Высокая</option></select></label></div>
       <div id="cfwCardioIntervalFields" class="cfw-form cfw-interval-form" hidden><label><span>Раундов</span><input id="cfwCardioRounds" type="number" inputmode="numeric" min="1" max="100" value="8"></label><label><span>Работа, сек</span><input id="cfwCardioWork" type="number" inputmode="numeric" min="1" max="3600" value="30"></label><label><span>Отдых, сек</span><input id="cfwCardioRest" type="number" inputmode="numeric" min="0" max="3600" value="60"></label></div>
       <details class="cfw-more"><summary>Дополнительные показатели</summary><div class="cfw-form">
@@ -101,7 +103,10 @@ function builder(){
   D.getElementById('cfwCardioMode')?.addEventListener('change',()=>{
     const interval=D.getElementById('cfwCardioMode').value==='interval';
     D.getElementById('cfwCardioIntervalFields').hidden=!interval;
-    D.getElementById('cfwCardioMinutesBox').hidden=interval;
+    const mode=D.getElementById('cfwCardioMode').value;
+    D.getElementById('cfwCardioMinutesBox').hidden=mode!=='steady';
+    D.getElementById('cfwCardioDistanceGoalBox').hidden=mode!=='distance';
+    D.getElementById('cfwCardioCaloriesGoalBox').hidden=mode!=='calories';
   });
   const rpeInput=D.getElementById('cfwRpe'),rirInput=D.getElementById('cfwRir');
   const synchronizeEffort=(edited,other,reverse=false)=>{
@@ -136,9 +141,10 @@ function builder(){
     const positiveOptional=(id,max)=>{const n=N(value(id));return n==null||n<=0?null:Math.min(n,max)};
     const zeroOptional=(id,max)=>{const raw=value(id);const n=N(raw);return raw==null||raw===''||n==null?null:Math.max(0,Math.min(n,max))};
     const mode=value('cfwCardioMode')||'steady';
-    const cardio={mode,intensity:value('cfwCardioIntensity')||'moderate',durationMin:mode==='interval'?null:positiveOptional('cfwCardioMinutes',1440),rounds:Math.round(readNumber('cfwCardioRounds',8,1,100)),workSeconds:Math.round(readNumber('cfwCardioWork',30,1,3600)),restSeconds:Math.round(readNumber('cfwCardioRest',60,0,3600)),distanceKm:positiveOptional('cfwCardioDistance',1000),speedKmh:positiveOptional('cfwCardioSpeed',40),inclinePct:zeroOptional('cfwCardioIncline',25),resistance:zeroOptional('cfwCardioResistance',100),powerWatts:positiveOptional('cfwCardioPower',3000),heartRate:positiveOptional('cfwCardioHr',250),reportedKcal:positiveOptional('cfwCardioKcal',10000),weightKg:positiveOptional('cfwCardioMass',500)};
-    if(mode!=='interval'&&!cardio.durationMin)return W.toast?.('Укажи длительность кардио');
-    if(mode==='distance'&&!cardio.distanceKm)return W.toast?.('Укажи дистанцию');
+    const cardio={mode,intensity:value('cfwCardioIntensity')||'moderate',durationMin:mode==='steady'?positiveOptional('cfwCardioMinutes',1440):null,targetKcal:mode==='calories'?positiveOptional('cfwCardioTargetKcal',10000):null,rounds:Math.round(readNumber('cfwCardioRounds',8,1,100)),workSeconds:Math.round(readNumber('cfwCardioWork',30,1,3600)),restSeconds:Math.round(readNumber('cfwCardioRest',60,0,3600)),distanceKm:mode==='distance'?positiveOptional('cfwCardioDistanceGoal',1000):positiveOptional('cfwCardioDistance',1000),speedKmh:positiveOptional('cfwCardioSpeed',40),inclinePct:zeroOptional('cfwCardioIncline',25),resistance:zeroOptional('cfwCardioResistance',100),powerWatts:positiveOptional('cfwCardioPower',3000),heartRate:positiveOptional('cfwCardioHr',250),reportedKcal:mode==='calories'?null:positiveOptional('cfwCardioKcal',10000),weightKg:positiveOptional('cfwCardioMass',500)};
+    if(mode==='steady'&&!cardio.durationMin)return W.toast?.('Укажи длительность кардио');
+    if(mode==='distance'&&!cardio.distanceKm)return W.toast?.('Укажи целевую дистанцию');
+    if(mode==='calories'&&!cardio.targetKcal)return W.toast?.('Укажи цель в ккал');
     draft().push({...common,cardioMachineId:selected.cardioMachineId,cardio});
   }else{
     const repMin=Math.round(readNumber('cfwRepMin',8,1,100)),repMax=Math.max(repMin,Math.round(readNumber('cfwRepMax',repMin,1,100)));
@@ -162,7 +168,7 @@ function builder(){
       const durationSec=cardio.mode==='interval'
         ? Math.max(1,Math.round(cardio.rounds||1))*Math.max(1,Math.round(cardio.workSeconds||60))
           +Math.max(0,Math.round((cardio.rounds||1)-1))*Math.max(0,Math.round(cardio.restSeconds||0))
-        : Math.round(Math.max(1,Number(cardio.durationMin)||30)*60);
+        : cardio.mode==='steady'?Math.round(Math.max(1,Number(cardio.durationMin)||30)*60):0;
       const machineId=item.cardioMachineId||meta.cardioMachine?.id||W.UNVRSLCardio?.lookup(item.name)?.cardioMachine?.id||null;
       return {id:item.id,n:item.name,exerciseId:meta.id||item.exerciseId,sourceId:meta.id||null,bp:'cardio',kind:'cardio',loadType:'time',workMode:'timer',method:'STANDARD',cardioMachineId:machineId,cardio,durationSec,workSeconds:durationSec,rest:0,note:'Свободная тренировка',sets:[{label:'1',w:0,r:0,workSeconds:durationSec,reportedKcal:cardio.reportedKcal??null,weightKg:cardio.weightKg??null}]};
     }
