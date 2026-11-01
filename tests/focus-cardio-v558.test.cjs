@@ -25,7 +25,10 @@ test('aerobike 480 sec displays an 08:00 cardio face, not strength field',()=>{
  assert.match(html,/08:00/);
  assert.match(html,/Начать кардио/);
  assert.match(html,/data-wf-form="cardio"/);
- assert.match(html,/Время запишется из таймера/);
+ assert.match(html,/Фактические показатели/);
+ assert.match(html,/Завершить и сохранить/);
+ assert.match(html,/Непрерывно/);
+ assert.doesNotMatch(html,/class="wf-cardio-metrics"|class="wf-cardio-result-title"/);
  assert.doesNotMatch(html,/Техника сохранена|Возникла боль|480 сек|name="weight"|name="reps"/);
 });
 test('timer starts, pauses, resumes, and persists exact elapsed time on reload',()=>{
