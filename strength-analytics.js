@@ -73,7 +73,7 @@
       const values=row.points.flatMap(p=>p.entries.map(s=>s.e1)).filter(v=>v!=null);
       const evidence=row.points.flatMap(p=>p.entries.filter(e=>e.strengthEvidence).map(e=>({
         sessionId:p.id,date:p.date,estimate:e.strengthEvidence.estimate,
-        confidenceWeight:e.strengthEvidence.confidenceWeight,
+        confidenceWeight:e.strengthEvidence.confidenceWeight,tier:e.strengthEvidence.tier,
         confirmedSingle:e.r===1&&e.rpe>=7?e.w:null
       })));
       const rolling=D.currentStrengthEstimate?.(evidence)??null;
