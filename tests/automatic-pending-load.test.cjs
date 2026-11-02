@@ -50,3 +50,17 @@ test('already-open W8 replaces stale untouched auto weights once without changin
  for(let i=0;i<3;i++)c.trainingLoadModel292.run();
  assert.deepEqual(ex.set.map(s=>s.w),after,'once upgraded, pending loads stay stable');
 });
+
+test('v584 refreshes older v582 auto weights exactly once without touching protected sets',()=>{
+ const c=fixture(),sets=c.st.current.ex[0].set;
+ for(const s of sets)Object.assign(s,{w:55,selectedW:55,plannedW:55,weightMode:'auto',
+   weightSource:'auto',rollingAutoRevision:582,autoInitialApplied:true});
+ sets[1].manualOverride=true;
+ sets[2].ok=true;
+ sets[3].recommendationDecision={status:'applied',proposalKey:'keep',weight:55};
+ c.trainingLoadModel292.run();
+ assert.equal(sets[0].w,110);assert.equal(sets[0].rollingAutoRevision,584);
+ assert.equal(sets[1].w,55);assert.equal(sets[2].w,55);assert.equal(sets[3].w,55);
+ c.trainingLoadModel292.run();
+ assert.equal(sets[0].w,110,'no repeated weight changes after upgrade');
+});

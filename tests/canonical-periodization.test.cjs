@@ -300,7 +300,7 @@ test('rolling e1RM follows latest three workout days rather than the full histor
  const result=A.currentStrengthEstimate(observations,{nowMs:Date.parse('2026-10-22')});
  assert.equal(result.sessionCount,3);
  assert.deepEqual(result.sourceSessions.map(x=>x.date),['2026-10-21','2026-10-01','2026-09-20']);
- assert.ok(Math.abs(result.estimate-96.4635)<.02);
+ assert.ok(Math.abs(result.estimate-95.8746)<.02,'single-session changes are now capped at 5%');
  assert.ok(Math.abs(result.trainingMax-result.estimate*.9)<.01);
  assert.equal(result.historicalSessionCount,6);
  const moreOld=[...observations,...Array.from({length:30},(_,i)=>({sessionId:'ancient'+i,date:'2025-01-01',estimate:50,confidenceWeight:1}))];
@@ -426,4 +426,61 @@ test('a real workout with an RPE 8 single informs standard auto weight and TM bu
   [...history,create('deload','2026-10-25',120,1,9,{isDeload:true})],reg);
  assert.equal(withDeload.currentOneRepMax,rec.currentOneRepMax);
  assert.equal(withDeload.confirmedOneRepFloor,100);
+});
+
+test('adaptive 1RM accelerates on two credible independent gains, not a single spike',()=>{
+ const observations=[100,105,110].map((estimate,i)=>({
+   sessionId:'gain'+i,date:['2026-10-01','2026-10-08','2026-10-15'][i],
+   estimate,confidenceWeight:1
+ }));
+ const up=A.currentStrengthEstimate(observations,{nowMs:Date.parse('2026-10-16')});
+ assert.equal(up.trend,'confirmed_growth');
+ assert.equal(up.smoothingAlpha,.6);
+ assert.equal(up.maxChangePct,8);
+ assert.ok(up.estimate>106&&up.estimate<108,'strong repeated results should be reflected promptly');
+ assert.equal(up.confidence,'высокая');
+ const spike=A.currentStrengthEstimate([
+   {...observations[0]}, {...observations[1],estimate:145},
+   {...observations[2],estimate:101}
+ ],{nowMs:Date.parse('2026-10-16')});
+ assert.notEqual(spike.trend,'confirmed_growth');
+ assert.equal(spike.maxChangePct,5);
+ assert.ok(spike.estimate<104,'a solitary extreme result cannot redefine the baseline');
+});
+test('a single dip is damped and two corroborated declines progressively lower 1RM',()=>{
+ const dates=['2026-10-01','2026-10-08','2026-10-15'];
+ const values=[110,105,100];
+ const observations=values.map((estimate,i)=>({date:dates[i],sessionId:'decline'+i,estimate,confidenceWeight:1}));
+ const single=A.currentStrengthEstimate(observations.slice(0,2),{nowMs:Date.parse('2026-10-16')});
+ assert.equal(single.trend,'single_decline');assert.equal(single.smoothingAlpha,.25);
+ const repeated=A.currentStrengthEstimate(observations,{nowMs:Date.parse('2026-10-16')});
+ assert.equal(repeated.trend,'confirmed_decline');
+ assert.equal(repeated.smoothingAlpha,.45);
+ assert.equal(repeated.maxChangePct,5);
+ assert.ok(repeated.estimate<single.estimate);
+});
+test('low-quality rising sessions do not trigger aggressive strength updates',()=>{
+ const seq=[100,105,110].map((estimate,i)=>({
+   sessionId:'q'+i,date:['2026-10-01','2026-10-08','2026-10-15'][i],
+   estimate,confidenceWeight:.2
+ }));
+ const result=A.currentStrengthEstimate(seq,{nowMs:Date.parse('2026-10-16')});
+ assert.notEqual(result.trend,'confirmed_growth');
+ assert.equal(result.smoothingAlpha,.35);assert.equal(result.maxChangePct,5);
+ assert.equal(result.highQuality,false);
+ assert.notEqual(result.confidence,'высокая');
+});
+test('adaptive rolling model keeps confirmed singles as floors and test-week attempts untouched',()=>{
+ const rows=[
+  {sessionId:'a',date:'2026-10-01',estimate:93.3,confidenceWeight:1},
+  {sessionId:'b',date:'2026-10-08',estimate:110,confidenceWeight:1,confirmedSingle:100},
+  {sessionId:'c',date:'2026-10-15',estimate:98.7,confidenceWeight:1}
+ ];
+ const r=A.currentStrengthEstimate(rows,{nowMs:Date.parse('2026-10-16')});
+ assert.equal(r.estimate,100);assert.equal(r.confirmedFloor,100);
+ assert.equal(r.trainingMax,90);
+ const plan=A.generateCycle({weeks:8,daysPerWeek:3,startDate:'2026-09-01',testWeek:true,exercises:[{exerciseId:'bench',n:'Жим',kind:'base',dayIndices:[0],sets:[{w:100}],weightMode:'auto'}]});
+ const testSets=plan.weeks[7].days.flatMap(d=>d.ex).find(e=>e.exerciseId==='bench').sets;
+ assert.deepEqual(testSets.map(x=>x.role),['test_preparation','test_preparation','test_attempt','test_attempt','test_attempt','backoff','backoff']);
+ assert.deepEqual(testSets.filter(x=>x.role==='backoff').map(x=>x.backoffPercent),[80,80]);
 });
