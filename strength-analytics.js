@@ -77,7 +77,7 @@
         confidenceWeight:e.strengthEvidence.confidenceWeight,tier:e.strengthEvidence.tier,
         confirmedSingle:e.r===1&&e.rpe>=7?e.w:null
       })));
-      const rolling=D.currentStrengthEstimate?.(evidence,{nowMs:now.getTime()})??null;
+      const rolling=D.currentStrengthEstimate?.(evidence,{nowMs:new Date(now).getTime()})??null;
       // A 30-day strength comparison uses a baseline known at the time,
       // never the lifetime mean or the most recent graph-only recovery set.
       const cutoff=new Date(now);cutoff.setHours(12,0,0,0);cutoff.setDate(cutoff.getDate()-30);
