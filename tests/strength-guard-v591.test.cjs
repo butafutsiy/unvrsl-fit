@@ -13,7 +13,7 @@ const rolling=values=>D.currentStrengthEstimate(evidence(values),{nowMs:Date.par
 
 test('two credible strong workouts resist two anomalous drops without locking a historic peak',()=>{
   const x=rolling([150,151,139,137]);
-  assert.equal(x.sessionCount,4);
+  assert.equal(x.sessionCount,3,'the current 1RM uses three recent days; older days only confirm stability');
   assert.equal(x.stabilityFloorApplied,true);
   assert.ok(x.estimate>=147&&x.estimate<151);
   assert.equal(x.declineConfirmed,false);
