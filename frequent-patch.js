@@ -135,7 +135,7 @@ function startDeferredModules(){
  const safe=(promise,label)=>promise.catch(e=>{console.warn(label,e);return{failed:true,label}});
  const templates=safe(loadSequence(['popular-programs.js?v=561','female-program-templates.js?v=561']),'program templates');
  const programs=safe(loadSequence(['anton-gorkusha-plan.js?v=561','anton-plan-rules.js?v=561','trainer-self-plan.js?v=561','client-free-workout.js?v=561']),'program modules');
- const workout=safe(loadSequence(['wake-lock.js?v=561','workout-duration.js?v=561','cardio-timer.js?v=561','advanced-training.js?v=561','workout-template-ux.js?v=561','cardio-exercise-library.js?v=561','client-workout-scroll.js?v=561']),'workout modules');
+ const workout=safe(loadSequence(['wake-lock.js?v=561','workout-duration.js?v=561','cardio-timer.js?v=561','advanced-training.js?v=561','workout-template-ux.js?v=561','cardio-exercise-library.js?v=561','client-workout-scroll.js?v=587']),'workout modules');
  const stats=safe(loadSequence(['profile-strength-core.js?v=561','sheet-swipe.js?v=561','stats-dashboard.js?v=561','stats-authority.js?v=561']),'stats modules');
  deferredPromise=Promise.allSettled([templates,programs,workout,stats]).finally(()=>{
   window.__unvrslDeferredModulesReadyV320=true;
