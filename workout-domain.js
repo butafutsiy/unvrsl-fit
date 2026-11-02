@@ -817,7 +817,8 @@
       const value=n(o.estimate??o.value),weight=n(o.confidenceWeight??o.weight)??1;
       const date=day(o.date),stamp=ms(date);
       if(!(value>0)||!(weight>0)||!Number.isFinite(stamp))continue;
-      const key=String(o.sessionId??date);
+      // Multiple sessions on the same calendar day are one independent strength check.
+      const key=date;
       if(!grouped.has(key))grouped.set(key,{date,stamp,points:[],confirmedSingles:[]});
       // Only full-strength evidence (>=75% estimated relative intensity)
       // may update an already established programme 1RM. Auxiliary evidence
@@ -849,7 +850,8 @@
       const valid=selectedPoints.filter(y=>Math.abs(y.value-primary)<=primary*.15);
       const sum=valid.reduce((a,y)=>a+y.weight,0);
       return {date:x.date,stamp:x.stamp,estimate:valid.reduce((a,y)=>a+y.value*y.weight,0)/sum,
-        count:x.points.length,confidenceWeight:valid[0].weight,
+        count:x.points.length,credibleSets:valid.filter(y=>y.weight>=.3).length,
+        confidenceWeight:valid[0].weight,
         confirmedSingle:x.confirmedSingles.length?Math.max(...x.confirmedSingles):null};
     });
     // Adaptive EMA: one exceptional day is capped at 5%, while two
@@ -944,17 +946,34 @@
     const spread=Math.max(...recent.map(x=>Math.abs(x.estimate-current)/current));
     const aged=(n(options.nowMs)??Date.now())-anchor;
     const stale=aged>60*d;
-    // High confidence requires repeatability AND credible effort-based data.
+    // Confidence must reflect independently repeated evidence, not merely
+    // three closely matching workouts. More sets on one day do not create
+    // extra training days, and recovery/auxiliary sets are excluded upstream.
+    const credibleDays=selected.filter(x=>x.confidenceWeight>=.3&&anchor-x.stamp<=56*d);
+    const qualitySessionCount=new Set(credibleDays.map(x=>x.date)).size;
+    const qualitySetCount=credibleDays.reduce((sum,x)=>sum+x.credibleSets,0);
+    const coverageDays=credibleDays.length?
+      Math.round((Math.max(...credibleDays.map(x=>x.stamp))-Math.min(...credibleDays.map(x=>x.stamp)))/d):0;
     const highQuality=recent.every(x=>x.confidenceWeight>=.3);
-    const confidence=provisional||stale||recent.length<2||spread>.16?'низкая':
-      recent.length>=3&&spread<.08&&highQuality?'высокая':'средняя';
+    const highEvidence=qualitySessionCount>=4&&qualitySetCount>=6&&coverageDays>=10;
+    const confirmedStable=!['single_decline','unconfirmed_growth'].includes(trend)&&!stabilityFloorApplied;
+    const confidence=provisional||stale||qualitySessionCount<2||recent.length<2||spread>.16?'низкая':
+      highEvidence&&highQuality&&spread<=.07&&confirmedStable&&aged<=28*d?'высокая':'средняя';
+    const confidenceReason=provisional?'Предварительная оценка по лёгким подходам':
+      stale?'Давно не было сопоставимых тренировок':
+      qualitySessionCount<2?'Нужна ещё одна независимая рабочая тренировка':
+      confidence==='высокая'?'Стабильная сила подтверждена в нескольких тренировках':
+      !highEvidence?'Для высокой оценки нужны 4 тренировки и 6 рабочих подходов за 56 дней':
+      !confirmedStable?'Последнее изменение силы ещё проверяется':
+      spread>.07?'Оценки силы пока различаются':'Требуется дополнительная проверка';
     const coefficient=confidence==='низкая'?.85:.9;
     return {estimate:current,trainingMax:current*coefficient,trainingMaxFactor:coefficient,
       provisional,minimumStrengthIntensity:70,fullStrengthIntensity:75,
       confirmedFloor,confirmedFloorDate:witness?.date??null,floorApplied,
       stabilityFloor,stabilityFloorApplied,stabilitySourceDates,declineConfirmed,
       trend,smoothingAlpha,maxChangePct,highQuality,
-      confidence,sessionCount:recent.length,lastPerformed:recent[0].date,stale,
+      confidence,confidenceReason,qualitySessionCount,qualitySetCount,coverageDays,
+      sessionCount:recent.length,lastPerformed:recent[0].date,stale,
       historicalSessionCount:history.length,sourceSessions:recent.map(x=>({
         date:x.date,estimate:x.estimate,count:x.count
       }))};
