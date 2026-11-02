@@ -65,6 +65,6 @@ const val=(id,v)=>w.document.getElementById(id).value=v;
  assert.equal(JSON.stringify(db.offline_client_strengths),before,'read-only weekly projections');
  db.offline_client_strengths.push({id:'new-working',offline_client_id:'n1',trainer_id:'t1',exercise_name:'Присед со штангой',exercise_key:'squat',measured_at:'2026-10-28',created_at:'2026-10-28',weight_kg:100,reps:3,rpe:8,rir:2,is_deload:false});
  await w.offlineProgressWeeklyLoad('n1');
- assert.match(w.document.getElementById('ofpWeeklyExercises').textContent,/Актуальный 1ПМ:\s*110 кг/,'new working result updates rolling e1RM');assert.match(w.document.getElementById('ofpWeeklyExercises').textContent,/Исторический средний:\s*100,2 кг/,'full history is kept separately');
+ assert.match(w.document.getElementById('ofpWeeklyExercises').textContent,/Актуальный 1ПМ:\s*110,5 кг/,'new working result updates rolling 1RM with the adaptive 5% guard');assert.match(w.document.getElementById('ofpWeeklyExercises').textContent,/Исторический средний:\s*100,2 кг/,'full history is kept separately');
  console.log('Offline history: edit, ownership, author preservation, recalculation, delete/cancel, weekly projection and private snapshot passed.');dom.window.close();
 })().catch(e=>{console.error(e);dom.window.close();process.exitCode=1});
