@@ -1,13 +1,13 @@
 'use strict';
 (()=>{
-  if(window.__unvrslProfileStrengthCoreV248)return;
-  window.__unvrslProfileStrengthCoreV248=true;
+  if(window.__unvrslProfileStrengthCoreV249)return;
+  window.__unvrslProfileStrengthCoreV249=true;
   if(!window.st)return;
   const W=window;
   if(!st.profileBio||typeof st.profileBio!=='object')st.profileBio={heightCm:null,birthDate:null,sex:null};
 
   const css=document.createElement('style');
-  css.id='profile-strength-core-v248-style';
+  css.id='profile-strength-core-v249-style';
   css.textContent=`
     .strength-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}.strength-summary .metric{min-width:0;padding:12px;border-color:var(--line)}.strength-summary .metric span{font-size:11px;line-height:1.3}.strength-summary .metric b{font-size:20px;overflow-wrap:anywhere}
     .strength-list{display:flex;flex-direction:column}.strength-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid #303034;background:transparent;border-left:0;border-right:0;border-top:0;width:100%;color:inherit;text-align:left}.strength-item:last-child{border-bottom:0}
@@ -43,6 +43,18 @@
     .strength-point-compare .is-recovery{border-style:dashed}
     @media(max-width:360px){.strength-point-compare{gap:6px}.strength-point-compare>div{padding:9px}.strength-point-compare strong{font-size:17px}}
   `;
+  css.textContent+=`\n    .strength-live-grid small{display:block;margin-top:5px;color:var(--muted,#8e8e95);font-size:10px;line-height:1.35}
+    .strength-live-latest{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line,#34343a);padding-top:11px}
+    .strength-live-latest strong{flex:0 0 auto;font-size:19px}
+    .strength-live-trend{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:3px 10px;margin-top:12px;font-size:12px;font-weight:650}
+    .strength-live-trend span:last-child{font-size:10px;font-weight:400;color:var(--muted,#8e8e95)}
+    .strength-live-detail small{display:block;margin-top:5px;font-size:10px;line-height:1.4;color:var(--muted,#8e8e95)}
+    .strength-live-more{margin-top:10px;border-top:1px solid var(--line,#34343a);padding-top:9px;font-size:11px;color:var(--muted,#8e8e95)}
+    .strength-live-more summary{cursor:pointer;list-style:none;color:var(--text,#f5f5f7)}
+    .strength-live-more summary::after{content:' ›';color:var(--muted,#8e8e95)}
+    .strength-live-more>div{margin-top:7px;display:flex;justify-content:space-between;gap:10px}
+    .strength-live-more b{color:var(--text,#f5f5f7);text-align:right}
+  `;
   document.head.appendChild(css);
 
   function ageFromBirth(v){if(!v)return null;const d=new Date(v+'T12:00:00');if(Number.isNaN(d.getTime()))return null;const now=new Date();let a=now.getFullYear()-d.getFullYear();const m=now.getMonth()-d.getMonth();if(m<0||(m===0&&now.getDate()<d.getDate()))a--;return a>=0&&a<130?a:null}
@@ -66,21 +78,28 @@
   function strengthSummaryHtml(x){
     const rolling=x.currentStrength||{},historical=x.historicalWorkingMean;
     const number=v=>v!=null?F(v)+' кг':'—';
+    const lastWorking=x.points.filter(p=>!p.deload&&p.entries.some(e=>e.strengthEvidence)).at(-1);
+    const lastValue=lastWorking?.e1;
+    const lastNote=lastWorking?.date?dateLabel(lastWorking.date)+'.'+lastWorking.date.slice(0,4):'Пока нет рабочих подходов';
     const verified=rolling.confirmedFloor!=null?`${F(rolling.confirmedFloor)} кг × 1 · ${rolling.confirmedFloorDate?E(dateLabel(rolling.confirmedFloorDate)+'.'+rolling.confirmedFloorDate.slice(0,4)):'подтверждено'}`:'Нет актуального';
-    const trends={confirmed_growth:'устойчивый рост',confirmed_decline:'устойчивое снижение',single_decline:'разовое снижение',unconfirmed_growth:'рост проверяется',stable:'стабильно'};
-    const details=x.strengthEvidenceCount?`${x.strengthEvidenceCount} подходов · ${rolling.sessionCount||0} тренировок · достоверность ${rolling.confidence||'низкая'} · ${rolling.stabilityFloorApplied?'защита от разового снижения':rolling.declineConfirmed?'снижение подтверждено':rolling.provisional?'предварительная калибровка 70–75%':trends[rolling.trend]||'без тренда'}`:'Для оценки силы нужны рабочие подходы с RPE 7–10';
-    return `<section class="strength-live-summary" aria-label="Сводка силовых показателей" data-strength-summary>
-      <div class="strength-live-grid">
-        <div class="strength-live-main"><span>Актуальный 1ПМ</span><strong data-strength-current>${number(rolling.estimate)}</strong></div>
-        <div><span>Тренировочный максимум (TM)</span><strong data-strength-tm>${number(rolling.trainingMax)}</strong></div>
-        <div><span>Исторический средний 1ПМ</span><strong data-strength-historical>${number(historical)}</strong></div>
-        <div class="strength-live-confirmed"><span>Подтверждённый сингл</span><strong data-strength-single>${verified}</strong></div>
+    const trends={confirmed_growth:'устойчивый рост',confirmed_decline:'устойчивое снижение',single_decline:'проверяем разовое снижение',unconfirmed_growth:'рост проверяется',stable:'стабильно'};
+    const count=(n,one,few,many)=>{const v=Math.abs(Number(n))%100,tail=v%10;return v>=11&&v<=14?many:tail===1?one:tail>=2&&tail<=4?few:many};
+    const sessions=rolling.qualitySessionCount||0,sets=rolling.qualitySetCount||0;
+    const details=sets?`${sessions} ${count(sessions,'тренировка','тренировки','тренировок')} · ${sets} ${count(sets,'подход','подхода','подходов')} · достоверность ${rolling.confidence||'низкая'} · ${rolling.stabilityFloorApplied?'защита от разового снижения':rolling.declineConfirmed?'снижение подтверждено':rolling.provisional?'предварительная калибровка':trends[rolling.trend]||'без тренда'}`:'Для оценки силы нужны качественные рабочие подходы с RPE 7–10';
+    const month=x.monthChange==null?'Недостаточно данных за 30 дней':`${x.monthChange>0?'+':''}${F(x.monthChange)}% за 30 дней`;
+    return `<section class='strength-live-summary' aria-label='Сводка силовых показателей' data-strength-summary>
+      <div class='strength-live-grid'>
+        <div class='strength-live-main'><span>Актуальный 1ПМ</span><strong data-strength-current>${number(rolling.estimate)}</strong><small>Оценка текущей силы</small></div>
+        <div><span>Тренировочный максимум (ТМ)</span><strong data-strength-tm>${number(rolling.trainingMax)}</strong><small>Для планирования нагрузки</small></div>
+        <div class='strength-live-latest'><div><span>Последняя рабочая тренировка</span><small>${E(lastNote)}</small></div><strong>${number(lastValue)}</strong></div>
       </div>
-      <div class="strength-live-detail">${E(details)}</div>
-      <div class="strength-recovery-note" data-strength-recovery><b>Разгрузка / восстановление: ${x.recoverySessionCount||0}</b> · точки на графике, не влияют на расчёт и автовес</div>
+      <div class='strength-live-trend'><span>${E(month)}</span><span>30-дневная динамика 1ПМ</span></div>
+      <div class='strength-live-detail'>${E(details)}<small>${E(rolling.confidenceReason||'')}</small></div>
+      <div class='strength-recovery-note' data-strength-recovery>Разгрузка / восстановление: <b>${x.recoverySessionCount||0}</b> · только на графике, не влияет на автовес</div>
+      <details class='strength-live-more'><summary>Исторические показатели</summary><div>Средний рабочий 1ПМ: <b data-strength-historical>${number(historical)}</b></div><div>Подтверждённый сингл: <b data-strength-single>${verified}</b></div></details>
     </section>`;
   }
-  function selectedStrengthCompare(point,group){
+    function selectedStrengthCompare(point,group){
     const graphMax=point.e1==null?'—':F(point.e1)+' кг';
     const programMax=group.currentStrength?.estimate==null?'—':F(group.currentStrength.estimate)+' кг';
     const status=point.deload?'Разгрузка / восстановление · только график':'Оценка по этой тренировке';
@@ -104,7 +123,7 @@
     if(x.variants)return familyDetail(x);
     const index=Math.min(selected.get(x.key)??x.points.length-1,x.points.length-1),p=x.points[index],mode=modes.get(x.key)||'both',estimate=p.e1==null?'Расчётный 1ПМ: нет оценки':`Расчётный 1ПМ ≈ ${F(p.e1)} кг`;
     const origin=p.estimateSet,originNote=origin&&(origin.w!==p.maxWeight||origin.r!==p.maxReps)?`Оценка 1ПМ из подхода ${F(origin.w)} кг × ${F(origin.r)}`:'',effort=origin?.rpe!=null?`RPE ${F(origin.rpe)}${origin.rir!=null?' · RIR '+F(origin.rir):''}`:'';
-    return `${strengthSummaryHtml(x)}<div class="strength-modes" aria-label="Вид графика">${[['weight','Рабочий вес'],['e1','1ПМ'],['both','Оба']].map(([v,l])=>`<button type="button" aria-pressed="${mode===v}" onclick="strengthMode('${token(x.key)}','${v}')">${l}</button>`).join('')}</div>${selectedStrengthCompare(p,x)}<div class="strength-focus"><div><span>Выбранная точка</span><strong>${F(p.maxWeight)} кг</strong><b>× ${F(p.maxReps)} повторений</b><small>${estimate}${p.deload?' · Разгрузка: только график, без автовеса':''}</small><small class="strength-session-average">${effort?E(effort)+' · ':''}Средний 1ПМ тренировки: ${p.meanE1==null?'нет оценки':F(p.meanE1)+' кг'} · ${p.estimateCount} подх.</small></div><div class="strength-focus-side"><b>${dateLabel(p.date)}.${p.date.slice(0,4)}</b><small>${p.deload?'Разгрузка':'Тренировка'}</small></div>${originNote?`<p>${originNote}</p>`:''}</div><div class="strength-legend">${mode!=='e1'?'<span><i></i>Рабочий вес</span>':''}${mode!=='weight'?'<span><i class="estimate"></i>Расчётный 1ПМ</span>':''}</div><div class="strength-recovery-legend muted small"><i></i>Разгрузка / восстановление · только график</div><div class="muted small strength-unit-note">${units(x)}${x.type==='bodyweight_added'?' · 1ПМ только по отягощению':x.type==='bodyweight_assisted'?' · помощь не является отягощением, 1ПМ не рассчитывается':x.type==='bodyweight_only'?' · нет внешнего веса для расчёта 1ПМ':''}</div>${chart(x,mode,index)}<div class="strength-records">${x.points.map((v,i)=>({v,i})).map(({v,i})=>`<button type="button" class="strength-record ${v.deload?'recovery':''}" aria-pressed="${i===index}" onclick="strengthSelect('${token(x.key)}',${i})"><strong>${F(v.maxWeight)} кг × ${F(v.maxReps)}</strong><b>${v.e1==null?'1ПМ: нет оценки':'1ПМ ≈ '+F(v.e1)+' кг'}</b><small>${dateLabel(v.date)}.${v.date.slice(0,4)}${v.deload?' · разгрузка':''}</small></button>`).join('')}</div><details class="strength-history"><summary>Все тренировки · ${x.points.length}<span>›</span></summary><div class="strength-session"><label>Тренировка <select aria-label="Выбрать тренировку" onchange="strengthSelect('${token(x.key)}',Number(this.value))">${x.points.map((v,i)=>`<option value="${i}" ${i===index?'selected':''}>${E(v.date)}${v.deload?' · разгрузка':''}</option>`).join('')}</select></label><div class="strength-set-list">${p.entries.map((s,i)=>`<div><div><b>${i+1}. ${F(s.w)} кг × ${F(s.r)}</b><strong class="strength-set-estimate">${s.e1==null?'1ПМ: нет оценки':'1ПМ ≈ '+F(s.e1)+' кг'}</strong></div><span class="muted small">${E(s.method==='STANDARD'?'Обычный подход':s.method)}${s.rpe==null?'':' · RPE '+F(s.rpe)}</span></div>`).join('')}</div></div></details><details class="strength-help"><summary>Как считается 1ПМ</summary><p>Для точек графика используется прогноз 1ПМ по весу, повторениям и указанному RPE/RIR. Без данных об усилии остаётся приблизительная формула Эпли. Подтверждённый сингл – реально поднятый вес, а не прогноз. Для гантелей и тренажёров показатели считаются раздельно.</p><p>График показывает все завершённые подходы, включая разгрузочные и восстановительные. Верхняя сводка использует только достоверные рабочие подходы с RPE/RIR, исключает разгрузку и разминку и обновляет актуальный 1ПМ по адаптивному сглаживанию. Исторический средний – среднее этих пригодных подходов. TM – отдельный консервативный ориентир, не обязательная база недельных процентов.</p><p>Это оценка по весу и повторам, а не проверенный максимум. При большом числе повторов и в специальных методах точность ниже. Для упражнений без отягощения и с помощью 1ПМ по внешнему весу не рассчитывается.</p></details>`;
+    return `${strengthSummaryHtml(x)}<div class="strength-modes" aria-label="Вид графика">${[['weight','Рабочий вес'],['e1','1ПМ'],['both','Оба']].map(([v,l])=>`<button type="button" aria-pressed="${mode===v}" onclick="strengthMode('${token(x.key)}','${v}')">${l}</button>`).join('')}</div><div class="strength-focus"><div><span>Выбранная точка</span><strong>${F(p.maxWeight)} кг</strong><b>× ${F(p.maxReps)} повторений</b><small>${estimate}${p.deload?' · Разгрузка: только график, без автовеса':''}</small><small class="strength-session-average">${effort?E(effort)+' · ':''}Средний 1ПМ тренировки: ${p.meanE1==null?'нет оценки':F(p.meanE1)+' кг'} · ${p.estimateCount} подх.</small></div><div class="strength-focus-side"><b>${dateLabel(p.date)}.${p.date.slice(0,4)}</b><small>${p.deload?'Разгрузка':'Тренировка'}</small></div>${originNote?`<p>${originNote}</p>`:''}</div><div class="strength-legend">${mode!=='e1'?'<span><i></i>Рабочий вес</span>':''}${mode!=='weight'?'<span><i class="estimate"></i>Расчётный 1ПМ</span>':''}</div><div class="strength-recovery-legend muted small"><i></i>Разгрузка / восстановление · только график</div><div class="muted small strength-unit-note">${units(x)}${x.type==='bodyweight_added'?' · 1ПМ только по отягощению':x.type==='bodyweight_assisted'?' · помощь не является отягощением, 1ПМ не рассчитывается':x.type==='bodyweight_only'?' · нет внешнего веса для расчёта 1ПМ':''}</div>${chart(x,mode,index)}<div class="strength-records">${x.points.map((v,i)=>({v,i})).map(({v,i})=>`<button type="button" class="strength-record ${v.deload?'recovery':''}" aria-pressed="${i===index}" onclick="strengthSelect('${token(x.key)}',${i})"><strong>${F(v.maxWeight)} кг × ${F(v.maxReps)}</strong><b>${v.e1==null?'1ПМ: нет оценки':'1ПМ ≈ '+F(v.e1)+' кг'}</b><small>${dateLabel(v.date)}.${v.date.slice(0,4)}${v.deload?' · разгрузка':''}</small></button>`).join('')}</div><details class="strength-history"><summary>Все тренировки · ${x.points.length}<span>›</span></summary><div class="strength-session"><label>Тренировка <select aria-label="Выбрать тренировку" onchange="strengthSelect('${token(x.key)}',Number(this.value))">${x.points.map((v,i)=>`<option value="${i}" ${i===index?'selected':''}>${E(v.date)}${v.deload?' · разгрузка':''}</option>`).join('')}</select></label><div class="strength-set-list">${p.entries.map((s,i)=>`<div><div><b>${i+1}. ${F(s.w)} кг × ${F(s.r)}</b><strong class="strength-set-estimate">${s.e1==null?'1ПМ: нет оценки':'1ПМ ≈ '+F(s.e1)+' кг'}</strong></div><span class="muted small">${E(s.method==='STANDARD'?'Обычный подход':s.method)}${s.rpe==null?'':' · RPE '+F(s.rpe)}</span></div>`).join('')}</div></div></details><details class="strength-help"><summary>Как считается 1ПМ</summary><p>Для точек графика используется прогноз 1ПМ по весу, повторениям и указанному RPE/RIR. Без данных об усилии остаётся приблизительная формула Эпли. Подтверждённый сингл – реально поднятый вес, а не прогноз. Для гантелей и тренажёров показатели считаются раздельно.</p><p>График показывает все завершённые подходы, включая разгрузочные и восстановительные. Верхняя сводка использует только достоверные рабочие подходы с RPE/RIR, исключает разгрузку и разминку и обновляет актуальный 1ПМ по адаптивному сглаживанию. Высокая достоверность требует 4 независимых тренировочных дней, минимум 6 качественных подходов за 56 дней, согласованных оценок 1ПМ и отсутствия неподтверждённой просадки. Исторический средний – среднее пригодных подходов и доступен в подробностях. ТМ – консервативный ориентир, не обязательная база недельных процентов.</p><p>Это оценка по весу и повторам, а не проверенный максимум. При большом числе повторов и в специальных методах точность ниже. Для упражнений без отягощения и с помощью 1ПМ по внешнему весу не рассчитывается.</p></details>`;
   }
   function equipmentControls(x){
     const view=equipmentViews.get(x.key)||'all';
