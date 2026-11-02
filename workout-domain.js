@@ -823,13 +823,15 @@
     const newest=Math.max(0,...compatible.map(x=>sessionTime(x.session)));
     for(const x of compatible) {
       const value=e1rm(x.exercise,x.set,x.session,reg,weights);
-      if(!(value>0))continue;
+      const evidence=strengthEvidence(loadForEstimate(x.exercise,x.set,x.session,reg,weights),
+        performedReps(x.exercise,x.set),effortRpe(x.set));
+      if(!(value>0)||!(evidence.confidenceWeight>0))continue;
       const m=method(x.exercise,x.set),role=setRole(x.exercise,x.set),rpe=effortRpe(x.set);
       const reps=performedReps(x.exercise,x.set);
       const position=Math.max(0,(x.exercise.set||[]).indexOf(x.set));
       const methodWeight=m==='STANDARD'?1:m==='UNVRSL'?({heavy:1,middle:.7,light:.3}[role]??.15):m==='DS'?(position===0?.55:.025):m==='FST-7'?(position===0?.3:.02):.12;
       const age=Math.max(0,(newest-sessionTime(x.session))/86400000);
-      const confidenceWeight=methodWeight*(reps<=5?1:reps<=8?.8:.45)*(rpe==null?.4:rpe<6?.04:1)*Math.pow(.5,age/35)/(1+position*.05);
+      const confidenceWeight=methodWeight*evidence.confidenceWeight*Math.pow(.5,age/35)/(1+position*.05);
       points.push({...x,value,confidenceWeight});
     }
     points.sort((a,b)=>sessionTime(b.session)-sessionTime(a.session));
@@ -1204,6 +1206,24 @@
     if (rpe != null && rpe>=1 && rpe<=10) return rpe;
     const rir = number(s?.actualRir ?? s?.rir);
     return rir == null || rir<0 || rir>9 ? null : 10 - rir;
+  }
+  // Shared evidence criteria for live workouts and offline strength records.
+  // Intensity is estimated from performed reps and effort, so a first-time
+  // athlete does not need a known 1RM to establish an initial baseline.
+  function strengthEvidence(weight,reps,rpe,rir=null,{deload=false}={}) {
+    const w=number(weight),r=number(reps),effort=number(rpe)??(number(rir)!=null?10-number(rir):null);
+    const output={estimate:null,intensity:null,tier:'excluded',confidenceWeight:0};
+    if(deload||!(w>0)||!Number.isInteger(r)||r<1||r>20||effort==null||effort<7||effort>10)return output;
+    if(number(rpe)!=null&&number(rir)!=null&&Math.abs(number(rpe)+number(rir)-10)>.5)return output;
+    const value=w*(1+(r+10-effort)/30),intensity=100*w/value;
+    output.intensity=Math.round(intensity*10)/10;
+    if(intensity<65)return output;
+    const factor=r<=5?1:r<=8?.8:r<=10?.65:.35;
+    const tier=intensity<75?'auxiliary':intensity<85?'working':intensity<95?'heavy':'test';
+    const byTier={auxiliary:.2,working:.7,heavy:1,test:1.15};
+    output.estimate=Math.round(value*10)/10;
+    output.tier=tier;output.confidenceWeight=byTier[tier]*factor;
+    return output;
   }
   function estimateMaxFromSet(s, e = {}) {
     const weight = number(s?.w ?? s?.weight), reps = performedReps(e, s), rpe = effortRpe(s);
@@ -2268,6 +2288,7 @@
     repRange,
     effortRpe,
     estimateMaxFromSet,
+    strengthEvidence,
     intensityBand,
     setRole,
     loadComparable,
