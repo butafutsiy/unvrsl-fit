@@ -842,7 +842,20 @@
     // successful older observations from analytics. Alpha 0.35.
     const chronological=selected.slice().reverse();
     let current=chronological[0].estimate;
-    for(const x of chronological.slice(1))current=current*.65+x.estimate*.35;
+    if(chronological.length===2){
+      // With only two sessions, avoid letting an old, lower-effort
+      // calibration overwhelm the more recent verified working day.
+      current=current*.25+chronological[1].estimate*.75;
+    }else{
+      for(const x of chronological.slice(1)){
+        // One exceptional session must not suddenly redefine the maximum.
+        // Repeated gains still accumulate across independent workouts.
+        const limit=current*.06;
+        const bounded=Math.max(current-limit,Math.min(current+limit,x.estimate));
+        current=current*.65+bounded*.35;
+      }
+    }
+    current=Number(current.toFixed(4));
     const spread=Math.max(...selected.map(x=>Math.abs(x.estimate-current)/current));
     const aged=(n(options.nowMs)??Date.now())-anchor;
     const stale=aged>60*d;
@@ -925,6 +938,7 @@
     for(const bucket of Object.values(protocols)){bucket.estimate=bucket.total/bucket.weight;delete bucket.total;}
     return {estimate:rolling.estimate??estimate,stableMean:rolling.estimate??estimate,
       historicalEstimate:estimate,trainingMax:rolling.trainingMax,
+      currentSessionCount:rolling.sessionCount,
       trainingMaxFactor:rolling.trainingMaxFactor,
       currentSourceSessions:rolling.sourceSessions,stale:rolling.stale,
       best:points.length?Math.max(...points.map(x=>x.value)):null,lastPerformed:points[0]?sessionDate(points[0].session):null,lastWorkingSets:latestGroup.map(x=>({weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effortRpe(x.set),rir:effortRpe(x.set)==null?null:10-effortRpe(x.set)})),protocols,sessionCount:sessions.length,setCount:points.length,latest:latestGroup.length?Math.max(...latestGroup.map(x=>x.value)):null,points,source,
