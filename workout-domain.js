@@ -867,7 +867,9 @@
       const independent=middle.confidenceWeight>=.3&&newer.confidenceWeight>=.3;
       const isolatedHigh=older.estimate>Math.max(middle.estimate,newer.estimate)*1.1;
       const isolatedLow=older.estimate<Math.min(middle.estimate,newer.estimate)*.9;
-      if(independent&&!older.confirmedSingle&&(isolatedHigh||isolatedLow))
+      const singleStillProtects=older.confirmedSingle>0&&
+        !(middle.estimate<older.confirmedSingle*.95&&newer.estimate<older.confirmedSingle*.95);
+      if(independent&&!singleStillProtects&&(isolatedHigh||isolatedLow))
         chronological=chronological.slice(1);
     }
     let current=chronological[0].estimate;
