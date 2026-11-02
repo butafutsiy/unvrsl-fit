@@ -807,6 +807,53 @@
     }
     return value;
   }
+  // Rolling strength baseline: exactly one observation per workout/day.
+  // Deloads are filtered by callers. No past result can influence today's
+  // estimate indefinitely: use the last 3–5 qualifying sessions.
+  function currentStrengthEstimate(observations,options={}) {
+    const n=number,day=v=>String(v||'').slice(0,10),ms=v=>Date.parse(day(v)+'T12:00:00Z');
+    const grouped=new Map();
+    for(const o of observations||[]){
+      const value=n(o.estimate??o.value),weight=n(o.confidenceWeight??o.weight)??1;
+      const date=day(o.date),stamp=ms(date);
+      if(!(value>0)||!(weight>0)||!Number.isFinite(stamp))continue;
+      const key=String(o.sessionId??date);
+      if(!grouped.has(key))grouped.set(key,{date,stamp,points:[]});
+      grouped.get(key).points.push({value,weight});
+    }
+    const all=[...grouped.values()].sort((a,b)=>b.stamp-a.stamp);
+    const empty={estimate:null,trainingMax:null,confidence:'низкая',sessionCount:0,
+      lastPerformed:null,sourceSessions:[],historicalSessionCount:all.length,stale:true};
+    if(!all.length)return empty;
+    const anchor=all[0].stamp,d=86400000;
+    let selected=all.filter(x=>anchor-x.stamp<=42*d).slice(0,5);
+    if(selected.length<3)selected=all.filter(x=>anchor-x.stamp<=90*d).slice(0,5);
+    if(selected.length<2)selected=all.slice(0,Math.min(5,all.length));
+    selected=selected.map(x=>{
+      const selectedPoints=[...x.points].sort((a,b)=>b.weight-a.weight).slice(0,2);
+      const primary=selectedPoints[0].value;
+      const valid=selectedPoints.filter(y=>Math.abs(y.value-primary)<=primary*.15);
+      const sum=valid.reduce((a,y)=>a+y.weight,0);
+      return {date:x.date,stamp:x.stamp,estimate:valid.reduce((a,y)=>a+y.value*y.weight,0)/sum,
+        count:x.points.length,confidenceWeight:valid[0].weight};
+    });
+    // EMA increases the significance of RECENT sessions without deleting
+    // successful older observations from analytics. Alpha 0.35.
+    const chronological=selected.slice().reverse();
+    let current=chronological[0].estimate;
+    for(const x of chronological.slice(1))current=current*.65+x.estimate*.35;
+    const spread=Math.max(...selected.map(x=>Math.abs(x.estimate-current)/current));
+    const aged=(n(options.nowMs)??Date.now())-anchor;
+    const stale=aged>60*d;
+    const confidence=stale||selected.length<2||spread>.16?'низкая':
+      selected.length>=3&&spread<.10?'высокая':'средняя';
+    const coefficient=confidence==='низкая'?.85:.9;
+    return {estimate:current,trainingMax:current*coefficient,trainingMaxFactor:coefficient,
+      confidence,sessionCount:selected.length,lastPerformed:selected[0].date,stale,
+      historicalSessionCount:all.length,sourceSessions:selected.map(x=>({
+        date:x.date,estimate:x.estimate,count:x.count
+      }))};
+  }
   function strengthEstimate(e,rows,reg,weights=[],set={},basisMethod=method(e,set)) {
     // Callers may explicitly use ordinary sets as the reference for a
     // different method on the SAME exercise, equipment and technique.
@@ -847,6 +894,10 @@
       const sum=group.reduce((n,x)=>n+x.confidenceWeight,0);
       return {value:group.reduce((n,x)=>n+x.value*x.confidenceWeight,0)/sum,weight:Math.max(...group.map(x=>x.confidenceWeight)),group};
     });
+    const rolling=currentStrengthEstimate(points.map(x=>({
+      sessionId:String(x.session.calibrationParentId??x.session.id??sessionDate(x.session)),
+      date:sessionDate(x.session),estimate:x.value,confidenceWeight:x.confidenceWeight
+    })));
     const weightedMedian=rows=>{const sorted=[...rows].sort((a,b)=>a.value-b.value);const half=sorted.reduce((n,x)=>n+x.weight,0)/2;let acc=0;for(const x of sorted){acc+=x.weight;if(acc>=half)return x.value}return null};
     const center=weightedMedian(sessions);
     const deviations=sessions.map(x=>({value:Math.abs(x.value-center),weight:x.weight}));
@@ -871,10 +922,14 @@
       }
     }
     for(const bucket of Object.values(protocols)){bucket.estimate=bucket.total/bucket.weight;delete bucket.total;}
-    return {estimate,stableMean:estimate,best:points.length?Math.max(...points.map(x=>x.value)):null,lastPerformed:points[0]?sessionDate(points[0].session):null,lastWorkingSets:latestGroup.map(x=>({weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effortRpe(x.set),rir:effortRpe(x.set)==null?null:10-effortRpe(x.set)})),protocols,sessionCount:sessions.length,setCount:points.length,latest:latestGroup.length?Math.max(...latestGroup.map(x=>x.value)):null,points,source,
+    return {estimate:rolling.estimate??estimate,stableMean:rolling.estimate??estimate,
+      historicalEstimate:estimate,trainingMax:rolling.trainingMax,
+      trainingMaxFactor:rolling.trainingMaxFactor,
+      currentSourceSessions:rolling.sourceSessions,stale:rolling.stale,
+      best:points.length?Math.max(...points.map(x=>x.value)):null,lastPerformed:points[0]?sessionDate(points[0].session):null,lastWorkingSets:latestGroup.map(x=>({weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effortRpe(x.set),rir:effortRpe(x.set)==null?null:10-effortRpe(x.set)})),protocols,sessionCount:sessions.length,setCount:points.length,latest:latestGroup.length?Math.max(...latestGroup.map(x=>x.value)):null,points,source,
       confidenceLow:estimate==null?null:estimate-spread,confidenceHigh:estimate==null?null:estimate+spread,
       confirmed:actualSingles.length?Math.max(...actualSingles.map(x=>loadForEstimate(x.exercise,x.set,x.session,reg,weights)||0)):null,
-      confidence:sessions.filter(x=>x.weight>=.4).length>=3?'высокая':sessions.filter(x=>x.weight>=.3).length>=2?'средняя':'низкая'};
+      confidence:rolling.confidence};
   }
   function policyContext(e,s,session={}) {
     return !session.ended&&method(e,s)==='STANDARD'&&setRole(e,s)==='standard'&&!warmup(s)&&
@@ -1789,6 +1844,12 @@
     return {
       weight,
       strengthBasis:baselineFromStandard?'standard':activeMethod==='STANDARD'?'standard':'method',
+      currentOneRepMax:strength.estimate??null,
+      trainingMax:strength.trainingMax??null,
+      trainingMaxFactor:strength.trainingMaxFactor??null,
+      historicalOneRepMax:strength.historicalEstimate??null,
+      strengthSourceSessions:strength.currentSourceSessions??[],
+      percentageBasis:session.percentageBasis==='trainingMax'?'trainingMax':'e1RM',
       series,calibration,reasonCodes,repetitionGoal,
       recoveryEvidenceExcluded:skippedRecovery.length,
       recoveryEvidenceLastDate:allHistory.find(x=>isRecoveryForAutoweight(x.session))?.session?sessionDate(allHistory.find(x=>isRecoveryForAutoweight(x.session)).session):null,
@@ -2303,7 +2364,7 @@
     loadComparable,
     weekProfiles,
     upgradePercentageWeeks,upgradeSessionVolume,allocateWeek,bandPrescription,cycleProfiles,dayRoles,validatePrescription,exerciseKind,applyWeekProfile,generateCycle,fatigueSignals,isRecoveryForAutoweight,boundedProgression,
-    strengthEstimate,
+    strengthEstimate,currentStrengthEstimate,
     setDecision,
     effortTarget,
     recommend,
