@@ -61,7 +61,7 @@ const val=(id,v)=>w.document.getElementById(id).value=v;
  assert.match(text,/110 кг/,'the higher successful single is included in full');
  assert.match(text,/82,3 \+ 93,3 \+ 110 \+ 98,7/);
  assert.equal(w.document.querySelectorAll('tbody tr').length,8);
- assert.equal(w.document.querySelector('tbody tr td:last-child b').textContent,'70,00');
+ assert.equal(w.document.querySelector('tbody tr td:last-child b').textContent,'72,50','week 1 uses confirmed 100 kg baseline, not smoothed 96.5 kg');
  assert.equal(JSON.stringify(db.offline_client_strengths),before,'read-only weekly projections');
  db.offline_client_strengths.push({id:'new-working',offline_client_id:'n1',trainer_id:'t1',exercise_name:'Присед со штангой',exercise_key:'squat',measured_at:'2026-10-28',created_at:'2026-10-28',weight_kg:100,reps:3,rpe:8,rir:2,is_deload:false});
  await w.offlineProgressWeeklyLoad('n1');
