@@ -831,7 +831,9 @@
     if(selected.length<3)selected=all.filter(x=>anchor-x.stamp<=90*d).slice(0,maxSessions);
     if(selected.length<2)selected=all.slice(0,Math.min(maxSessions,all.length));
     selected=selected.map(x=>{
-      const selectedPoints=[...x.points].sort((a,b)=>b.weight-a.weight).slice(0,2);
+      // Take the two strongest credible working observations from each workout.
+      // The final fatigued sets must not replace a better opening top set.
+      const selectedPoints=[...x.points].sort((a,b)=>b.value-a.value||b.weight-a.weight).slice(0,2);
       const primary=selectedPoints[0].value;
       const valid=selectedPoints.filter(y=>Math.abs(y.value-primary)<=primary*.15);
       const sum=valid.reduce((a,y)=>a+y.weight,0);
