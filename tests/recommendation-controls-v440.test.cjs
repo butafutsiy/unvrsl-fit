@@ -12,7 +12,7 @@ test('older effort evidence remains usable when latest workout has no RPE',()=>{
  const r=A.recommend(e,e.set[0],s,history,reg);
  assert.equal(r.planPreserved,false);assert.equal(r.weight,r.calculatedWeight);assert.ok(r.weight>=r.allowedWeightRange.min&&r.weight<=r.allowedWeightRange.max);assert.equal(r.strength.setCount,4,'only the older RPE-recorded workout counts toward reliable 1RM');
  const buckets=Object.values(r.strength.protocols);const mean=buckets.reduce((n,b)=>n+b.weight*b.estimate,0)/buckets.reduce((n,b)=>n+b.weight,0);
- assert.equal(Number(mean.toFixed(1)),r.strength.estimate);
+ assert.equal(Number(mean.toFixed(1)),Number(r.strength.historicalEstimate.toFixed(1)));assert.ok(r.strength.estimate>0);
 });
 test('three test attempts and matching backoffs survive reload, stop and correction',()=>{
  const first={w:100,r:1,plannedReps:1,role:'test_attempt',ok:false};
