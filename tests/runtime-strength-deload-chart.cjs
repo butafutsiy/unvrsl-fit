@@ -31,7 +31,7 @@ w.eval(fs.readFileSync(require.resolve('../strength-progress.js'),'utf8'));
  assert.ok(card.querySelectorAll('.spv335-marker.e1rm').length===3,'all observations plotted');
  assert.match(card.textContent,/86,7 кг/,'65 × 8 at RPE 8 gives 86.7 kg chart-only 1RM');
  assert.match(card.textContent,/Разгрузка · не для автовеса/);
- marker.dispatchEvent(new w.MouseEvent('click',{bubbles:true}));
+ card.querySelector('[data-sp-chip="1"]').click();
  assert.match(card.querySelector('[data-sp-focus-e1rm]').textContent,/Разгрузка, только график/);
  assert.equal(saved[1].e1rm,null,'rendering cannot change program calculation input');
  console.log('Deload graph overlay: 1RM marker, historical date, badge and no persistence passed.');
