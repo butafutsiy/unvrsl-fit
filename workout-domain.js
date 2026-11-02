@@ -2165,6 +2165,15 @@
         const ex=(session.ex||[]).find(e=>reg.identity(e)===key);
         const strength=strengthEstimate(ex,history(ex,processed,reg),reg,weights);
         if(strength.estimate!=null)point.e1=strength.estimate;
+        else {
+          // Historical charts keep a provisional standard-set estimate when
+          // actual effort was never recorded. It is NOT strength evidence
+          // used by autoweight; a fatigued method stage cannot inflate it.
+          const legacy=(ex?.set||[]).filter(x=>complete(ex,x,reg)&&
+            method(ex,x)==='STANDARD'&&!warmup(x))
+            .map(x=>e1rm(ex,x,session,reg,weights)).filter(x=>x>0);
+          if(legacy.length)point.e1=Math.max(...legacy);
+        }
         const row = map.get(key) || {
           key,
           base: point.base,
