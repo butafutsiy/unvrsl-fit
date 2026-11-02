@@ -374,7 +374,13 @@ test('confirmed single protection is temporary and evidence of decline can overr
  const result=A.currentStrengthEstimate(original,{nowMs:Date.parse('2026-09-23')});
  assert.equal(result.confirmedFloor,null,'two independent days below 95 percent release old ceiling/floor');
  assert.equal(result.floorApplied,false);
- assert.ok(result.estimate<100);
+ const withoutSingle=A.currentStrengthEstimate(original.map(({confirmedSingle,...item})=>item),
+   {nowMs:Date.parse('2026-09-23')});
+ assert.equal(result.estimate,withoutSingle.estimate,
+   'after two convincing weaker workouts the past single no longer constrains smoothing');
+ const later=A.currentStrengthEstimate([...original,
+   {sessionId:'bad3',date:'2026-10-01',estimate:90}],{nowMs:Date.parse('2026-10-02')});
+ assert.ok(later.estimate<100,'once the old single leaves the last three days, current strength may fall');
  const expired=A.currentStrengthEstimate([
   {sessionId:'oldSingle',date:'2026-08-01',estimate:110,confirmedSingle:100},
   {sessionId:'new1',date:'2026-09-23',estimate:90},
