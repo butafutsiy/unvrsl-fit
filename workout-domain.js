@@ -1865,9 +1865,17 @@
     const reasonCodes=[];
     let repetitionGoal=null;
     if(ordinary&&prior!=null&&!anomalous&&!deload){
-      if(weak&&!repeatedWeak&&!changedRepBand&&!band){
-        raw=prior;action='hold';trend='insufficient';reasonCodes.push('UNCONFIRMED_DECLINE');
-        reason='Один недобор повторений при повышенном RPE: вес следующей тренировки сохранён; проверь восстановление';
+      if(weak&&!changedRepBand&&!band){
+        if(repeatedWeak){
+          // Two genuine failures justify one equipment step, not an abrupt
+          // 10% downgrade derived from a noisy low-day e1RM.
+          raw=moveWeight(prior,p.loadType==='bodyweight_assisted'?1:-1,p);
+          action='down';reasonCodes.push('REPEATED_WEAK_SERIES');
+          reason='Две полные сопоставимые тренировки ниже цели: снизить стартовый вес на один доступный шаг';
+        }else{
+          raw=prior;action='hold';trend='insufficient';reasonCodes.push('UNCONFIRMED_DECLINE');
+          reason='Один недобор повторений при повышенном RPE: вес следующей тренировки сохранён; проверь восстановление';
+        }
       }else if(series&&!series.full){
         raw=prior;action='hold';trend='insufficient';reasonCodes.push('INCOMPLETE_SERIES');
         reason='Серия записана не полностью или содержит меньше подходов, чем новое задание: рабочий вес сохранён';
