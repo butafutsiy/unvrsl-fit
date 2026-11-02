@@ -35,7 +35,7 @@ w.eval(fs.readFileSync(require.resolve('../strength-progress.js'),'utf8'));
  assert.deepEqual(Array.from(card.__spRows||[],x=>x._i),[0,1,2],'record keys are stable');
  const chip=card.querySelector('[data-sp-chip="1"]');
  assert.ok(chip,'deload record chip exists');
- assert.equal(chip.closest('[data-sp-mode]'),null);
+ assert.equal(chip.closest('button[data-sp-mode]'),null,'record selection is not a mode-button action');
  let eventBubbled=false;
  card.addEventListener('click',()=>{eventBubbled=true},{capture:true,once:true});
  chip.click();
