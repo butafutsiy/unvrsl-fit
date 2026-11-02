@@ -36,7 +36,8 @@
     html:not(.${READY}) body>.modal,
     html:not(.${READY}) body>.toast{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
     html.${READY}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior-y:auto!important}
-    body.${READY}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch}
+    /* Safari: html owns page scrolling. clip does not turn visible overflow into an extra scroll container. */
+    body.${READY}{height:auto!important;min-height:100%!important;overflow-x:clip!important;overflow-y:visible!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:auto!important}
     body.${READY}.unvrsl-modal-open{overflow:hidden!important;overscroll-behavior:none!important}
     html.${READY} .app,html.${READY} body>.nav{visibility:visible!important;opacity:1!important;pointer-events:auto!important}
     .page:not(.active){display:none!important;visibility:hidden!important;pointer-events:none!important}
