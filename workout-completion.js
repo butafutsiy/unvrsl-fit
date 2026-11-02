@@ -50,7 +50,9 @@
         (e.set || []).some((x) => A.complete(e, x, workoutRegistry)),
       )
     ) {
-      toast("Нет завершённых рабочих подходов");
+      modal(
+        '<div class="wc392"><h2>Нет выполненных подходов</h2><p class="muted">Чтобы завершить тренировку, отметь хотя бы один выполненный рабочий подход. Если передумал тренироваться, отмени тренировку. Она не попадёт в статистику.</p><button type="button" class="btn primary full" onclick="closeModal()">Вернуться к тренировке</button><button type="button" class="btn danger full" onclick="closeModal();cancelWorkout()">Отменить тренировку</button></div>',
+      );
       return;
     }
     W.__workoutFinishing = true;
