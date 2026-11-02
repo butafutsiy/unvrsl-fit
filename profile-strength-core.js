@@ -96,7 +96,7 @@
       <div class='strength-live-trend'><span>${E(month)}</span><span>30-дневная динамика 1ПМ</span></div>
       <div class='strength-live-detail'>${E(details)}<small>${E(rolling.confidenceReason||'')}</small></div>
       <div class='strength-recovery-note' data-strength-recovery>Разгрузка / восстановление: <b>${x.recoverySessionCount||0}</b> · только на графике, не влияет на автовес</div>
-      <details class='strength-live-more'><summary>Исторические показатели</summary><div>Средний рабочий 1ПМ: <b>${number(historical)}</b></div><div>Подтверждённый сингл: <b>${verified}</b></div></details>
+      <details class='strength-live-more'><summary>Исторические показатели</summary><div>Средний рабочий 1ПМ: <b data-strength-historical>${number(historical)}</b></div><div>Подтверждённый сингл: <b data-strength-single>${verified}</b></div></details>
     </section>`;
   }
     function selectedStrengthCompare(point,group){
