@@ -922,7 +922,10 @@
     }
     const stabilityFloorApplied=stabilityFloor!=null&&current<stabilityFloor;
     if(stabilityFloorApplied)current=Number(stabilityFloor.toFixed(4));
-    const spread=Math.max(...selected.map(x=>Math.abs(x.estimate-current)/current));
+    // Confidence describes current strength, not the widest spread across
+    // all five days. A low older workout may remain in the baseline window
+    // but must not silently downgrade TM from 90% to 85% of the protected 1RM.
+    const spread=Math.max(...selected.slice(0,3).map(x=>Math.abs(x.estimate-current)/current));
     const aged=(n(options.nowMs)??Date.now())-anchor;
     const stale=aged>60*d;
     // High confidence requires repeatability AND credible effort-based data.
