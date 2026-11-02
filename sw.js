@@ -1,6 +1,6 @@
 "use strict";
 // Refresh shell for per-session working sets and compact rest timer.
-const SW_RELEASE = "v591",
+const SW_RELEASE = "v592",
   CACHE_PREFIX = "unvrsl-",
   SHELL = `${CACHE_PREFIX}shell-${SW_RELEASE}`,
   MEDIA = `${CACHE_PREFIX}media-${SW_RELEASE}`;
