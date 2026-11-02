@@ -54,9 +54,13 @@
         confirmedSingle:N(row.reps)===1&&N(row.weight_kg)>0&&(N(row.rpe)??(N(row.rir)!=null?10-N(row.rir):null))>=7
           ?N(row.weight_kg):null});
     }
-    const count=included.length,estimate=count?
-      included.reduce((total,row)=>total+row.e1rm,0)/count:null;
-    return {estimate,count,total:A(rows).length,included,excluded};
+    // Auxiliary 70–75% observations are allowed only until full-strength
+    // evidence exists; they must not bias the eligible historical mean.
+    const effective=included.some(row=>row.tier!=='auxiliary')?
+      included.filter(row=>row.tier!=='auxiliary'):included;
+    const count=effective.length,estimate=count?
+      effective.reduce((total,row)=>total+row.e1rm,0)/count:null;
+    return {estimate,count,total:A(rows).length,included:effective,excluded};
   }
   function age(v){if(!v)return null;const d=new Date(`${v}T12:00:00`);if(Number.isNaN(d.getTime()))return null;const n=new Date();let x=n.getFullYear()-d.getFullYear(),m=n.getMonth()-d.getMonth();if(m<0||(m===0&&n.getDate()<d.getDate()))x--;return x>=14&&x<=100?x:null}
   function measure(row,key){const n=N(row?.measurements?.[key]);return n!=null&&n>0?n:null}
