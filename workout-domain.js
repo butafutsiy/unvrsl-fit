@@ -845,21 +845,39 @@
         count:x.points.length,confidenceWeight:valid[0].weight,
         confirmedSingle:x.confirmedSingles.length?Math.max(...x.confirmedSingles):null};
     });
-    // EMA increases the significance of RECENT sessions without deleting
-    // successful older observations from analytics. Alpha 0.35.
+    // Adaptive EMA: one exceptional day is capped at 5%, while two
+    // independent, sufficiently credible improving days can unlock a faster
+    // response. Never accelerate from one low-confidence/auxiliary set.
     const chronological=selected.slice().reverse();
     let current=chronological[0].estimate;
+    let trend='stable',smoothingAlpha=null,maxChangePct=null;
     if(chronological.length===2){
-      // With only two sessions, avoid letting an old, lower-effort
-      // calibration overwhelm the more recent verified working day.
-      current=current*.25+chronological[1].estimate*.75;
+      // With only two sessions, keep the newest credible working day relevant.
+      const recent=chronological[1];
+      const delta=(recent.estimate-chronological[0].estimate)/chronological[0].estimate;
+      smoothingAlpha=delta<-.01?.25:.75;
+      // The original two-day rule favors the newest verified session; cap
+      // one-day jumps to avoid treating an anomalous set as a new baseline.
+      const limit=current*.05;
+      const bounded=Math.max(current-limit,Math.min(current+limit,recent.estimate));
+      current=current*(1-smoothingAlpha)+bounded*smoothingAlpha;
+      maxChangePct=5;
+      trend=delta<-.01?'single_decline':delta>.005?'unconfirmed_growth':'stable';
     }else{
-      for(const x of chronological.slice(1)){
-        // One exceptional session must not suddenly redefine the maximum.
-        // Repeated gains still accumulate across independent workouts.
-        const limit=current*.06;
+      for(let i=1;i<chronological.length;i++){
+        const x=chronological[i],previous=chronological[i-1],prior=chronological[i-2];
+        const change=(x.estimate-previous.estimate)/previous.estimate;
+        const priorChange=prior?(previous.estimate-prior.estimate)/prior.estimate:0;
+        const quality=previous.confidenceWeight>=.3&&x.confidenceWeight>=.3;
+        const confirmedGrowth=!!prior&&quality&&priorChange>=.005&&change>=.005;
+        const confirmedDecline=!!prior&&quality&&priorChange<=-.01&&change<=-.01;
+        smoothingAlpha=confirmedGrowth?.6:confirmedDecline?.45:change<-.01?.25:.35;
+        maxChangePct=confirmedGrowth?8:5;
+        trend=confirmedGrowth?'confirmed_growth':confirmedDecline?'confirmed_decline':
+          change<-.01?'single_decline':change>.005?'unconfirmed_growth':'stable';
+        const limit=current*maxChangePct/100;
         const bounded=Math.max(current-limit,Math.min(current+limit,x.estimate));
-        current=current*.65+bounded*.35;
+        current=current*(1-smoothingAlpha)+bounded*smoothingAlpha;
       }
     }
     current=Number(current.toFixed(4));
@@ -879,11 +897,14 @@
     const spread=Math.max(...selected.map(x=>Math.abs(x.estimate-current)/current));
     const aged=(n(options.nowMs)??Date.now())-anchor;
     const stale=aged>60*d;
+    // High confidence requires repeatability AND credible effort-based data.
+    const highQuality=selected.every(x=>x.confidenceWeight>=.3);
     const confidence=stale||selected.length<2||spread>.16?'низкая':
-      selected.length>=3&&spread<.10?'высокая':'средняя';
+      selected.length>=3&&spread<.08&&highQuality?'высокая':'средняя';
     const coefficient=confidence==='низкая'?.85:.9;
     return {estimate:current,trainingMax:current*coefficient,trainingMaxFactor:coefficient,
       confirmedFloor,confirmedFloorDate:witness?.date??null,floorApplied,
+      trend,smoothingAlpha,maxChangePct,highQuality,
       confidence,sessionCount:selected.length,lastPerformed:selected[0].date,stale,
       historicalSessionCount:all.length,sourceSessions:selected.map(x=>({
         date:x.date,estimate:x.estimate,count:x.count
@@ -968,6 +989,8 @@
       currentSourceSessions:rolling.sourceSessions,stale:rolling.stale,
       confirmedFloor:rolling.confirmedFloor,confirmedFloorDate:rolling.confirmedFloorDate,
       confirmedFloorApplied:rolling.floorApplied,
+      trend:rolling.trend,smoothingAlpha:rolling.smoothingAlpha,
+      maxChangePct:rolling.maxChangePct,highQuality:rolling.highQuality,
       best:points.length?Math.max(...points.map(x=>x.value)):null,lastPerformed:points[0]?sessionDate(points[0].session):null,lastWorkingSets:latestGroup.map(x=>({weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effortRpe(x.set),rir:effortRpe(x.set)==null?null:10-effortRpe(x.set)})),protocols,sessionCount:sessions.length,setCount:points.length,latest:latestGroup.length?Math.max(...latestGroup.map(x=>x.value)):null,points,source,
       confidenceLow:estimate==null?null:estimate-spread,confidenceHigh:estimate==null?null:estimate+spread,
       confirmed:actualSingles.length?Math.max(...actualSingles.map(x=>loadForEstimate(x.exercise,x.set,x.session,reg,weights)||0)):null,
@@ -1899,6 +1922,8 @@
       confirmedOneRepFloor:strength.confirmedFloor??null,
       confirmedOneRepFloorDate:strength.confirmedFloorDate??null,
       confirmedOneRepFloorApplied:strength.confirmedFloorApplied===true,
+      strengthTrend:strength.trend??'stable',strengthSmoothingAlpha:strength.smoothingAlpha??null,
+      strengthMaxChangePct:strength.maxChangePct??null,
       strengthSourceSessions:strength.currentSourceSessions??[],
       percentageBasis,
       series,calibration,reasonCodes,repetitionGoal,
@@ -1953,7 +1978,9 @@
       }:null,
       strength: {stableMean:strength.stableMean,best:strength.best,lastPerformed:strength.lastPerformed,lastWorkingSets:strength.lastWorkingSets,protocols:strength.protocols,sessionCount:strength.sessionCount||ids.length,currentSessionCount:strength.currentSessionCount||0,trainingMax:strength.trainingMax,historicalEstimate:strength.historicalEstimate,
         confirmedFloor:strength.confirmedFloor,confirmedFloorDate:strength.confirmedFloorDate,
-        confirmedFloorApplied:strength.confirmedFloorApplied,setCount:strength.setCount||recent.length,estimate:strength.estimate==null?null:Number(strength.estimate.toFixed(1)),confirmed:strength.confirmed,
+        confirmedFloorApplied:strength.confirmedFloorApplied,trend:strength.trend,
+        smoothingAlpha:strength.smoothingAlpha,maxChangePct:strength.maxChangePct,
+        highQuality:strength.highQuality,setCount:strength.setCount||recent.length,estimate:strength.estimate==null?null:Number(strength.estimate.toFixed(1)),confirmed:strength.confirmed,
         confidenceLow:strength.confidenceLow,confidenceHigh:strength.confidenceHigh,confidence:strength.confidence,sources:strength.points.slice(0,12).map(x=>({date:sessionDate(x.session),method:method(x.exercise,x.set),role:setRole(x.exercise,x.set),weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effortRpe(x.set)}))},
       methodStage:methodRec?.role??setRole(e,set),
       targetEffort:effortBand,
