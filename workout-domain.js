@@ -855,7 +855,21 @@
     // Adaptive EMA: one exceptional day is capped at 5%, while two
     // independent, sufficiently credible improving days can unlock a faster
     // response. Never accelerate from one low-confidence/auxiliary set.
-    const chronological=selected.slice().reverse();
+    // Keep the working 1RM responsive: only the latest three qualified
+    // days participate in EMA. The older two are validation evidence for
+    // the temporary stability floor, not extra downward drag on progression.
+    const recent=selected.slice(0,3);
+    let chronological=recent.slice().reverse();
+    // Ignore a lone older e1RM spike/drop when two newer credible workouts
+    // disagree by over 10%. Real repeated changes stay in the calculation.
+    if(chronological.length===3){
+      const [older,middle,newer]=chronological;
+      const independent=middle.confidenceWeight>=.3&&newer.confidenceWeight>=.3;
+      const isolatedHigh=older.estimate>Math.max(middle.estimate,newer.estimate)*1.1;
+      const isolatedLow=older.estimate<Math.min(middle.estimate,newer.estimate)*.9;
+      if(independent&&!older.confirmedSingle&&(isolatedHigh||isolatedLow))
+        chronological=chronological.slice(1);
+    }
     let current=chronological[0].estimate;
     let trend='stable',smoothingAlpha=null,maxChangePct=null;
     if(chronological.length===2){
@@ -925,21 +939,21 @@
     // Confidence describes current strength, not the widest spread across
     // all five days. A low older workout may remain in the baseline window
     // but must not silently downgrade TM from 90% to 85% of the protected 1RM.
-    const spread=Math.max(...selected.slice(0,3).map(x=>Math.abs(x.estimate-current)/current));
+    const spread=Math.max(...recent.map(x=>Math.abs(x.estimate-current)/current));
     const aged=(n(options.nowMs)??Date.now())-anchor;
     const stale=aged>60*d;
     // High confidence requires repeatability AND credible effort-based data.
-    const highQuality=selected.every(x=>x.confidenceWeight>=.3);
-    const confidence=provisional||stale||selected.length<2||spread>.16?'низкая':
-      selected.length>=3&&spread<.08&&highQuality?'высокая':'средняя';
+    const highQuality=recent.every(x=>x.confidenceWeight>=.3);
+    const confidence=provisional||stale||recent.length<2||spread>.16?'низкая':
+      recent.length>=3&&spread<.08&&highQuality?'высокая':'средняя';
     const coefficient=confidence==='низкая'?.85:.9;
     return {estimate:current,trainingMax:current*coefficient,trainingMaxFactor:coefficient,
       provisional,minimumStrengthIntensity:70,fullStrengthIntensity:75,
       confirmedFloor,confirmedFloorDate:witness?.date??null,floorApplied,
       stabilityFloor,stabilityFloorApplied,stabilitySourceDates,declineConfirmed,
       trend,smoothingAlpha,maxChangePct,highQuality,
-      confidence,sessionCount:selected.length,lastPerformed:selected[0].date,stale,
-      historicalSessionCount:history.length,sourceSessions:selected.map(x=>({
+      confidence,sessionCount:recent.length,lastPerformed:recent[0].date,stale,
+      historicalSessionCount:history.length,sourceSessions:recent.map(x=>({
         date:x.date,estimate:x.estimate,count:x.count
       }))};
   }
