@@ -1928,6 +1928,7 @@
       strengthBasis:baselineFromStandard?'standard':activeMethod==='STANDARD'?'standard':'method',
       currentOneRepMax:strength.estimate??null,
       trainingMax:strength.trainingMax??null,
+      strengthProvisional:strength.provisional===true,
       trainingMaxFactor:strength.trainingMaxFactor??null,
       historicalOneRepMax:strength.historicalEstimate??null,
       confirmedOneRepFloor:strength.confirmedFloor??null,
