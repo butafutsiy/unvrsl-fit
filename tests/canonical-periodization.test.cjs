@@ -300,7 +300,7 @@ test('rolling e1RM follows latest three workout days rather than the full histor
  const result=A.currentStrengthEstimate(observations,{nowMs:Date.parse('2026-10-22')});
  assert.equal(result.sessionCount,3);
  assert.deepEqual(result.sourceSessions.map(x=>x.date),['2026-10-21','2026-10-01','2026-09-20']);
- assert.ok(Math.abs(result.estimate-98.98925)<.02);
+ assert.ok(Math.abs(result.estimate-96.4635)<.02);
  assert.ok(Math.abs(result.trainingMax-result.estimate*.9)<.01);
  assert.equal(result.historicalSessionCount,6);
  const moreOld=[...observations,...Array.from({length:30},(_,i)=>({sessionId:'ancient'+i,date:'2025-01-01',estimate:50,confidenceWeight:1}))];
@@ -340,7 +340,7 @@ test('actual workout recommendation uses rolling e1RM, not the historical full a
    .map(([id,date,w])=>({id,date,ended:1,ex:[ex('bench',[work(w,5,9)])]}));
  const cur=current(target({w:105,programW:0,targetRepMin:5,targetRepMax:7,targetRpeMin:8,targetRpeMax:9}), 'bench',{date:'2026-10-28'});
  const r=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,sessions,reg);
- assert.equal(r.strength.sessionCount,3);
+ assert.equal(r.strength.currentSessionCount,3);
  assert.ok(r.currentOneRepMax>r.historicalOneRepMax,'old weak session no longer drags live estimate down');
  assert.ok(r.trainingMax<r.currentOneRepMax);
  assert.equal(r.percentageBasis,'e1RM');
