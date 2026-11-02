@@ -291,3 +291,57 @@ test('low intensity or missing RPE cannot lower robust working e1RM',()=>{
  assert.equal(mixed.strength.estimate,only.strength.estimate);
  assert.equal(mixed.strength.sessionCount,1);
 });
+
+
+test('rolling e1RM follows latest three workout days rather than the full historical mean',()=>{
+ const dates=['2026-06-01','2026-06-08','2026-06-15','2026-09-20','2026-10-01','2026-10-21'];
+ const estimates=[70,75,80,93.3,110,98.7];
+ const observations=dates.map((date,i)=>({sessionId:'s'+i,date,estimate:estimates[i],confidenceWeight:1}));
+ const result=A.currentStrengthEstimate(observations,{nowMs:Date.parse('2026-10-22')});
+ assert.equal(result.sessionCount,3);
+ assert.deepEqual(result.sourceSessions.map(x=>x.date),['2026-10-21','2026-10-01','2026-09-20']);
+ assert.ok(Math.abs(result.estimate-98.98925)<.02);
+ assert.ok(Math.abs(result.trainingMax-result.estimate*.9)<.01);
+ assert.equal(result.historicalSessionCount,6);
+ const moreOld=[...observations,...Array.from({length:30},(_,i)=>({sessionId:'ancient'+i,date:'2025-01-01',estimate:50,confidenceWeight:1}))];
+ assert.ok(Math.abs(A.currentStrengthEstimate(moreOld,{nowMs:Date.parse('2026-10-22')}).estimate-result.estimate)<.001);
+});
+test('two sets in one session do not count as two workouts',()=>{
+ const observations=[
+  {sessionId:'same',date:'2026-10-01',estimate:105,confidenceWeight:1},
+  {sessionId:'same',date:'2026-10-01',estimate:104,confidenceWeight:1},
+  {sessionId:'next',date:'2026-10-10',estimate:110,confidenceWeight:1}
+ ];
+ const r=A.currentStrengthEstimate(observations,{nowMs:Date.parse('2026-10-12')});
+ assert.equal(r.sessionCount,2);
+ assert.equal(r.historicalSessionCount,2);
+ assert.ok(r.estimate>105&&r.estimate<110);
+});
+test('return from long break lowers confidence, not the actual estimate',()=>{
+ const records=[{date:'2026-05-01',estimate:130},{date:'2026-05-10',estimate:135},{date:'2026-05-20',estimate:132}];
+ const now=A.currentStrengthEstimate(records,{nowMs:Date.parse('2026-05-22')});
+ const stale=A.currentStrengthEstimate(records,{nowMs:Date.parse('2026-10-22')});
+ assert.equal(now.estimate,stale.estimate);
+ assert.equal(stale.confidence,'низкая');
+ assert.equal(stale.trainingMaxFactor,.85);
+});
+test('W8 maximal attempts and both 80 percent backoffs remain intact',()=>{
+ const cycle=A.generateCycle({weeks:8,daysPerWeek:3,startDate:'2026-09-01',testWeek:true,
+   exercises:[{exerciseId:'bench',n:'Жим',kind:'base',dayIndices:[0],sets:[{w:100}],weightMode:'auto'}]});
+ const w8=cycle.weeks.at(-1),sets=w8.days.flatMap(d=>d.ex).find(x=>x.exerciseId==='bench').sets;
+ assert.equal(w8.testWeek,true);
+ assert.deepEqual(sets.map(x=>x.role),['test_preparation','test_preparation','test_attempt','test_attempt','test_attempt','backoff','backoff']);
+ assert.deepEqual(sets.filter(x=>x.role==='test_attempt').map(x=>x.targetRepMin),[1,1,1]);
+ assert.deepEqual(sets.filter(x=>x.role==='backoff').map(x=>x.backoffPercent),[80,80]);
+ assert.ok(w8.weeklyLoadProfile.pct[0]>=90);
+});
+test('actual workout recommendation uses rolling e1RM, not the historical full average',()=>{
+ const sessions=[['a','2026-06-01',70],['b','2026-09-20',95],['c','2026-10-01',100],['d','2026-10-21',105]]
+   .map(([id,date,w])=>({id,date,ended:1,ex:[ex('bench',[work(w,5,9)])]}));
+ const cur=current(target({w:105,programW:0,targetRepMin:5,targetRepMax:7,targetRpeMin:8,targetRpeMax:9}), 'bench',{date:'2026-10-28'});
+ const r=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,sessions,reg);
+ assert.equal(r.strength.sessionCount,3);
+ assert.ok(r.currentOneRepMax>r.historicalOneRepMax,'old weak session no longer drags live estimate down');
+ assert.ok(r.trainingMax<r.currentOneRepMax);
+ assert.equal(r.percentageBasis,'e1RM');
+});
