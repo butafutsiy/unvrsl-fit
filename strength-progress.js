@@ -41,6 +41,44 @@
 
   function normalizeTrainer(row,index){const weight=N(row?.weight_kg),reps=N(row?.reps),stored=N(row?.e1rm);return{_i:index,id:String(row?.id||''),date:String(row?.measured_at||'').slice(0,10),key:String(row?.exercise_key||row?.exercise_name||''),name:String(row?.exercise_name||'Упражнение'),weight,reps,e1rm:plotE1rm(stored,weight,reps,row?.rpe,row?.rir,row?.is_deload),rpe:N(row?.rpe),rir:N(row?.rir),isDeload:!!row?.is_deload,source:sourceKey(row?.entry_source),note:String(row?.notes||'')}}
   function normalizePublic(row,index){const weight=N(row?.weight),reps=N(row?.reps),stored=N(row?.e1rm);return{_i:index,id:String(row?.id||''),date:String(row?.date||'').slice(0,10),key:String(row?.key||row?.name||''),name:String(row?.name||'Упражнение'),weight,reps,e1rm:plotE1rm(stored,weight,reps,row?.rpe,row?.rir,row?.isDeload),rpe:N(row?.rpe),rir:N(row?.rir),isDeload:!!row?.isDeload,source:sourceKey(row?.source),note:String(row?.note||'')}}
+  // Read-only summary based on the same eligible working records as the weekly table.
+  // A recovery chart point must never become evidence for TM or autoweight.
+  function strengthSummary(rows){
+    const domain=W.WorkoutDomain;
+    if(!domain?.strengthEvidence||!domain?.currentStrengthEstimate)return null;
+    const evidence=[],excluded=A(rows).filter(x=>x.isDeload).length;
+    for(const row of A(rows)){
+      if(row.isDeload)continue;
+      const score=domain.strengthEvidence(row.weight,row.reps,row.rpe,row.rir);
+      if(!(score.estimate>0&&score.confidenceWeight>0)||!row.date)continue;
+      evidence.push({sessionId:row.date,date:row.date,estimate:score.estimate,
+        confidenceWeight:score.confidenceWeight,confirmedSingle:row.reps===1&&
+          (row.rpe??(row.rir!=null?10-row.rir:null))>=7?row.weight:null});
+    }
+    const rolling=domain.currentStrengthEstimate(evidence);
+    const mean=evidence.length?evidence.reduce((a,x)=>a+x.estimate,0)/evidence.length:null;
+    const verified=evidence.find(x=>x.confirmedSingle===rolling.confirmedFloor&&x.date===rolling.confirmedFloorDate);
+    return {rolling,mean,verified,excluded,used:evidence.length};
+  }
+  function summaryHtml(rows){
+    const stats=strengthSummary(rows);if(!stats)return '';
+    const {rolling,mean,verified,excluded,used}=stats;
+    const value=n=>n!=null?`${fmt(n)} кг`:'—';
+    const verifiedText=verified?`${fmt(verified.confirmedSingle)} кг × 1 · ${day(verified.date)}`:'Нет актуального';
+    const trends={confirmed_growth:'устойчивый рост',confirmed_decline:'устойчивое снижение',
+      single_decline:'разовое снижение',unconfirmed_growth:'рост проверяется',stable:'стабильно'};
+    const details=used?`${used} рабочих записей · ${rolling.sessionCount} тренировок · достоверность ${rolling.confidence} · ${trends[rolling.trend]||'нет тренда'}`:'Нужны рабочие подходы с RPE/RIR';
+    return `<section class="spv336-summary" data-sp-strength-summary aria-label="Сводка по силе">
+      <div class="spv336-summary-grid">
+        <div><small>Актуальный 1ПМ</small><strong class="spv336-current" data-sp-current-1rm>${E(value(rolling.estimate))}</strong></div>
+        <div><small>Тренировочный максимум (TM)</small><strong data-sp-training-max>${E(value(rolling.trainingMax))}</strong></div>
+        <div><small>Исторический средний 1ПМ</small><strong data-sp-historical-mean>${E(value(mean))}</strong></div>
+        <div><small>Подтверждённый сингл</small><strong class="spv336-confirmed" data-sp-confirmed-single>${E(verifiedText)}</strong></div>
+      </div>
+      <div class="spv336-summary-detail">${E(details)}</div>
+      <div class="spv336-summary-recovery" data-sp-excluded><b>Разгрузка / восстановление: ${excluded}</b><span>Есть на графике · не влияет на 1ПМ, TM, автовес и недельные веса</span></div>
+    </section>`;
+  }
   function chronological(rows){return A(rows).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||a._i-b._i).map((x,i)=>({...x,_i:i}))}
   function groupRows(rows){const map=new Map();chronological(rows).forEach(row=>{const key=String(row.key||row.name||'').trim();if(!key)return;if(!map.has(key))map.set(key,{key,name:row.name||'Упражнение',rows:[]});map.get(key).rows.push(row)});return[...map.values()].sort((a,b)=>String(b.rows.at(-1)?.date||'').localeCompare(String(a.rows.at(-1)?.date||'')))}
   function hasActual(row){return N(row?.weight)!=null&&N(row?.reps)!=null}
