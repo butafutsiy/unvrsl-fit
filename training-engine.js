@@ -203,7 +203,7 @@
    if(rec.basis){const basis=document.createElement('div');basis.className='te406-basis';basis.textContent=`История: ${rec.strength?.sessionCount||rec.sessionIds.length} тренировок · ${rec.strength?.setCount||0} подходов${(rec.strength?.estimate??rec.basis.estimatedOneRepMax)?` · расчётный 1ПМ ≈ ${fmt(rec.strength?.estimate??rec.basis.estimatedOneRepMax)} кг`:''}${item.s.assignedW!=null?` · назначено ${WorkoutDomain.weightText(ex,rec.basis.planned,workoutRegistry,item.s)} кг`:''}`;metrics.append(basis)}
    if(rec.currentOneRepMax>0){
      const current=document.createElement('div');current.className='te410-week';
-     current.textContent=`Актуальный 1ПМ ≈ ${fmt(rec.currentOneRepMax)} кг · TM ≈ ${fmt(rec.trainingMax)} кг · ${rec.strengthSourceSessions.length} рабочих тренировок · уверенность ${rec.confidence}. Исторический средний ≈ ${fmt(rec.historicalOneRepMax)} кг. Основа процентов: ${rec.percentageBasis==='trainingMax'?'TM':'актуальный 1ПМ'}`;
+     current.textContent=`Актуальный 1ПМ ≈ ${fmt(rec.currentOneRepMax)} кг${rec.strengthProvisional?' · предварительная калибровка 70–75%':''} · TM ≈ ${fmt(rec.trainingMax)} кг · ${rec.strengthSourceSessions.length} рабочих тренировок · уверенность ${rec.confidence}. Исторический средний ≈ ${fmt(rec.historicalOneRepMax)} кг. Основа процентов: ${rec.percentageBasis==='trainingMax'?'TM':'актуальный 1ПМ'}`;
      metrics.append(current);
    }
    if(rec.strengthSmoothingAlpha!=null){
