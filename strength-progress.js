@@ -78,7 +78,7 @@
       const score=domain.strengthEvidence(row.weight,row.reps,row.rpe,row.rir);
       if(!(score.estimate>0&&score.confidenceWeight>0)||!row.date)continue;
       evidence.push({sessionId:row.date,date:row.date,estimate:score.estimate,
-        confidenceWeight:score.confidenceWeight,confirmedSingle:row.reps===1&&
+        confidenceWeight:score.confidenceWeight,tier:score.tier,confirmedSingle:row.reps===1&&
           (row.rpe??(row.rir!=null?10-row.rir:null))>=7?row.weight:null});
     }
     const rolling=domain.currentStrengthEstimate(evidence);
