@@ -39,3 +39,16 @@ test('concurrent finish clicks use one transaction and one session ID',async()=>
  assert.equal(calls.uploads,1);assert.equal(state.sessions.length,1);
  assert.equal(state.sessions[0].id,'same-session');
 });
+
+test('empty workout shows cancel/continue choices without creating a history entry',async()=>{
+ const {context,state,calls}=runtime();
+ state.current.ex[0].set[0].ok=false;
+ let sheet='';context.modal=html=>{sheet=html};
+ await context.completeWorkout();
+ assert.match(sheet,/Нет выполненных подходов/);
+ assert.match(sheet,/Вернуться к тренировке/);
+ assert.match(sheet,/Отменить тренировку/);
+ assert.equal(state.current.id,'same-session');
+ assert.equal(state.sessions.length,0);
+ assert.equal(calls.uploads,0);
+});
