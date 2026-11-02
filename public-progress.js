@@ -55,7 +55,13 @@
   function weightPoints(){return sorted(data?.measurements,'date').map(x=>({date:x.date,value:N(x.weight),source:x.source,note:x.note})).filter(x=>x.value!=null&&x.value>0)}
   function measures(){return MEASURES.map(([key,name])=>({key,name,points:sorted(data?.measurements,'date').map(x=>({date:x.date,value:N(x.measurements?.[key]),source:x.source,note:x.note})).filter(x=>x.value!=null&&x.value>0)})).filter(x=>x.points.length)}
   function groups(){const map=new Map();A(data?.strengths).forEach(x=>{const key=String(x.key||x.name||'');if(!key)return;if(!map.has(key))map.set(key,{key,name:x.name||'Упражнение',rows:[]});map.get(key).rows.push(x)});return[...map.values()].sort((a,b)=>String(b.rows[b.rows.length-1]?.date||'').localeCompare(String(a.rows[a.rows.length-1]?.date||'')))}
-  function strengthSeries(rows){const list=sorted(rows,'date'),mode=list.some(x=>N(x.e1rm)>0)?'e1rm':list.some(x=>N(x.weight)>0)?'weight':'reps',label=mode==='e1rm'?'Расчётный 1ПМ':mode==='weight'?'Рабочий вес':'Повторения',unit=mode==='reps'?'повт.':'кг',points=list.map(x=>({date:x.date,value:N(x[mode]),source:x.source,note:x.note})).filter(x=>x.value!=null);return{label,unit,points}}
+  function graphE1rm(row){
+    if(!row?.isDeload)return N(row?.e1rm);
+    const weight=N(row.weight),reps=N(row.reps),effort=N(row.rpe)??(N(row.rir)!=null?10-N(row.rir):null);
+    if(!(weight>0)||!Number.isInteger(reps)||reps<1||reps>30)return null;
+    return +(weight*(1+(reps+(effort!=null&&effort>=4&&effort<=10?10-effort:0))/30)).toFixed(1);
+  }
+  function strengthSeries(rows){const list=sorted(rows,'date'),mode=list.some(x=>graphE1rm(x)>0)?'e1rm':list.some(x=>N(x.weight)>0)?'weight':'reps',label=mode==='e1rm'?'Расчётный 1ПМ':mode==='weight'?'Рабочий вес':'Повторения',unit=mode==='reps'?'повт.':'кг',points=list.map(x=>({date:x.date,value:mode==='e1rm'?graphE1rm(x):N(x[mode]),source:x.source,note:x.isDeload?['Разгрузка, только график',x.note].filter(Boolean).join(' · '):x.note})).filter(x=>x.value!=null);return{label,unit,points}}
   function strengthSummary(row){const out=[];if(N(row?.weight)!=null)out.push(`${fmt(row.weight)} кг`);if(N(row?.reps)!=null)out.push(`${fmt(row.reps,0)} повт.`);if(N(row?.rpe)!=null)out.push(`RPE ${fmt(row.rpe)}`);if(N(row?.rir)!=null)out.push(`RIR ${fmt(row.rir)}`);if(row?.isDeload)out.push('Разгрузка');if(N(row?.e1rm)!=null)out.push(`1ПМ ≈ ${fmt(row.e1rm)} кг`);return out.join(' · ')||'Нет данных'}
   const whole=value=>{const n=N(value);return n==null?'—':Math.round(n).toLocaleString('ru-RU')};
   const range=(values,unit='')=>Array.isArray(values)&&values.length===2?`${whole(values[0])}–${whole(values[1])}${unit}`:'—';
