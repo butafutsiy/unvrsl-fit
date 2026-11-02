@@ -120,6 +120,8 @@
           // maths becomes available. Completed/manual/accepted weights stay.
           const livePeakUpgrade=rec.peakRebase===true&&set.weightSource==='auto'&&
             set.peakAutoRevision!==575&&!set.manualOverride&&!set.ok&&!set.skipped;
+          const rollingUpgrade=rec.currentOneRepMax>0&&set.weightSource==='auto'&&
+            set.rollingAutoRevision!==582&&!set.manualOverride&&!set.ok&&!set.skipped;
           const recoveryUpgrade=rec.recoveryEvidenceExcluded>0&&set.weightSource==='auto'&&
             set.recoveryAutoRevision!==577&&!set.manualOverride&&!set.ok&&!set.skipped;
           const liveBackoffUpdate=A.setRole(ex,set)==='backoff'&&set.weightSource==='auto'&&
@@ -129,7 +131,7 @@
               suggested > 0 && (rec.sessionIds.length > 0 || rec.nextSetSuggestion || rec.strength?.estimate > 0) &&
               set.recommendationDecision?.status !== 'applied' &&
               !set.dismissedRecommendation && !rec.planPreserved &&
-              (!set.autoInitialApplied||livePeakUpgrade||liveBackoffUpdate||recoveryUpgrade)) {
+              (!set.autoInitialApplied||livePeakUpgrade||liveBackoffUpdate||recoveryUpgrade||rollingUpgrade)) {
             const before = set.w;
             const initialBase=rec.nextSetSuggestion?(ex.set||[]).filter(s=>s.ok&&!s.warmup).at(-1)?.w:null;
             const initialRec=rec.nextSetSuggestion&&rec.nextSetSuggestion.policyVersion!==541&&A.setRole(ex,set)!=='backoff'?{...rec,weeklyCalculated:false,nextSetSuggestion:null,weight:initialBase}:rec;
@@ -137,6 +139,7 @@
               set.plannedW = set.w;
               set.selectedW=set.w;set.autoInitialWeight=set.w;set.autoInitialApplied=true;
               if(rec.peakRebase)set.peakAutoRevision=575;
+              if(rec.currentOneRepMax>0)set.rollingAutoRevision=582;
               if(rec.recoveryEvidenceExcluded>0)set.recoveryAutoRevision=577;
               if(A.setRole(ex,set)==='backoff')set.backoffAutoKey=rec.proposalKey;
               if (before !== set.w) changed = weightsChanged = true;
