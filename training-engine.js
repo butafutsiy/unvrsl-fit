@@ -87,7 +87,7 @@
  W.trainingInitializeSetWeights=initializeSetWeights;
  async function ensureLoadModel(){
   if(W.trainingLoadModel292?.run)return true;
-  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=582';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
+  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=584';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
   for(let i=0;i<40;i++){if(W.trainingLoadModel292?.run)return true;await new Promise(r=>setTimeout(r,50))}
   return !!W.trainingLoadModel292?.run
  }
@@ -205,6 +205,12 @@
      const current=document.createElement('div');current.className='te410-week';
      current.textContent=`Актуальный 1ПМ ≈ ${fmt(rec.currentOneRepMax)} кг · TM ≈ ${fmt(rec.trainingMax)} кг · ${rec.strengthSourceSessions.length} рабочих тренировок · уверенность ${rec.confidence}. Исторический средний ≈ ${fmt(rec.historicalOneRepMax)} кг. Основа процентов: ${rec.percentageBasis==='trainingMax'?'TM':'актуальный 1ПМ'}`;
      metrics.append(current);
+   }
+   if(rec.strengthSmoothingAlpha!=null){
+     const trends={confirmed_growth:'устойчивый рост',confirmed_decline:'устойчивое снижение',single_decline:'единичное снижение',unconfirmed_growth:'рост ещё проверяется',stable:'стабильный уровень'};
+     const trend=document.createElement('div');trend.className='te410-week';
+     trend.textContent=`Динамика 1ПМ: ${trends[rec.strengthTrend]||'недостаточно данных'} · вес новой тренировки ${Math.round(rec.strengthSmoothingAlpha*100)}% · ограничение ${fmt(rec.strengthMaxChangePct)}% на шаг.`;
+     metrics.append(trend);
    }
    if(rec.confirmedOneRepFloor>0){
      const confirmed=document.createElement('div');confirmed.className='te410-week';
