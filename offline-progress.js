@@ -31,14 +31,19 @@
   const e1rm=(weight,reps,rpe=null,rir=null,deload=false)=>
     strengthScore(weight,reps,rpe,rir,deload).estimate;
   function reliableOfflineMean(rows) {
-    const points=A(rows).map(row=>strengthScore(row.weight_kg,row.reps,row.rpe,row.rir,row.is_deload))
-      .filter(x=>x.confidenceWeight>0);
-    if(!points.length)return {estimate:null,count:0};
-    const sorted=points.map(x=>x.estimate).sort((a,b)=>a-b);
-    const median=sorted[Math.floor(sorted.length/2)];
-    const clean=points.filter(x=>points.length<3||Math.abs(x.estimate-median)<=median*.12);
-    const sum=clean.reduce((n,x)=>n+x.confidenceWeight,0);
-    return {estimate:sum?clean.reduce((n,x)=>n+x.estimate*x.confidenceWeight,0)/sum:null,count:clean.length};
+    // Arithmetic mean of EVERY eligible working set, not a weighted or
+    // median-trimmed subset. No silent exclusion of successful records.
+    const included=[],excluded={recovery:0,unqualified:0};
+    for(const row of A(rows)){
+      if(row.is_deload===true){excluded.recovery++;continue}
+      const score=strengthScore(row.weight_kg,row.reps,row.rpe,row.rir,false);
+      if(!(score.confidenceWeight>0)){excluded.unqualified++;continue}
+      included.push({date:row.measured_at,weight:N(row.weight_kg),reps:N(row.reps),
+        rpe:N(row.rpe)??(N(row.rir)!=null?10-N(row.rir):null),e1rm:score.estimate});
+    }
+    const count=included.length,estimate=count?
+      included.reduce((total,row)=>total+row.e1rm,0)/count:null;
+    return {estimate,count,total:A(rows).length,included,excluded};
   }
   function age(v){if(!v)return null;const d=new Date(`${v}T12:00:00`);if(Number.isNaN(d.getTime()))return null;const n=new Date();let x=n.getFullYear()-d.getFullYear(),m=n.getMonth()-d.getMonth();if(m<0||(m===0&&n.getDate()<d.getDate()))x--;return x>=14&&x<=100?x:null}
   function measure(row,key){const n=N(row?.measurements?.[key]);return n!=null&&n>0?n:null}
@@ -356,7 +361,7 @@
     if(data.error||!data.client)return W.alert?.(data.error?.message||'Клиент не найден');
     if(!W.WorkoutDomain?.cycleProfiles)return W.toast?.('Расчёт нагрузки ещё загружается');
     const groups=strengthGroups(data),domain=W.WorkoutDomain;
-    W.modal?.(`<div class="sheet-grabber"></div><div class="ofp-add-head"><div><h2>Нагрузка по неделям</h2><div class="muted">${E(data.client.display_name)} · Только для тренера</div></div><button class="btn tiny" onclick="offlineClientDetail('${E(id)}')">✕</button></div><div class="field"><label for="ofpCycleWeeks">Длительность цикла</label><select id="ofpCycleWeeks">${[3,4,6,8,10,11,12].map(n=>`<option value="${n}"${n===8?' selected':''}>${n} недель</option>`).join('')}</select></div><div class="ofp-tip">1ПМ – устойчивое среднее рабочих подходов с RPE 7–10 и нагрузкой от 65%. Разгрузочные и записи без RPE не влияют на проценты. Рабочий вес – середина недельного диапазона с округлением до выбранного шага. Это ориентир по процентам, без автоматического назначения тренировок.</div><div id="ofpWeeklyExercises"></div>`);
+    W.modal?.(`<div class="sheet-grabber"></div><div class="ofp-add-head"><div><h2>Нагрузка по неделям</h2><div class="muted">${E(data.client.display_name)} · Только для тренера</div></div><button class="btn tiny" onclick="offlineClientDetail('${E(id)}')">✕</button></div><div class="field"><label for="ofpCycleWeeks">Длительность цикла</label><select id="ofpCycleWeeks">${[3,4,6,8,10,11,12].map(n=>`<option value="${n}"${n===8?' selected':''}>${n} недель</option>`).join('')}</select></div><div class="ofp-tip">1ПМ – обычное среднее по всем подходящим рабочим подходам упражнения из всей истории. Разгрузки и записи без достоверного RPE/RIR не входят в расчёт. Контрольные результаты не получают дополнительного веса. Рабочий вес – середина недельного диапазона с округлением до выбранного шага. Это ориентир по процентам, без автоматического назначения тренировок.</div><div id="ofpWeeklyExercises"></div>`);
     const registry=domain.registry(W.UNVRSL_EXERCISES||[]);
     const settings=groups.map(g=>({kind:domain.exerciseKind({n:g.name},registry),step:domain.profile({n:g.name},registry).step}));
     const host=D.getElementById('ofpWeeklyExercises'),select=D.getElementById('ofpCycleWeeks');
@@ -364,7 +369,10 @@
       const profiles=domain.cycleProfiles(Number(select.value));
       host.innerHTML=groups.map((g,i)=>{
         const scored=reliableOfflineMean(g.rows),one=scored.estimate,setting=settings[i];
-        return `<section class="ofp-weekly-exercise"><h3>${E(g.name)}</h3><p>Средний 1ПМ: <b>${one?fmt(one)+' кг':'нет данных'}</b> · Подходящих записей: ${scored.count}</p><div class="offline-measure-grid"><div class="field"><label>Тип упражнения</label><select data-weekly-kind="${i}"><option value="base"${setting.kind==='base'?' selected':''}>Базовое</option><option value="isolation"${setting.kind==='isolation'?' selected':''}>Изоляция</option></select></div><div class="field"><label>Шаг веса, кг</label><select data-weekly-step="${i}">${[...new Set([.25,.5,1,1.25,2,2.5,4,5,10,setting.step])].sort((a,b)=>a-b).map(n=>`<option value="${n}"${n===setting.step?' selected':''}>${n===0?'Без веса':fmt(n,2)}</option>`).join('')}</select></div></div>${one&&setting.step>0?`<div class="ofp-weekly-scroll"><table class="ofp-weekly-table"><thead><tr><th>Неделя</th><th>% 1ПМ</th><th>Диапазон, кг</th><th>Вес, кг</th></tr></thead><tbody>${profiles.map(p=>{
+        const sourceRows=scored.included.map(row=>`<li><span>${E(day(row.date))} · ${E(fmt(row.weight))} кг × ${E(fmt(row.reps,0))} · RPE ${E(fmt(row.rpe))}</span><b>${E(fmt(row.e1rm))} кг</b></li>`).join('');
+        const basis=scored.count?`<details class="ofp-weekly-basis"><summary>Источники 1ПМ · ${scored.count} из ${scored.total} записей</summary><ul>${sourceRows}</ul><small>(${scored.included.map(x=>fmt(x.e1rm)).join(' + ')}) ÷ ${scored.count} = ${fmt(one)} кг</small>${scored.excluded.recovery?`<small>Разгрузочных подходов исключено: ${scored.excluded.recovery}</small>`:''}${scored.excluded.unqualified?`<small>Без достоверных данных исключено: ${scored.excluded.unqualified}</small>`:''}</details>`:
+          `<p class="muted">Нет подходов для расчёта. Нужны рабочие записи с RPE 7–10 и достаточной интенсивностью.</p>`;
+        return `<section class="ofp-weekly-exercise"><h3>${E(g.name)}</h3><p>Средний 1ПМ: <b>${one!=null?fmt(one)+' кг':'нет данных'}</b> · Рабочих подходов: ${scored.count} из ${scored.total}</p>${basis}<div class="offline-measure-grid"><div class="field"><label>Тип упражнения</label><select data-weekly-kind="${i}"><option value="base"${setting.kind==='base'?' selected':''}>Базовое</option><option value="isolation"${setting.kind==='isolation'?' selected':''}>Изоляция</option></select></div><div class="field"><label>Шаг веса, кг</label><select data-weekly-step="${i}">${[...new Set([.25,.5,1,1.25,2,2.5,4,5,10,setting.step])].sort((a,b)=>a-b).map(n=>`<option value="${n}"${n===setting.step?' selected':''}>${n===0?'Без веса':fmt(n,2)}</option>`).join('')}</select></div></div>${one&&setting.step>0?`<div class="ofp-weekly-scroll"><table class="ofp-weekly-table"><thead><tr><th>Неделя</th><th>% 1ПМ</th><th>Диапазон, кг</th><th>Вес, кг</th></tr></thead><tbody>${profiles.map(p=>{
           const prescription=p[setting.kind],pct=prescription.pct,lo=one*pct[0]/100,hi=one*pct[1]/100;
           const rounded=domain.roundWeight((lo+hi)/2,{step:setting.step,min:0},'nearest');
           const weight=rounded;
@@ -463,6 +471,13 @@
     .ofp-weekly-scroll{overflow-x:auto}.ofp-weekly-table{width:100%;border-collapse:collapse;font-size:13px;text-align:left}
     .ofp-weekly-table th,.ofp-weekly-table td{padding:12px 8px;border-bottom:1px solid rgba(128,128,128,.2)}
     .ofp-weekly-table th{font-size:11px;opacity:.65}.ofp-weekly-table small{display:block;min-width:85px;max-width:130px;font-size:10px;line-height:1.4;opacity:.65;margin-top:4px}
+    .ofp-weekly-basis{margin:10px 0 17px;border-radius:14px;border:1px solid rgba(128,128,128,.18);background:rgba(128,128,128,.035);padding:10px 12px}
+    .ofp-weekly-basis summary{cursor:pointer;font-size:12px;font-weight:750;line-height:1.4}
+    .ofp-weekly-basis ul{list-style:none;margin:12px 0 8px;padding:0;display:grid;gap:7px}
+    .ofp-weekly-basis li{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:11px}
+    .ofp-weekly-basis li span{color:var(--muted,#8e8e93)}
+    .ofp-weekly-basis li b{white-space:nowrap;font-size:12px}
+    .ofp-weekly-basis small{display:block;margin-top:7px;font-size:11px;color:var(--muted,#8e8e93);line-height:1.4}
     .ofp-effort-grid{margin-top:11px}.ofp-effort-grid .field label{font-size:12px}
     .ofp-effort-grid input{width:100%;min-height:46px;border:1px solid #34343b;border-radius:13px;background:#1d1d22;color:#f5f5f7;padding:9px 13px;font-size:16px;box-sizing:border-box}
     .ofp-deload{display:flex;gap:10px;align-items:center;margin:12px 0;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.035);color:#bdbdc5;font-size:12px;line-height:1.4}

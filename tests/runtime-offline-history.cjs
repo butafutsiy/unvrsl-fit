@@ -31,5 +31,34 @@ const val=(id,v)=>w.document.getElementById(id).value=v;
  await w.offlineProgressWeeklyLoad('c1');assert.match(w.document.body.textContent,/Сначала добавь/);
  await w.offlineClientDetail('c1');await w.offlineProgressDeleteMeasurementV334('m1');assert.equal(db.offline_client_measurements.length,0);
  assert.deepEqual(alerts,[]);await w.offlineProgressEditEntry('strength','other','s1');assert.equal(alerts.length,1);
+ // Every qualifying working record contributes exactly once. A 100 kg single
+ // must not be dropped by hidden median trimming and a deload must not lower
+ // the mean or change the percentage table.
+ db.offline_clients.push({id:'n1',trainer_id:'t1',display_name:'Example'});
+ const rows=[
+  ['2026-09-12',65,6,8,false],
+  ['2026-09-21',70,8,8,false],
+  ['2026-09-28',65,8,8,true],
+  ['2026-10-07',100,1,8,false],
+  ['2026-10-21',80,5,8,false],
+ ];
+ rows.forEach(([measured_at,weight_kg,reps,rpe,is_deload],i)=>db.offline_client_strengths.push({
+  id:'n'+i,offline_client_id:'n1',trainer_id:'t1',
+  exercise_name:'Присед со штангой',exercise_key:'squat',
+  measured_at,created_at:measured_at,weight_kg,reps,rpe,rir:10-rpe,is_deload}));
+ const before=JSON.stringify(db.offline_client_strengths);
+ await w.offlineProgressWeeklyLoad('n1');
+ const text=w.document.getElementById('ofpWeeklyExercises').textContent;
+ assert.match(text,/Средний 1ПМ:\s*96,1 кг/);
+ assert.match(text,/Рабочих подходов:\s*4 из 5/);
+ assert.match(text,/Разгрузочных подходов исключено:\s*1/);
+ assert.match(text,/110 кг/,'the higher successful single is included in full');
+ assert.match(text,/82,3 \+ 93,3 \+ 110 \+ 98,7/);
+ assert.equal(w.document.querySelectorAll('tbody tr').length,8);
+ assert.equal(w.document.querySelector('tbody tr td:last-child b').textContent,'70,00');
+ assert.equal(JSON.stringify(db.offline_client_strengths),before,'read-only weekly projections');
+ db.offline_client_strengths.push({id:'new-working',offline_client_id:'n1',trainer_id:'t1',exercise_name:'Присед со штангой',exercise_key:'squat',measured_at:'2026-10-28',created_at:'2026-10-28',weight_kg:100,reps:3,rpe:8,rir:2,is_deload:false});
+ await w.offlineProgressWeeklyLoad('n1');
+ assert.match(w.document.getElementById('ofpWeeklyExercises').textContent,/Средний 1ПМ:\s*100,2 кг/,'new working result updates the entire 1RM average');
  console.log('Offline history: edit, ownership, author preservation, recalculation, delete/cancel, weekly projection and private snapshot passed.');dom.window.close();
 })().catch(e=>{console.error(e);dom.window.close();process.exitCode=1});
