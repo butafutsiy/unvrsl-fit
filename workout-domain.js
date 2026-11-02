@@ -826,9 +826,10 @@
       lastPerformed:null,sourceSessions:[],historicalSessionCount:all.length,stale:true};
     if(!all.length)return empty;
     const anchor=all[0].stamp,d=86400000;
-    let selected=all.filter(x=>anchor-x.stamp<=42*d).slice(0,5);
-    if(selected.length<3)selected=all.filter(x=>anchor-x.stamp<=90*d).slice(0,5);
-    if(selected.length<2)selected=all.slice(0,Math.min(5,all.length));
+    const maxSessions=Math.min(5,Math.max(3,n(options.maxSessions)??3));
+    let selected=all.filter(x=>anchor-x.stamp<=42*d).slice(0,maxSessions);
+    if(selected.length<3)selected=all.filter(x=>anchor-x.stamp<=90*d).slice(0,maxSessions);
+    if(selected.length<2)selected=all.slice(0,Math.min(maxSessions,all.length));
     selected=selected.map(x=>{
       const selectedPoints=[...x.points].sort((a,b)=>b.weight-a.weight).slice(0,2);
       const primary=selectedPoints[0].value;
@@ -1491,8 +1492,14 @@
     const testPreparation=compound&&setRole(e,set)==='test_preparation';
     const isolationTest=setRole(e,set)==='isolation_test';
     const band=((weekEight||session.testWeek)&&!testAttempt)||isolationTest||testPreparation?null:intensityBand(session,e,set),weekMid=band?((band.lo+band.hi)/2):null;
-    const weeklyRaw=stableOneRepMax!=null&&weekMid!=null?fromEstimateLoad(stableOneRepMax*weekMid,e,session,reg):null;
-    const weeklyCorridor=stableOneRepMax!=null&&band?{min:fromEstimateLoad(stableOneRepMax*band.lo,e,session,reg),max:fromEstimateLoad(stableOneRepMax*band.hi,e,session,reg)}:null;
+    // Existing programme percentages remain based on e1RM. A separate
+    // explicitly opted-in TM basis is allowed only on regular working weeks.
+    // Peak/test attempts ALWAYS use actual current e1RM, never discounted TM.
+    const percentageBasis=session.percentageBasis==='trainingMax'&&
+      !weekEight&&!session.testWeek&&!session.weeklyLoadProfile?.test?'trainingMax':'e1RM';
+    const loadOneRepMax=percentageBasis==='trainingMax'?(strength.trainingMax??stableOneRepMax):stableOneRepMax;
+    const weeklyRaw=loadOneRepMax!=null&&weekMid!=null?fromEstimateLoad(loadOneRepMax*weekMid,e,session,reg):null;
+    const weeklyCorridor=loadOneRepMax!=null&&band?{min:fromEstimateLoad(loadOneRepMax*band.lo,e,session,reg),max:fromEstimateLoad(loadOneRepMax*band.hi,e,session,reg)}:null;
     let weeklyApplied=false;
     if(compound&&weeklyRaw!=null&&projected==null&&band.hi<=.70&&targetMin<6){
       projected=weeklyRaw;weeklyApplied=true;
@@ -1502,7 +1509,7 @@
       projected=Math.max(weeklyCorridor.min,Math.min(weeklyCorridor.max,projected));weeklyApplied=true;
     }
     const prescription=validatePrescription({sets:1,pct:band?[band.lo*100,band.hi*100]:[0,100],reps:[range.lo,range.hi],rpe:[targetMin,target]});
-    const corridor=stableOneRepMax>0&&prescription.corridor?prescription.corridor.map(x=>fromEstimateLoad(stableOneRepMax*x/100,e,session,reg)):null;
+    const corridor=loadOneRepMax>0&&prescription.corridor?prescription.corridor.map(x=>fromEstimateLoad(loadOneRepMax*x/100,e,session,reg)):null;
     // A new 90%+ prescription is a fresh intensity target, not a 5% step
     // from the last high-rep working load. Stage loads use the robust mean e1RM.
     const highIntensityWeek=!!band&&band.lo>=.9;
@@ -1849,7 +1856,7 @@
       trainingMaxFactor:strength.trainingMaxFactor??null,
       historicalOneRepMax:strength.historicalEstimate??null,
       strengthSourceSessions:strength.currentSourceSessions??[],
-      percentageBasis:session.percentageBasis==='trainingMax'?'trainingMax':'e1RM',
+      percentageBasis,
       series,calibration,reasonCodes,repetitionGoal,
       recoveryEvidenceExcluded:skippedRecovery.length,
       recoveryEvidenceLastDate:allHistory.find(x=>isRecoveryForAutoweight(x.session))?.session?sessionDate(allHistory.find(x=>isRecoveryForAutoweight(x.session)).session):null,
