@@ -163,7 +163,9 @@ jobs:
       - name: Verify offline RPE/RIR entry, history and weekly loads
         env:
           UNVRSL_JSDOM: ${{ runner.temp }}/unvrsl-offline/node_modules/jsdom
-        run: node tests/runtime-offline-history.cjs
+        run: |
+          node tests/runtime-offline-history.cjs
+          node tests/runtime-strength-deload-chart.cjs
 
   catalog-completeness:
     runs-on: ubuntu-latest
