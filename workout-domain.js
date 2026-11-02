@@ -819,13 +819,20 @@
       if(!(value>0)||!(weight>0)||!Number.isFinite(stamp))continue;
       const key=String(o.sessionId??date);
       if(!grouped.has(key))grouped.set(key,{date,stamp,points:[],confirmedSingles:[]});
-      grouped.get(key).points.push({value,weight});
+      // Only full-strength evidence (>=75% estimated relative intensity)
+      // may update an already established programme 1RM. Auxiliary evidence
+      // from 70–74.9% is reserved for first-time provisional calibration.
+      grouped.get(key).points.push({value,weight,tier:o.tier??'working'});
       // Only a verified single from a comparable, non-deload session
       // can establish a lower bound. It is not an inferred 1RM.
       const single=n(o.confirmedSingle);
       if(single>0)grouped.get(key).confirmedSingles.push(single);
     }
-    const all=[...grouped.values()].sort((a,b)=>b.stamp-a.stamp);
+    const history=[...grouped.values()].sort((a,b)=>b.stamp-a.stamp);
+    const hasFullStrengthEvidence=history.some(x=>x.points.some(p=>p.tier!=='auxiliary'));
+    const provisional=!hasFullStrengthEvidence;
+    const all=hasFullStrengthEvidence?history.filter(x=>x.points.some(p=>p.tier!=='auxiliary'))
+      .map(x=>({...x,points:x.points.filter(p=>p.tier!=='auxiliary')})):history;
     const empty={estimate:null,trainingMax:null,confidence:'низкая',sessionCount:0,
       lastPerformed:null,sourceSessions:[],historicalSessionCount:all.length,stale:true};
     if(!all.length)return empty;
@@ -899,14 +906,15 @@
     const stale=aged>60*d;
     // High confidence requires repeatability AND credible effort-based data.
     const highQuality=selected.every(x=>x.confidenceWeight>=.3);
-    const confidence=stale||selected.length<2||spread>.16?'низкая':
+    const confidence=provisional||stale||selected.length<2||spread>.16?'низкая':
       selected.length>=3&&spread<.08&&highQuality?'высокая':'средняя';
     const coefficient=confidence==='низкая'?.85:.9;
     return {estimate:current,trainingMax:current*coefficient,trainingMaxFactor:coefficient,
+      provisional,minimumStrengthIntensity:70,fullStrengthIntensity:75,
       confirmedFloor,confirmedFloorDate:witness?.date??null,floorApplied,
       trend,smoothingAlpha,maxChangePct,highQuality,
       confidence,sessionCount:selected.length,lastPerformed:selected[0].date,stale,
-      historicalSessionCount:all.length,sourceSessions:selected.map(x=>({
+      historicalSessionCount:history.length,sourceSessions:selected.map(x=>({
         date:x.date,estimate:x.estimate,count:x.count
       }))};
   }
@@ -935,7 +943,7 @@
       const methodWeight=m==='STANDARD'?1:m==='UNVRSL'?({heavy:1,middle:.7,light:.3}[role]??.15):m==='DS'?(position===0?.55:.025):m==='FST-7'?(position===0?.3:.02):.12;
       const age=Math.max(0,(newest-sessionTime(x.session))/86400000);
       const confidenceWeight=methodWeight*evidence.confidenceWeight*Math.pow(.5,age/35)/(1+position*.05);
-      points.push({...x,value,confidenceWeight});
+      points.push({...x,value,confidenceWeight,strengthTier:evidence.tier});
     }
     points.sort((a,b)=>sessionTime(b.session)-sessionTime(a.session));
     // One workout is one observation, regardless of its number of mini-sets.
@@ -952,7 +960,7 @@
     });
     const rolling=currentStrengthEstimate(points.map(x=>({
       sessionId:String(x.session.calibrationParentId??x.session.id??sessionDate(x.session)),
-      date:sessionDate(x.session),estimate:x.value,confidenceWeight:x.confidenceWeight,
+      date:sessionDate(x.session),estimate:x.value,confidenceWeight:x.confidenceWeight,tier:x.strengthTier,
       confirmedSingle:performedReps(x.exercise,x.set)===1&&
         !x.set.techniqueFailed&&!x.set.techniqueDangerous&&!x.set.pain&&
         !x.set.painReported&&effortRpe(x.set)>=7&&effortRpe(x.set)<=10
@@ -984,6 +992,7 @@
     for(const bucket of Object.values(protocols)){bucket.estimate=bucket.total/bucket.weight;delete bucket.total;}
     return {estimate:rolling.estimate??estimate,stableMean:rolling.estimate??estimate,
       historicalEstimate:estimate,trainingMax:rolling.trainingMax,
+      provisional:rolling.provisional,
       currentSessionCount:rolling.sessionCount,
       trainingMaxFactor:rolling.trainingMaxFactor,
       currentSourceSessions:rolling.sourceSessions,stale:rolling.stale,
@@ -1337,8 +1346,10 @@
     if(number(rpe)!=null&&number(rir)!=null&&Math.abs(number(rpe)+number(rir)-10)>.5)return output;
     const value=w*(1+(r+10-effort)/30),intensity=100*w/value;
     output.intensity=Math.round(intensity*10)/10;
-    if(intensity<65)return output;
+    if(intensity<70)return output;
     const factor=r<=5?1:r<=8?.8:r<=10?.65:.35;
+    // 70–74.9% can bootstrap a low-confidence e1RM; only >=75%
+    // should drive later changes to a calibrated strength baseline.
     const tier=intensity<75?'auxiliary':intensity<85?'working':intensity<95?'heavy':'test';
     const byTier={auxiliary:.2,working:.7,heavy:1,test:1.15};
     output.estimate=Math.round(value*10)/10;
