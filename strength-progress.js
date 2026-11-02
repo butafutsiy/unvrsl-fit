@@ -78,13 +78,15 @@
       const score=domain.strengthEvidence(row.weight,row.reps,row.rpe,row.rir);
       if(!(score.estimate>0&&score.confidenceWeight>0)||!row.date)continue;
       evidence.push({sessionId:row.date,date:row.date,estimate:score.estimate,
-        confidenceWeight:score.confidenceWeight,confirmedSingle:row.reps===1&&
+        confidenceWeight:score.confidenceWeight,tier:score.tier,confirmedSingle:row.reps===1&&
           (row.rpe??(row.rir!=null?10-row.rir:null))>=7?row.weight:null});
     }
     const rolling=domain.currentStrengthEstimate(evidence);
-    const mean=evidence.length?evidence.reduce((a,x)=>a+x.estimate,0)/evidence.length:null;
+    const eligible=evidence.some(x=>x.tier!=='auxiliary')?
+      evidence.filter(x=>x.tier!=='auxiliary'):evidence;
+    const mean=eligible.length?eligible.reduce((a,x)=>a+x.estimate,0)/eligible.length:null;
     const verified=evidence.find(x=>x.confirmedSingle===rolling.confirmedFloor&&x.date===rolling.confirmedFloorDate);
-    return {rolling,mean,verified,excluded,used:evidence.length};
+    return {rolling,mean,verified,excluded,used:eligible.length};
   }
   function summaryHtml(rows){
     const stats=strengthSummary(rows);if(!stats)return '';
@@ -93,7 +95,7 @@
     const verifiedText=verified?`${fmt(verified.confirmedSingle)} кг × 1 · ${day(verified.date)}`:'Нет актуального';
     const trends={confirmed_growth:'устойчивый рост',confirmed_decline:'устойчивое снижение',
       single_decline:'разовое снижение',unconfirmed_growth:'рост проверяется',stable:'стабильно'};
-    const details=used?`${used} рабочих записей · ${rolling.sessionCount} тренировок · достоверность ${rolling.confidence} · ${trends[rolling.trend]||'нет тренда'}`:'Нужны рабочие подходы с RPE/RIR';
+    const details=used?`${used} рабочих записей · ${rolling.sessionCount} тренировок · достоверность ${rolling.confidence} · ${rolling.provisional?'предварительная калибровка 70–75%':trends[rolling.trend]||'нет тренда'}`:'Нужны рабочие подходы с RPE/RIR';
     return `<section class="spv336-summary" data-sp-strength-summary aria-label="Сводка по силе">
       <div class="spv336-summary-grid">
         <div><small>Актуальный 1ПМ</small><strong class="spv336-current" data-sp-current-1rm>${E(value(rolling.estimate))}</strong></div>

@@ -819,13 +819,20 @@
       if(!(value>0)||!(weight>0)||!Number.isFinite(stamp))continue;
       const key=String(o.sessionId??date);
       if(!grouped.has(key))grouped.set(key,{date,stamp,points:[],confirmedSingles:[]});
-      grouped.get(key).points.push({value,weight});
+      // Only full-strength evidence (>=75% estimated relative intensity)
+      // may update an already established programme 1RM. Auxiliary evidence
+      // from 70–74.9% is reserved for first-time provisional calibration.
+      grouped.get(key).points.push({value,weight,tier:o.tier??'working'});
       // Only a verified single from a comparable, non-deload session
       // can establish a lower bound. It is not an inferred 1RM.
       const single=n(o.confirmedSingle);
       if(single>0)grouped.get(key).confirmedSingles.push(single);
     }
-    const all=[...grouped.values()].sort((a,b)=>b.stamp-a.stamp);
+    const history=[...grouped.values()].sort((a,b)=>b.stamp-a.stamp);
+    const hasFullStrengthEvidence=history.some(x=>x.points.some(p=>p.tier!=='auxiliary'));
+    const provisional=!hasFullStrengthEvidence;
+    const all=hasFullStrengthEvidence?history.filter(x=>x.points.some(p=>p.tier!=='auxiliary'))
+      .map(x=>({...x,points:x.points.filter(p=>p.tier!=='auxiliary')})):history;
     const empty={estimate:null,trainingMax:null,confidence:'низкая',sessionCount:0,
       lastPerformed:null,sourceSessions:[],historicalSessionCount:all.length,stale:true};
     if(!all.length)return empty;
@@ -899,14 +906,15 @@
     const stale=aged>60*d;
     // High confidence requires repeatability AND credible effort-based data.
     const highQuality=selected.every(x=>x.confidenceWeight>=.3);
-    const confidence=stale||selected.length<2||spread>.16?'низкая':
+    const confidence=provisional||stale||selected.length<2||spread>.16?'низкая':
       selected.length>=3&&spread<.08&&highQuality?'высокая':'средняя';
     const coefficient=confidence==='низкая'?.85:.9;
     return {estimate:current,trainingMax:current*coefficient,trainingMaxFactor:coefficient,
+      provisional,minimumStrengthIntensity:70,fullStrengthIntensity:75,
       confirmedFloor,confirmedFloorDate:witness?.date??null,floorApplied,
       trend,smoothingAlpha,maxChangePct,highQuality,
       confidence,sessionCount:selected.length,lastPerformed:selected[0].date,stale,
-      historicalSessionCount:all.length,sourceSessions:selected.map(x=>({
+      historicalSessionCount:history.length,sourceSessions:selected.map(x=>({
         date:x.date,estimate:x.estimate,count:x.count
       }))};
   }
@@ -935,7 +943,7 @@
       const methodWeight=m==='STANDARD'?1:m==='UNVRSL'?({heavy:1,middle:.7,light:.3}[role]??.15):m==='DS'?(position===0?.55:.025):m==='FST-7'?(position===0?.3:.02):.12;
       const age=Math.max(0,(newest-sessionTime(x.session))/86400000);
       const confidenceWeight=methodWeight*evidence.confidenceWeight*Math.pow(.5,age/35)/(1+position*.05);
-      points.push({...x,value,confidenceWeight});
+      points.push({...x,value,confidenceWeight,strengthTier:evidence.tier});
     }
     points.sort((a,b)=>sessionTime(b.session)-sessionTime(a.session));
     // One workout is one observation, regardless of its number of mini-sets.
@@ -952,7 +960,7 @@
     });
     const rolling=currentStrengthEstimate(points.map(x=>({
       sessionId:String(x.session.calibrationParentId??x.session.id??sessionDate(x.session)),
-      date:sessionDate(x.session),estimate:x.value,confidenceWeight:x.confidenceWeight,
+      date:sessionDate(x.session),estimate:x.value,confidenceWeight:x.confidenceWeight,tier:x.strengthTier,
       confirmedSingle:performedReps(x.exercise,x.set)===1&&
         !x.set.techniqueFailed&&!x.set.techniqueDangerous&&!x.set.pain&&
         !x.set.painReported&&effortRpe(x.set)>=7&&effortRpe(x.set)<=10
@@ -984,6 +992,7 @@
     for(const bucket of Object.values(protocols)){bucket.estimate=bucket.total/bucket.weight;delete bucket.total;}
     return {estimate:rolling.estimate??estimate,stableMean:rolling.estimate??estimate,
       historicalEstimate:estimate,trainingMax:rolling.trainingMax,
+      provisional:rolling.provisional,
       currentSessionCount:rolling.sessionCount,
       trainingMaxFactor:rolling.trainingMaxFactor,
       currentSourceSessions:rolling.sourceSessions,stale:rolling.stale,
@@ -1337,8 +1346,10 @@
     if(number(rpe)!=null&&number(rir)!=null&&Math.abs(number(rpe)+number(rir)-10)>.5)return output;
     const value=w*(1+(r+10-effort)/30),intensity=100*w/value;
     output.intensity=Math.round(intensity*10)/10;
-    if(intensity<65)return output;
+    if(intensity<70)return output;
     const factor=r<=5?1:r<=8?.8:r<=10?.65:.35;
+    // 70–74.9% can bootstrap a low-confidence e1RM; only >=75%
+    // should drive later changes to a calibrated strength baseline.
     const tier=intensity<75?'auxiliary':intensity<85?'working':intensity<95?'heavy':'test';
     const byTier={auxiliary:.2,working:.7,heavy:1,test:1.15};
     output.estimate=Math.round(value*10)/10;
@@ -1587,6 +1598,21 @@
       projected=Math.max(corridor[0],Math.min(corridor[1],(corridor[0]+(corridor[1]-corridor[0])*position)*calibration.factor));
       weeklyApplied=!!band&&prescription.valid;
     }
+    // A low-intensity set cannot redefine the programme 1RM. When the
+    // prescribed repetitions change, its completed reps/RPE may inform only
+    // the task-specific weight forecast. The usual 5% progression guard is
+    // enforced later, so this never becomes a rolling strength observation.
+    const changedRepTask=!!top&&!sameTarget(e,set,top,session);
+    const taskOnlyMax=top&&oldRpe>=7&&oldRpe<=10?e1rm(top.exercise,top.set,top.session,reg):null;
+    const safeTaskRebase=projected==null&&strength.estimate==null&&taskOnlyMax>0&&
+      prior>0&&changedRepTask&&oldReps>range.hi&&targetReps<oldReps&&targetReps<=10&&
+      compound&&activeMethod==='STANDARD'&&!weekEight&&!session.testWeek&&
+      !session.weeklyLoadProfile?.test;
+    if(safeTaskRebase){
+      const taskReps=(targetMin+target)/2,taskDenominator=1+(targetReps+10-taskReps)/30;
+      const taskLoad=fromEstimateLoad(taskOnlyMax*calibration.factor/taskDenominator,e,session,reg);
+      if(taskLoad!=null)projected=taskLoad;
+    }
     const reference=projected??prior;
     const changedRepBand=top?!sameTarget(e,set,top,session):false;
     let anomalous=!set.weightMode&&e.programWeightMode!=='adaptive'&&seed>0&&reference>0&&Math.abs(seed-reference)>Math.max(2*p.step,seed*(projected!=null&&changedRepBand?.25:.1));
@@ -1605,7 +1631,7 @@
       latest.every(x=>performedReps(x.exercise,x.set)<range.lo&&effort(x)!=null&&effort(x)>target);
     if(strong&&projected!=null&&projected<=prior+p.step/2&&!anomalous){projected=null;raw=prior;action="hold"}
     if(ids.length){
-      reason=anomalous?`План ${seed} кг далеко от ${projected!=null?`оценки для нового диапазона ${Number(projected.toFixed(1))}`:`прошлой рабочей нагрузки ${prior}`} кг: нужна ручная проверка`:projected!=null?`Последний лучший сет ${prior} кг × ${oldReps} при RPE ${oldRpe}; его 1ПМ ≈ ${Number(latestOneRepMax.toFixed(1))} кг. Оценка по ${strength.setCount} подходам из ${strength.sessionCount} тренировок ≈ ${Number(stableOneRepMax.toFixed(1))} кг; для ${range.lo}–${range.hi} повторений при RPE ${targetMin}–${target} ориентир ${Number(projected.toFixed(1))} кг${weeklyApplied?` с учётом недели ${Number((band.lo*100).toFixed(1))}–${Number((band.hi*100).toFixed(1))}%`:""}`:"Сохранить вес последнего тяжёлого рабочего сета";
+      reason=anomalous?`План ${seed} кг далеко от ${projected!=null?`оценки для нового диапазона ${Number(projected.toFixed(1))}`:`прошлой рабочей нагрузки ${prior}`} кг: нужна ручная проверка`:safeTaskRebase?`Предыдущий подход ${prior} кг × ${oldReps} при RPE ${oldRpe}. Диапазон повторений изменился: ориентир ${Number(projected.toFixed(1))} кг рассчитан только для нового задания, а прибавка ограничивается стандартным лимитом. Подход низкой интенсивности не изменяет актуальный 1ПМ`:projected!=null?`Последний лучший сет ${prior} кг × ${oldReps} при RPE ${oldRpe}; его 1ПМ ≈ ${Number(latestOneRepMax.toFixed(1))} кг. Оценка по ${strength.setCount} подходам из ${strength.sessionCount} тренировок ≈ ${Number(stableOneRepMax.toFixed(1))} кг; для ${range.lo}–${range.hi} повторений при RPE ${targetMin}–${target} ориентир ${Number(projected.toFixed(1))} кг${weeklyApplied?` с учётом недели ${Number((band.lo*100).toFixed(1))}–${Number((band.hi*100).toFixed(1))}%`:""}`:"Сохранить вес последнего тяжёлого рабочего сета";
       if(fatigueLimited&&!anomalous)reason+=`. Последний из ${lastWorking.length} подходов вышел за диапазон: повышение ограничено; коррекция сегодня считается отдельно`;
       if(action==="hold"&&projected!=null&&!anomalous)reason=`Повторы в целевом диапазоне: сохранить вес. ${reason}`;
       if (strong&&!anomalous&&projected==null) {
@@ -1917,6 +1943,7 @@
       strengthBasis:baselineFromStandard?'standard':activeMethod==='STANDARD'?'standard':'method',
       currentOneRepMax:strength.estimate??null,
       trainingMax:strength.trainingMax??null,
+      strengthProvisional:strength.provisional===true,
       trainingMaxFactor:strength.trainingMaxFactor??null,
       historicalOneRepMax:strength.historicalEstimate??null,
       confirmedOneRepFloor:strength.confirmedFloor??null,
@@ -1943,7 +1970,7 @@
       proposalKey:proposalFingerprint([p.correctionPolicy?541:469,session.id,setRole(e,set),range,effortBand,band,set.programW,p,session.readiness,session.readinessAdjusted,series,calibration,currentRows.map(x=>[x.set.w,x.set.actualReps??x.set.r,effortRpe(x.set)]),strength.points.map(x=>[x.session.id,x.value]),set.attemptNumber]),
       raw,
       previous: prior,
-      basis:ids.length?{date:sessionDate(latest[0]?.session??strength.source?.session),weight:prior??number(strength.source?.set.w),planned:seed||null,estimatedOneRepMax:baselineFromStandard?Number(strength.estimate.toFixed(1)):latestOneRepMax!=null?Number(latestOneRepMax.toFixed(1)):null,sets:latest.map(x=>({weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effort(x)}))}:null,
+      basis:ids.length?{date:sessionDate(latest[0]?.session??strength.source?.session),weight:prior??number(strength.source?.set.w),planned:seed||null,estimatedOneRepMax:baselineFromStandard?Number(strength.estimate.toFixed(1)):latestOneRepMax!=null?Number(latestOneRepMax.toFixed(1)):safeTaskRebase?Number(taskOnlyMax.toFixed(1)):null,descriptiveOnly:safeTaskRebase,sets:latest.map(x=>({weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effort(x)}))}:null,
       delta: prior == null ? 0 : Number((weight - prior).toFixed(6)),
       step: p.step,
       action,

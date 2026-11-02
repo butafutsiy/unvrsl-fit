@@ -50,13 +50,17 @@
       if(!(score.confidenceWeight>0)){excluded.unqualified++;continue}
       included.push({date:row.measured_at,weight:N(row.weight_kg),reps:N(row.reps),
         rpe:N(row.rpe)??(N(row.rir)!=null?10-N(row.rir):null),
-        e1rm:score.estimate,confidenceWeight:score.confidenceWeight,
+        e1rm:score.estimate,confidenceWeight:score.confidenceWeight,tier:score.tier,
         confirmedSingle:N(row.reps)===1&&N(row.weight_kg)>0&&(N(row.rpe)??(N(row.rir)!=null?10-N(row.rir):null))>=7
           ?N(row.weight_kg):null});
     }
-    const count=included.length,estimate=count?
-      included.reduce((total,row)=>total+row.e1rm,0)/count:null;
-    return {estimate,count,total:A(rows).length,included,excluded};
+    // Auxiliary 70–75% observations are allowed only until full-strength
+    // evidence exists; they must not bias the eligible historical mean.
+    const effective=included.some(row=>row.tier!=='auxiliary')?
+      included.filter(row=>row.tier!=='auxiliary'):included;
+    const count=effective.length,estimate=count?
+      effective.reduce((total,row)=>total+row.e1rm,0)/count:null;
+    return {estimate,count,total:A(rows).length,included:effective,excluded};
   }
   function age(v){if(!v)return null;const d=new Date(`${v}T12:00:00`);if(Number.isNaN(d.getTime()))return null;const n=new Date();let x=n.getFullYear()-d.getFullYear(),m=n.getMonth()-d.getMonth();if(m<0||(m===0&&n.getDate()<d.getDate()))x--;return x>=14&&x<=100?x:null}
   function measure(row,key){const n=N(row?.measurements?.[key]);return n!=null&&n>0?n:null}
@@ -299,8 +303,8 @@
       score.tier==='test'?'Высокая достоверность · контрольный подход':
       score.tier==='heavy'?'Высокая достоверность · тяжёлый подход':
       score.tier==='working'?'Основная оценка · рабочий подход':
-      score.tier==='auxiliary'?'Вспомогательная оценка · 65–75%':
-      'Для расчёта нужны RPE 7–10, нагрузка от 65% и не более 20 повторений';
+      score.tier==='auxiliary'?'Предварительная оценка · 70–75% (пока нет данных от 75%)':
+      'Для расчёта нужны RPE 7–10, нагрузка от 70% и не более 20 повторений';
   };
   async function saveStrength(id,keyToken,nameToken){
     const key=decodeURIComponent(keyToken),name=decodeURIComponent(nameToken),
@@ -388,12 +392,12 @@
       host.innerHTML=groups.map((g,i)=>{
         const scored=reliableOfflineMean(g.rows),rolling=domain.currentStrengthEstimate(
           scored.included.map(row=>({date:row.date,sessionId:row.date,estimate:row.e1rm,
-            confidenceWeight:row.confidenceWeight,confirmedSingle:row.confirmedSingle}))),
+            confidenceWeight:row.confidenceWeight,tier:row.tier,confirmedSingle:row.confirmedSingle}))),
           one=rolling.estimate,setting=settings[i];
         const confirmedNote=rolling.confirmedFloor!=null?
           `<small>Подтверждённый одиночный подъём: ${fmt(rolling.confirmedFloor)} кг (${E(day(rolling.confirmedFloorDate))})${rolling.floorApplied?' · не даёт занизить актуальный 1ПМ':''}. Не заменяет прогнозный 1ПМ.</small>`:'';
         const sourceRows=scored.included.map(row=>`<li><span>${E(day(row.date))} · ${E(fmt(row.weight))} кг × ${E(fmt(row.reps,0))} · RPE ${E(fmt(row.rpe))}</span><b>${E(fmt(row.e1rm))} кг</b></li>`).join('');
-        const basis=scored.count?`<details class="ofp-weekly-basis"><summary>Источники 1ПМ · ${scored.count} из ${scored.total} записей</summary><ul>${sourceRows}</ul><small>Исторический средний: (${scored.included.map(x=>fmt(x.e1rm)).join(' + ')}) ÷ ${scored.count} = ${fmt(scored.estimate)} кг</small><small>Для автовеса: ${rolling.sourceSessions.map(x=>day(x.date)+' · '+fmt(x.estimate)+' кг').join(' → ')} · адаптивное сглаживание ${rolling.smoothingAlpha!=null?Math.round(rolling.smoothingAlpha*100)+'%':'не требуется'} · ограничение ${rolling.maxChangePct??5}% · ${E(({confirmed_growth:'устойчивый рост',confirmed_decline:'устойчивое снижение',single_decline:'единичное снижение',unconfirmed_growth:'рост ещё проверяется',stable:'стабильный уровень'})[rolling.trend]||'недостаточно данных')}</small>${confirmedNote}${scored.excluded.recovery?`<small>Разгрузочных подходов исключено: ${scored.excluded.recovery}</small>`:''}${scored.excluded.unqualified?`<small>Без достоверных данных исключено: ${scored.excluded.unqualified}</small>`:''}</details>`:
+        const basis=scored.count?`<details class="ofp-weekly-basis"><summary>Источники 1ПМ · ${scored.count} из ${scored.total} записей</summary><ul>${sourceRows}</ul><small>Исторический средний: (${scored.included.map(x=>fmt(x.e1rm)).join(' + ')}) ÷ ${scored.count} = ${fmt(scored.estimate)} кг</small><small>Для автовеса: ${rolling.sourceSessions.map(x=>day(x.date)+' · '+fmt(x.estimate)+' кг').join(' → ')}${rolling.provisional?' · предварительная калибровка 70–75%':''} · адаптивное сглаживание ${rolling.smoothingAlpha!=null?Math.round(rolling.smoothingAlpha*100)+'%':'не требуется'} · ограничение ${rolling.maxChangePct??5}% · ${E(({confirmed_growth:'устойчивый рост',confirmed_decline:'устойчивое снижение',single_decline:'единичное снижение',unconfirmed_growth:'рост ещё проверяется',stable:'стабильный уровень'})[rolling.trend]||'недостаточно данных')}</small>${confirmedNote}${scored.excluded.recovery?`<small>Разгрузочных подходов исключено: ${scored.excluded.recovery}</small>`:''}${scored.excluded.unqualified?`<small>Без достоверных данных исключено: ${scored.excluded.unqualified}</small>`:''}</details>`:
           `<p class="muted">Нет подходов для расчёта. Нужны рабочие записи с RPE 7–10 и достаточной интенсивностью.</p>`;
         return `<section class="ofp-weekly-exercise"><h3>${E(g.name)}</h3><p>Актуальный 1ПМ: <b>${one!=null?fmt(one)+' кг':'нет данных'}</b> · TM: <b>${rolling.trainingMax!=null?fmt(rolling.trainingMax)+' кг':'нет данных'}</b> · Достоверность: ${E(rolling.confidence)}</p><p class="muted">Исторический средний: ${scored.estimate!=null?fmt(scored.estimate)+' кг':'нет данных'} · Для актуального 1ПМ использовано тренировок: ${rolling.sessionCount} · Рабочих записей всего: ${scored.count} из ${scored.total}</p>${basis}<div class="offline-measure-grid"><div class="field"><label>Тип упражнения</label><select data-weekly-kind="${i}"><option value="base"${setting.kind==='base'?' selected':''}>Базовое</option><option value="isolation"${setting.kind==='isolation'?' selected':''}>Изоляция</option></select></div><div class="field"><label>Шаг веса, кг</label><select data-weekly-step="${i}">${[...new Set([.25,.5,1,1.25,2,2.5,4,5,10,setting.step])].sort((a,b)=>a-b).map(n=>`<option value="${n}"${n===setting.step?' selected':''}>${n===0?'Без веса':fmt(n,2)}</option>`).join('')}</select></div></div>${one&&setting.step>0?`<div class="ofp-weekly-scroll"><table class="ofp-weekly-table"><thead><tr><th>Неделя</th><th>% 1ПМ</th><th>Диапазон, кг</th><th>Вес, кг</th></tr></thead><tbody>${profiles.map(p=>{
           const prescription=p[setting.kind],pct=prescription.pct,lo=one*pct[0]/100,hi=one*pct[1]/100;

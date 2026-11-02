@@ -268,19 +268,49 @@ test('deload-only history does not masquerade as reliable strength evidence',()=
  assert.equal(r.canApply,true);
 });
 
-test('common evidence tiers reject <65%, RPE <7 and mismatched effort while accepting heavy sets',()=>{
+test('strength evidence tiers: <70% chart-only, 70–75% provisional, >=75% full',()=>{
  const score=(r,rpe,deload=false)=>A.strengthEvidence(100,r,rpe,null,{deload});
  assert.equal(score(15,8).tier,'excluded');
- assert.equal(score(10,7).tier,'auxiliary');
+ assert.equal(score(10,7).tier,'excluded','69.8% of predicted 1RM is not sufficient');
+ assert.equal(score(10,8).tier,'auxiliary','71.4% can calibrate only when no strong history exists');
+ assert.equal(score(8,8).tier,'working','exactly 75% is a full-strength working observation');
  assert.equal(score(6,8).tier,'working');
  assert.equal(score(3,9).tier,'heavy');
  assert.equal(score(1,10).tier,'test');
- assert.ok(score(1,10).confidenceWeight>score(10,7).confidenceWeight);
+ assert.ok(score(1,10).confidenceWeight>score(10,8).confidenceWeight);
  assert.equal(score(6,6).estimate,null);
  assert.equal(score(3,9,true).estimate,null);
  assert.equal(A.strengthEvidence(100,5,8,0).estimate,null);
  assert.equal(A.strengthEvidence(100,6,null,2).tier,'working');
  assert.equal(A.strengthEvidence(100,6,null,null).estimate,null);
+});
+test('70–75% can bootstrap but cannot change an already calibrated rolling 1RM or TM',()=>{
+ const full=A.strengthEvidence(100,6,8),aux=A.strengthEvidence(65,10,8);
+ const raw=(s,id,date)=>({sessionId:id,date,estimate:s.estimate,
+   tier:s.tier,confidenceWeight:s.confidenceWeight});
+ assert.equal(full.tier,'working');
+ assert.equal(aux.tier,'auxiliary');
+ const initial=A.currentStrengthEstimate([
+   raw(aux,'first','2026-10-01'),raw({...aux,estimate:aux.estimate+2},'second','2026-10-08')
+ ],{nowMs:Date.parse('2026-10-09')});
+ assert.equal(initial.provisional,true);
+ assert.equal(initial.confidence,'низкая');
+ assert.ok(initial.estimate>0&&Math.abs(initial.trainingMax-initial.estimate*.85)<1e-8);
+ const existing=A.currentStrengthEstimate([raw(full,'working','2026-10-01')],{nowMs:Date.parse('2026-10-16')});
+ const mixed=A.currentStrengthEstimate([
+   raw(full,'working','2026-10-01'),
+   raw(aux,'low1','2026-10-08'),
+   raw({...aux,estimate:75},'low2','2026-10-15')
+ ],{nowMs:Date.parse('2026-10-16')});
+ assert.equal(mixed.provisional,false);
+ assert.equal(mixed.estimate,existing.estimate,'auxiliary days do not lower the current 1RM');
+ assert.equal(mixed.trainingMax,existing.trainingMax);
+ assert.equal(mixed.sessionCount,1,'auxiliary days cannot crowd strong days out of rolling window');
+ assert.deepEqual(mixed.sourceSessions.map(s=>s.date),['2026-10-01']);
+ const sameDay=A.currentStrengthEstimate([
+   raw(full,'shared','2026-10-01'),raw(aux,'shared','2026-10-01')
+ ],{nowMs:Date.parse('2026-10-02')});
+ assert.equal(sameDay.estimate,full.estimate,'within a day only full strength sets are used when available');
 });
 test('low intensity or missing RPE cannot lower robust working e1RM',()=>{
  const heavy={id:'h',date:'2026-09-01',ended:1,ex:[ex('bench',[work(100,5,9)])]};

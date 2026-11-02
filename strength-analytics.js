@@ -73,14 +73,16 @@
       const values=row.points.flatMap(p=>p.entries.map(s=>s.e1)).filter(v=>v!=null);
       const evidence=row.points.flatMap(p=>p.entries.filter(e=>e.strengthEvidence).map(e=>({
         sessionId:p.id,date:p.date,estimate:e.strengthEvidence.estimate,
-        confidenceWeight:e.strengthEvidence.confidenceWeight,
+        confidenceWeight:e.strengthEvidence.confidenceWeight,tier:e.strengthEvidence.tier,
         confirmedSingle:e.r===1&&e.rpe>=7?e.w:null
       })));
       const rolling=D.currentStrengthEstimate?.(evidence)??null;
-      const usableMean=average(evidence.map(e=>e.estimate));
+      const qualified=evidence.some(e=>e.tier!=='auxiliary')?
+        evidence.filter(e=>e.tier!=='auxiliary'):evidence;
+      const usableMean=average(qualified.map(e=>e.estimate));
       return {...row,meanE1:average(values),estimateCount:values.length,
         currentStrength:rolling,historicalWorkingMean:usableMean,
-        strengthEvidenceCount:evidence.length,recoverySessionCount:row.points.filter(p=>p.deload).length,
+        strengthEvidenceCount:qualified.length,recoverySessionCount:row.points.filter(p=>p.deload).length,
         first:row.points[0],last:row.points.at(-1),workouts:row.points.length,bestWeight:Math.max(...row.points.map(p=>p.maxWeight)),best:Math.max(0,...row.points.map(p=>p.e1||0)),growth,comparable:estimates.length,estimateDate:last?.date};
     }).sort((a,b)=>b.last.date.localeCompare(a.last.date)||a.base.localeCompare(b.base));
   }

@@ -68,7 +68,7 @@
     const number=v=>v!=null?F(v)+' кг':'—';
     const verified=rolling.confirmedFloor!=null?`${F(rolling.confirmedFloor)} кг × 1 · ${rolling.confirmedFloorDate?E(dateLabel(rolling.confirmedFloorDate)+'.'+rolling.confirmedFloorDate.slice(0,4)):'подтверждено'}`:'Нет актуального';
     const trends={confirmed_growth:'устойчивый рост',confirmed_decline:'устойчивое снижение',single_decline:'разовое снижение',unconfirmed_growth:'рост проверяется',stable:'стабильно'};
-    const details=x.strengthEvidenceCount?`${x.strengthEvidenceCount} подходов · ${rolling.sessionCount||0} тренировок · достоверность ${rolling.confidence||'низкая'} · ${trends[rolling.trend]||'без тренда'}`:'Для оценки силы нужны рабочие подходы с RPE 7–10';
+    const details=x.strengthEvidenceCount?`${x.strengthEvidenceCount} подходов · ${rolling.sessionCount||0} тренировок · достоверность ${rolling.confidence||'низкая'} · ${rolling.provisional?'предварительная калибровка 70–75%':trends[rolling.trend]||'без тренда'}`:'Для оценки силы нужны рабочие подходы с RPE 7–10';
     return `<section class="strength-live-summary" aria-label="Сводка силовых показателей" data-strength-summary>
       <div class="strength-live-grid">
         <div class="strength-live-main"><span>Актуальный 1ПМ</span><strong data-strength-current>${number(rolling.estimate)}</strong></div>
