@@ -1921,7 +1921,7 @@
         estimatedMax:weeklyCorridor?Number(weeklyCorridor.max.toFixed(1)):null,
         applied:weeklyApplied
       }:null,
-      strength: {stableMean:strength.stableMean,best:strength.best,lastPerformed:strength.lastPerformed,lastWorkingSets:strength.lastWorkingSets,protocols:strength.protocols,sessionCount:strength.sessionCount||ids.length,setCount:strength.setCount||recent.length,estimate:strength.estimate==null?null:Number(strength.estimate.toFixed(1)),confirmed:strength.confirmed,
+      strength: {stableMean:strength.stableMean,best:strength.best,lastPerformed:strength.lastPerformed,lastWorkingSets:strength.lastWorkingSets,protocols:strength.protocols,sessionCount:strength.sessionCount||ids.length,currentSessionCount:strength.currentSessionCount||0,trainingMax:strength.trainingMax,historicalEstimate:strength.historicalEstimate,setCount:strength.setCount||recent.length,estimate:strength.estimate==null?null:Number(strength.estimate.toFixed(1)),confirmed:strength.confirmed,
         confidenceLow:strength.confidenceLow,confidenceHigh:strength.confidenceHigh,confidence:strength.confidence,sources:strength.points.slice(0,12).map(x=>({date:sessionDate(x.session),method:method(x.exercise,x.set),role:setRole(x.exercise,x.set),weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effortRpe(x.set)}))},
       methodStage:methodRec?.role??setRole(e,set),
       targetEffort:effortBand,
