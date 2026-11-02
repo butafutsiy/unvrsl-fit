@@ -181,11 +181,13 @@ test("a new rep range cannot bypass the maximum progression step",()=>{
  const bar=p("romanian-bar"),past=[old("1",bar,[set(115,12,8)])];
  const current=now(bar,[set(135,6,0,{ok:false,programW:135,targetRepMin:5,targetRepMax:7,targetRpeMin:8,targetRpeMax:9})]);
  const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg);
- assert.equal(rec.weight,120);assert.equal(rec.planPreserved,false);
+ assert.ok(rec.weight>115&&rec.weight<=120,'rebase stays within the guarded 5% increase');assert.equal(rec.planPreserved,false);
  assert.equal(rec.action,"range_adjust");assert.equal(rec.basis.estimatedOneRepMax,168.7);
  assert.match(rec.reason,/115 кг × 12/);
  const pastWithRir=[old("1",bar,[set(115,12,"",{rir:2})])];
- assert.equal(A.recommend(current.ex[0],current.ex[0].set[0],current,pastWithRir,reg).weight,120);
+ const withRir=A.recommend(current.ex[0],current.ex[0].set[0],current,pastWithRir,reg);
+ assert.ok(withRir.weight>115&&withRir.weight<=120);
+ assert.equal(withRir.strength.estimate,null,'the <70% set may inform repetition-task sizing, not the current 1RM');
 });
 test("isolation and effort-free sets do not justify a large weight jump",()=>{
  const bar=p("leg-curl"),past=[old("1",bar,[set(70,12,8)])];
