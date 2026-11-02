@@ -121,7 +121,7 @@
           const livePeakUpgrade=rec.peakRebase===true&&set.weightSource==='auto'&&
             set.peakAutoRevision!==575&&!set.manualOverride&&!set.ok&&!set.skipped;
           const rollingUpgrade=rec.currentOneRepMax>0&&set.weightSource==='auto'&&
-            set.rollingAutoRevision!==582&&!set.manualOverride&&!set.ok&&!set.skipped;
+            set.rollingAutoRevision!==584&&!set.manualOverride&&!set.ok&&!set.skipped;
           const recoveryUpgrade=rec.recoveryEvidenceExcluded>0&&set.weightSource==='auto'&&
             set.recoveryAutoRevision!==577&&!set.manualOverride&&!set.ok&&!set.skipped;
           const liveBackoffUpdate=A.setRole(ex,set)==='backoff'&&set.weightSource==='auto'&&
@@ -139,7 +139,7 @@
               set.plannedW = set.w;
               set.selectedW=set.w;set.autoInitialWeight=set.w;set.autoInitialApplied=true;
               if(rec.peakRebase)set.peakAutoRevision=575;
-              if(rec.currentOneRepMax>0)set.rollingAutoRevision=582;
+              if(rec.currentOneRepMax>0)set.rollingAutoRevision=584;
               if(rec.recoveryEvidenceExcluded>0)set.recoveryAutoRevision=577;
               if(A.setRole(ex,set)==='backoff')set.backoffAutoKey=rec.proposalKey;
               if (before !== set.w) changed = weightsChanged = true;
