@@ -30,6 +30,16 @@
     W.WorkoutDomain.strengthEvidence(weight,reps,rpe,rir,{deload:!!deload});
   const e1rm=(weight,reps,rpe=null,rir=null,deload=false)=>
     strengthScore(weight,reps,rpe,rir,deload).estimate;
+  // Only for visual history: a deload has a descriptive e1RM, but its saved
+  // e1rm remains null, so TM / weekly loads / autoweight cannot consume it.
+  function chartOnlyE1rm(row){
+    if(!row?.is_deload)return N(row?.e1rm);
+    const w=N(row.weight_kg),reps=N(row.reps),rpe=N(row.rpe),rir=N(row.rir);
+    if(!(w>0)||!Number.isInteger(reps)||reps<1||reps>30)return null;
+    const effort=rpe??(rir!=null?10-rir:null);
+    if(effort!=null&&effort>=4&&effort<=10)return +(w*(1+(reps+10-effort)/30)).toFixed(1);
+    return +(w*(1+reps/30)).toFixed(1); // legacy, uncalibrated chart estimate
+  }
   function reliableOfflineMean(rows) {
     // Arithmetic mean of EVERY eligible working set, not a weighted or
     // median-trimmed subset. No silent exclusion of successful records.
@@ -63,9 +73,9 @@
 
   function strengthSeries(rows){
     const sorted=chronological(rows,'measured_at');
-    const mode=sorted.some(x=>N(x.e1rm)>0)?'e1rm':sorted.some(x=>N(x.weight_kg)>0)?'weight':'reps';
+    const mode=sorted.some(x=>chartOnlyE1rm(x)>0)?'e1rm':sorted.some(x=>N(x.weight_kg)>0)?'weight':'reps';
     const label=mode==='e1rm'?'Расчётный 1ПМ':mode==='weight'?'Рабочий вес':'Повторения',unit=mode==='reps'?'повт.':'кг';
-    const points=sorted.map(x=>({date:x.measured_at,value:mode==='e1rm'?N(x.e1rm):mode==='weight'?N(x.weight_kg):N(x.reps),source:x.entry_source,note:x.notes})).filter(x=>x.value!=null);
+    const points=sorted.map(x=>({date:x.measured_at,value:mode==='e1rm'?chartOnlyE1rm(x):mode==='weight'?N(x.weight_kg):N(x.reps),source:x.entry_source,note:x.is_deload?['Разгрузка · только график · не для автовеса',x.notes].filter(Boolean).join(' · '):x.notes})).filter(x=>x.value!=null);
     return{mode,label,unit,points}
   }
 
@@ -210,8 +220,8 @@
   }
 
   function latestStrengthText(row){
-    if(!row)return'Нет записей';const w=N(row.weight_kg),r=N(row.reps),one=N(row.e1rm),parts=[];
-    if(w!=null)parts.push(`${fmt(w)} кг`);if(r!=null)parts.push(`${fmt(r,0)} повт.`);if(N(row.rpe)!=null)parts.push(`RPE ${fmt(row.rpe)}`);if(N(row.rir)!=null)parts.push(`RIR ${fmt(row.rir)}`);if(row.is_deload)parts.push('Разгрузка');if(one!=null)parts.push(`1ПМ ≈ ${fmt(one)} кг`);return parts.join(' · ')||'Запись без нагрузки'
+    if(!row)return'Нет записей';const w=N(row.weight_kg),r=N(row.reps),one=chartOnlyE1rm(row),parts=[];
+    if(w!=null)parts.push(`${fmt(w)} кг`);if(r!=null)parts.push(`${fmt(r,0)} повт.`);if(N(row.rpe)!=null)parts.push(`RPE ${fmt(row.rpe)}`);if(N(row.rir)!=null)parts.push(`RIR ${fmt(row.rir)}`);if(row.is_deload)parts.push('Разгрузка');if(one!=null)parts.push(`1ПМ ≈ ${fmt(one)} кг`);if(row.is_deload)parts.push('1ПМ только для графика');return parts.join(' · ')||'Запись без нагрузки'
   }
   function strengthCard(id,group){
     const rows=chronological(group.rows,'measured_at'),latest=rows[rows.length-1],series=strengthSeries(rows),delta=change(series.points);
@@ -277,8 +287,12 @@
     const score=strengthScore(D.getElementById('osWeight')?.value,D.getElementById('osReps')?.value,
       D.getElementById('osRpe')?.value,D.getElementById('osRir')?.value,D.getElementById('osDeload')?.checked);
     const out=D.getElementById('ofpE1rmValue'),note=D.getElementById('ofpStrengthEvidenceNote');
-    if(out)out.textContent=score.estimate==null?'—':`≈ ${fmt(score.estimate)} кг`;
-    if(note)note.textContent=D.getElementById('osDeload')?.checked?'Разгрузка сохраняется в журнале, но не меняет 1ПМ':
+    const chartValue=D.getElementById('osDeload')?.checked?chartOnlyE1rm({
+      weight_kg:D.getElementById('osWeight')?.value,reps:D.getElementById('osReps')?.value,
+      rpe:D.getElementById('osRpe')?.value,rir:D.getElementById('osRir')?.value,is_deload:true
+    }):score.estimate;
+    if(out)out.textContent=chartValue==null?'—':`≈ ${fmt(chartValue)} кг`;
+    if(note)note.textContent=D.getElementById('osDeload')?.checked?'Разгрузка: оценка видна на графике, но не участвует в расчёте тренировок и автовеса':
       score.tier==='test'?'Высокая достоверность · контрольный подход':
       score.tier==='heavy'?'Высокая достоверность · тяжёлый подход':
       score.tier==='working'?'Основная оценка · рабочий подход':
@@ -310,7 +324,8 @@
       const result=await saveEntry('offline_client_strengths',id,button?.dataset.entryId,payload);
       if(result.error)throw result.error;
       await c.client.from('offline_clients').update({updated_at:iso()}).eq('id',id).eq('trainer_id',c.user.id);
-      W.toast?.(score.estimate!=null?`Показатель сохранён · 1ПМ ≈ ${fmt(score.estimate)} кг`:
+      W.toast?.(isDeload?'Разгрузка сохранена · оценка 1ПМ доступна только на графике':
+        score.estimate!=null?`Показатель сохранён · 1ПМ ≈ ${fmt(score.estimate)} кг`:
         'Подход сохранён · без достоверной оценки 1ПМ');
       await openDetail(id);
     }catch(error){W.alert?.(error?.message||'Не удалось сохранить показатель')}
