@@ -286,6 +286,10 @@
       weight=N(raw('osWeight')),reps=N(raw('osReps')),rpe=N(raw('osRpe')),rir=N(raw('osRir')),
       isDeload=!!D.getElementById('osDeload')?.checked,
       score=strengthScore(weight,reps,rpe,rir,isDeload),button=D.getElementById('ofpStrengthSave');
+    const original=A(state.data?.strengths).find(row=>String(row.id)===String(button?.dataset.entryId||'')),
+      preserveLegacy=original&&N(original.rpe)==null&&N(original.rir)==null&&rpe==null&&rir==null&&!isDeload&&
+        weight===N(original.weight_kg)&&reps===N(original.reps),
+      storedE1rm=score.estimate??(preserveLegacy?N(original.e1rm):null);
     try {
       if(!(weight>0)||weight>999||!Number.isInteger(reps)||reps<1||reps>30)
         throw new Error('Укажи рабочий вес и от 1 до 30 повторений');
@@ -296,7 +300,7 @@
       const c=W.cloud;if(!c?.client||!c?.user)throw new Error('Нет подключения к аккаунту тренера');
       if(button)button.disabled=true;
       const payload={offline_client_id:id,trainer_id:c.user.id,measured_at:raw('osDate')||today(),
-        exercise_key:key,exercise_name:name,weight_kg:weight,reps,e1rm:score.estimate,
+        exercise_key:key,exercise_name:name,weight_kg:weight,reps,e1rm:storedE1rm,
         rpe,rir,is_deload:isDeload,notes:raw('osNotes')||null,entry_source:'trainer'};
       const result=await saveEntry('offline_client_strengths',id,button?.dataset.entryId,payload);
       if(result.error)throw result.error;
@@ -459,6 +463,10 @@
     .ofp-weekly-scroll{overflow-x:auto}.ofp-weekly-table{width:100%;border-collapse:collapse;font-size:13px;text-align:left}
     .ofp-weekly-table th,.ofp-weekly-table td{padding:12px 8px;border-bottom:1px solid rgba(128,128,128,.2)}
     .ofp-weekly-table th{font-size:11px;opacity:.65}.ofp-weekly-table small{display:block;min-width:85px;max-width:130px;font-size:10px;line-height:1.4;opacity:.65;margin-top:4px}
+    .ofp-effort-grid{margin-top:11px}.ofp-effort-grid .field label{font-size:12px}
+    .ofp-effort-grid input{width:100%;min-height:46px;border:1px solid #34343b;border-radius:13px;background:#1d1d22;color:#f5f5f7;padding:9px 13px;font-size:16px;box-sizing:border-box}
+    .ofp-deload{display:flex;gap:10px;align-items:center;margin:12px 0;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.035);color:#bdbdc5;font-size:12px;line-height:1.4}
+    .ofp-deload input{flex:0 0 20px;accent-color:#30d158;width:20px;height:20px}
   `;D.head.appendChild(entryStyle);
 
   function install(){
