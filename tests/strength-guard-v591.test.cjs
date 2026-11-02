@@ -28,6 +28,18 @@ test('three consecutive comparable poor workouts release the strength guard',()=
   assert.ok(x.estimate<147);
 });
 
+test('an older low estimate must not downgrade a confirmed single from 90% TM to 85%',()=>{
+  const dates=['2026-09-12','2026-09-21','2026-10-07','2026-10-21'];
+  const values=[82.3,93.3,110,98.7];
+  const x=D.currentStrengthEstimate(values.map((estimate,i)=>({
+    sessionId:'s'+i,date:dates[i],estimate,confidenceWeight:1,tier:'heavy',
+    confirmedSingle:i===2?100:null
+  })),{nowMs:Date.parse('2026-11-02')});
+  assert.equal(x.estimate,100);
+  assert.equal(x.trainingMax,90);
+  assert.equal(x.confidence,'средняя');
+});
+
 test('one isolated peak cannot establish a strong-day protection floor',()=>{
   const x=rolling([150,166,145,144]);
   assert.ok(x.stabilityFloor==null||x.stabilityFloor<145);
