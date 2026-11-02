@@ -166,6 +166,7 @@ jobs:
         run: |
           node tests/runtime-offline-history.cjs
           node tests/runtime-strength-deload-chart.cjs
+          node tests/runtime-strength-equipment.cjs
 
   catalog-completeness:
     runs-on: ubuntu-latest
