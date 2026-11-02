@@ -37,7 +37,7 @@ test("the September 21 workout drives the next week's 5–7 reps despite stale m
  assert.equal(rec.basis.date,'2026-09-21');assert.equal(rec.basis.weight,140);
  assert.equal(rec.basis.estimatedOneRepMax,182);
  assert.equal(rec.sessionIds[0],'21');assert.deepEqual(rec.repRange,{lo:5,hi:7});
- assert.ok(rec.weight>=140&&rec.weight<=145);assert.equal(rec.planPreserved,false);
+ console.log('DEBUG_WEIGHT_1',rec.weight,rec.currentOneRepMax,rec.historicalOneRepMax,rec.previous,rec.reasonCodes);assert.ok(rec.weight>=140&&rec.weight<=145);assert.equal(rec.planPreserved,false);
  assert.equal(rec.weeklyIntensity.applied,false);
 });
 test("a single late miss holds next-session load instead of declaring lost strength",()=>{
@@ -100,7 +100,7 @@ test("restoring a week-five draft recomputes its saved recommendation from Septe
  assert.equal(waiting.recommendation.basis.date,'2026-09-21');
  assert.equal(waiting.recommendation.basis.estimatedOneRepMax,182);
  assert.deepEqual(JSON.parse(JSON.stringify(waiting.recommendation.repRange)),{lo:4,hi:6});
- assert.ok(waiting.recommendedW>=150&&waiting.recommendedW<=155,'effort-weighted load within equipment step');assert.equal(waiting.recommendation.canApply,true);assert.equal(waiting.recommendation.conflict,null);assert.equal(waiting.w,135);assert.ok(saves>0);assert.ok(refreshes>0);
+ console.log('DEBUG_WEIGHT_2',waiting.recommendedW,waiting.recommendation.currentOneRepMax,waiting.recommendation.historicalOneRepMax,waiting.recommendation.previous,waiting.recommendation.reasonCodes);assert.ok(waiting.recommendedW>=150&&waiting.recommendedW<=155,'effort-weighted load within equipment step');assert.equal(waiting.recommendation.canApply,true);assert.equal(waiting.recommendation.conflict,null);assert.equal(waiting.w,135);assert.ok(saves>0);assert.ok(refreshes>0);
 });
 test("completed sets in legacy history count even if the old session lacks an ended timestamp",()=>{
  const bar=p('rdl-bar'),earlier=old('12',bar,[set(115,12,8)]),recent=old('21',bar,[set(140,7,8)]);
