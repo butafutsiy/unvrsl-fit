@@ -23,9 +23,13 @@
   }
 
   // Display estimates use the entered load, independently of prescription estimates.
-  function estimate(w,r,type){
+  function estimate(w,r,type,effort=null){
     if(['bodyweight_only','bodyweight_assisted','time','distance','repetitions_only'].includes(type)||!Number.isFinite(w)||w<0||!Number.isInteger(r)||r<1)return null;
-    const value=w*(r===1?1:1+r/30);
+    // Graph history retains recovery sets. If actual effort is available,
+    // display the same RPE-aware estimate as the strength model, even for
+    // deloads; without effort keep legacy Epley chart behaviour.
+    const e=Number(effort);
+    const value=w*(Number.isFinite(e)&&e>=4&&e<=10?1+(r+10-e)/30:r===1?1:1+r/30);
     return Number.isFinite(value)?Math.round(value*10)/10:null;
   }
   const average=values=>values.length?values.reduce((sum,v)=>sum+v,0)/values.length:null;
@@ -47,10 +51,15 @@
           const familyKey=JSON.stringify([reg.identity(e),type,configuration]);
           const key=JSON.stringify([reg.identity(e),type,equipment,configuration]);
           const row=rows.get(key)||{key,familyKey,base:resolved.n||e.n,group:g,type,equipment,equipmentName:s.equipmentSnapshot?.name||(e.equipmentProfile?.id===equipment?e.equipmentProfile.name:'')||equipmentProfiles[equipment]?.name||(equipment?'Оборудование '+equipment:'Оборудование не указано'),points:[],sets:0};
-          let p=row.points.find(x=>x.id===sid);if(!p){p={id:sid,date,started:session.started,e1:null,maxWeight:0,maxReps:0,sets:0,entries:[],estimateSet:null,deload:session.deload===true||session.isDeload===true||((!session.programId||session.programId==='__builtin_cycle__')&&['A1','A2','B','C','D'].includes(session.c)&&[4,6].includes(Number(session.w)))};row.points.push(p)}
+          let p=row.points.find(x=>x.id===sid);if(!p){p={id:sid,date,started:session.started,e1:null,maxWeight:0,maxReps:0,sets:0,entries:[],estimateSet:null,deload:!!D.isRecoveryForAutoweight?.(session)||session.deload===true||session.isDeload===true||((!session.programId||session.programId==='__builtin_cycle__')&&['A1','A2','B','C','D'].includes(session.c)&&[4,6].includes(Number(session.w)))};row.points.push(p)}
           const w=D.number(s.w)??0,r=D.number(s.actualReps??s.r),method=D.method(e,s),role=D.setRole(e,s);
-          const e1=estimate(w,r,type);
-          const entry={w,r,method,role,rpe:D.effortRpe(s),e1};p.entries.push(entry);p.sets++;row.sets++;
+          const effort=D.effortRpe(s),rir=D.number(s.actualRir??s.rir),e1=estimate(w,r,type,effort);
+          // Shared strength evidence is for the summary only. Chart values
+          // remain independent and retain all completed recovery sets.
+          const eligible=!p.deload&&!D.warmup(s)&&!['bodyweight_only','bodyweight_assisted'].includes(type)&&w>0&&
+            typeof D.strengthEvidence==='function'?D.strengthEvidence(w,r,effort,rir):null;
+          const entry={w,r,method,role,rpe:effort,rir,e1,
+            strengthEvidence:eligible?.confidenceWeight>0?eligible:null};p.entries.push(entry);p.sets++;row.sets++;
           if(w>p.maxWeight||(w===p.maxWeight&&r>p.maxReps)){p.maxWeight=w;p.maxReps=r}
           if(e1!=null&&(p.e1==null||e1>p.e1)){p.e1=e1;p.estimateSet=entry}
           rows.set(key,row);
@@ -62,7 +71,17 @@
       const estimates=row.points.filter(p=>p.e1!=null),first=estimates[0],last=estimates.at(-1);
       const growth=estimates.length>=2&&first.date!==last.date&&first.e1>0?(last.e1/first.e1-1)*100:null;
       const values=row.points.flatMap(p=>p.entries.map(s=>s.e1)).filter(v=>v!=null);
-      return {...row,meanE1:average(values),estimateCount:values.length,first:row.points[0],last:row.points.at(-1),workouts:row.points.length,bestWeight:Math.max(...row.points.map(p=>p.maxWeight)),best:Math.max(0,...row.points.map(p=>p.e1||0)),growth,comparable:estimates.length,estimateDate:last?.date};
+      const evidence=row.points.flatMap(p=>p.entries.filter(e=>e.strengthEvidence).map(e=>({
+        sessionId:p.id,date:p.date,estimate:e.strengthEvidence.estimate,
+        confidenceWeight:e.strengthEvidence.confidenceWeight,
+        confirmedSingle:e.r===1&&e.rpe>=7?e.w:null
+      })));
+      const rolling=D.currentStrengthEstimate?.(evidence)??null;
+      const usableMean=average(evidence.map(e=>e.estimate));
+      return {...row,meanE1:average(values),estimateCount:values.length,
+        currentStrength:rolling,historicalWorkingMean:usableMean,
+        strengthEvidenceCount:evidence.length,recoverySessionCount:row.points.filter(p=>p.deload).length,
+        first:row.points[0],last:row.points.at(-1),workouts:row.points.length,bestWeight:Math.max(...row.points.map(p=>p.maxWeight)),best:Math.max(0,...row.points.map(p=>p.e1||0)),growth,comparable:estimates.length,estimateDate:last?.date};
     }).sort((a,b)=>b.last.date.localeCompare(a.last.date)||a.base.localeCompare(b.base));
   }
   // Group the exercise for display only. Prescription history stays equipment-specific.
