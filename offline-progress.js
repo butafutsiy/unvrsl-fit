@@ -281,8 +281,31 @@
       'Для расчёта нужны RPE 7–10, нагрузка от 65% и не более 20 повторений';
   };
   async function saveStrength(id,keyToken,nameToken){
-    const key=decodeURIComponent(keyToken),name=decodeURIComponent(nameToken),raw=x=>String(D.getElementById(x)?.value||'').trim(),weight=N(raw('osWeight')),reps=N(raw('osReps')),one=e1rm(weight,reps),button=D.getElementById('ofpStrengthSave');
-    try{if(one==null||!Number.isInteger(reps)||weight>999)throw new Error('Укажи рабочий вес и от 1 до 30 повторений');const c=W.cloud;if(!c?.client||!c?.user)throw new Error('Нет подключения к аккаунту тренера');if(button)button.disabled=true;const payload={offline_client_id:id,trainer_id:c.user.id,measured_at:raw('osDate')||today(),exercise_key:key,exercise_name:name,weight_kg:weight,reps,e1rm:one,notes:raw('osNotes')||null,entry_source:'trainer'};const result=await saveEntry('offline_client_strengths',id,button?.dataset.entryId,payload);if(result.error)throw result.error;await c.client.from('offline_clients').update({updated_at:iso()}).eq('id',id).eq('trainer_id',c.user.id);W.toast?.(`Показатель сохранён · 1ПМ ≈ ${fmt(one)} кг`);await openDetail(id)}catch(error){W.alert?.(error?.message||'Не удалось сохранить показатель')}finally{if(button)button.disabled=false}
+    const key=decodeURIComponent(keyToken),name=decodeURIComponent(nameToken),
+      raw=x=>String(D.getElementById(x)?.value||'').trim(),
+      weight=N(raw('osWeight')),reps=N(raw('osReps')),rpe=N(raw('osRpe')),rir=N(raw('osRir')),
+      isDeload=!!D.getElementById('osDeload')?.checked,
+      score=strengthScore(weight,reps,rpe,rir,isDeload),button=D.getElementById('ofpStrengthSave');
+    try {
+      if(!(weight>0)||weight>999||!Number.isInteger(reps)||reps<1||reps>30)
+        throw new Error('Укажи рабочий вес и от 1 до 30 повторений');
+      if((raw('osRpe')&&(rpe==null||rpe<4||rpe>10||rpe*2%1!==0))||
+         (raw('osRir')&&(rir==null||rir<0||rir>6||rir*2%1!==0))||
+         (rpe!=null&&rir!=null&&Math.abs(rpe+rir-10)>.01))
+        throw new Error('RPE 4–10 и RIR 0–6 должны соответствовать друг другу (RPE = 10 − RIR)');
+      const c=W.cloud;if(!c?.client||!c?.user)throw new Error('Нет подключения к аккаунту тренера');
+      if(button)button.disabled=true;
+      const payload={offline_client_id:id,trainer_id:c.user.id,measured_at:raw('osDate')||today(),
+        exercise_key:key,exercise_name:name,weight_kg:weight,reps,e1rm:score.estimate,
+        rpe,rir,is_deload:isDeload,notes:raw('osNotes')||null,entry_source:'trainer'};
+      const result=await saveEntry('offline_client_strengths',id,button?.dataset.entryId,payload);
+      if(result.error)throw result.error;
+      await c.client.from('offline_clients').update({updated_at:iso()}).eq('id',id).eq('trainer_id',c.user.id);
+      W.toast?.(score.estimate!=null?`Показатель сохранён · 1ПМ ≈ ${fmt(score.estimate)} кг`:
+        'Подход сохранён · без достоверной оценки 1ПМ');
+      await openDetail(id);
+    }catch(error){W.alert?.(error?.message||'Не удалось сохранить показатель')}
+    finally{if(button)button.disabled=false}
   }
   async function strengthHistory(id,keyToken,nameToken){
     const key=decodeURIComponent(keyToken),name=decodeURIComponent(nameToken),c=W.cloud;if(!c?.client||!c?.user)return W.toast?.('Нет подключения к аккаунту тренера');const result=await c.client.from('offline_client_strengths').select('*').eq('offline_client_id',id).eq('exercise_key',key).order('measured_at',{ascending:false}).order('created_at',{ascending:false});if(result.error)return W.alert?.(result.error.message);
