@@ -36,5 +36,43 @@ assert.equal(W.document.querySelectorAll('.strength-record').length,5);
 assert.match(query('.strength-average').textContent,/15.*%/);
 W.strengthFilter('group','chest');assert.equal(W.document.querySelectorAll('.strength-exercise').length,0);
 W.strengthFilter('group','legs');assert.equal(W.document.querySelectorAll('.strength-exercise').length,1);
-console.log('PASS: one equipment family, normalized percentages, unknown history, machine-specific kg, point selection, chart modes, back to all, muscle filters.');
+
+// The personal account shares the same working-evidence and adaptive rolling
+// estimator as the offline weekly table, without allowing recovery to
+// influence either the current 1RM or historical eligible mean.
+const sample=[
+  [65,6,false],[70,8,false],[65,8,true],[100,1,false],[80,5,false]
+];
+W.st.sessions=sample.map(([w,r,deload],i)=>({
+ id:'personal-'+i,date:day(i),ended:1,deload,
+ ex:[{n:'Присед со штангой',loadType:'external_total',set:[
+   {w,r,actualReps:r,actualRpe:8,actualRir:2,ok:true}
+ ]}]
+}));
+W.workoutRegistry=W.WorkoutDomain.registry([{id:'squat',n:'Присед со штангой',tg:'quads',loadType:'external_total'}]);
+W.document.querySelector('main').innerHTML=W.profileStrengthOverviewHtml();
+const personal=W.document.querySelector('[data-strength-summary]');
+assert.ok(personal,'personal strength card shows unified rolling 1RM summary');
+assert.equal(personal.querySelector('[data-strength-current]').textContent,'100 кг');
+assert.equal(personal.querySelector('[data-strength-tm]').textContent,'90 кг');
+assert.equal(personal.querySelector('[data-strength-historical]').textContent,'96,1 кг');
+assert.match(personal.querySelector('[data-strength-single]').textContent,/100 кг × 1/);
+assert.match(personal.querySelector('[data-strength-recovery]').textContent,/Разгрузка \/ восстановление: 1/);
+assert.equal(W.document.querySelectorAll('.strength-marker.e1').length,5,'all chart 1RM points remain visible');
+assert.equal(W.document.querySelectorAll('.strength-marker.recovery.e1').length,1,'recovery e1RM remains a chart-only point');
+assert.match(W.document.querySelector('.strength-record.recovery').textContent,/86,7 кг/);
+assert.match(W.document.querySelector('.strength-focus').textContent,/RPE 8/,'selected top set displays its effort');
+const personalKey=W.document.querySelector('[data-strength-key]').dataset.strengthKey;
+W.strengthSelect(encodeURIComponent(personalKey),2);
+assert.match(W.document.querySelector('.strength-focus').textContent,/Разгрузка: только график/);
+assert.equal(W.document.querySelector('[data-strength-current]').textContent,'100 кг','selecting recovery cannot change current strength');
+assert.equal(W.document.querySelector('[data-strength-historical]').textContent,'96,1 кг','recovery cannot change eligible mean');
+// A non-deload session with no RPE stays in the chart but does not fabricate a strength baseline.
+W.st.sessions=[session('no-effort',0,80)];
+W.document.querySelector('main').innerHTML=W.profileStrengthOverviewHtml();
+assert.equal(W.document.querySelector('[data-strength-current]').textContent,'—');
+assert.match(W.document.querySelector('[data-strength-summary]').textContent,/нужны рабочие подходы с RPE 7–10/i);
+
+console.log('PASS: one equipment family, personal rolling 1RM/TM/eligible mean, verified singles, recovery markers and protection.');
+
 dom.window.close();
