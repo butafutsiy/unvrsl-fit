@@ -341,7 +341,8 @@ test('actual workout recommendation uses rolling e1RM, not the historical full a
  const cur=current(target({w:105,programW:0,targetRepMin:5,targetRepMax:7,targetRpeMin:8,targetRpeMax:9}), 'bench',{date:'2026-10-28'});
  const r=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,sessions,reg);
  assert.equal(r.strength.currentSessionCount,3);
- assert.ok(r.currentOneRepMax>r.historicalOneRepMax,'old weak session no longer drags live estimate down');
+ const recentOnly=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,sessions.slice(1),reg);
+ assert.equal(r.currentOneRepMax,recentOnly.currentOneRepMax,'ancient workout cannot change current e1RM');
  assert.ok(r.trainingMax<r.currentOneRepMax);
  assert.equal(r.percentageBasis,'e1RM');
 });
