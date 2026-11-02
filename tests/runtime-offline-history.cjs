@@ -16,7 +16,7 @@ const val=(id,v)=>w.document.getElementById(id).value=v;
  await w.offlineStrengthHistory('c1','bench','Жим');assert.match(w.document.body.textContent,/Изменить/);assert.match(w.document.body.textContent,/Удалить/);
  await w.offlineProgressEditEntry('strength','c1','s1');val('osWeight','110');val('osReps','10');val('osRpe','9');w.offlineProgressEffortChangedV578('rpe');assert.equal(w.document.getElementById('osRir').value,'1');await w.offlineSaveStrength('c1','bench','Жим');
  assert.equal(db.offline_client_strengths.length,1);assert.equal(db.offline_client_strengths[0].e1rm,150.3);assert.equal(db.offline_client_strengths[0].rpe,9);assert.equal(db.offline_client_strengths[0].rir,1);assert.equal(db.offline_client_strengths[0].entry_source,'client');
- await w.offlineProgressWeeklyLoad('c1');assert.equal(w.document.querySelectorAll('tbody tr').length,8);assert.ok(Number(w.document.querySelector('tbody tr td:last-child b').textContent.replace(',','.'))>100);
+ await w.offlineProgressWeeklyLoad('c1');assert.equal(w.document.querySelectorAll('tbody tr').length,8);assert.ok(Number(w.document.querySelector('tbody tr td:last-child strong').textContent.replace(' кг','').replace(',','.'))>100);
  val('ofpCycleWeeks','4');w.document.getElementById('ofpCycleWeeks').dispatchEvent(new w.Event('change'));assert.equal(w.document.querySelectorAll('tbody tr').length,4);
  assert.ok(!JSON.stringify(db.offline_progress_shares[0].snapshot).includes('weekly'));
  await w.offlineProgressEditEntry('strength','c1','s1');
