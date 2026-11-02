@@ -56,7 +56,8 @@
           const effort=D.effortRpe(s),rir=D.number(s.actualRir??s.rir),e1=estimate(w,r,type,effort);
           // Shared strength evidence is for the summary only. Chart values
           // remain independent and retain all completed recovery sets.
-          const eligible=!p.deload&&!D.warmup(s)&&!['bodyweight_only','bodyweight_assisted'].includes(type)&&w>0&&
+          const unsafe=!!(s.techniqueFailed||s.techniqueDangerous||s.pain||s.painReported||s.incomplete||s.partial||s.failedAttempt);
+          const eligible=!unsafe&&!p.deload&&!D.warmup(s)&&!['bodyweight_only','bodyweight_assisted'].includes(type)&&w>0&&
             typeof D.strengthEvidence==='function'?D.strengthEvidence(w,r,effort,rir):null;
           const entry={w,r,method,role,rpe:effort,rir,e1,
             strengthEvidence:eligible?.confidenceWeight>0?eligible:null};p.entries.push(entry);p.sets++;row.sets++;
