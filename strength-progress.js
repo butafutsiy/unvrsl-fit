@@ -82,9 +82,11 @@
           (row.rpe??(row.rir!=null?10-row.rir:null))>=7?row.weight:null});
     }
     const rolling=domain.currentStrengthEstimate(evidence);
-    const mean=evidence.length?evidence.reduce((a,x)=>a+x.estimate,0)/evidence.length:null;
+    const eligible=evidence.some(x=>x.tier!=='auxiliary')?
+      evidence.filter(x=>x.tier!=='auxiliary'):evidence;
+    const mean=eligible.length?eligible.reduce((a,x)=>a+x.estimate,0)/eligible.length:null;
     const verified=evidence.find(x=>x.confirmedSingle===rolling.confirmedFloor&&x.date===rolling.confirmedFloorDate);
-    return {rolling,mean,verified,excluded,used:evidence.length};
+    return {rolling,mean,verified,excluded,used:eligible.length};
   }
   function summaryHtml(rows){
     const stats=strengthSummary(rows);if(!stats)return '';
