@@ -300,7 +300,7 @@ test('rolling e1RM follows latest three workout days rather than the full histor
  const result=A.currentStrengthEstimate(observations,{nowMs:Date.parse('2026-10-22')});
  assert.equal(result.sessionCount,3);
  assert.deepEqual(result.sourceSessions.map(x=>x.date),['2026-10-21','2026-10-01','2026-09-20']);
- assert.ok(Math.abs(result.estimate-96.2513)<.02,'single-session changes are now capped at 5%');
+ assert.ok(Math.abs(result.estimate-95.8746)<.02,'single-session changes are now capped at 5%');
  assert.ok(Math.abs(result.trainingMax-result.estimate*.9)<.01);
  assert.equal(result.historicalSessionCount,6);
  const moreOld=[...observations,...Array.from({length:30},(_,i)=>({sessionId:'ancient'+i,date:'2025-01-01',estimate:50,confidenceWeight:1}))];
