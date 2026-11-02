@@ -346,3 +346,84 @@ test('actual workout recommendation uses rolling e1RM, not the historical full a
  assert.ok(r.trainingMax<r.currentOneRepMax);
  assert.equal(r.percentageBasis,'e1RM');
 });
+
+
+test('recent successful 100 kg single protects Nikolai current 1RM from over-conservative smoothing',()=>{
+ const inputs=[
+  {sessionId:'w1',date:'2026-09-21',estimate:93.3,confidenceWeight:1},
+  {sessionId:'test',date:'2026-10-07',estimate:110,confidenceWeight:1,confirmedSingle:100},
+  {sessionId:'w3',date:'2026-10-21',estimate:98.7,confidenceWeight:1}
+ ];
+ const result=A.currentStrengthEstimate(inputs,{nowMs:Date.parse('2026-10-22')});
+ assert.equal(result.estimate,100,'the athlete has already demonstrated 100 kg');
+ assert.equal(result.confirmedFloor,100);
+ assert.equal(result.confirmedFloorDate,'2026-10-07');
+ assert.equal(result.floorApplied,true);
+ assert.equal(result.trainingMax,90,'the separately discounted TM is not itself 1RM');
+ assert.equal(result.sessionCount,3);
+ const without=A.currentStrengthEstimate(inputs.map(({confirmedSingle,...item})=>item),{nowMs:Date.parse('2026-10-22')});
+ assert.ok(without.estimate<100,'floor only comes from actually performed single');
+});
+
+test('confirmed single protection is temporary and evidence of decline can override it',()=>{
+ const original=[
+  {sessionId:'single',date:'2026-09-01',estimate:110,confirmedSingle:100},
+  {sessionId:'bad1',date:'2026-09-15',estimate:88},
+  {sessionId:'bad2',date:'2026-09-22',estimate:89}
+ ];
+ const result=A.currentStrengthEstimate(original,{nowMs:Date.parse('2026-09-23')});
+ assert.equal(result.confirmedFloor,null,'two independent days below 95 percent release old ceiling/floor');
+ assert.equal(result.floorApplied,false);
+ const withoutSingle=A.currentStrengthEstimate(original.map(({confirmedSingle,...item})=>item),
+   {nowMs:Date.parse('2026-09-23')});
+ assert.equal(result.estimate,withoutSingle.estimate,
+   'after two convincing weaker workouts the past single no longer constrains smoothing');
+ const later=A.currentStrengthEstimate([...original,
+   {sessionId:'bad3',date:'2026-10-01',estimate:90}],{nowMs:Date.parse('2026-10-02')});
+ assert.ok(later.estimate<100,'once the old single leaves the last three days, current strength may fall');
+ const expired=A.currentStrengthEstimate([
+  {sessionId:'oldSingle',date:'2026-08-01',estimate:110,confirmedSingle:100},
+  {sessionId:'new1',date:'2026-09-23',estimate:90},
+  {sessionId:'new2',date:'2026-10-01',estimate:91},
+  {sessionId:'new3',date:'2026-10-20',estimate:92}
+ ],{nowMs:Date.parse('2026-10-21')});
+ assert.equal(expired.confirmedFloor,null);
+ assert.ok(expired.estimate<100);
+});
+
+test('a planned or unverified single cannot establish a floor',()=>{
+ const rows=[
+  {sessionId:'1',date:'2026-10-01',estimate:93},
+  {sessionId:'2',date:'2026-10-10',estimate:95},
+  {sessionId:'3',date:'2026-10-21',estimate:97}
+ ];
+ const base=A.currentStrengthEstimate(rows,{nowMs:Date.parse('2026-10-22')});
+ for(const invalid of [0,null,-100]){
+  const result=A.currentStrengthEstimate(rows.map((row,i)=>i===1?{...row,confirmedSingle:invalid}:row),
+    {nowMs:Date.parse('2026-10-22')});
+  assert.equal(result.confirmedFloor,null);
+  assert.equal(result.estimate,base.estimate);
+ }
+});
+
+test('a real workout with an RPE 8 single informs standard auto weight and TM but not deload',()=>{
+ const create=(id,date,weight,reps,rpe,opts={})=>({
+  id,date,ended:1,...opts,
+  ex:[ex('bench',[work(weight,reps,rpe)])]
+ });
+ const history=[
+  create('v1','2026-09-21',70,8,8),
+  create('v2','2026-10-07',100,1,8),
+  create('v3','2026-10-21',80,5,8)
+ ];
+ const cur=current(target({w:80,programW:0,targetRepMin:5,targetRepMax:6,targetRpeMin:8,targetRpeMax:9}),'bench',{date:'2026-10-27'});
+ const rec=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,history,reg);
+ assert.ok(rec.currentOneRepMax>=100);
+ assert.equal(rec.confirmedOneRepFloor,100);
+ assert.equal(rec.confirmedOneRepFloorApplied,true);
+ assert.equal(rec.percentageBasis,'e1RM');
+ const withDeload=A.recommend(cur.ex[0],cur.ex[0].set[0],cur,
+  [...history,create('deload','2026-10-25',120,1,9,{isDeload:true})],reg);
+ assert.equal(withDeload.currentOneRepMax,rec.currentOneRepMax);
+ assert.equal(withDeload.confirmedOneRepFloor,100);
+});

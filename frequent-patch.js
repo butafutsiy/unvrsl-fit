@@ -110,7 +110,7 @@ async function loadCloudModules(){
  if(cloudModulesLoaded||cloudModulesLoading)return;cloudModulesLoading=true;
  try{
   if(!window.supabase)await loadExternalScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-  for(const src of ['cloud-config.js','cloud.js?v=561','auth-ux.js','auth-handoff.js','trainer-style.js','trainer.js?v=561','trainer-nav-patch.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js?v=561','client-link.js?v=561','auth-password.js','checkin.js?v=561','checkin-singleton-fix.js','online-progress.js','client-ui-fix.js?v=561','trainer-plan-controls.js','trainer-direct-ui.js','offline-progress.js?v=582','offline-schedule.js?v=561','trainer-clients-canonical.js?v=561'])await loadExternalScript(src);
+  for(const src of ['cloud-config.js','cloud.js?v=561','auth-ux.js','auth-handoff.js','trainer-style.js','trainer.js?v=561','trainer-nav-patch.js','progression.js','cloud-patch.js','cloud-programs.js','app-mode.js?v=561','client-link.js?v=561','auth-password.js','checkin.js?v=561','checkin-singleton-fix.js','online-progress.js','client-ui-fix.js?v=561','trainer-plan-controls.js','trainer-direct-ui.js','offline-progress.js?v=583','offline-schedule.js?v=561','trainer-clients-canonical.js?v=561'])await loadExternalScript(src);
   cloudModulesLoaded=true;
  }catch(e){console.warn('UNVRSL cloud modules',e)}finally{cloudModulesLoading=false;window.__unvrslCloudModulesSettledV257=true;window.__unvrslCloudModulesSettledV260=true;window.dispatchEvent(new CustomEvent('unvrsl:cloud-modules-settled',{detail:{loaded:cloudModulesLoaded,release:260}}))}
 }

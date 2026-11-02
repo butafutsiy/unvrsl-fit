@@ -206,6 +206,11 @@
      current.textContent=`Актуальный 1ПМ ≈ ${fmt(rec.currentOneRepMax)} кг · TM ≈ ${fmt(rec.trainingMax)} кг · ${rec.strengthSourceSessions.length} рабочих тренировок · уверенность ${rec.confidence}. Исторический средний ≈ ${fmt(rec.historicalOneRepMax)} кг. Основа процентов: ${rec.percentageBasis==='trainingMax'?'TM':'актуальный 1ПМ'}`;
      metrics.append(current);
    }
+   if(rec.confirmedOneRepFloor>0){
+     const confirmed=document.createElement('div');confirmed.className='te410-week';
+     confirmed.textContent=`Подтверждённый сингл: ${fmt(rec.confirmedOneRepFloor)} кг · ${rec.confirmedOneRepFloorDate||'дата неизвестна'}${rec.confirmedOneRepFloorApplied?' · нижняя граница актуального 1ПМ':''}. Не равен прогнозному максимуму.`;
+     metrics.append(confirmed);
+   }
    if(rec.excludedHistory){const skip=document.createElement('div');skip.className='te410-week';skip.textContent=`Есть более новая тренировка ${rec.excludedHistory.date}, но она не объединена с этой: ${rec.excludedHistory.reason}. Проверь настройки упражнения и оборудования.`;metrics.append(skip)}
    if(rec.weeklyIntensity){const week=document.createElement('div');week.className='te410-week';const wi=rec.weeklyIntensity;week.textContent=`Неделя: ${fmt(wi.min)}–${fmt(wi.max)}%${wi.estimatedMin!=null?` · коридор ≈ ${fmt(wi.estimatedMin)}–${fmt(wi.estimatedMax)} кг`:''}${(rec.testWeekSuggestion||wi.applied)?' · учтено в весе':' · диапазон повторений имеет приоритет'}`;metrics.append(week)}
    if(rec.series){const series=document.createElement('div');series.className='te410-week';series.textContent=`Прошлая серия: ${rec.series.reps.join(' / ')} · ${rec.series.completed} из ${rec.series.planned} подходов${rec.repetitionGoal!=null?` · цель следующей серии: ${rec.repetitionGoal} повторений суммарно при заданном усилии`:''}`;metrics.append(series)}
