@@ -20,7 +20,8 @@
   style.id='unvrsl-client-workout-scroll-v268-style';
   style.textContent=`
     html.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:auto!important;overscroll-behavior-y:auto!important}
-    body.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:visible!important;touch-action:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch}
+    /* Keep the document as the only vertical scroller on iOS; hidden x-overflow would coerce visible y-overflow to auto. */
+    body.${ROOT_CLASS}{height:auto!important;min-height:100%!important;overflow-x:clip!important;overflow-y:visible!important;touch-action:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:auto!important}
     body.${ROOT_CLASS} #start.page.active{overflow:visible!important;overflow-anchor:none!important;touch-action:auto!important;overscroll-behavior-y:auto!important;-webkit-overflow-scrolling:touch;padding-bottom:calc(124px + env(safe-area-inset-bottom))!important}
     body.${ROOT_CLASS}.${TIMER_CLASS} #start.page.active{padding-bottom:calc(258px + env(safe-area-inset-bottom))!important}
     body.${ROOT_CLASS} #start.page.active *{touch-action:auto!important}
