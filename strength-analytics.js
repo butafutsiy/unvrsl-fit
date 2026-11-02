@@ -77,12 +77,24 @@
         confidenceWeight:e.strengthEvidence.confidenceWeight,tier:e.strengthEvidence.tier,
         confirmedSingle:e.r===1&&e.rpe>=7?e.w:null
       })));
-      const rolling=D.currentStrengthEstimate?.(evidence)??null;
+      const rolling=D.currentStrengthEstimate?.(evidence,{nowMs:now.getTime()})??null;
+      // A 30-day strength comparison uses a baseline known at the time,
+      // never the lifetime mean or the most recent graph-only recovery set.
+      const cutoff=new Date(now);cutoff.setHours(12,0,0,0);cutoff.setDate(cutoff.getDate()-30);
+      const cutoffDate=[cutoff.getFullYear(),String(cutoff.getMonth()+1).padStart(2,'0'),String(cutoff.getDate()).padStart(2,'0')].join('-');
+      const earlier=evidence.filter(p=>p.date<=cutoffDate);
+      const pastDays=new Set(earlier.map(p=>p.date)).size;
+      const pastLast=earlier.reduce((last,p)=>p.date>last?p.date:last,'');
+      const cutoffAge=pastLast?(cutoff.getTime()-new Date(pastLast+'T12:00:00').getTime())/86400000:Infinity;
+      const pastEstimate=pastDays>=2&&cutoffAge<=30?
+        D.currentStrengthEstimate?.(earlier,{nowMs:cutoff.getTime()})?.estimate:null;
+      const monthChange=rolling?.estimate>0&&pastEstimate>0&&evidence.some(p=>p.date>cutoffDate)?
+        Math.round((rolling.estimate/pastEstimate-1)*1000)/10:null;
       const qualified=evidence.some(e=>e.tier!=='auxiliary')?
         evidence.filter(e=>e.tier!=='auxiliary'):evidence;
       const usableMean=average(qualified.map(e=>e.estimate));
       return {...row,meanE1:average(values),estimateCount:values.length,
-        currentStrength:rolling,historicalWorkingMean:usableMean,
+        currentStrength:rolling,historicalWorkingMean:usableMean,monthChange,
         strengthEvidenceCount:qualified.length,recoverySessionCount:row.points.filter(p=>p.deload).length,
         first:row.points[0],last:row.points.at(-1),workouts:row.points.length,bestWeight:Math.max(...row.points.map(p=>p.maxWeight)),best:Math.max(0,...row.points.map(p=>p.e1||0)),growth,comparable:estimates.length,estimateDate:last?.date};
     }).sort((a,b)=>b.last.date.localeCompare(a.last.date)||a.base.localeCompare(b.base));
