@@ -100,7 +100,7 @@ test("restoring a week-five draft recomputes its saved recommendation from Septe
  assert.equal(waiting.recommendation.basis.date,'2026-09-21');
  assert.equal(waiting.recommendation.basis.estimatedOneRepMax,182);
  assert.deepEqual(JSON.parse(JSON.stringify(waiting.recommendation.repRange)),{lo:4,hi:6});
- assert.equal(waiting.recommendedW,150);assert.equal(waiting.recommendation.canApply,true);assert.equal(waiting.recommendation.conflict,null);assert.equal(waiting.w,135);assert.ok(saves>0);assert.ok(refreshes>0);
+ assert.ok(waiting.recommendedW>=150&&waiting.recommendedW<=155,'effort-weighted load within equipment step');assert.equal(waiting.recommendation.canApply,true);assert.equal(waiting.recommendation.conflict,null);assert.equal(waiting.w,135);assert.ok(saves>0);assert.ok(refreshes>0);
 });
 test("completed sets in legacy history count even if the old session lacks an ended timestamp",()=>{
  const bar=p('rdl-bar'),earlier=old('12',bar,[set(115,12,8)]),recent=old('21',bar,[set(140,7,8)]);
@@ -218,7 +218,7 @@ test("isolation uses its own strength estimate and reports a percentage conflict
  current.programWeekUseIntensity=true;current.programWeekIntensityMin=85;current.programWeekIntensityMax=88;
  const rec=A.recommend(current.ex[0],current.ex[0].set[0],current,past,reg);
  assert.equal(rec.weight,52.5);assert.equal(rec.action,"up");assert.equal(rec.exerciseKind,"isolation");
- assert.ok(rec.weeklyIntensity.estimatedMin>0);assert.equal(rec.weeklyIntensity.applied,false);
+ assert.equal(rec.weeklyIntensity.estimatedMin,null,'15 repetitions at RPE 8 are below the 65% evidence threshold');assert.equal(rec.weeklyIntensity.applied,false);
 });
 test("default increments depend on load type and exercise class until equipment overrides them",()=>{
  assert.equal(A.profile({n:"Разгибание ног",type:"isolation",eq:"leverage machine",tg:"quadriceps"},reg).step,5);

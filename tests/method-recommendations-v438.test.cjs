@@ -153,7 +153,7 @@ test('RPE has one priority over conflicting RIR and unknown effort lowers confid
   assert.equal(A.estimateMaxFromSet(work(120,5,8,{rir:1})),148);
   const e=bench([work(120,5,8),work(120,5,null)]),s=past('effort','2026-09-20',[e]);
   const result=A.strengthEstimate(e,A.history(e,[s],reg),reg);
-  assert.ok(result.points[0].confidenceWeight>result.points[1].confidenceWeight);
+  assert.equal(result.points.length,1,'unknown actual effort is not evidence for the robust 1RM');assert.ok(result.points[0].confidenceWeight>0);
 });
 
 test('single TEST matches its target effort, preview back-off uses that attempt, then the actual result',()=>{

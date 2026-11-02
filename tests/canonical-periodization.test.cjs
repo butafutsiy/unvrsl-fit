@@ -267,3 +267,27 @@ test('deload-only history does not masquerade as reliable strength evidence',()=
  assert.equal(r.recoveryEvidenceExcluded,1);
  assert.equal(r.canApply,true);
 });
+
+test('common evidence tiers reject <65%, RPE <7 and mismatched effort while accepting heavy sets',()=>{
+ const score=(r,rpe,deload=false)=>A.strengthEvidence(100,r,rpe,null,{deload});
+ assert.equal(score(15,8).tier,'excluded');
+ assert.equal(score(10,7).tier,'auxiliary');
+ assert.equal(score(6,8).tier,'working');
+ assert.equal(score(3,9).tier,'heavy');
+ assert.equal(score(1,10).tier,'test');
+ assert.ok(score(1,10).confidenceWeight>score(10,7).confidenceWeight);
+ assert.equal(score(6,6).estimate,null);
+ assert.equal(score(3,9,true).estimate,null);
+ assert.equal(A.strengthEvidence(100,5,8,0).estimate,null);
+ assert.equal(A.strengthEvidence(100,6,null,2).tier,'working');
+ assert.equal(A.strengthEvidence(100,6,null,null).estimate,null);
+});
+test('low intensity or missing RPE cannot lower robust working e1RM',()=>{
+ const heavy={id:'h',date:'2026-09-01',ended:1,ex:[ex('bench',[work(100,5,9)])]};
+ const light={id:'l',date:'2026-09-10',ended:1,ex:[ex('bench',[work(45,20,8),work(60,10,6),{w:80,r:10,ok:true}])]};
+ const s=current(target({w:100,programW:0,targetRepMin:5,targetRepMax:8,targetRpeMin:8,targetRpeMax:9}));
+ const only=A.recommend(s.ex[0],s.ex[0].set[0],s,[heavy],reg);
+ const mixed=A.recommend(s.ex[0],s.ex[0].set[0],s,[heavy,light],reg);
+ assert.equal(mixed.strength.estimate,only.strength.estimate);
+ assert.equal(mixed.strength.sessionCount,1);
+});

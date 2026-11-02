@@ -24,7 +24,22 @@
   const sourceKey=v=>v==='client'?'client':'trainer';
   const sourceName=v=>sourceKey(v)==='client'?'Клиент':'Тренер';
   const sourceBadge=v=>`<span class="ofp-source ${sourceKey(v)}">${sourceName(v)}</span>`;
-  const e1rm=(weight,reps)=>{const w=N(weight),r=N(reps);return w>0&&r>=1&&r<=30?+(r===1?w:w*(1+r/30)).toFixed(1):null};
+  // Historical stored maxima remain visible. New estimates share the workout
+  // intensity, RPE and recovery filters, including first-time calibration.
+  const strengthScore=(weight,reps,rpe=null,rir=null,deload=false)=>
+    W.WorkoutDomain.strengthEvidence(weight,reps,rpe,rir,{deload:!!deload});
+  const e1rm=(weight,reps,rpe=null,rir=null,deload=false)=>
+    strengthScore(weight,reps,rpe,rir,deload).estimate;
+  function reliableOfflineMean(rows) {
+    const points=A(rows).map(row=>strengthScore(row.weight_kg,row.reps,row.rpe,row.rir,row.is_deload))
+      .filter(x=>x.confidenceWeight>0);
+    if(!points.length)return {estimate:null,count:0};
+    const sorted=points.map(x=>x.estimate).sort((a,b)=>a-b);
+    const median=sorted[Math.floor(sorted.length/2)];
+    const clean=points.filter(x=>points.length<3||Math.abs(x.estimate-median)<=median*.12);
+    const sum=clean.reduce((n,x)=>n+x.confidenceWeight,0);
+    return {estimate:sum?clean.reduce((n,x)=>n+x.estimate*x.confidenceWeight,0)/sum:null,count:clean.length};
+  }
   function age(v){if(!v)return null;const d=new Date(`${v}T12:00:00`);if(Number.isNaN(d.getTime()))return null;const n=new Date();let x=n.getFullYear()-d.getFullYear(),m=n.getMonth()-d.getMonth();if(m<0||(m===0&&n.getDate()<d.getDate()))x--;return x>=14&&x<=100?x:null}
   function measure(row,key){const n=N(row?.measurements?.[key]);return n!=null&&n>0?n:null}
   function signed(v,unit){const n=N(v);if(n==null)return'';const x=Math.round(n*10)/10;return`${x>0?'+':''}${String(x).replace('.',',')} ${unit}`}
@@ -167,7 +182,7 @@
       const measurements={};MEASURES.forEach(([key])=>{const v=measure(row,key);if(v!=null)measurements[key]=v});
       return{id:String(row.id||''),date:String(row.measure_date||'').slice(0,10),weight:N(row.weight_kg),measurements,note:String(row.notes||'').slice(0,500),source:sourceKey(row.entry_source),createdAt:String(row.created_at||'').slice(0,40)}
     }).filter(x=>x.date&&(x.weight!=null||Object.keys(x.measurements).length));
-    const cleanStrengths=chronological(data?.strengths,'measured_at').map(row=>({id:String(row.id||''),date:String(row.measured_at||'').slice(0,10),key:String(row.exercise_key||''),name:String(row.exercise_name||'Упражнение').slice(0,120),weight:N(row.weight_kg),reps:N(row.reps),e1rm:N(row.e1rm),note:String(row.notes||'').slice(0,500),source:sourceKey(row.entry_source),createdAt:String(row.created_at||'').slice(0,40)})).filter(x=>x.date&&x.key);
+    const cleanStrengths=chronological(data?.strengths,'measured_at').map(row=>({id:String(row.id||''),date:String(row.measured_at||'').slice(0,10),key:String(row.exercise_key||''),name:String(row.exercise_name||'Упражнение').slice(0,120),weight:N(row.weight_kg),reps:N(row.reps),e1rm:N(row.e1rm),rpe:N(row.rpe),rir:N(row.rir),isDeload:!!row.is_deload,note:String(row.notes||'').slice(0,500),source:sourceKey(row.entry_source),createdAt:String(row.created_at||'').slice(0,40)})).filter(x=>x.date&&x.key);
     return{version:REV,generatedAt:iso(),client:{name:String(data?.client?.display_name||'Клиент').slice(0,100),sex:String(data?.client?.sex||'other'),birthDate:String(data?.client?.birth_date||'').slice(0,10),height:N(data?.client?.height_cm),targetWeight:N(data?.client?.target_weight_kg)},nutrition:publicNutrition(data),exerciseCatalog:catalogNames(),measurements:cleanMeasures,strengths:cleanStrengths}
   }
 
@@ -191,7 +206,7 @@
 
   function latestStrengthText(row){
     if(!row)return'Нет записей';const w=N(row.weight_kg),r=N(row.reps),one=N(row.e1rm),parts=[];
-    if(w!=null)parts.push(`${fmt(w)} кг`);if(r!=null)parts.push(`${fmt(r,0)} повт.`);if(one!=null)parts.push(`1ПМ ≈ ${fmt(one)} кг`);return parts.join(' · ')||'Запись без нагрузки'
+    if(w!=null)parts.push(`${fmt(w)} кг`);if(r!=null)parts.push(`${fmt(r,0)} повт.`);if(N(row.rpe)!=null)parts.push(`RPE ${fmt(row.rpe)}`);if(N(row.rir)!=null)parts.push(`RIR ${fmt(row.rir)}`);if(row.is_deload)parts.push('Разгрузка');if(one!=null)parts.push(`1ПМ ≈ ${fmt(one)} кг`);return parts.join(' · ')||'Запись без нагрузки'
   }
   function strengthCard(id,group){
     const rows=chronological(group.rows,'measured_at'),latest=rows[rows.length-1],series=strengthSeries(rows),delta=change(series.points);
@@ -243,12 +258,58 @@
   }
   function strengthSheet(id,keyToken,nameToken){
     const key=decodeURIComponent(keyToken),name=decodeURIComponent(nameToken);
-    W.modal?.(`<div class="sheet-grabber"></div><div class="ofp-add-head"><div><h2>${E(name)}</h2><div class="ofp-form-author">Запись добавит ${sourceBadge('trainer')}</div></div><button class="btn tiny" onclick="offlineClientDetail('${E(id)}')">✕</button></div><div class="field"><label>Дата</label><input id="osDate" type="date" value="${today()}"></div><div class="offline-measure-grid"><div class="field"><label>Рабочий вес, кг</label><input id="osWeight" type="number" min="0.1" max="999" step="0.1" inputmode="decimal" oninput="offlineProgressE1rmV328()"></div><div class="field"><label>Повторения</label><input id="osReps" type="number" min="1" max="30" step="1" inputmode="numeric" oninput="offlineProgressE1rmV328()"></div></div><div class="ofp-e1rm"><span>Расчётный 1ПМ</span><b id="ofpE1rmValue">—</b><small>Формула Эпли, сразу после веса и повторений</small></div><div class="field"><label>Заметка тренера</label><textarea id="osNotes" maxlength="500" rows="3" placeholder="Тренажёр, техника, самочувствие"></textarea></div><button id="ofpStrengthSave" class="btn primary full" onclick="offlineSaveStrength('${E(id)}','${T(key)}','${T(name)}')">Сохранить показатель</button><button class="btn full" onclick="offlineStrengthHistory('${E(id)}','${T(key)}','${T(name)}')">Открыть историю</button>`)
+    const effortFields='<div class="offline-measure-grid ofp-effort-grid"><div class="field"><label>RPE · фактический</label><input id="osRpe" type="number" min="4" max="10" step="0.5" inputmode="decimal" placeholder="8" oninput="offlineProgressEffortChangedV578(&quot;rpe&quot;)"></div><div class="field"><label>RIR · повторов в запасе</label><input id="osRir" type="number" min="0" max="6" step="0.5" inputmode="decimal" placeholder="2" oninput="offlineProgressEffortChangedV578(&quot;rir&quot;)"></div></div><label class="ofp-deload"><input id="osDeload" type="checkbox" onchange="offlineProgressE1rmV328()">Разгрузочный / восстановительный подход</label>';
+    W.modal?.(`<div class="sheet-grabber"></div><div class="ofp-add-head"><div><h2>${E(name)}</h2><div class="ofp-form-author">Запись добавит ${sourceBadge('trainer')}</div></div><button class="btn tiny" onclick="offlineClientDetail('${E(id)}')">✕</button></div><div class="field"><label>Дата</label><input id="osDate" type="date" value="${today()}"></div><div class="offline-measure-grid"><div class="field"><label>Рабочий вес, кг</label><input id="osWeight" type="number" min="0.1" max="999" step="0.1" inputmode="decimal" oninput="offlineProgressE1rmV328()"></div><div class="field"><label>Повторения</label><input id="osReps" type="number" min="1" max="30" step="1" inputmode="numeric" oninput="offlineProgressE1rmV328()"></div></div>${effortFields}<div class="ofp-e1rm"><span>Расчётный 1ПМ</span><b id="ofpE1rmValue">—</b><small id="ofpStrengthEvidenceNote">RPE/RIR фактического подхода. От 65% нагрузки, RPE 7–10; разгрузка исключается.</small></div><div class="field"><label>Заметка тренера</label><textarea id="osNotes" maxlength="500" rows="3" placeholder="Тренажёр, техника, самочувствие"></textarea></div><button id="ofpStrengthSave" class="btn primary full" onclick="offlineSaveStrength('${E(id)}','${T(key)}','${T(name)}')">Сохранить показатель</button><button class="btn full" onclick="offlineStrengthHistory('${E(id)}','${T(key)}','${T(name)}')">Открыть историю</button>`)
   }
-  W.offlineProgressE1rmV328=function(){const result=e1rm(D.getElementById('osWeight')?.value,D.getElementById('osReps')?.value),out=D.getElementById('ofpE1rmValue');if(out)out.textContent=result==null?'—':`≈ ${fmt(result)} кг`};
+  W.offlineProgressEffortChangedV578=function(source){
+    const a=D.getElementById(source==='rpe'?'osRpe':'osRir');
+    const b=D.getElementById(source==='rpe'?'osRir':'osRpe');
+    if(a&&b){const n=N(a.value);if(a.value.trim()==='')b.value='';
+      else if(n!=null&&n>=0&&n<=10)b.value=String(Math.round((10-n)*2)/2);}
+    W.offlineProgressE1rmV328();
+  };
+  W.offlineProgressE1rmV328=function(){
+    const score=strengthScore(D.getElementById('osWeight')?.value,D.getElementById('osReps')?.value,
+      D.getElementById('osRpe')?.value,D.getElementById('osRir')?.value,D.getElementById('osDeload')?.checked);
+    const out=D.getElementById('ofpE1rmValue'),note=D.getElementById('ofpStrengthEvidenceNote');
+    if(out)out.textContent=score.estimate==null?'—':`≈ ${fmt(score.estimate)} кг`;
+    if(note)note.textContent=D.getElementById('osDeload')?.checked?'Разгрузка сохраняется в журнале, но не меняет 1ПМ':
+      score.tier==='test'?'Высокая достоверность · контрольный подход':
+      score.tier==='heavy'?'Высокая достоверность · тяжёлый подход':
+      score.tier==='working'?'Основная оценка · рабочий подход':
+      score.tier==='auxiliary'?'Вспомогательная оценка · 65–75%':
+      'Для расчёта нужны RPE 7–10, нагрузка от 65% и не более 20 повторений';
+  };
   async function saveStrength(id,keyToken,nameToken){
-    const key=decodeURIComponent(keyToken),name=decodeURIComponent(nameToken),raw=x=>String(D.getElementById(x)?.value||'').trim(),weight=N(raw('osWeight')),reps=N(raw('osReps')),one=e1rm(weight,reps),button=D.getElementById('ofpStrengthSave');
-    try{if(one==null||!Number.isInteger(reps)||weight>999)throw new Error('Укажи рабочий вес и от 1 до 30 повторений');const c=W.cloud;if(!c?.client||!c?.user)throw new Error('Нет подключения к аккаунту тренера');if(button)button.disabled=true;const payload={offline_client_id:id,trainer_id:c.user.id,measured_at:raw('osDate')||today(),exercise_key:key,exercise_name:name,weight_kg:weight,reps,e1rm:one,notes:raw('osNotes')||null,entry_source:'trainer'};const result=await saveEntry('offline_client_strengths',id,button?.dataset.entryId,payload);if(result.error)throw result.error;await c.client.from('offline_clients').update({updated_at:iso()}).eq('id',id).eq('trainer_id',c.user.id);W.toast?.(`Показатель сохранён · 1ПМ ≈ ${fmt(one)} кг`);await openDetail(id)}catch(error){W.alert?.(error?.message||'Не удалось сохранить показатель')}finally{if(button)button.disabled=false}
+    const key=decodeURIComponent(keyToken),name=decodeURIComponent(nameToken),
+      raw=x=>String(D.getElementById(x)?.value||'').trim(),
+      weight=N(raw('osWeight')),reps=N(raw('osReps')),rpe=N(raw('osRpe')),rir=N(raw('osRir')),
+      isDeload=!!D.getElementById('osDeload')?.checked,
+      score=strengthScore(weight,reps,rpe,rir,isDeload),button=D.getElementById('ofpStrengthSave');
+    const original=A(state.data?.strengths).find(row=>String(row.id)===String(button?.dataset.entryId||'')),
+      preserveLegacy=original&&N(original.rpe)==null&&N(original.rir)==null&&rpe==null&&rir==null&&!isDeload&&
+        weight===N(original.weight_kg)&&reps===N(original.reps),
+      storedE1rm=score.estimate??(preserveLegacy?N(original.e1rm):null);
+    try {
+      if(!(weight>0)||weight>999||!Number.isInteger(reps)||reps<1||reps>30)
+        throw new Error('Укажи рабочий вес и от 1 до 30 повторений');
+      if((raw('osRpe')&&(rpe==null||rpe<4||rpe>10||rpe*2%1!==0))||
+         (raw('osRir')&&(rir==null||rir<0||rir>6||rir*2%1!==0))||
+         (rpe!=null&&rir!=null&&Math.abs(rpe+rir-10)>.01))
+        throw new Error('RPE 4–10 и RIR 0–6 должны соответствовать друг другу (RPE = 10 − RIR)');
+      const c=W.cloud;if(!c?.client||!c?.user)throw new Error('Нет подключения к аккаунту тренера');
+      if(button)button.disabled=true;
+      const payload={offline_client_id:id,trainer_id:c.user.id,measured_at:raw('osDate')||today(),
+        exercise_key:key,exercise_name:name,weight_kg:weight,reps,e1rm:storedE1rm,
+        rpe,rir,is_deload:isDeload,notes:raw('osNotes')||null,entry_source:'trainer'};
+      const result=await saveEntry('offline_client_strengths',id,button?.dataset.entryId,payload);
+      if(result.error)throw result.error;
+      await c.client.from('offline_clients').update({updated_at:iso()}).eq('id',id).eq('trainer_id',c.user.id);
+      W.toast?.(score.estimate!=null?`Показатель сохранён · 1ПМ ≈ ${fmt(score.estimate)} кг`:
+        'Подход сохранён · без достоверной оценки 1ПМ');
+      await openDetail(id);
+    }catch(error){W.alert?.(error?.message||'Не удалось сохранить показатель')}
+    finally{if(button)button.disabled=false}
   }
   async function strengthHistory(id,keyToken,nameToken){
     const key=decodeURIComponent(keyToken),name=decodeURIComponent(nameToken),c=W.cloud;if(!c?.client||!c?.user)return W.toast?.('Нет подключения к аккаунту тренера');const result=await c.client.from('offline_client_strengths').select('*').eq('offline_client_id',id).eq('exercise_key',key).order('measured_at',{ascending:false}).order('created_at',{ascending:false});if(result.error)return W.alert?.(result.error.message);
@@ -272,8 +333,8 @@
       if(result.error||!result.data)throw result.error||new Error('Запись не найдена');
       const row=result.data;
       if(strength)strengthSheet(id,T(row.exercise_key),T(row.exercise_name));else measurementSheet(id);
-      const values=strength?{osDate:row.measured_at,osWeight:row.weight_kg,osReps:row.reps,osNotes:row.notes}:{omDate:row.measure_date,omWeight:row.weight_kg,omNotes:row.notes,...Object.fromEntries(MEASURES.map(([key])=>['om'+key[0].toUpperCase()+key.slice(1),row.measurements?.[key]]))};
-      Object.entries(values).forEach(([key,value])=>{const input=D.getElementById(key);if(input)input.value=value??''});
+      const values=strength?{osDate:row.measured_at,osWeight:row.weight_kg,osReps:row.reps,osRpe:row.rpe,osRir:row.rir,osDeload:row.is_deload,osNotes:row.notes}:{omDate:row.measure_date,omWeight:row.weight_kg,omNotes:row.notes,...Object.fromEntries(MEASURES.map(([key])=>['om'+key[0].toUpperCase()+key.slice(1),row.measurements?.[key]]))};
+      Object.entries(values).forEach(([key,value])=>{const input=D.getElementById(key);if(input){if(input.type==='checkbox')input.checked=!!value;else input.value=value??''}});
       const button=D.getElementById(strength?'ofpStrengthSave':'ofpMeasureSave');button.dataset.entryId=entryId;button.textContent='Сохранить изменения';
       const author=D.querySelector('.ofp-form-author');if(author)author.innerHTML=`Редактирование записи · ${sourceBadge(row.entry_source)}`;
       if(strength)W.offlineProgressE1rmV328();
@@ -295,15 +356,15 @@
     if(data.error||!data.client)return W.alert?.(data.error?.message||'Клиент не найден');
     if(!W.WorkoutDomain?.cycleProfiles)return W.toast?.('Расчёт нагрузки ещё загружается');
     const groups=strengthGroups(data),domain=W.WorkoutDomain;
-    W.modal?.(`<div class="sheet-grabber"></div><div class="ofp-add-head"><div><h2>Нагрузка по неделям</h2><div class="muted">${E(data.client.display_name)} · Только для тренера</div></div><button class="btn tiny" onclick="offlineClientDetail('${E(id)}')">✕</button></div><div class="field"><label for="ofpCycleWeeks">Длительность цикла</label><select id="ofpCycleWeeks">${[3,4,6,8,10,11,12].map(n=>`<option value="${n}"${n===8?' selected':''}>${n} недель</option>`).join('')}</select></div><div class="ofp-tip">1ПМ – среднее расчётных максимумов всех записей каждого упражнения. Рабочий вес – середина недельного диапазона с округлением до выбранного шага. Это ориентир по процентам, без автоматического назначения тренировок.</div><div id="ofpWeeklyExercises"></div>`);
+    W.modal?.(`<div class="sheet-grabber"></div><div class="ofp-add-head"><div><h2>Нагрузка по неделям</h2><div class="muted">${E(data.client.display_name)} · Только для тренера</div></div><button class="btn tiny" onclick="offlineClientDetail('${E(id)}')">✕</button></div><div class="field"><label for="ofpCycleWeeks">Длительность цикла</label><select id="ofpCycleWeeks">${[3,4,6,8,10,11,12].map(n=>`<option value="${n}"${n===8?' selected':''}>${n} недель</option>`).join('')}</select></div><div class="ofp-tip">1ПМ – устойчивое среднее рабочих подходов с RPE 7–10 и нагрузкой от 65%. Разгрузочные и записи без RPE не влияют на проценты. Рабочий вес – середина недельного диапазона с округлением до выбранного шага. Это ориентир по процентам, без автоматического назначения тренировок.</div><div id="ofpWeeklyExercises"></div>`);
     const registry=domain.registry(W.UNVRSL_EXERCISES||[]);
     const settings=groups.map(g=>({kind:domain.exerciseKind({n:g.name},registry),step:domain.profile({n:g.name},registry).step}));
     const host=D.getElementById('ofpWeeklyExercises'),select=D.getElementById('ofpCycleWeeks');
     function render(){
       const profiles=domain.cycleProfiles(Number(select.value));
       host.innerHTML=groups.map((g,i)=>{
-        const estimates=g.rows.map(r=>e1rm(r.weight_kg,r.reps)??N(r.e1rm)).filter(x=>x>0),one=estimates.length?estimates.reduce((sum,x)=>sum+x,0)/estimates.length:null,setting=settings[i];
-        return `<section class="ofp-weekly-exercise"><h3>${E(g.name)}</h3><p>Средний 1ПМ: <b>${one?fmt(one)+' кг':'нет данных'}</b> · Записей: ${estimates.length}</p><div class="offline-measure-grid"><div class="field"><label>Тип упражнения</label><select data-weekly-kind="${i}"><option value="base"${setting.kind==='base'?' selected':''}>Базовое</option><option value="isolation"${setting.kind==='isolation'?' selected':''}>Изоляция</option></select></div><div class="field"><label>Шаг веса, кг</label><select data-weekly-step="${i}">${[...new Set([.25,.5,1,1.25,2,2.5,4,5,10,setting.step])].sort((a,b)=>a-b).map(n=>`<option value="${n}"${n===setting.step?' selected':''}>${n===0?'Без веса':fmt(n,2)}</option>`).join('')}</select></div></div>${one&&setting.step>0?`<div class="ofp-weekly-scroll"><table class="ofp-weekly-table"><thead><tr><th>Неделя</th><th>% 1ПМ</th><th>Диапазон, кг</th><th>Вес, кг</th></tr></thead><tbody>${profiles.map(p=>{
+        const scored=reliableOfflineMean(g.rows),one=scored.estimate,setting=settings[i];
+        return `<section class="ofp-weekly-exercise"><h3>${E(g.name)}</h3><p>Средний 1ПМ: <b>${one?fmt(one)+' кг':'нет данных'}</b> · Подходящих записей: ${scored.count}</p><div class="offline-measure-grid"><div class="field"><label>Тип упражнения</label><select data-weekly-kind="${i}"><option value="base"${setting.kind==='base'?' selected':''}>Базовое</option><option value="isolation"${setting.kind==='isolation'?' selected':''}>Изоляция</option></select></div><div class="field"><label>Шаг веса, кг</label><select data-weekly-step="${i}">${[...new Set([.25,.5,1,1.25,2,2.5,4,5,10,setting.step])].sort((a,b)=>a-b).map(n=>`<option value="${n}"${n===setting.step?' selected':''}>${n===0?'Без веса':fmt(n,2)}</option>`).join('')}</select></div></div>${one&&setting.step>0?`<div class="ofp-weekly-scroll"><table class="ofp-weekly-table"><thead><tr><th>Неделя</th><th>% 1ПМ</th><th>Диапазон, кг</th><th>Вес, кг</th></tr></thead><tbody>${profiles.map(p=>{
           const prescription=p[setting.kind],pct=prescription.pct,lo=one*pct[0]/100,hi=one*pct[1]/100;
           const rounded=domain.roundWeight((lo+hi)/2,{step:setting.step,min:0},'nearest');
           const weight=rounded;
@@ -402,6 +463,10 @@
     .ofp-weekly-scroll{overflow-x:auto}.ofp-weekly-table{width:100%;border-collapse:collapse;font-size:13px;text-align:left}
     .ofp-weekly-table th,.ofp-weekly-table td{padding:12px 8px;border-bottom:1px solid rgba(128,128,128,.2)}
     .ofp-weekly-table th{font-size:11px;opacity:.65}.ofp-weekly-table small{display:block;min-width:85px;max-width:130px;font-size:10px;line-height:1.4;opacity:.65;margin-top:4px}
+    .ofp-effort-grid{margin-top:11px}.ofp-effort-grid .field label{font-size:12px}
+    .ofp-effort-grid input{width:100%;min-height:46px;border:1px solid #34343b;border-radius:13px;background:#1d1d22;color:#f5f5f7;padding:9px 13px;font-size:16px;box-sizing:border-box}
+    .ofp-deload{display:flex;gap:10px;align-items:center;margin:12px 0;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.035);color:#bdbdc5;font-size:12px;line-height:1.4}
+    .ofp-deload input{flex:0 0 20px;accent-color:#30d158;width:20px;height:20px}
   `;D.head.appendChild(entryStyle);
 
   function install(){

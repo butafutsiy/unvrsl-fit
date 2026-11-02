@@ -151,6 +151,20 @@ jobs:
             docs/runtime-v392.json
             docs/exercise-audit-v392.json
             docs/share-fixture-v392.png
+  offline-effort-regressions:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install DOM test dependencies
+        run: npm install --prefix "$RUNNER_TEMP/unvrsl-offline" --no-audit --no-fund jsdom@26.1.0
+      - name: Verify offline RPE/RIR entry, history and weekly loads
+        env:
+          UNVRSL_JSDOM: ${{ runner.temp }}/unvrsl-offline/node_modules/jsdom
+        run: node tests/runtime-offline-history.cjs
+
   catalog-completeness:
     runs-on: ubuntu-latest
     steps:
