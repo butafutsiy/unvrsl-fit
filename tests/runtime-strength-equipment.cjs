@@ -59,6 +59,9 @@ assert.equal(personal.querySelector('[data-strength-tm]').textContent,'90 кг')
 assert.equal(personal.querySelector('[data-strength-historical]').textContent,'96,1 кг');
 assert.match(personal.querySelector('[data-strength-single]').textContent,/100 кг × 1/);
 assert.match(personal.querySelector('[data-strength-recovery]').textContent,/Разгрузка \/ восстановление: 1/);
+assert.equal(W.document.querySelector('[data-strength-session-max]').textContent,'98,7 кг','selected training point shows its own estimate');
+assert.equal(W.document.querySelector('[data-strength-program-max]').textContent,'100 кг','programme maximum stays separate');
+assert.match(W.document.querySelector('[data-strength-session-note]').textContent,/Оценка по этой тренировке/);
 assert.equal(W.document.querySelectorAll('.strength-marker.e1').length,5,'all chart 1RM points remain visible');
 assert.equal(W.document.querySelectorAll('.strength-marker.recovery.e1').length,1,'recovery e1RM remains a chart-only point');
 assert.match(W.document.querySelector('.strength-record.recovery').textContent,/86,7 кг/);
@@ -66,12 +69,17 @@ assert.match(W.document.querySelector('.strength-focus').textContent,/RPE 8/,'se
 const personalKey=W.document.querySelector('[data-strength-key]').dataset.strengthKey;
 W.strengthSelect(encodeURIComponent(personalKey),2);
 assert.match(W.document.querySelector('.strength-focus').textContent,/Разгрузка: только график/);
+assert.equal(W.document.querySelector('[data-strength-session-max]').textContent,'86,7 кг','recovery chart observation still has descriptive 1RM');
+assert.equal(W.document.querySelector('[data-strength-program-max]').textContent,'100 кг','recovery cannot replace program reference');
+assert.match(W.document.querySelector('[data-strength-session-note]').textContent,/только график/);
 assert.equal(W.document.querySelector('[data-strength-current]').textContent,'100 кг','selecting recovery cannot change current strength');
 assert.equal(W.document.querySelector('[data-strength-historical]').textContent,'96,1 кг','recovery cannot change eligible mean');
 // A non-deload session with no RPE stays in the chart but does not fabricate a strength baseline.
 W.st.sessions=[session('no-effort',0,80)];
 W.document.querySelector('main').innerHTML=W.profileStrengthOverviewHtml();
 assert.equal(W.document.querySelector('[data-strength-current]').textContent,'—');
+assert.equal(W.document.querySelector('[data-strength-program-max]').textContent,'—','missing RPE leaves program estimate absent');
+assert.equal(W.document.querySelector('[data-strength-session-max]').textContent,'80 кг','graph preserves observational estimate without RPE');
 assert.match(W.document.querySelector('[data-strength-summary]').textContent,/нужны рабочие подходы с RPE 7–10/i);
 
 console.log('PASS: one equipment family, personal rolling 1RM/TM/eligible mean, verified singles, recovery markers and protection.');
