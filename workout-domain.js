@@ -837,8 +837,8 @@
       lastPerformed:null,sourceSessions:[],historicalSessionCount:all.length,stale:true};
     if(!all.length)return empty;
     const anchor=all[0].stamp,d=86400000;
-    const maxSessions=Math.min(5,Math.max(3,n(options.maxSessions)??3));
-    let selected=all.filter(x=>anchor-x.stamp<=42*d).slice(0,maxSessions);
+    const maxSessions=Math.min(5,Math.max(3,n(options.maxSessions)??5));
+    let selected=all.filter(x=>anchor-x.stamp<=56*d).slice(0,maxSessions);
     if(selected.length<3)selected=all.filter(x=>anchor-x.stamp<=90*d).slice(0,maxSessions);
     if(selected.length<2)selected=all.slice(0,Math.min(maxSessions,all.length));
     selected=selected.map(x=>{
@@ -855,7 +855,23 @@
     // Adaptive EMA: one exceptional day is capped at 5%, while two
     // independent, sufficiently credible improving days can unlock a faster
     // response. Never accelerate from one low-confidence/auxiliary set.
-    const chronological=selected.slice().reverse();
+    // Keep the working 1RM responsive: only the latest three qualified
+    // days participate in EMA. The older two are validation evidence for
+    // the temporary stability floor, not extra downward drag on progression.
+    const recent=selected.slice(0,3);
+    let chronological=recent.slice().reverse();
+    // Ignore a lone older e1RM spike/drop when two newer credible workouts
+    // disagree by over 10%. Real repeated changes stay in the calculation.
+    if(chronological.length===3){
+      const [older,middle,newer]=chronological;
+      const independent=middle.confidenceWeight>=.3&&newer.confidenceWeight>=.3;
+      const isolatedHigh=older.estimate>Math.max(middle.estimate,newer.estimate)*1.1;
+      const isolatedLow=older.estimate<Math.min(middle.estimate,newer.estimate)*.9;
+      const singleStillProtects=older.confirmedSingle>0&&
+        !(middle.estimate<older.confirmedSingle*.95&&newer.estimate<older.confirmedSingle*.95);
+      if(independent&&!singleStillProtects&&(isolatedHigh||isolatedLow))
+        chronological=chronological.slice(1);
+    }
     let current=chronological[0].estimate;
     let trend='stable',smoothingAlpha=null,maxChangePct=null;
     if(chronological.length===2){
@@ -892,7 +908,7 @@
     // merely a prediction. Do not report an implausibly lower current 1RM
     // unless two subsequent credible sessions indicate a sustained decline.
     // Once that single leaves the rolling window, its protection expires.
-    const singles=selected.filter(x=>x.confirmedSingle>0&&anchor-x.stamp<=42*d)
+    const singles=selected.filter(x=>x.confirmedSingle>0&&anchor-x.stamp<=56*d)
       .sort((a,b)=>b.confirmedSingle-a.confirmedSingle);
     const witness=singles.find(x=>{
       const later=selected.filter(y=>y.stamp>x.stamp).sort((a,b)=>b.stamp-a.stamp);
@@ -901,20 +917,45 @@
     const confirmedFloor=witness?.confirmedSingle??null;
     const floorApplied=confirmedFloor!=null&&current<confirmedFloor;
     if(floorApplied)current=confirmedFloor;
-    const spread=Math.max(...selected.map(x=>Math.abs(x.estimate-current)/current));
+    // Two separate credible strong days form a temporary floor for regular
+    // loading. One exceptional e1RM never creates it. This does NOT modify
+    // chart points, and it expires after three comparable poor sessions or
+    // when those stronger sessions leave the rolling 56-day window.
+    const credible=selected.filter(x=>x.confidenceWeight>=.3)
+      .sort((a,b)=>b.estimate-a.estimate);
+    let stabilityFloor=null,declineConfirmed=false,stabilitySourceDates=[];
+    for(const top of credible){
+      const witness=credible.find(x=>x!==top&&x.estimate>=top.estimate*.95&&x.estimate<=top.estimate*1.05);
+      if(!witness)continue;
+      const baseline=Math.min(top.estimate,witness.estimate);
+      const lastStrong=Math.max(top.stamp,witness.stamp);
+      const later=selected.filter(x=>x.stamp>lastStrong).sort((a,b)=>b.stamp-a.stamp);
+      declineConfirmed=later.length>=3&&later.slice(0,3).every(x=>
+        x.confidenceWeight>=.3&&x.estimate<baseline*.95);
+      stabilityFloor=declineConfirmed?null:baseline*.985;
+      stabilitySourceDates=[top.date,witness.date];
+      break;
+    }
+    const stabilityFloorApplied=stabilityFloor!=null&&current<stabilityFloor;
+    if(stabilityFloorApplied)current=Number(stabilityFloor.toFixed(4));
+    // Confidence describes current strength, not the widest spread across
+    // all five days. A low older workout may remain in the baseline window
+    // but must not silently downgrade TM from 90% to 85% of the protected 1RM.
+    const spread=Math.max(...recent.map(x=>Math.abs(x.estimate-current)/current));
     const aged=(n(options.nowMs)??Date.now())-anchor;
     const stale=aged>60*d;
     // High confidence requires repeatability AND credible effort-based data.
-    const highQuality=selected.every(x=>x.confidenceWeight>=.3);
-    const confidence=provisional||stale||selected.length<2||spread>.16?'низкая':
-      selected.length>=3&&spread<.08&&highQuality?'высокая':'средняя';
+    const highQuality=recent.every(x=>x.confidenceWeight>=.3);
+    const confidence=provisional||stale||recent.length<2||spread>.16?'низкая':
+      recent.length>=3&&spread<.08&&highQuality?'высокая':'средняя';
     const coefficient=confidence==='низкая'?.85:.9;
     return {estimate:current,trainingMax:current*coefficient,trainingMaxFactor:coefficient,
       provisional,minimumStrengthIntensity:70,fullStrengthIntensity:75,
       confirmedFloor,confirmedFloorDate:witness?.date??null,floorApplied,
+      stabilityFloor,stabilityFloorApplied,stabilitySourceDates,declineConfirmed,
       trend,smoothingAlpha,maxChangePct,highQuality,
-      confidence,sessionCount:selected.length,lastPerformed:selected[0].date,stale,
-      historicalSessionCount:history.length,sourceSessions:selected.map(x=>({
+      confidence,sessionCount:recent.length,lastPerformed:recent[0].date,stale,
+      historicalSessionCount:history.length,sourceSessions:recent.map(x=>({
         date:x.date,estimate:x.estimate,count:x.count
       }))};
   }
@@ -933,9 +974,14 @@
     const points=[];
     const newest=Math.max(0,...compatible.map(x=>sessionTime(x.session)));
     for(const x of compatible) {
+      // A failed-technique/pain/partial set can stay in the journal, but
+      // must not redefine the strength baseline or the recommended load.
+      if(x.set.techniqueFailed||x.set.techniqueDangerous||x.set.pain||
+        x.set.painReported||x.set.incomplete||x.set.partial||x.set.failedAttempt)continue;
       const value=e1rm(x.exercise,x.set,x.session,reg,weights);
       const evidence=strengthEvidence(loadForEstimate(x.exercise,x.set,x.session,reg,weights),
-        performedReps(x.exercise,x.set),effortRpe(x.set));
+        performedReps(x.exercise,x.set),number(x.set.actualRpe??x.set.rpe),
+        number(x.set.actualRir??x.set.rir));
       if(!(value>0)||!(evidence.confidenceWeight>0))continue;
       const m=method(x.exercise,x.set),role=setRole(x.exercise,x.set),rpe=effortRpe(x.set);
       const reps=performedReps(x.exercise,x.set);
@@ -998,6 +1044,8 @@
       currentSourceSessions:rolling.sourceSessions,stale:rolling.stale,
       confirmedFloor:rolling.confirmedFloor,confirmedFloorDate:rolling.confirmedFloorDate,
       confirmedFloorApplied:rolling.floorApplied,
+      stabilityFloor:rolling.stabilityFloor,stabilityFloorApplied:rolling.stabilityFloorApplied,
+      declineConfirmed:rolling.declineConfirmed,stabilitySourceDates:rolling.stabilitySourceDates,
       trend:rolling.trend,smoothingAlpha:rolling.smoothingAlpha,
       maxChangePct:rolling.maxChangePct,highQuality:rolling.highQuality,
       best:points.length?Math.max(...points.map(x=>x.value)):null,lastPerformed:points[0]?sessionDate(points[0].session):null,lastWorkingSets:latestGroup.map(x=>({weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effortRpe(x.set),rir:effortRpe(x.set)==null?null:10-effortRpe(x.set)})),protocols,sessionCount:sessions.length,setCount:points.length,latest:latestGroup.length?Math.max(...latestGroup.map(x=>x.value)):null,points,source,
@@ -1629,6 +1677,14 @@
     const weak =
       latest.length > 0 &&
       latest.every(x=>performedReps(x.exercise,x.set)<range.lo&&effort(x)!=null&&effort(x)>target);
+    // One bad session may reflect fatigue, not lost strength. Ask for a
+    // second comparable full, effort-recorded failure before decreasing the
+    // NEXT session's ordinary starting load. Live set adjustments are separate.
+    const repeatedWeak=weak&&groups.length>=2&&groups.slice(0,2).every((group,i)=>{
+      const proof=i===0?series:previousSeries;
+      return proof?.full&&proof.effortKnown&&proof.sameTarget&&group.length>0&&
+        group.every(x=>performedReps(x.exercise,x.set)<range.lo&&effort(x)>target);
+    });
     if(strong&&projected!=null&&projected<=prior+p.step/2&&!anomalous){projected=null;raw=prior;action="hold"}
     if(ids.length){
       reason=anomalous?`План ${seed} кг далеко от ${projected!=null?`оценки для нового диапазона ${Number(projected.toFixed(1))}`:`прошлой рабочей нагрузки ${prior}`} кг: нужна ручная проверка`:safeTaskRebase?`Предыдущий подход ${prior} кг × ${oldReps} при RPE ${oldRpe}. Диапазон повторений изменился: ориентир ${Number(projected.toFixed(1))} кг рассчитан только для нового задания, а прибавка ограничивается стандартным лимитом. Подход низкой интенсивности не изменяет актуальный 1ПМ`:projected!=null?`Последний лучший сет ${prior} кг × ${oldReps} при RPE ${oldRpe}; его 1ПМ ≈ ${Number(latestOneRepMax.toFixed(1))} кг. Оценка по ${strength.setCount} подходам из ${strength.sessionCount} тренировок ≈ ${Number(stableOneRepMax.toFixed(1))} кг; для ${range.lo}–${range.hi} повторений при RPE ${targetMin}–${target} ориентир ${Number(projected.toFixed(1))} кг${weeklyApplied?` с учётом недели ${Number((band.lo*100).toFixed(1))}–${Number((band.hi*100).toFixed(1))}%`:""}`:"Сохранить вес последнего тяжёлого рабочего сета";
@@ -1641,7 +1697,7 @@
         raw = p.available?.length
           ? moveWeight(raw, p.loadType === "bodyweight_assisted" ? -1 : 1, p)
           : raw + (p.loadType === "bodyweight_assisted" ? -1 : 1) * p.step;
-      } else if (weak&&!anomalous&&projected==null) {
+      } else if (repeatedWeak&&!anomalous&&projected==null) {
         action = "down";
         reason =
           "Последние рабочие подходы ниже диапазона или тяжелее целевого RPE";
@@ -1828,7 +1884,18 @@
     const reasonCodes=[];
     let repetitionGoal=null;
     if(ordinary&&prior!=null&&!anomalous&&!deload){
-      if(series&&!series.full){
+      if(weak&&!changedRepBand&&!band){
+        if(repeatedWeak){
+          // Two genuine failures justify one equipment step, not an abrupt
+          // 10% downgrade derived from a noisy low-day e1RM.
+          raw=moveWeight(prior,p.loadType==='bodyweight_assisted'?1:-1,p);
+          action='down';reasonCodes.push('REPEATED_WEAK_SERIES');
+          reason='Две полные сопоставимые тренировки ниже цели: снизить стартовый вес на один доступный шаг';
+        }else{
+          raw=prior;action='hold';trend='insufficient';reasonCodes.push('UNCONFIRMED_DECLINE');
+          reason='Один недобор повторений при повышенном RPE: вес следующей тренировки сохранён; проверь восстановление';
+        }
+      }else if(series&&!series.full){
         raw=prior;action='hold';trend='insufficient';reasonCodes.push('INCOMPLETE_SERIES');
         reason='Серия записана не полностью или содержит меньше подходов, чем новое задание: рабочий вес сохранён';
       }else if(series&&!changedRepBand&&!series.effortKnown){
@@ -1949,6 +2016,9 @@
       confirmedOneRepFloor:strength.confirmedFloor??null,
       confirmedOneRepFloorDate:strength.confirmedFloorDate??null,
       confirmedOneRepFloorApplied:strength.confirmedFloorApplied===true,
+      strengthStabilityFloor:strength.stabilityFloor??null,
+      strengthStabilityFloorApplied:strength.stabilityFloorApplied===true,
+      strengthDeclineConfirmed:strength.declineConfirmed===true,
       strengthTrend:strength.trend??'stable',strengthSmoothingAlpha:strength.smoothingAlpha??null,
       strengthMaxChangePct:strength.maxChangePct??null,
       strengthSourceSessions:strength.currentSourceSessions??[],
@@ -2005,7 +2075,9 @@
       }:null,
       strength: {stableMean:strength.stableMean,best:strength.best,lastPerformed:strength.lastPerformed,lastWorkingSets:strength.lastWorkingSets,protocols:strength.protocols,sessionCount:strength.sessionCount||ids.length,currentSessionCount:strength.currentSessionCount||0,trainingMax:strength.trainingMax,historicalEstimate:strength.historicalEstimate,
         confirmedFloor:strength.confirmedFloor,confirmedFloorDate:strength.confirmedFloorDate,
-        confirmedFloorApplied:strength.confirmedFloorApplied,trend:strength.trend,
+        confirmedFloorApplied:strength.confirmedFloorApplied,
+        stabilityFloor:strength.stabilityFloor,stabilityFloorApplied:strength.stabilityFloorApplied,
+        declineConfirmed:strength.declineConfirmed,trend:strength.trend,
         smoothingAlpha:strength.smoothingAlpha,maxChangePct:strength.maxChangePct,
         highQuality:strength.highQuality,setCount:strength.setCount||recent.length,estimate:strength.estimate==null?null:Number(strength.estimate.toFixed(1)),confirmed:strength.confirmed,
         confidenceLow:strength.confidenceLow,confidenceHigh:strength.confidenceHigh,confidence:strength.confidence,sources:strength.points.slice(0,12).map(x=>({date:sessionDate(x.session),method:method(x.exercise,x.set),role:setRole(x.exercise,x.set),weight:number(x.set.w),reps:performedReps(x.exercise,x.set),rpe:effortRpe(x.set)}))},
