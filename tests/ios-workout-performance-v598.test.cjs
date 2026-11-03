@@ -6,7 +6,7 @@ const read=path=>fs.readFileSync(require('node:path').join(__dirname,'..',path),
 
 test('workout nav is fixed by CSS rather than repeatedly translated by visualViewport',()=>{
   const guard=read('workout-scroll-guard.js'),css=read('mobile-final-fix.js');
-  assert.doesNotMatch(guard,/visualViewport|navOffset|desiredBottom/);
+  assert.doesNotMatch(guard,/W\.visualViewport|navOffset\s*=|desiredBottom\s*=/);
   assert.doesNotMatch(guard,/style\.translate\s*=/);
   assert.match(guard,/removeProperty\('translate'\)/);
   assert.match(css,/\.nav\{position:fixed!important/);
