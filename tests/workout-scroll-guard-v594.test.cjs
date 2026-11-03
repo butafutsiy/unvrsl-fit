@@ -10,7 +10,7 @@ test('release v594 installs workout scroll guard without a fixed-nav compositor 
   const html=read('index.html');
   assert.match(html,/__unvrslRelease='v(?:59[4-9]|[6-9]\\d{2})'/);
   assert.match(html,/workout-scroll-guard\.js\?v=594/);
-  assert.match(html,/sw\.js\?v=594/);
+  assert.match(html,/sw\.js\?v=59[4-9]/);
   assert.match(read('sw.js'),/SW_RELEASE = "v59[4-9]"/);
   assert.doesNotMatch(read('mobile-final-fix.js'),/will-change:transform;backface-visibility:hidden/);
 });
