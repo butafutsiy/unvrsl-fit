@@ -64,8 +64,13 @@ test('normal completion always displays full statistics and all share layouts en
   assert.equal(state.current,null);
   assert.equal(calls.html.length,1);
   const html=calls.html[0];
-  for(const label of ['Тренировка завершена','Время','Упражнения','Рабочие подходы','Тоннаж','Средний RPE','Жим лёжа','Тяга блока','Поделиться результатом · 6 шаблонов'])
+  for(const label of ['Тренировка завершена','Время','Упражнения','Рабочие подходы','Тоннаж','Средний RPE','Жим лёжа','Тяга блока','Поделиться результатом'])
     assert.ok(html.includes(label),label);
+  assert.equal((html.match(/onclick="previewWorkoutShare\\(\\)"/g)||[]).length,1,
+    'only the bottom share action should remain');
+  assert.doesNotMatch(html,/6 шаблонов|Постер · Минимал/);
+  assert.ok(html.indexOf('Поделиться результатом')>html.indexOf('Тяга блока'),
+    'share button must be below the exercise report');
   assert.ok(!calls.toasts.some(x=>/истори|облак|не удалось/i.test(x)),JSON.stringify(calls.toasts));
   ctx.previewWorkoutShare();
   assert.equal(calls.shares.length,1);
