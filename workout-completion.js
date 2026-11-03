@@ -243,8 +243,8 @@
     finally { W.__workoutFinishing = false; }
   };
   for (const event of ["unvrsl:app-ready", "unvrsl:cloud-modules-settled", "unvrsl:storage-hydrated"])
-    W.addEventListener(event, () => setTimeout(autoRecover, 150));
-  setTimeout(autoRecover, 1800);
+    W.addEventListener(event, () => { if (typeof setTimeout === "function") setTimeout(autoRecover, 150); });
+  if (typeof setTimeout === "function") setTimeout(autoRecover, 1800);
   W.addEventListener("unvrsl:workout-rendered", () => {
     if (st.current?.pendingCompletion) {
       const b = D.querySelector("[data-workout-finish]");
