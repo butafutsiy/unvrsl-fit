@@ -158,6 +158,9 @@
     const user=c?.user;
     if(!c?.client||!user||window.__workoutFinishing)return false;
     if(inflight)return inflight;
+    // Background account reconciliation may update local history but must
+    // not destroy/rebuild the mounted exercise inputs mid-workout.
+    const visibleWorkoutId=document.querySelector('#start.active')?.id&&st.current?.id?String(st.current.id):null;
     window.__unvrslSyncState={status:'loading',owner:user.id};window.dispatchEvent(new CustomEvent('unvrsl:sync-state'));
     inflight=(async()=>{
       let completed=false;
@@ -195,7 +198,12 @@
         setMeta({lastSyncedAt:Date.now(),lastUserId:user.id});window.__unvrslSyncState={status:localRevision>sentRevision?'pending':'synced',owner:user.id,at:Date.now()};window.dispatchEvent(new CustomEvent('unvrsl:sync-state'));
         if(!quiet)try{toast(remoteExists?'Данные аккаунта синхронизированы':'Облачная копия создана')}catch(e){}
         window.dispatchEvent?.(new CustomEvent('unvrsl:history-updated',{detail:{sessions:arr(st.sessions).length}}));
-        try{render();if(document.querySelector('#programs.active'))window.trainerProgramsPage?.()}catch(e){}
+        try{
+          const sameVisibleWorkout=!!visibleWorkoutId&&
+            document.querySelector('#start.active')&&String(st.current?.id||'')===visibleWorkoutId;
+          if(!sameVisibleWorkout)render();
+          if(document.querySelector('#programs.active'))window.trainerProgramsPage?.();
+        }catch(e){console.warn('Account UI refresh',e)}
         return true;
       }catch(e){if((e.code==='23505'||/Другой прибор обновил/.test(e.message))&&conflictRetries<2){conflictRetries++;setTimeout(()=>{if(window.cloud?.user?.id===user.id)reconcile({quiet:true})},350)}window.__unvrslSyncState={status:'error',owner:user.id,message:e.message};window.dispatchEvent(new CustomEvent('unvrsl:sync-state'));console.warn('UNVRSL account sync',e);if(!quiet)try{toast('Не удалось синхронизировать аккаунт')}catch(_){}return false}
       finally{inflight=null;if(completed&&c.user?.id===user.id&&localRevision>uploadedRevision)schedule()}
