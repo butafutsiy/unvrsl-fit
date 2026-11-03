@@ -64,12 +64,45 @@
     function owner(session) {
       return String(session?.userId || "local");
     }
+    // Successful cloud completion can leave its old IndexedDB/localStorage
+    // journal row behind (e.g. Safari refused to close the draft). A later
+    // workout must not be blocked by that ALREADY archived row. Never retire
+    // a genuinely unsaved draft or edits that differ from the history entry.
+    function completedSignature(session) {
+      return JSON.stringify((session?.ex || []).map(ex => [
+        String(ex.n || ""), String(ex.sourceId || ""), String(ex.mode || ""),
+        (ex.set || []).map(set => [
+          !!set.ok, String(set.w ?? ""), String(set.r ?? ""),
+          String(set.rpe ?? ""), String(set.rir ?? "")
+        ])
+      ]));
+    }
+    function alreadyArchived(state, session) {
+      return !!session?.id && (state.sessions || []).some(done =>
+        done?.ended && !done.pendingCompletion &&
+        String(done.id) === String(session.id) &&
+        completedSignature(done) === completedSignature(session)
+      );
+    }
+    function retireStaleDraft(state, journal, key, incoming) {
+      const old = journal.owners[key];
+      // Reopening/editing an archived workout with the SAME id must keep its
+      // newer changes. Only retire a DIFFERENT completed draft that blocks
+      // starting the next session.
+      if (!old || String(old.id) === String(incoming?.id) ||
+          !alreadyArchived(state, old)) return false;
+      journal.closed[old.id] ||= { at: now(), reason: "completed" };
+      delete journal.owners[key];
+      return true;
+    }
     function checkpoint(state) {
       const s = state.current;
       if (!s) return;
-      const j = journal(),
-        key = owner(s),
-        old = j.owners[key];
+      const j = journal(), key = owner(s);
+      j.owners ||= {};
+      j.closed ||= {};
+      retireStaleDraft(state, j, key, s);
+      const old = j.owners[key];
       if (old && old.id !== s.id && !j.closed[old.id])
         throw new Error("Сначала завершите или удалите сохранённую тренировку");
       if (!s.id) s.id = id();
@@ -90,28 +123,17 @@
     function restore(state, userId) {
       const j = journal(),
         key = String(userId || state.current?.userId || "local"),
-        saved = j.owners[key];
-      const signature = session => JSON.stringify((session?.ex || []).map(ex =>
-        (ex?.set || []).map(set => [
-          !!set.ok, String(set.w ?? ""), String(set.r ?? ""),
-          String(set.rpe ?? ""), String(set.rir ?? "")
-        ])
-      ));
-      const completed = session => (state.sessions || []).some(done =>
-        done?.ended && String(done.id) === String(session?.id) &&
-        (done.ex || []).length === (session.ex || []).length &&
-        signature(done) === signature(session)
-      );
+        saved = j.owners?.[key];
       if (
         saved &&
-        !j.closed[saved.id] &&
-        !completed(saved) &&
+        !j.closed?.[saved.id] &&
+        !alreadyArchived(state, saved) &&
         (!state.current ||
           (state.current.id === saved.id &&
             (saved.updatedAt || 0) > (state.current.updatedAt || 0)))
       )
         state.current = clone(saved);
-      if (state.current && (j.closed[state.current.id] || completed(state.current)))
+      if (state.current && (j.closed?.[state.current.id] || alreadyArchived(state, state.current)))
         state.current = null;
       return state.current;
     }

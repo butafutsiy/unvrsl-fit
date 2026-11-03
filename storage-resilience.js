@@ -123,7 +123,15 @@
     } catch (e) {
       localError = e;
     }
-    if (localError && !/QuotaExceeded|SecurityError|NS_ERROR_DOM_QUOTA_REACHED/.test(localError.name || "")) {
+    // Mobile Safari may report unavailable localStorage as InvalidStateError
+    // or UnknownError instead of QuotaExceededError. Those storage failures
+    // can use our IndexedDB mirror. Logic conflicts (e.g. a real unsaved
+    // older draft) must still fail rather than silently overwriting data.
+    const storageFailure = localError && (
+      /QuotaExceeded|SecurityError|NS_ERROR_DOM_QUOTA_REACHED|InvalidStateError|UnknownError|NotAllowedError/i.test(localError.name || "") ||
+      /quota exceeded|localstorage.*(?:disabled|unavailable|denied)|storage.*(?:full|unavailable|denied)/i.test(localError.message || "")
+    );
+    if (localError && !storageFailure) {
       console.error("UNVRSL save conflict", localError);
       toast(String(localError.message || "Не удалось сохранить изменения"));
       durable = Promise.resolve(false);
