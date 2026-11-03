@@ -99,8 +99,21 @@
     // A session that is already present in history with `ended` can never be active again.
     // Also treat a fresh local `current: null` as an explicit completion/cancel state instead
     // of reviving an older remote current session during the next cloud reconcile.
-    const completedIds=new Set(base.sessions.filter(x=>x?.ended&&x?.id).map(x=>String(x.id)));
-    const closed=workoutStore.journal().closed;const validCurrent=x=>x&&!closed[x.id]&&(x.pendingCompletion||!x.id||!completedIds.has(String(x.id)))?x:null;
+    const completedById=new Map(base.sessions.filter(x=>x?.ended&&x?.id).map(x=>[String(x.id),x]));
+    const completedSetsEqual=(a,b)=>JSON.stringify((a?.ex||[]).map(e=>(e?.set||[]).map(s=>[
+      !!s.ok,String(s.w??''),String(s.r??''),String(s.rpe??''),String(s.rir??'')
+    ])))===JSON.stringify((b?.ex||[]).map(e=>(e?.set||[]).map(s=>[
+      !!s.ok,String(s.w??''),String(s.r??''),String(s.rpe??''),String(s.rir??'')
+    ])))&&(a?.ex||[]).length===(b?.ex||[]).length;
+    const closed=workoutStore.journal().closed;
+    const validCurrent=x=>{
+      if(!x||closed[x.id])return null;
+      const completed=completedById.get(String(x.id));
+      if(!completed)return x;
+      // A pending draft already archived with the same completed sets must
+      // never be revived after cloud reconcile. Keep unsynced local edits.
+      return x.pendingCompletion&&!completedSetsEqual(x,completed)?x:null;
+    };
     const lc=validCurrent(local.current),rc=validCurrent(remote.current);
     if(lc&&rc&&lc.id!==rc.id){base.current=lc;}else if(lc&&rc){
       const ls=sessionScore(lc),rs=sessionScore(rc);

@@ -91,15 +91,28 @@
       const j = journal(),
         key = String(userId || state.current?.userId || "local"),
         saved = j.owners[key];
+      const signature = session => JSON.stringify((session?.ex || []).map(ex =>
+        (ex?.set || []).map(set => [
+          !!set.ok, String(set.w ?? ""), String(set.r ?? ""),
+          String(set.rpe ?? ""), String(set.rir ?? "")
+        ])
+      ));
+      const completed = session => (state.sessions || []).some(done =>
+        done?.ended && String(done.id) === String(session?.id) &&
+        (done.ex || []).length === (session.ex || []).length &&
+        signature(done) === signature(session)
+      );
       if (
         saved &&
         !j.closed[saved.id] &&
+        !completed(saved) &&
         (!state.current ||
           (state.current.id === saved.id &&
             (saved.updatedAt || 0) > (state.current.updatedAt || 0)))
       )
         state.current = clone(saved);
-      if (state.current && j.closed[state.current.id]) state.current = null;
+      if (state.current && (j.closed[state.current.id] || completed(state.current)))
+        state.current = null;
       return state.current;
     }
     function close(state, s, reason) {
