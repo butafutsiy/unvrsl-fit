@@ -8,7 +8,7 @@
  const seen=new Set();
  for(const href of sources){
   if(seen.has(href))continue;seen.add(href);
-  const link=document.createElement('link');link.rel='preload';link.as='script';link.href=href;link.fetchPriority=seen.size<=6?'high':'auto';link.dataset.unvrslPreloadV320='1';document.head.appendChild(link)
+  const link=document.createElement('link');link.rel='preload';link.as='script';link.href=href.replace(/v=\\d+/, 'v='+String(window.__unvrslRelease||'v598').replace(/^v/,''));link.fetchPriority=seen.size<=6?'high':'auto';link.dataset.unvrslPreloadV320='1';document.head.appendChild(link)
  }
  window.__unvrslCanonicalPreloadsV320=Object.freeze([...seen]);window.__unvrslCanonicalPreloadsV260=window.__unvrslCanonicalPreloadsV320;
 })();
