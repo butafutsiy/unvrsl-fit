@@ -97,8 +97,7 @@
       return basicReport(s);
     }
   }
-  const shareButton='<button type="button" class="btn primary full wc392-share" onclick="previewWorkoutShare()">Поделиться результатом · 6 шаблонов</button>';
-  const shareHint='<p class="muted small wc392-share-hint">Постер · Минимал · Упражнения · Рекорд · Тоннаж · Динамика</p>';
+  const shareButton='<button type="button" class="btn primary full wc392-share" onclick="previewWorkoutShare()">Поделиться результатом</button>';
   function showSummaryModal(html){
     try{modal(html);return true}
     catch(error){
@@ -146,7 +145,7 @@
     const compare=r.comparison
       ?`<p class="muted small">По сравнению с ${esc(r.comparison.date)}: подходы ${r.comparison.setDelta>0?'+':''}${r.comparison.setDelta}${r.comparison.volumeDelta==null?'':`, тоннаж ${r.comparison.volumeDelta>0?'+':''}${r.comparison.volumeDelta} кг`}</p>`
       :'';
-    const html=`<div class="wc392"><div class="row between"><h2>Тренировка завершена</h2><button class="btn" onclick="closeModal()" aria-label="Закрыть">✕</button></div><p class="muted">${esc(r.name)} · ${esc(r.date||'')}</p><div class="wc392-grid">${metrics.map(([label,v])=>`<div><small>${esc(label)}</small><b>${esc(v)}</b></div>`).join('')}</div>${shareButton}${shareHint}${r.unknownVolumeSets?'<p class="muted small">Тоннаж рассчитан только для подходов с известной нагрузкой.</p>':''}${compare}<div class="wc392-exercises">${exerciseHtml||'<p class="muted">Выполненные подходы не найдены.</p>'}</div>${conditioning}${shareButton}<button type="button" class="btn full" onclick="closeModal();nav('stats')">К статистике</button></div>`;
+    const html=`<div class="wc392"><div class="row between"><h2>Тренировка завершена</h2><button class="btn" onclick="closeModal()" aria-label="Закрыть">✕</button></div><p class="muted">${esc(r.name)} · ${esc(r.date||'')}</p><div class="wc392-grid">${metrics.map(([label,v])=>`<div><small>${esc(label)}</small><b>${esc(v)}</b></div>`).join('')}</div>${r.unknownVolumeSets?'<p class="muted small">Тоннаж рассчитан только для подходов с известной нагрузкой.</p>':''}${compare}<div class="wc392-exercises">${exerciseHtml||'<p class="muted">Выполненные подходы не найдены.</p>'}</div>${conditioning}${shareButton}<button type="button" class="btn full" onclick="closeModal();nav('stats')">К статистике</button></div>`;
     return showSummaryModal(html);
   };
   W.openWorkoutSummaryV596=id=>{
@@ -355,7 +354,7 @@
   };
   const css = D.createElement("style");
   css.textContent =
-    ".weight392{min-width:0}.weight392>div{display:flex;justify-content:space-between;gap:4px}.weight392 button{min-height:24px;flex:1;background:#302734;border-radius:6px;font-size:16px} .wc392-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wc392-grid>div{background:#242127;border:1px solid #39303f;border-radius:18px;padding:18px;min-width:0}.wc392-grid small{display:block;color:#aaa}.wc392-grid b{display:block;font-size:26px;margin-top:10px}.wc392 .primary{background:#bf5af2;color:#120918}.wc392-preview{display:block;width:100%;height:auto;border-radius:18px;margin-bottom:16px}.wc392 .listline p{margin:8px 0}.wc392-share{min-height:50px;margin:14px 0 4px}.wc392-share-hint{margin:2px 0 12px;text-align:center;line-height:1.35}.wc392-exercises{margin-top:10px}.wc392 .wc392-grid{margin:12px 0 14px}";
+    ".weight392{min-width:0}.weight392>div{display:flex;justify-content:space-between;gap:4px}.weight392 button{min-height:24px;flex:1;background:#302734;border-radius:6px;font-size:16px} .wc392-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wc392-grid>div{background:#242127;border:1px solid #39303f;border-radius:18px;padding:18px;min-width:0}.wc392-grid small{display:block;color:#aaa}.wc392-grid b{display:block;font-size:26px;margin-top:10px}.wc392 .primary{background:#bf5af2;color:#120918}.wc392-preview{display:block;width:100%;height:auto;border-radius:18px;margin-bottom:16px}.wc392 .listline p{margin:8px 0}.wc392-share{min-height:50px;margin:14px 0 4px}.wc392-exercises{margin-top:10px}.wc392 .wc392-grid{margin:12px 0 14px}";
   D.head.append(css);
   W.addEventListener("unvrsl:app-ready", W.showWorkoutDraft);
   // Recover a cloud-committed session on next launch without asking the user
