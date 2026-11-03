@@ -69,6 +69,16 @@
     running = true;
     let changed = false, weightsChanged = false;
     try {
+      // Build the scoped history once for the entire calculation, not twice
+      // for every individual set. Repeated large JSON/history scans can lock
+      // the iPhone main thread before the workout becomes interactive.
+      const sessionHistory = recommendationHistory();
+      const eligibleHistory = sessionHistory.filter(x=>
+        !A.isRecoveryForAutoweight(x)&&!x.isLoadCalibration&&
+        x.id!==cur.id&&!x.pendingCompletion&&
+        (!cur.userId||!x.userId||x.userId===cur.userId)&&
+        (!cur.date||!x.date||x.date<=cur.date)
+      ).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
       changed=A.repairLegacyEffortTargets(cur)||changed;
       changed=A.prepareTestBlocks(cur,workoutRegistry)||changed;
       W.equipmentAttachDefaults405?.(cur);
@@ -93,11 +103,11 @@
             ex,
             set,
             cur,
-            recommendationHistory(),
+            sessionHistory,
             workoutRegistry,
             st.exerciseWeightProfiles || {},
           );
-          const observations=recommendationHistory().filter(x=>!A.isRecoveryForAutoweight(x)&&!x.isLoadCalibration&&x.id!==cur.id&&!x.pendingCompletion&&(!cur.userId||!x.userId||x.userId===cur.userId)&&(!cur.date||!x.date||x.date<=cur.date)).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).flatMap(old=>{
+          const observations=eligibleHistory.flatMap(old=>{
             const match=(old.ex||[]).find(x=>A.loadComparable(ex,x,workoutRegistry,set,x.set?.[0]||{})&&A.method(ex,set)===A.method(x,x.set?.[0]||{}));if(!match)return [];
             const done=(match.set||[]).filter(x=>A.complete(match,x,workoutRegistry)),target=A.effortTarget(match,done[0]||{},old),range=A.repRange(match,done[0]||{});
             const estimate=A.strengthEstimate(ex,A.history(ex,[old],workoutRegistry),workoutRegistry,[],set).estimate;

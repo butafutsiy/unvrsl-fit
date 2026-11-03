@@ -251,23 +251,37 @@
     const match = handler.match(/editSet\((\d+),(\d+),'([^']+)'/);
     if (match) editSet(+match[1], +match[2], match[3], el.value, el);
   });
-  let scrollFrame = 0;
+  // A document scroll fires dozens of times per second on iOS. Writing the
+  // full workout journal + IndexedDB mirror on EVERY animation frame made
+  // scrolling, buttons and fixed controls stutter. Only keep the position in
+  // memory while moving; persist it once the gesture has settled.
+  let scrollFrame = 0, scrollIdleTimer = 0, lastScrollSession = null;
+  const persistIdleScroll = () => {
+    scrollIdleTimer = 0;
+    if (st.current?.id && String(st.current.id) === lastScrollSession &&
+        document.querySelector("#start.active"))
+      checkpoint();
+  };
   W.addEventListener(
     "scroll",
     () => {
-      if (
-        scrollFrame ||
-        !st.current ||
-        !document.querySelector("#start.active")
-      )
-        return;
+      if (!st.current || !document.querySelector("#start.active")) return;
+      if (scrollIdleTimer) clearTimeout(scrollIdleTimer);
+      lastScrollSession = String(st.current.id);
+      scrollIdleTimer = setTimeout(persistIdleScroll, 650);
+      if (scrollFrame) return;
       scrollFrame = requestAnimationFrame(() => {
         scrollFrame = 0;
-        checkpoint();
+        if (st.current?.id === lastScrollSession)
+          st.current.scrollY = W.unvrslScrollTop?.() ?? W.scrollY ?? 0;
       });
     },
     { passive: true },
   );
+  W.addEventListener("pagehide", () => {
+    if (scrollIdleTimer) clearTimeout(scrollIdleTimer);
+    scrollIdleTimer = 0;
+  });
   W.addEventListener("storage", (event) => {
     if (event.key !== WorkoutStore.DRAFT) return;
     const before = st.current?.updatedAt || 0;

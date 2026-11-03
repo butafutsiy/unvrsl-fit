@@ -9,10 +9,11 @@ const read=name=>fs.readFileSync(path.join(__dirname,'..',name),'utf8');
 test('release v594 installs workout scroll guard without a fixed-nav compositor hint',()=>{
   const html=read('index.html');
   assert.match(html,/__unvrslRelease='v(?:59[4-9]|[6-9]\\d{2})'/);
-  assert.match(html,/workout-scroll-guard\.js\?v=594/);
+  assert.match(html,/workout-scroll-guard\.js\?v=598/);
   assert.match(html,/sw\.js\?v=59[4-9]/);
   assert.match(read('sw.js'),/SW_RELEASE = "v59[4-9]"/);
   assert.doesNotMatch(read('mobile-final-fix.js'),/will-change:transform;backface-visibility:hidden/);
+  assert.match(read('mobile-final-fix.js'),/translate:none!important/);
 });
 
 function environment(pinned=false){
@@ -59,19 +60,19 @@ function environment(pinned=false){
   return {win,nav,setY:value=>{y=value},getY:()=>y,fire:name=>(listeners[name]||[]).forEach(fn=>fn()),flush,offset};
 }
 
-test('iOS scrolled workout pins bottom nav and restores rendered workout position',()=>{
+test('iOS scrolled workout never translates bottom nav and restores rendered position',()=>{
   const e=environment(false);
   e.flush();
   assert.equal(e.offset(),0);
   e.setY(250);
   e.fire('scroll');
   e.flush();
-  assert.equal(Math.round(e.nav.getBoundingClientRect().bottom),790);
+  assert.equal(e.offset(),0);
   assert.equal(e.win.startPage(),'rendered');
   e.flush();
   assert.equal(e.getY(),250);
   e.setY(0);e.fire('scroll');e.flush();
-  assert.equal(Math.round(e.nav.getBoundingClientRect().bottom),790);
+  assert.equal(e.offset(),0);
 });
 
 test('healthy fixed nav is not translated during page scrolling',()=>{
