@@ -137,7 +137,7 @@
     let conditioning='';
     try{conditioning=W.conditioningSummaryHtml?.(s)||''}
     catch(error){console.warn('Conditioning summary unavailable',error)}
-    const exerciseHtml=(r.exercises||[]).map(e=>{
+    const exerciseHtml=r.exercises.map(e=>{
       const suggestion=nextWeight(s,e);
       const details=(e.sets||[]).map(x=>`<p class="small">${esc(x.label||'Подход выполнен')}</p>`).join('');
       const best=e.best?.label?`<p class="muted small">Лучший подход: ${esc(e.best.label)}</p>`:'';
@@ -338,7 +338,7 @@
     const session=currentSession;
     if(!session)return toast('Нет данных для публикации');
     if(typeof W.openShareProgressV264==='function'){
-      try{return W.openShareProgressV264(session)}
+      try{return W.openShareProgressV264?.(currentSession)}
       catch(error){console.error('Workout share templates unavailable',error)}
     }
     toast('Шаблоны не загрузились. Перезапусти приложение и попробуй снова');
