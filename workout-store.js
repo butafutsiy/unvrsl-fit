@@ -84,9 +84,13 @@
         completedSignature(done) === completedSignature(session)
       );
     }
-    function retireStaleDraft(state, journal, key) {
+    function retireStaleDraft(state, journal, key, incoming) {
       const old = journal.owners[key];
-      if (!old || !alreadyArchived(state, old)) return false;
+      // Reopening/editing an archived workout with the SAME id must keep its
+      // newer changes. Only retire a DIFFERENT completed draft that blocks
+      // starting the next session.
+      if (!old || String(old.id) === String(incoming?.id) ||
+          !alreadyArchived(state, old)) return false;
       journal.closed[old.id] ||= { at: now(), reason: "completed" };
       delete journal.owners[key];
       return true;
@@ -97,7 +101,7 @@
       const j = journal(), key = owner(s);
       j.owners ||= {};
       j.closed ||= {};
-      retireStaleDraft(state, j, key);
+      retireStaleDraft(state, j, key, s);
       const old = j.owners[key];
       if (old && old.id !== s.id && !j.closed[old.id])
         throw new Error("Сначала завершите или удалите сохранённую тренировку");
