@@ -65,6 +65,14 @@
   }
   function coreReady(){
     if(!localCoreReady())return false;
+    // A safely hydrated, already active workout is usable without waiting
+    // for the full cloud client/program catalog. Preserve owner isolation.
+    // Slow auth/profile requests must not block its locally saved buttons.
+    const current=W.st?.current,cloudOwner=W.cloud?.user?.id;
+    if(current?.id&&(!cloudOwner||!current.userId||String(current.userId)===String(cloudOwner))){
+      if(!cloudSettled())W.__unvrslStartupCloudBypassedV260=true;
+      return true;
+    }
     if(!cloudSettled()&&(cloudCanWait()||(cachedAuth()&&elapsed()<AUTH_GRACE_MS)))return false;
     if(!cloudSettled()){
       W.__unvrslStartupCloudBypassedV260=true;
