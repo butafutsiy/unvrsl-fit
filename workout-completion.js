@@ -9,37 +9,150 @@
     const seconds=Math.max(0,Math.floor(Number(ms)/1000)||0),minutes=Math.floor(seconds/60),tail=String(seconds%60).padStart(2,"0");
     return minutes>=60?`${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,"0")}:${tail}`:`${minutes}:${tail}`;
   };
+  // A next-load recommendation is optional: a malformed history entry must
+  // never block the completed-workout report or its share action.
   const nextWeight=(s,entry)=>{
-    const ex=entry.best.exercise,set=entry.best.set;
-    if(ex.mode==='cardio')return null;
-    const future={...s,id:`next-${s.id}`,started:(Number(s.ended)||Date.now())+1,ended:null,ex:[]};
-    const rec=A.recommend(ex,{...set,ok:false},future,st.sessions||[],workoutRegistry,st.exerciseWeightProfiles||{});
-    return rec.sessionIds.length&&rec.action!=='reps'?`В следующий раз: ${String(rec.weight).replace('.',',')} кг · ${rec.reason}`:null;
+    try {
+      if(!entry?.best?.exercise||!entry.best.set)return null;
+      const ex=entry.best.exercise,set=entry.best.set;
+      if(ex.mode==='cardio'||ex.kind==='cardio')return null;
+      const future={...s,id:`next-${s.id}`,started:(Number(s.ended)||Date.now())+1,ended:null,ex:[]};
+      const rec=A.recommend(ex,{...set,ok:false},future,st.sessions||[],workoutRegistry,st.exerciseWeightProfiles||{});
+      return rec?.sessionIds?.length&&rec.action!=='reps'&&Number.isFinite(Number(rec.weight))
+        ?`В следующий раз: ${String(rec.weight).replace('.',',')} кг · ${rec.reason||''}`:null;
+    } catch(error) {
+      console.warn('Next workout recommendation unavailable in completion summary',error);
+      return null;
+    }
   };
   let currentReport = null,
     currentSession = null;
+  const completed=(exercise,set)=>{
+    try{return !!A.complete(exercise,set,workoutRegistry)}
+    catch(_){return !!set?.ok}
+  };
+  const num=v=>{
+    if(v===''||v==null)return null;
+    const n=Number(String(v).replace(',','.'));
+    return Number.isFinite(n)?n:null;
+  };
+  const avgEffort=s=>{
+    const values=[];
+    for(const e of s?.ex||[]){
+      if(e.kind==='cardio'||e.mode==='cardio')continue;
+      for(const x of e.set||[]){
+        if(!completed(e,x))continue;
+        let v=num(x.actualRpe??x.rpe);
+        if(v==null){const rir=num(x.actualRir??x.rir);if(rir!=null)v=10-rir}
+        if(v!=null&&v>=0&&v<=10)values.push(v);
+      }
+    }
+    return values.length?values.reduce((a,b)=>a+b,0)/values.length:null;
+  };
+  // Fallback is assembled exclusively from recorded sets. It is only used
+  // when the detailed stats engine cannot process an older/partial session.
+  function basicReport(s){
+    const exercises=[];let sets=0,volume=0,unknown=0;
+    for(const e of s?.ex||[]){
+      const done=(e?.set||[]).filter(x=>completed(e,x));
+      if(!done.length)continue;
+      const lines=done.map(x=>{
+        let label;
+        try{label=A.setLabel(e,x,workoutRegistry)}catch(_){}
+        if(!label){
+          const w=num(x.actualWeight??x.w),r=num(x.actualReps??x.r);
+          label=[w==null?'':w+' кг',r==null?'':r+' повт.'].filter(Boolean).join(' × ')||'Выполнен';
+        }
+        if(e.mode!=='cardio'&&e.kind!=='cardio'){
+          let load=null;
+          try{load=num(A.tonnageLoad(e,x,workoutRegistry))}catch(_){}
+          const reps=num(x.actualReps??x.r);
+          if(load!=null&&reps!=null)volume+=load*reps;
+          else unknown++;
+        }
+        return {exercise:e,set:x,label};
+      });
+      sets+=lines.length;
+      const best=lines.reduce((a,b)=>{
+        if(!a)return b;
+        const score=x=>(num(x.set.actualWeight??x.set.w)||0)*1000+(num(x.set.actualReps??x.set.r)||0);
+        return score(b)>score(a)?b:a;
+      },null);
+      exercises.push({name:e.n||'Упражнение',sets:lines,best,records:[]});
+    }
+    const start=num(s?.started),end=num(s?.ended);
+    return{
+      id:s?.id,name:s?.name||s?.c||'Тренировка',date:s?.date||'',
+      durationMs:Math.max(0,num(s?.finalDurationMs??s?.durationMs)??(start!=null&&end!=null?end-start:0)),
+      exercises,exerciseCount:exercises.length,setCount:sets,
+      volume:Math.round(volume),unknownVolumeSets:unknown,records:[],comparison:null
+    };
+  }
+  function safeReport(s){
+    try{
+      const result=report(s);
+      return result&&Array.isArray(result.exercises)?result:basicReport(s);
+    }catch(error){
+      console.warn('Detailed workout summary unavailable; showing recorded results',error);
+      return basicReport(s);
+    }
+  }
+  const shareButton='<button type="button" class="btn primary full wc392-share" onclick="previewWorkoutShare()">Поделиться результатом · 6 шаблонов</button>';
+  const shareHint='<p class="muted small wc392-share-hint">Постер · Минимал · Упражнения · Рекорд · Тоннаж · Динамика</p>';
+  function showSummaryModal(html){
+    try{modal(html);return true}
+    catch(error){
+      console.warn('Workout summary modal fallback',error);
+      const shell=D.getElementById?.('modal'),sheet=D.getElementById?.('sheet');
+      if(!shell||!sheet)throw error;
+      sheet.innerHTML=html;
+      sheet.scrollTop=0;
+      shell.classList.add('show');
+      return true;
+    }
+  }
   W.renderWorkoutSummary = function (s) {
-    currentSession = s;
-    const r = (currentReport = report(s));
+    if(!s)return false;
+    currentSession=s;
+    const r=(currentReport=safeReport(s));
     const volume =
       r.unknownVolumeSets && r.volume === 0
-        ? "Не рассчитан"
+        ? 'Не рассчитан'
         : r.unknownVolumeSets
-          ? `${r.volume.toLocaleString("ru-RU")} кг · частичный`
-          : `${r.volume.toLocaleString("ru-RU")} кг`;
-    modal(
-      `<div class="wc392"><div class="row between"><h2>Тренировка завершена</h2><button class="btn" onclick="closeModal()" aria-label="Закрыть">✕</button></div><p class="muted">${esc(r.name)} · ${esc(r.date)}</p><div class="wc392-grid">${[
-        ["Время", duration(r.durationMs)],
-        ["Упражнения", r.exerciseCount],
-        ["Рабочие подходы", r.setCount],
-        ["Объём", volume],
-        ...(W.UNVRSLCardio?.sessionCalories(s)?[["Кардио, ккал",`${W.UNVRSLCardio.sessionCalories(s).estimated?'≈ ':''}${W.UNVRSLCardio.sessionCalories(s).kcal}`]]:[]),
-      ]
-        .map(([label, v]) => `<div><small>${label}</small><b>${v}</b></div>`)
-        .join(
-          "",
-        )}</div>${r.unknownVolumeSets ? '<p class="muted small">Объём включает только подходы с известной эффективной нагрузкой.</p>' : ""}${r.comparison ? `<p class="muted small">По сравнению с ${esc(r.comparison.date)}: подходы ${r.comparison.setDelta > 0 ? "+" : ""}${r.comparison.setDelta}${r.comparison.volumeDelta == null ? "" : `, объём ${r.comparison.volumeDelta > 0 ? "+" : ""}${r.comparison.volumeDelta} кг`}</p>` : ""}${r.exercises.map((e) => `<div class="listline"><b>${esc(e.name)}</b>${e.sets.map((x) => `<p class="small">${esc(x.label)}</p>`).join("")}<p class="muted small">Лучший подход: ${esc(e.best.label)}</p>${nextWeight(s,e)?`<p class="small green">${esc(nextWeight(s,e))}</p>`:""}${e.records.length ? '<span class="chip">Новый рекорд</span>' : ""}</div>`).join("")}${W.conditioningSummaryHtml?.(s)||''}<button class="btn primary full" onclick="previewWorkoutShare()">Поделиться результатом</button><button class="btn full" onclick="closeModal();nav('stats')">К статистике</button></div>`,
-    );
+          ? `${r.volume.toLocaleString('ru-RU')} кг · частичный`
+          : `${r.volume.toLocaleString('ru-RU')} кг`;
+    const effort=avgEffort(s),recordCount=r.records?.length||0;
+    const metrics=[
+      ['Время',duration(r.durationMs)],
+      ['Упражнения',r.exerciseCount],
+      ['Рабочие подходы',r.setCount],
+      ['Тоннаж',volume],
+      ['Средний RPE',effort==null?'–':String(Math.round(effort*10)/10).replace('.',',')],
+      ['Новые рекорды',recordCount]
+    ];
+    try{
+      const cardio=W.UNVRSLCardio?.sessionCalories(s);
+      if(cardio?.kcal!=null)metrics.push(['Кардио, ккал',`${cardio.estimated?'≈ ':''}${cardio.kcal}`]);
+    }catch(error){console.warn('Cardio summary unavailable',error)}
+    let conditioning='';
+    try{conditioning=W.conditioningSummaryHtml?.(s)||''}
+    catch(error){console.warn('Conditioning summary unavailable',error)}
+    const exerciseHtml=(r.exercises||[]).map(e=>{
+      const suggestion=nextWeight(s,e);
+      const details=(e.sets||[]).map(x=>`<p class="small">${esc(x.label||'Подход выполнен')}</p>`).join('');
+      const best=e.best?.label?`<p class="muted small">Лучший подход: ${esc(e.best.label)}</p>`:'';
+      return `<div class="listline"><b>${esc(e.name||'Упражнение')}</b>${details}${best}${suggestion?`<p class="small green">${esc(suggestion)}</p>`:''}${e.records?.length?'<span class="chip">Новый рекорд</span>':''}</div>`;
+    }).join('');
+    const compare=r.comparison
+      ?`<p class="muted small">По сравнению с ${esc(r.comparison.date)}: подходы ${r.comparison.setDelta>0?'+':''}${r.comparison.setDelta}${r.comparison.volumeDelta==null?'':`, тоннаж ${r.comparison.volumeDelta>0?'+':''}${r.comparison.volumeDelta} кг`}</p>`
+      :'';
+    const html=`<div class="wc392"><div class="row between"><h2>Тренировка завершена</h2><button class="btn" onclick="closeModal()" aria-label="Закрыть">✕</button></div><p class="muted">${esc(r.name)} · ${esc(r.date||'')}</p><div class="wc392-grid">${metrics.map(([label,v])=>`<div><small>${esc(label)}</small><b>${esc(v)}</b></div>`).join('')}</div>${shareButton}${shareHint}${r.unknownVolumeSets?'<p class="muted small">Тоннаж рассчитан только для подходов с известной нагрузкой.</p>':''}${compare}<div class="wc392-exercises">${exerciseHtml||'<p class="muted">Выполненные подходы не найдены.</p>'}</div>${conditioning}${shareButton}<button type="button" class="btn full" onclick="closeModal();nav('stats')">К статистике</button></div>`;
+    return showSummaryModal(html);
+  };
+  W.openWorkoutSummaryV596=id=>{
+    const session=(st.sessions||[]).find(x=>String(x.id)===String(id));
+    if(!session){toast('Тренировка не найдена в истории');return false}
+    return W.renderWorkoutSummary(session);
   };
   // A successful cloud upload can outlive a failed local draft close on iOS.
   // Verify that the archived workout is the same as the current draft before
@@ -156,15 +269,18 @@
           : null,
       });
       if (result) {
-        stopTimer();
-        W.showWorkoutDraft();
-        W.renderWorkoutSummary(result);
+        try{stopTimer()}catch(error){console.warn('Finished timer cleanup',error)}
+        try{W.showWorkoutDraft()}catch(error){console.warn('Finished draft badge cleanup',error)}
+        // The durable save has already succeeded. UI rendering must never
+        // turn it into a misleading "history saved" toast-only result.
+        try{W.renderWorkoutSummary(result)}
+        catch(error){console.error('Workout results modal failed',error);toast('Тренировка сохранена. Итоги доступны в статистике')}
         W.dispatchEvent(
           new CustomEvent("unvrsl:workout-completed", {
             detail: { sessionId: result.id },
           }),
         );
-        save();
+        try{save()}catch(error){console.warn('Post-completion local save unavailable',error)}
       }
     } catch (error) {
       if (st.current?.id === s.id && await recoverSyncedWorkout(s)) return;
@@ -218,7 +334,15 @@
       `<h2>Незавершённая тренировка</h2><p>${esc(s.name || s.c)}</p>${(s.ex || []).map((e) => `<div class="listline"><b>${esc(e.n)}</b>${(e.set || []).map((x) => `<p>${x.ok ? "✓" : "○"} ${esc(A.setLabel(e, x, workoutRegistry))}</p>`).join("")}</div>`).join("")}<button class="btn primary full" onclick="resumeWorkoutDraft()">Продолжить</button>`,
     );
   };
-  W.previewWorkoutShare = () => { if (currentSession) W.openShareProgressV264?.(currentSession); };
+  W.previewWorkoutShare = () => {
+    const session=currentSession;
+    if(!session)return toast('Нет данных для публикации');
+    if(typeof W.openShareProgressV264==='function'){
+      try{return W.openShareProgressV264(session)}
+      catch(error){console.error('Workout share templates unavailable',error)}
+    }
+    toast('Шаблоны не загрузились. Перезапусти приложение и попробуй снова');
+  };
   W.sendWorkoutShare = () => W.shareProgressNativeV264?.();
   // Reuse the canonical summary for the old share entry points, without the old canvas renderer.
   W.advShareWorkout = (s) => {
@@ -231,7 +355,7 @@
   };
   const css = D.createElement("style");
   css.textContent =
-    ".weight392{min-width:0}.weight392>div{display:flex;justify-content:space-between;gap:4px}.weight392 button{min-height:24px;flex:1;background:#302734;border-radius:6px;font-size:16px} .wc392-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wc392-grid>div{background:#242127;border:1px solid #39303f;border-radius:18px;padding:18px;min-width:0}.wc392-grid small{display:block;color:#aaa}.wc392-grid b{display:block;font-size:26px;margin-top:10px}.wc392 .primary{background:#bf5af2;color:#120918}.wc392-preview{display:block;width:100%;height:auto;border-radius:18px;margin-bottom:16px}.wc392 .listline p{margin:8px 0}";
+    ".weight392{min-width:0}.weight392>div{display:flex;justify-content:space-between;gap:4px}.weight392 button{min-height:24px;flex:1;background:#302734;border-radius:6px;font-size:16px} .wc392-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wc392-grid>div{background:#242127;border:1px solid #39303f;border-radius:18px;padding:18px;min-width:0}.wc392-grid small{display:block;color:#aaa}.wc392-grid b{display:block;font-size:26px;margin-top:10px}.wc392 .primary{background:#bf5af2;color:#120918}.wc392-preview{display:block;width:100%;height:auto;border-radius:18px;margin-bottom:16px}.wc392 .listline p{margin:8px 0}.wc392-share{min-height:50px;margin:14px 0 4px}.wc392-share-hint{margin:2px 0 12px;text-align:center;line-height:1.35}.wc392-exercises{margin-top:10px}.wc392 .wc392-grid{margin:12px 0 14px}";
   D.head.append(css);
   W.addEventListener("unvrsl:app-ready", W.showWorkoutDraft);
   // Recover a cloud-committed session on next launch without asking the user
