@@ -5,7 +5,7 @@
   const s=document.createElement('style');s.id='unvrsl-mobile-final-fix';s.textContent=`
     /* iPhone bottom bar: keep navigation anchored to the visual viewport. */
     body{padding-bottom:calc(104px + env(safe-area-inset-bottom))!important}
-    .nav{position:fixed!important;left:8px!important;right:8px!important;top:auto!important;bottom:calc(env(safe-area-inset-bottom) + 5px)!important;height:64px!important;min-height:64px!important;padding:7px 4px 5px!important;border-radius:20px!important;align-items:center!important;z-index:120!important;margin:0!important;will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+    .nav{position:fixed!important;left:8px!important;right:8px!important;top:auto!important;bottom:calc(env(safe-area-inset-bottom) + 5px)!important;height:64px!important;min-height:64px!important;padding:7px 4px 5px!important;border-radius:20px!important;align-items:center!important;z-index:120!important;margin:0!important;}
     .nav button{height:48px!important;min-height:48px!important;padding:2px 0 0!important;align-self:center!important;justify-content:center!important}
     .nav button::after{height:9px!important;line-height:9px!important;margin-top:2px!important;font-size:8.5px!important}
     .nav .ico{height:20px!important;margin:0 auto 2px!important}
