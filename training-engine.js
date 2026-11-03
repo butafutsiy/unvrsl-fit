@@ -87,7 +87,7 @@
  W.trainingInitializeSetWeights=initializeSetWeights;
  async function ensureLoadModel(){
   if(W.trainingLoadModel292?.run)return true;
-  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=584';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
+  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=598';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
   for(let i=0;i<40;i++){if(W.trainingLoadModel292?.run)return true;await new Promise(r=>setTimeout(r,50))}
   return !!W.trainingLoadModel292?.run
  }
