@@ -41,9 +41,91 @@
         )}</div>${r.unknownVolumeSets ? '<p class="muted small">Объём включает только подходы с известной эффективной нагрузкой.</p>' : ""}${r.comparison ? `<p class="muted small">По сравнению с ${esc(r.comparison.date)}: подходы ${r.comparison.setDelta > 0 ? "+" : ""}${r.comparison.setDelta}${r.comparison.volumeDelta == null ? "" : `, объём ${r.comparison.volumeDelta > 0 ? "+" : ""}${r.comparison.volumeDelta} кг`}</p>` : ""}${r.exercises.map((e) => `<div class="listline"><b>${esc(e.name)}</b>${e.sets.map((x) => `<p class="small">${esc(x.label)}</p>`).join("")}<p class="muted small">Лучший подход: ${esc(e.best.label)}</p>${nextWeight(s,e)?`<p class="small green">${esc(nextWeight(s,e))}</p>`:""}${e.records.length ? '<span class="chip">Новый рекорд</span>' : ""}</div>`).join("")}${W.conditioningSummaryHtml?.(s)||''}<button class="btn primary full" onclick="previewWorkoutShare()">Поделиться результатом</button><button class="btn full" onclick="closeModal();nav('stats')">К статистике</button></div>`,
     );
   };
+  // A successful cloud upload can outlive a failed local draft close on iOS.
+  // Verify that the archived workout is the same as the current draft before
+  // recovering it. Never silently replace locally edited sets with older data.
+  const workoutSetSignature = (session) =>
+    JSON.stringify((session?.ex || []).map((exercise) =>
+      (exercise?.set || []).map((set) => [
+        !!set.ok, String(set.w ?? ""), String(set.r ?? ""),
+        String(set.rpe ?? ""), String(set.rir ?? ""),
+      ]),
+    ));
+  const sameCloudSets = (local, remote) =>
+    (local?.ex || []).length === (remote?.ex || []).length &&
+    workoutSetSignature(local) === workoutSetSignature(remote);
+
+  async function confirmedCloudWorkout(active) {
+    const cloud = W.cloud, uid = cloud?.user?.id;
+    if (!active?.pendingCompletion || !active.id || !uid || !cloud?.client) return null;
+    if (active.userId && String(active.userId) !== String(uid)) return null;
+    try {
+      const { data, error } = await cloud.client.from("workouts")
+        .select("payload").eq("user_id", uid)
+        .eq("external_id", String(active.id)).maybeSingle();
+      const remote = !error ? data?.payload : null;
+      if (!remote || String(remote.id) !== String(active.id) || !remote.ended ||
+          remote.pendingCompletion || !sameCloudSets(active, remote)) return null;
+      return remote;
+    } catch (error) {
+      console.warn("Could not verify finished workout in cloud", error);
+      return null;
+    }
+  }
+
+  let recoveringCloudWorkout = false;
+  async function recoverSyncedWorkout(active, showSummary = true) {
+    if (recoveringCloudWorkout || !active?.pendingCompletion) return false;
+    recoveringCloudWorkout = true;
+    try {
+      const remote = await confirmedCloudWorkout(active);
+      if (!remote || st.current?.id !== active.id) return false;
+      const result = { ...remote, syncStatus: "synced" };
+      const history = st.sessions || (st.sessions = []);
+      const index = history.findIndex((entry) => String(entry.id) === String(result.id));
+      if (index < 0) history.push(result);
+      else history[index] = result;
+      let closed = false;
+      try {
+        closed = (await W.closeWorkoutDraft?.(st, active, "completed")) === true;
+      } catch (error) {
+        console.warn("Cloud workout saved; IndexedDB draft close failed", error);
+      }
+      if (!closed) {
+        try { workoutStore.close(st, active, "completed"); closed = true; }
+        catch (error) { console.warn("Cloud workout saved; local draft close failed", error); }
+      }
+      if (!closed) {
+        // Remote copy was verified, so do not trap the user behind a stale
+        // pendingCompletion flag if Safari local storage is full.
+        st.current = null;
+      }
+      try { save(); } catch (error) { console.warn("Cloud workout saved; local save unavailable", error); }
+      try { stopTimer(); } catch (_) {}
+      try { W.showWorkoutDraft(); } catch (_) {}
+      if (showSummary) {
+        try { W.renderWorkoutSummary(result); }
+        catch (error) { console.warn("Saved workout summary unavailable", error); toast("Тренировка сохранена в облаке"); }
+      } else {
+        toast("Тренировка восстановлена из облака");
+        if (D.getElementById("start")?.classList.contains("active")) {
+          try { W.renderWorkoutSummary(result); } catch (_) {}
+        }
+      }
+      W.dispatchEvent?.(new CustomEvent("unvrsl:workout-completed", { detail: { sessionId: result.id, recovered: true } }));
+      return true;
+    } finally {
+      recoveringCloudWorkout = false;
+    }
+  }
   W.completeWorkout = async function () {
     const s = st.current;
     if (!s || W.__workoutFinishing) return;
+    if (s.pendingCompletion) {
+      W.__workoutFinishing = true;
+      try { if (await recoverSyncedWorkout(s)) return; }
+      finally { W.__workoutFinishing = false; }
+    }
     if(W.conditioningIsBusy?.(s)){toast('Сначала останови блок и сохрани его результат');return}
     if (
       !W.conditioningHasWork?.(s)&&!(s.ex || []).some((e) =>
@@ -85,10 +167,11 @@
         save();
       }
     } catch (error) {
+      if (st.current?.id === s.id && await recoverSyncedWorkout(s)) return;
       toast(
         st.current
-          ? "Результаты сохранены в черновике. Повторите завершение после восстановления связи."
-          : "Тренировка сохранена. Откройте результат из истории.",
+          ? "Черновик сохранён. Если облако недоступно, повтори завершение позже."
+          : "Тренировка сохранена. Открой результат из истории.",
       );
       console.warn("Workout completion retained draft", error);
     } finally {
@@ -151,6 +234,17 @@
     ".weight392{min-width:0}.weight392>div{display:flex;justify-content:space-between;gap:4px}.weight392 button{min-height:24px;flex:1;background:#302734;border-radius:6px;font-size:16px} .wc392-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wc392-grid>div{background:#242127;border:1px solid #39303f;border-radius:18px;padding:18px;min-width:0}.wc392-grid small{display:block;color:#aaa}.wc392-grid b{display:block;font-size:26px;margin-top:10px}.wc392 .primary{background:#bf5af2;color:#120918}.wc392-preview{display:block;width:100%;height:auto;border-radius:18px;margin-bottom:16px}.wc392 .listline p{margin:8px 0}";
   D.head.append(css);
   W.addEventListener("unvrsl:app-ready", W.showWorkoutDraft);
+  // Recover a cloud-committed session on next launch without asking the user
+  // to upload the exact same workout again.
+  const autoRecover = async () => {
+    if (W.__workoutFinishing || !st.current?.pendingCompletion || !W.cloud?.user) return;
+    W.__workoutFinishing = true;
+    try { await recoverSyncedWorkout(st.current); }
+    finally { W.__workoutFinishing = false; }
+  };
+  for (const event of ["unvrsl:app-ready", "unvrsl:cloud-modules-settled", "unvrsl:storage-hydrated"])
+    W.addEventListener(event, () => setTimeout(autoRecover, 150));
+  setTimeout(autoRecover, 1800);
   W.addEventListener("unvrsl:workout-rendered", () => {
     if (st.current?.pendingCompletion) {
       const b = D.querySelector("[data-workout-finish]");
