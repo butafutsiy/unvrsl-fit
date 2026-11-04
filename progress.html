@@ -69,7 +69,32 @@
     </script>
   </main>
   <script src="cloud-config.js?v=380"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+  <script>
+    // Avoid parser-blocking CDN stalls on iOS. Use a second provider if needed.
+    (function (W,D) {
+      var sources=[
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js',
+        'https://unpkg.com/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js'
+      ];
+      W.UNVRSL_PUBLIC_SUPABASE_READY=new Promise(function(resolve,reject){
+        var index=0;
+        function attempt(){
+          if(W.supabase&&W.supabase.createClient){resolve(W.supabase);return}
+          if(index>=sources.length){reject(new Error('Не удалось загрузить сервис данных'));return}
+          var script=D.createElement('script'),timer;
+          script.src=sources[index++];
+          script.async=true;
+          script.crossOrigin='anonymous';
+          function clear(){W.clearTimeout(timer);script.onload=null;script.onerror=null}
+          script.onload=function(){clear();attempt()};
+          script.onerror=function(){clear();script.remove();attempt()};
+          timer=W.setTimeout(function(){clear();script.remove();attempt()},6000);
+          D.head.appendChild(script);
+        }
+        attempt();
+      });
+    })(window,document);
+  </script>
   <script src="exercise-picker.js?v=380"></script>
   <!-- Load the client share before optional nutrition tools so they cannot block progress. -->
   <script src="public-progress.js?v=601"></script>
