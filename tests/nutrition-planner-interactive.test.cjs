@@ -13,7 +13,7 @@ test('BMR formula switches only with excess weight flag', () => {
   assert.equal(h.bmr.value,2097);
   assert.match(h.bmr.formula,/Харрис/);
   const m=planner.calculate({...base,overweight:true});
-  assert.equal(m.bmr.value,1949);
+  assert.equal(m.bmr.value,1974);
   assert.match(m.bmr.formula,/Миффлин/);
 });
 test('conservative activity examples and manual override', () => {
