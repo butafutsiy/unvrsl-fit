@@ -194,6 +194,7 @@
     try{
       const token=new URLSearchParams(W.location.hash.replace(/^#/, '')).get('t')||'';
       if(!/^[A-Za-z0-9_-]{40,80}$/.test(token))return fail();
+      if(W.UNVRSL_PUBLIC_SUPABASE_READY)await bounded(W.UNVRSL_PUBLIC_SUPABASE_READY,14000);
       if(!W.supabase?.createClient||!W.UNVRSL_CLOUD?.url||!W.UNVRSL_CLOUD?.anonKey)throw new Error('Сервис временно недоступен. Проверь подключение и повтори попытку.');
       shareHash=await bounded(hash(token),3000);
       api=W.supabase.createClient(W.UNVRSL_CLOUD.url,W.UNVRSL_CLOUD.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
