@@ -31,18 +31,20 @@
     const strength=clamp(num(inputs.strengthSessions)||0,0,14);
     const cardio=clamp(num(inputs.cardioSessions)||0,0,14);
     const minutes=clamp(num(inputs.cardioMinutes)||30,10,180);
+    const cardioLoad=cardio*minutes;
     const work=inputs.workType||'sedentary';
     const daily=inputs.dailyActivity||'low';
     const intensity=inputs.trainingIntensity||'moderate';
     const veryHigh=steps>=18000&&strength>=6&&cardio>=4&&work==='heavy'&&intensity==='high';
-    const high=(steps>=12000&&strength>=5&&cardio>=2&&work!=='sedentary'&&intensity==='high')||
-      (steps>=16000&&strength>=5&&cardio>=2&&work==='heavy');
+    const high=(steps>=12000&&strength>=5&&cardioLoad>=90&&work!=='sedentary'&&intensity==='high')||
+      (steps>=16000&&strength>=5&&cardioLoad>=90&&work==='heavy');
     const moderate=(steps>=8000&&strength>=3)||(steps>=7000&&strength>=4)||
       (steps>=14000&&strength>=2)||(steps>=10000&&work==='heavy')||
       (work==='mobile'&&strength>=3&&steps>=7000)||
+      (steps>=6500&&strength>=3&&cardioLoad>=120&&intensity!=='low')||
       (work==='heavy'&&strength>=3&&steps>=6000);
     const light=strength>=3||(strength>=2&&(steps>=3000||cardio>=1||work!=='sedentary'))||
-      steps>=4000||cardio>=2||work!=='sedentary'||daily==='high'||daily==='very_high';
+      steps>=4000||cardioLoad>=60||work!=='sedentary'||daily==='high'||daily==='very_high';
     const factor=veryHigh?1.9:high?1.725:moderate?1.55:light?1.375:1.2;
     const reason=factor===1.9?'Экстремально высокая совокупная нагрузка':
       factor===1.725?'Высокая ежедневная и тренировочная нагрузка':
