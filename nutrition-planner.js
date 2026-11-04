@@ -5,7 +5,8 @@
   if(root&&root.document)api.boot();
 })(typeof window!=='undefined'?window:globalThis,function(W){
   const D=W.document;
-  const VERSION=312;
+  const VERSION=600;
+  let activeGoal='cut',livePreview=null;
   const GOALS={
     cut:{title:'Сушка',cal:[.85,.90],protein:[1.8,2.4],fat:[.6,.9]},
     maintain:{title:'Поддержание',cal:null,protein:[1.5,2],fat:[.7,1]},
@@ -27,13 +28,30 @@
 
   function recommendedActivityFactor(inputs){
     const steps=clamp(num(inputs.steps)||0,0,50000);
-    const sessions=clamp(num(inputs.strengthSessions)||0,0,14);
-    const daily={sedentary:0,low:1,moderate:2,high:3,very_high:4}[inputs.dailyActivity]??0;
-    const stepLevel=steps<3500?0:steps<7000?1:steps<10000?2:steps<14000?3:4;
-    const trainingLevel=sessions===0?0:sessions<=2?.5:sessions<=4?1:sessions<=6?1.5:2;
-    const score=stepLevel*.5+trainingLevel*.25+daily*.25;
-    const factor=score<=.5?1.2:score<=1.5?1.375:score<=2.5?1.55:score<=3.5?1.725:1.9;
-    return {factor,score:+score.toFixed(2),stepLevel,trainingLevel,dailyLevel:daily};
+    const strength=clamp(num(inputs.strengthSessions)||0,0,14);
+    const cardio=clamp(num(inputs.cardioSessions)||0,0,14);
+    const minutes=clamp(num(inputs.cardioMinutes)||30,10,180);
+    const cardioLoad=cardio*minutes;
+    const work=inputs.workType||'sedentary';
+    const daily=inputs.dailyActivity||'low';
+    const intensity=inputs.trainingIntensity||'moderate';
+    const veryHigh=steps>=18000&&strength>=6&&cardio>=4&&work==='heavy'&&intensity==='high';
+    const high=(steps>=12000&&strength>=5&&cardioLoad>=90&&work!=='sedentary'&&intensity==='high')||
+      (steps>=16000&&strength>=5&&cardioLoad>=90&&work==='heavy');
+    const moderate=(steps>=8000&&strength>=3)||(steps>=7000&&strength>=4)||
+      (steps>=14000&&strength>=2)||(steps>=10000&&work==='heavy')||
+      (work==='mobile'&&strength>=3&&steps>=7000)||
+      (steps>=6500&&strength>=3&&cardioLoad>=120&&intensity!=='low')||
+      (work==='heavy'&&strength>=3&&steps>=6000);
+    const light=strength>=3||(strength>=2&&(steps>=3000||cardio>=1||work!=='sedentary'))||
+      steps>=4000||cardioLoad>=60||work!=='sedentary'||daily==='high'||daily==='very_high';
+    const factor=veryHigh?1.9:high?1.725:moderate?1.55:light?1.375:1.2;
+    const reason=factor===1.9?'Экстремально высокая совокупная нагрузка':
+      factor===1.725?'Высокая ежедневная и тренировочная нагрузка':
+      factor===1.55?'Шаги и тренировки дают умеренную общую активность':
+      factor===1.375?'Невысокая общая нагрузка вне зала':
+      'Минимальная подвижность большую часть дня';
+    return {factor,reason,steps,strengthSessions:strength,cardioSessions:cardio,cardioMinutes:minutes,workType:work,trainingIntensity:intensity};
   }
 
   function bmrFor(inputs){
@@ -76,14 +94,18 @@
       [num(inputs.weight)>=35&&num(inputs.weight)<=300,'Проверь вес'],
       [num(inputs.steps)>=0&&num(inputs.steps)<=50000,'Проверь среднее количество шагов'],
       [num(inputs.strengthSessions)>=0&&num(inputs.strengthSessions)<=14,'Проверь количество силовых'],
-      [Object.prototype.hasOwnProperty.call(ACTIVITY_LABELS,inputs.dailyActivity),'Укажи активность вне тренировок']
+      [Object.prototype.hasOwnProperty.call(ACTIVITY_LABELS,inputs.dailyActivity),'Укажи активность вне тренировок'],
+      [['sedentary','mobile','heavy'].includes(inputs.workType||'sedentary'),'Укажи характер работы'],
+      [['low','moderate','high'].includes(inputs.trainingIntensity||'moderate'),'Укажи интенсивность тренировок'],
+      [num(inputs.cardioSessions??0)>=0&&num(inputs.cardioSessions??0)<=14,'Проверь количество кардиотренировок'],
+      [num(inputs.cardioMinutes??30)>=10&&num(inputs.cardioMinutes??30)<=180,'Проверь длительность кардио']
     ];
     return rules.find(x=>!x[0])?.[1]||null;
   }
 
   function calculate(inputs){
     const error=validate(inputs);if(error)throw new Error(error);
-    const clean={...inputs,age:num(inputs.age),height:num(inputs.height),weight:num(inputs.weight),steps:num(inputs.steps),strengthSessions:num(inputs.strengthSessions),overweight:inputs.overweight===true||inputs.overweight==='yes'};
+    const clean={...inputs,age:num(inputs.age),height:num(inputs.height),weight:num(inputs.weight),steps:num(inputs.steps),strengthSessions:num(inputs.strengthSessions),cardioSessions:num(inputs.cardioSessions??0),cardioMinutes:num(inputs.cardioMinutes??30),overweight:inputs.overweight===true||inputs.overweight==='yes'};
     const bmr=bmrFor(clean),auto=recommendedActivityFactor(clean);
     const manual=num(clean.activityFactor);
     const factor=manual&&[1.2,1.375,1.55,1.725,1.9].includes(manual)?manual:auto.factor;
@@ -111,7 +133,11 @@
       overweight:saved.overweight===true||saved.overweight==='yes',
       steps:saved.steps??8000,
       strengthSessions:saved.strengthSessions??3,
-      dailyActivity:saved.dailyActivity||'moderate',
+      dailyActivity:saved.dailyActivity||'low',
+      workType:saved.workType||'sedentary',
+      trainingIntensity:saved.trainingIntensity||'moderate',
+      cardioSessions:saved.cardioSessions??0,
+      cardioMinutes:saved.cardioMinutes??30,
       activityFactor:saved.activityFactor??''
     };
   }
@@ -121,72 +147,132 @@
     return {
       sex:val('np311Sex'),age:val('np311Age'),height:val('np311Height'),weight:val('np311Weight'),
       overweight:val('np311Overweight')==='yes',steps:val('np311Steps'),strengthSessions:val('np311Strength'),
-      dailyActivity:val('np311Daily'),activityFactor:val('np311Factor')
+      dailyActivity:val('np311Daily'),workType:val('np600Work'),trainingIntensity:val('np600Intensity'),
+      cardioSessions:val('np600Cardio'),cardioMinutes:val('np600CardioMinutes'),activityFactor:val('np311Factor')
     };
   }
 
-  function refreshActivityPreview(markStale=false){
+  function refreshActivityPreview(){
     if(!D)return null;
-    const select=D.getElementById('np311Factor');if(!select)return null;
-    const inputs=readInputs(),auto=recommendedActivityFactor(inputs),shown=String(auto.factor).replace('.',',');
-    const option=select.querySelector('option[value=""]');if(option)option.textContent=`Авто – ${shown}`;
+    const factorSelect=D.getElementById('np311Factor');
+    if(!factorSelect)return null;
+    const inputs=readInputs(),automatic=recommendedActivityFactor(inputs);
+    const option=factorSelect.querySelector('option[value=""]');
+    if(option)option.textContent=`Авто – ×${String(automatic.factor).replace('.',',')}`;
     const hint=D.getElementById('np311FactorHint');
-    if(hint)hint.innerHTML=select.value
-      ?`Выбран вручную: <b>×${String(select.value).replace('.',',')}</b>.`
-      :`Авто сейчас: <b>×${shown}</b>. Учтены шаги, силовые и активность вне тренировок.`;
-    if(markStale){
-      const out=D.getElementById('np311Result');
-      if(out&&out.dataset.np311Calculated==='1'){
-        const active=select.value?String(select.value).replace('.',','):shown,mode=select.value?'Выбранный коэффициент':'Автокоэффициент сейчас';
-        out.innerHTML=`<div class="np311-empty">Данные изменены. ${mode} <b>×${active}</b>. Нажми «Рассчитать и сохранить», чтобы обновить КБЖУ.</div>`;
-      }
+    if(hint)hint.textContent=factorSelect.value
+      ?`Выбран вручную: ×${String(factorSelect.value).replace('.',',')}`
+      :`Авто: ×${String(automatic.factor).replace('.',',')}. ${automatic.reason}.`;
+    const cardioBox=D.getElementById('np600CardioDuration');
+    if(cardioBox)cardioBox.hidden=!(num(inputs.cardioSessions)>0);
+    const host=D.getElementById('np311Result');
+    if(host)try{
+      livePreview=calculate(inputs);
+      host.innerHTML=resultHtml(livePreview);
+      host.dataset.np311Calculated='1';
+    }catch(error){
+      livePreview=null;
+      host.innerHTML=`<div class="np311-empty" role="status">${esc(error.message)}</div>`;
     }
-    return auto.factor;
+    const saveHint=D.getElementById('np600SaveHint');
+    if(saveHint)saveHint.textContent='Предпросмотр пересчитывается сразу. Нажми «Сохранить», чтобы обновить цели дневника.';
+    return automatic.factor;
   }
 
   function resultHtml(result){
-    if(!result)return '<div class="np311-empty">Заполни данные и нажми «Рассчитать».</div>';
+    if(!result)return '<div class="np311-empty">Заполни данные для расчёта.</div>';
+    const goal=result.goals[activeGoal]||result.goals.cut;
+    const midpoint=(goal.calories[0]+goal.calories[1])/2;
+    const p=Math.round((goal.protein[0]+goal.protein[1])/2);
+    const f=Math.round((goal.fat[0]+goal.fat[1])/2);
+    const c=Math.max(0,Math.round((midpoint-p*4-f*9)/4));
+    const total=p*4+f*9+c*4;
+    const pct=v=>Math.max(0,100*v/Math.max(1,total));
     const selectedProtocol=state()?.mealNutritionV1?.protocol;
-    const protocol=`<section class="np311-protocol"><b>Выбери текущий протокол</b><div class="mp-protocol-options">${Object.entries(result.goals).map(([key,g])=>`<button type="button" aria-pressed="${selectedProtocol===key}" onclick="chooseNutritionProtocolV480('${key}')">${esc(g.title)}</button>`).join('')}</div><p class="muted">${selectedProtocol&&result.goals[selectedProtocol]?'Текущий протокол: '+esc(result.goals[selectedProtocol].title):'Выбранный протокол задаст цели меню и дневника.'}</p><button class="btn full" onclick="openMealPlanner()">Меню и дневник питания</button></section>`;
-    const cards=Object.values(result.goals).map(g=>`<div class="np311-goal">
-      <div class="np311-goal-title"><b>${g.title}</b><strong>${fmt(g.calories[0])}–${fmt(g.calories[1])} ккал</strong></div>
-      <div class="np311-macros"><span><small>Белок</small><b>${g.protein[0]}–${g.protein[1]} г</b></span><span><small>Жиры</small><b>${g.fat[0]}–${g.fat[1]} г</b></span><span><small>Углеводы</small><b>${g.carbs[0]}–${g.carbs[1]} г</b></span></div>
-      <div class="np311-check">Проверка границ: ${fmt(g.check[0])} / ${fmt(g.check[1])} ккал</div>
-    </div>`).join('');
-    const activityMode=result.activity.automatic?'подобран автоматически':'выбран вручную';
-    const female=result.inputs.sex==='female'?'<div class="np311-note">Для девушек не стоит надолго фиксировать жиры на самой нижней границе без отдельной причины.</div>':'';
-    return `${protocol}<div class="np311-base">
-      <div><span>BMR</span><b>${fmt(result.bmr.value)} ккал</b><small>${esc(result.bmr.formula)}</small></div>
-      <div><span>Активность</span><b>× ${String(result.activity.factor).replace('.',',')}</b><small>${activityMode}</small></div>
-      <div><span>TDEE</span><b>${fmt(result.tdee)} ккал</b><small>расчётное поддержание</small></div>
-    </div><div class="np311-formula">Использована формула <b>${esc(result.bmr.formula)}</b>: ${esc(result.bmr.reason)}. Коэффициент учитывает ${fmt(result.inputs.steps)} шагов, ${fmt(result.inputs.strengthSessions)} силовых и активность «${esc(ACTIVITY_LABELS[result.inputs.dailyActivity].toLowerCase())}».</div>${cards}${female}
-    <details class="np311-guide"><summary>Как проверить расчёт на практике</summary><ol><li>7–10 дней записывай обычное питание в FatSecret или YAZIO и используй кухонные весы.</li><li>Учитывай масло, соусы, напитки и перекусы. Сырой и готовый вес продукта не смешивай.</li><li>Корректируй рацион плавно – примерно на 100–200 ккал.</li><li>На сушке оценивай динамику 10–14 дней. Если прогресса нет, сначала добавь шаги или снизь 100–200 ккал.</li></ol></details>`;
+    const goalTabs=Object.values(result.goals).map(g=>`<button type="button" class="np600-tab" aria-pressed="${g.key===activeGoal}" onclick="selectNutritionGoalV600('${g.key}')">${esc(g.title)}</button>`).join('');
+    const macro=(name,v,grams,cls)=>`<div class="np600-macro ${cls}"><small>${name}</small><b>${fmt(v[0])}–${fmt(v[1])}</b><span>г/сутки</span><small>${fmt(grams[0])}–${fmt(grams[1])} г/кг</small></div>`;
+    return `
+      <div class="np311-base np600-base">
+        <div><span>BMR</span><b>${fmt(result.bmr.value)}</b><small>ккал в сутки</small></div>
+        <div><span>Активность</span><b>×${String(result.activity.factor).replace('.',',')}</b><small>${result.activity.automatic?'Авто':'Вручную'}</small></div>
+        <div><span>TDEE</span><b>${fmt(result.tdee)}</b><small>ккал в сутки</small></div>
+      </div>
+      <div class="np311-formula">Формула: <b>${esc(result.bmr.formula)}</b>. ${esc(result.bmr.reason)}. Это стартовая оценка, а не точный расход.</div>
+      <div class="np600-goal-tabs" role="group" aria-label="Цель питания">${goalTabs}</div>
+      <div class="np600-calorie">
+        <small>${goal.key==='cut'?'ДЕФИЦИТ 10–15%':goal.key==='gain'?'ПРОФИЦИТ 10–15%':'ПОДДЕРЖАНИЕ ±50 ККАЛ'}</small>
+        <strong>${fmt(goal.calories[0])}–${fmt(goal.calories[1])}</strong><span>ккал/день</span>
+      </div>
+      <div class="np600-macros">
+        ${macro('Белки',goal.protein,[GOALS[goal.key].protein[0],GOALS[goal.key].protein[1]],'np600-protein')}
+        ${macro('Жиры',goal.fat,[GOALS[goal.key].fat[0],GOALS[goal.key].fat[1]],'np600-fat')}
+        ${macro('Углеводы',goal.carbs,[goal.carbs[0]/result.inputs.weight,goal.carbs[1]/result.inputs.weight],'np600-carbs')}
+      </div>
+      <p class="np600-subnote">Границы БЖУ – возможные сочетания внутри калорий, а не независимые цели.</p>
+      <div class="np600-example">
+        <div class="np600-example-head"><b>Пример рабочего сочетания</b><strong>${fmt(total)} ккал</strong></div>
+        <div class="np600-bar" aria-hidden="true"><i style="width:${pct(p*4)}%;background:#5277c3"></i><i style="width:${pct(f*9)}%;background:#cc954c"></i><i style="width:${pct(c*4)}%;background:#429a87"></i></div>
+        <div class="np600-example-key"><span>Б <b>${p} г</b></span><span>Ж <b>${f} г</b></span><span>У <b>${c} г</b></span></div>
+        <small>Проверка: ${p} × 4 + ${f} × 9 + ${c} × 4 = ${fmt(total)} ккал</small>
+      </div>
+      ${result.inputs.age<18?'<div class="np311-note">До 18 лет расчёт ориентировочный. Жёсткий дефицит и спортивную сушку без медицинского сопровождения не назначаем.</div>':''}
+      ${result.inputs.sex==='female'&&goal.key==='cut'?'<div class="np311-note">Для длительной сушки у девушек чаще выбирай жиры 0,7–0,9 г/кг; нижняя граница 0,6 допустима, но не обязательна.</div>':''}
+      <div class="np600-actions">
+        <button type="button" class="btn full" onclick="copyNutritionResultV600()">Скопировать расчёт</button>
+        <button type="button" class="btn primary full" onclick="saveAndApplyNutritionGoalV600()">Сохранить и применить «${esc(goal.title)}»</button>
+        <small>${selectedProtocol?'Сейчас в дневнике: '+esc(result.goals[selectedProtocol]?.title||'Свои КБЖУ'):'Протокол дневника ещё не выбран'}</small>
+      </div>
+      <details class="np311-guide"><summary>Как проверять расчёт</summary><ol>
+        <li>7–10 дней записывай привычное питание в FatSecret или YAZIO; взвешивай продукты, по возможности сырыми.</li>
+        <li>Учитывай масла, соусы, напитки, перекусы. Не путай сухие и готовые продукты.</li>
+        <li>После 10–14 дней сравни средний вес за 7 дней, талию, силовые и самочувствие.</li>
+        <li>Корректируй питание на 100–200 ккал или меняй активность по результатам.</li>
+      </ol></details>
+    `;
   }
 
   function formHtml(inputs,result){
     const selected=(a,b)=>String(a)===String(b)?' selected':'';
     const auto=recommendedActivityFactor(inputs);
-    return `<div class="sheet-grabber"></div><div class="row between"><div><h2>Расчёт КБЖУ</h2><div class="muted">BMR → TDEE → цель → Б/Ж → углеводы остатком</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div>
+    const range=(label,id,slider,value,min,max,step,units)=>`
+      <div class="np600-slider-field">
+        <div class="np600-slider-head"><label for="${id}">${label}</label><div><input id="${id}" type="number" min="${min}" max="${max}" step="${step}" inputmode="numeric" value="${esc(value)}" aria-label="${label}"><small>${units}</small></div></div>
+        <input id="${slider}" type="range" min="${min}" max="${max}" step="${step}" value="${esc(value)}" aria-label="${label}, ползунок">
+      </div>`;
+    return `<div class="sheet-grabber"></div>
+      <div class="row between np600-heading"><div><h2>Калькулятор КБЖУ</h2><div class="muted">UNVRSL FIT · интерактивный расчёт</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div>
+      <div class="np600-section-title">Параметры</div>
       <div class="np311-fields">
         <div class="field"><label>Пол</label><select id="np311Sex"><option value="male"${selected(inputs.sex,'male')}>Мужской</option><option value="female"${selected(inputs.sex,'female')}>Женский</option></select></div>
-        <div class="field"><label>Возраст, лет</label><input id="np311Age" type="number" inputmode="numeric" min="14" max="100" value="${esc(inputs.age)}"></div>
-        <div class="field"><label>Рост, см</label><input id="np311Height" type="number" inputmode="decimal" min="120" max="230" value="${esc(inputs.height)}"></div>
-        <div class="field"><label>Вес, кг</label><input id="np311Weight" type="number" inputmode="decimal" step="0.1" min="35" max="300" value="${esc(inputs.weight)}"></div>
-        <div class="field"><label>Есть лишний вес?</label><select id="np311Overweight"><option value="no"${selected(inputs.overweight,false)}>Нет</option><option value="yes"${selected(inputs.overweight,true)}>Да</option></select></div>
-        <div class="field"><label>Среднее шагов в день</label><input id="np311Steps" type="number" inputmode="numeric" min="0" max="50000" step="500" value="${esc(inputs.steps)}" oninput="refreshNutritionActivityV312(true)"></div>
-        <div class="field"><label>Силовых в неделю</label><input id="np311Strength" type="number" inputmode="numeric" min="0" max="14" value="${esc(inputs.strengthSessions)}" oninput="refreshNutritionActivityV312(true)"></div>
-        <div class="field"><label>Активность вне тренировок</label><select id="np311Daily" onchange="refreshNutritionActivityV312(true)">${Object.entries(ACTIVITY_LABELS).map(([k,v])=>`<option value="${k}"${selected(inputs.dailyActivity,k)}>${v}</option>`).join('')}</select></div>
-        <div class="field np311-wide"><label>Коэффициент активности</label><select id="np311Factor" onchange="refreshNutritionActivityV312(true)"><option value=""${selected(inputs.activityFactor,'')}>Авто – ${String(auto.factor).replace('.',',')}</option>${[1.2,1.375,1.55,1.725,1.9].map(v=>`<option value="${v}"${selected(inputs.activityFactor,v)}>${String(v).replace('.',',')} – вручную</option>`).join('')}</select><div id="np311FactorHint" class="np311-hint">Авто сейчас: <b>×${String(auto.factor).replace('.',',')}</b>. Учтены шаги, силовые и активность вне тренировок.</div></div>
+        <div class="field"><label>Лишний вес</label><select id="np311Overweight"><option value="no"${selected(inputs.overweight,false)}>Нет</option><option value="yes"${selected(inputs.overweight,true)}>Да</option></select></div>
+        <div class="field"><label>Возраст, лет</label><input id="np311Age" type="number" min="14" max="100" value="${esc(inputs.age)}"></div>
+        <div class="field"><label>Рост, см</label><input id="np311Height" type="number" min="120" max="230" value="${esc(inputs.height)}"></div>
+        <div class="field"><label>Вес, кг</label><input id="np311Weight" type="number" min="35" max="300" step="0.1" value="${esc(inputs.weight)}"></div>
+        <div class="field"><label>Характер работы</label><select id="np600Work"><option value="sedentary"${selected(inputs.workType,'sedentary')}>Сидячая</option><option value="mobile"${selected(inputs.workType,'mobile')}>Подвижная</option><option value="heavy"${selected(inputs.workType,'heavy')}>Физически тяжёлая</option></select></div>
       </div>
-      <button class="btn primary full" onclick="calculateNutritionPlannerV311()">Рассчитать и сохранить</button>
-      <div id="np311Result" data-np311-calculated="${result?'1':'0'}">${resultHtml(result)}</div>`;
+      <div class="np600-section-title">Движение и тренировки</div>
+      ${range('Шаги в день','np311Steps','np600StepsSlider',inputs.steps,0,25000,500,'шагов')}
+      ${range('Силовые в неделю','np311Strength','np600StrengthSlider',inputs.strengthSessions,0,7,1,'раз')}
+      ${range('Кардио в неделю','np600Cardio','np600CardioSlider',inputs.cardioSessions||0,0,7,1,'раз')}
+      <div id="np600CardioDuration" ${inputs.cardioSessions?'':'hidden'}>${range('Длительность кардио','np600CardioMinutes','np600MinutesSlider',inputs.cardioMinutes||30,10,120,5,'мин')}</div>
+      <div class="np311-fields">
+        <div class="field"><label>Интенсивность тренировок</label><select id="np600Intensity"><option value="low"${selected(inputs.trainingIntensity,'low')}>Низкая</option><option value="moderate"${selected(inputs.trainingIntensity,'moderate')}>Средняя</option><option value="high"${selected(inputs.trainingIntensity,'high')}>Высокая</option></select></div>
+        <div class="field"><label>Активность вне зала</label><select id="np311Daily">${Object.entries(ACTIVITY_LABELS).map(([k,v])=>`<option value="${k}"${selected(inputs.dailyActivity,k)}>${v}</option>`).join('')}</select></div>
+        <div class="field np311-wide"><label>Коэффициент активности</label><select id="np311Factor"><option value=""${selected(inputs.activityFactor,'')}>Авто – ×${String(auto.factor).replace('.',',')}</option>${[1.2,1.375,1.55,1.725,1.9].map(v=>`<option value="${v}"${selected(inputs.activityFactor,v)}>×${String(v).replace('.',',')} – вручную</option>`).join('')}</select><div class="np311-hint" id="np311FactorHint"></div></div>
+      </div>
+      <div id="np600SaveHint" class="np600-subnote">Меняй данные – результат обновляется сразу.</div>
+      <button class="btn primary full np600-save" onclick="calculateNutritionPlannerV311()">Сохранить расчёт</button>
+      <div id="np311Result" data-np311-calculated="${result?'1':'0'}">${resultHtml(result)}</div>
+    `;
   }
 
   function open(){
-    const s=state()||{},inputs=profileDefaults(),result=s.nutritionPlannerV311?.result||null;
-    if(typeof W.modal==='function')W.modal(formHtml(inputs,result));
-    else{try{modal(formHtml(inputs,result))}catch(_){ }}
-    setTimeout(()=>refreshActivityPreview(false),0);
+    const s=state()||{},inputs=profileDefaults();
+    activeGoal=['cut','maintain','gain'].includes(s.mealNutritionV1?.protocol)?s.mealNutritionV1.protocol:'cut';
+    livePreview=null;
+    if(typeof W.modal==='function')W.modal(formHtml(inputs,s.nutritionPlannerV311?.result||null));
+    else{try{modal(formHtml(inputs,s.nutritionPlannerV311?.result||null))}catch(_){ }}
+    setTimeout(()=>refreshActivityPreview(),0);
   }
 
   function run(){
@@ -194,7 +280,8 @@
       const inputs=readInputs(),result=calculate(inputs),s=state();
       if(s){s.nutritionPlannerV311={inputs:result.inputs,result,updatedAt:Date.now()};saveState();const key=s.mealNutritionV1?.protocol;if(result.goals[key])W.UNVRSLMealUI?.selectProtocol(key,result)}
       const out=D.getElementById('np311Result');if(out){out.innerHTML=resultHtml(result);out.dataset.np311Calculated='1'}
-      refreshActivityPreview(false);
+      livePreview=result;
+      refreshActivityPreview();
       renderCard();W.toast?.('Расчёт КБЖУ сохранён');
       return result;
     }catch(e){W.toast?.(e.message||'Проверь данные');return null}
@@ -237,13 +324,67 @@
       .np311-macros{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}.np311-macros span{padding:8px;border-radius:12px;background:#29292d;min-width:0}.np311-macros small{display:block;color:#8e8e93;font-size:10px}.np311-macros b{display:block;margin-top:3px;font-size:13px;white-space:nowrap}.np311-check{margin-top:8px;color:#777;font-size:10px}
       .np311-guide{margin-top:10px;padding:12px;border-radius:16px;background:#232326;color:#c9c9cd}.np311-guide summary{font-weight:750;cursor:pointer}.np311-guide ol{margin:10px 0 0;padding-left:20px;color:#9d9da3;font-size:12px;line-height:1.45}.np311-guide li+li{margin-top:5px}
       @media(max-width:390px){.np311-fields{grid-template-columns:1fr}.np311-wide{grid-column:auto}.np311-card-grid{gap:5px}.np311-card-grid b{font-size:11px}.np311-base b{font-size:14px}.np311-goal-title{display:block}.np311-goal-title strong{display:block;margin-top:4px}.np311-macros b{font-size:12px}}
+      .np600-heading h2{margin:0 0 4px;font-size:24px}
+      .np600-section-title{color:var(--muted);font-size:12px;font-weight:750;text-transform:uppercase;letter-spacing:.08em;margin:20px 2px 8px}
+      .np600-slider-field{padding:13px 12px 11px;border-radius:16px;background:var(--panel2);margin:9px 0}
+      .np600-slider-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px}
+      .np600-slider-head label{margin:0;font-size:14px;font-weight:650}
+      .np600-slider-head>div{display:flex;align-items:center;gap:5px}
+      .np600-slider-head input{max-width:94px;min-width:48px;text-align:right;padding:7px 5px;border-radius:9px}
+      .np600-slider-head small{font-size:10px;color:var(--muted)}
+      .np600-slider-field input[type=range]{display:block;width:100%;margin:0;accent-color:var(--accent)}
+      .np600-subnote{color:var(--muted);font-size:11px;line-height:1.45;margin:9px 2px}
+      .np600-save{margin-top:10px}
+      .np600-base{margin-top:13px}
+      .np600-goal-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:5px;border-radius:15px;background:var(--panel2);margin-top:15px}
+      .np600-tab{padding:11px 3px;font-size:12px;font-weight:700;border-radius:11px}
+      .np600-tab[aria-pressed=true]{background:var(--accent);color:#fff}
+      .np600-calorie{display:flex;flex-direction:column;gap:3px;margin:15px 0 12px}
+      .np600-calorie small{font-size:10px;color:var(--muted);font-weight:700}
+      .np600-calorie strong{font-size:28px;line-height:1.2;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+      .np600-calorie span{font-size:12px;color:var(--muted)}
+      .np600-macros{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+      .np600-macro{min-width:0;padding:12px 7px;border-radius:14px;background:var(--panel2);display:flex;flex-direction:column;gap:4px}
+      .np600-macro b{font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
+      .np600-macro small,.np600-macro span{font-size:10px;color:var(--muted)}
+      .np600-macro.np600-protein{border-top:3px solid #5277c3}
+      .np600-macro.np600-fat{border-top:3px solid #cc954c}
+      .np600-macro.np600-carbs{border-top:3px solid #429a87}
+      .np600-example{background:var(--panel2);border-radius:16px;padding:13px;margin-top:13px}
+      .np600-example-head{display:flex;justify-content:space-between;gap:6px;align-items:center;font-size:12px}
+      .np600-bar{display:flex;width:100%;height:12px;margin:12px 0 10px;border-radius:99px;overflow:hidden;gap:2px}
+      .np600-bar i{display:block;height:100%}
+      .np600-example-key{display:flex;justify-content:space-between;gap:5px;font-size:12px;margin-bottom:8px}
+      .np600-example>small{display:block;font-size:10px;color:var(--muted);line-height:1.5}
+      .np600-actions{display:grid;gap:8px;margin-top:13px}
+      .np600-actions>small{color:var(--muted);font-size:11px;text-align:center}
+      #np600CardioDuration[hidden]{display:none}
+      @media(max-width:390px){.np600-macro b{font-size:12px}.np600-calorie strong{font-size:25px}.np600-example-head{font-size:11px}}
     `;D.head.appendChild(style);
   }
 
   function boot(){
     if(!D||W.__unvrslNutritionPlannerV311)return;W.__unvrslNutritionPlannerV311=true;
     W.chooseNutritionProtocolV480=function(key){try{W.UNVRSLMealUI.selectProtocol(key,state()?.nutritionPlannerV311?.result);const out=D.getElementById('np311Result');if(out)out.innerHTML=resultHtml(state()?.nutritionPlannerV311?.result);W.toast?.('Протокол выбран')}catch(error){W.toast?.(error.message)}};
-    W.openNutritionPlannerV311=open;W.calculateNutritionPlannerV311=run;W.refreshNutritionActivityV312=refreshActivityPreview;W.unvrslNutritionPlannerV311={calculate,recommendedActivityFactor,bmrFor,goalResult,refreshActivityPreview,version:VERSION};
+    W.openNutritionPlannerV311=open;W.calculateNutritionPlannerV311=run;W.refreshNutritionActivityV312=refreshActivityPreview;
+    W.selectNutritionGoalV600=function(key){if(!GOALS[key])return;activeGoal=key;const out=D.getElementById('np311Result');if(out)out.innerHTML=resultHtml(livePreview);};
+    W.saveAndApplyNutritionGoalV600=function(){const result=run();if(result)W.chooseNutritionProtocolV480(activeGoal);};
+    W.copyNutritionResultV600=async function(){
+      const result=livePreview;if(!result)return;
+      const g=result.goals[activeGoal],text=[g.title,'BMR: '+fmt(result.bmr.value)+' ккал ('+result.bmr.formula+')','Активность: '+result.activity.factor,'TDEE: '+fmt(result.tdee)+' ккал','Ккал: '+g.calories.map(fmt).join('–'),'Б: '+g.protein.map(fmt).join('–')+' г','Ж: '+g.fat.map(fmt).join('–')+' г','У: '+g.carbs.map(fmt).join('–')+' г'].join('\n');
+      try{await W.navigator.clipboard.writeText(text);W.toast?.('Расчёт скопирован')}catch(_){W.prompt?.('Скопируй расчёт',text)}
+    };
+    const linked={np600StepsSlider:'np311Steps',np600StrengthSlider:'np311Strength',np600CardioSlider:'np600Cardio',np600MinutesSlider:'np600CardioMinutes'};
+    const reverse=Object.fromEntries(Object.entries(linked).map(([a,b])=>[b,a]));
+    function onFieldChange(event){
+      const target=event.target,root=D.getElementById('sheet');
+      if(!root?.contains(target)||!target?.id||!/^np(311|600)/.test(target.id)||target.id==='np311Result')return;
+      const other=linked[target.id]||reverse[target.id];
+      if(other){const peer=D.getElementById(other);if(peer)peer.value=target.value}
+      refreshActivityPreview();
+    }
+    D.addEventListener('input',onFieldChange);
+    D.addEventListener('change',onFieldChange);W.unvrslNutritionPlannerV311={calculate,recommendedActivityFactor,bmrFor,goalResult,refreshActivityPreview,version:VERSION};
     const start=()=>{ensureStyle();renderCard()};
     if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
     let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;renderCard()})}).observe(D.documentElement,{childList:true,subtree:true});
