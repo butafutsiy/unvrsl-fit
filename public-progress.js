@@ -128,7 +128,23 @@
     root.innerHTML=`<header class="pp-client-hero"><div class="pp-avatar">${E(initial)}</div><div class="pp-client-name"><div class="pp-eyebrow">ПРОГРЕСС КЛИЕНТА</div><h1>${E(name)}</h1><p>Обновлено ${E(day(updatedAt||data?.generatedAt))}</p></div><button type="button" class="pp-edit" onclick="publicProgressProfileV333(true)">Изменить</button></header><div class="pp-facts"><div class="pp-fact"><span>Рост</span><b>${N(client.height)>0?`${fmt(client.height)} см`:'—'}</b></div><div class="pp-fact"><span>Вес</span><b>${lastWeight?`${fmt(lastWeight)} кг`:'—'}</b></div><div class="pp-fact"><span>Возраст</span><b>${clientAge==null?'—':`${clientAge} лет`}</b></div></div>${actionPanel()}${profilePanel()}${entryOpen?entryPanel():''}${nutritionPanel()}${weightPanel()}${measurePanel()}<div class="pp-section-head"><div class="pp-kicker">СИЛОВЫЕ</div><h2>Динамика упражнений</h2></div>${strengthCards()}<footer class="pp-footer">Данные защищены личной ссылкой. У каждой записи видно, кто её добавил – клиент или тренер.</footer>`;
     requestAnimationFrame(()=>root.querySelectorAll('[data-pp-scroll-end]').forEach(x=>{x.scrollLeft=x.scrollWidth}))
   }
-  function fail(message){root.innerHTML=`<div class="pp-error"><b>Прогресс не найден</b><span>${E(message||'Ссылка неверна, устарела или была обновлена тренером.')}</span></div>`}
+  function fail(message,invalid=false){
+    W.__unvrslProgressFinish?.();
+    const missing=invalid||!message;
+    const title=missing?'Прогресс не найден':'Не удалось загрузить прогресс';
+    const detail=message||(missing?'Ссылка неверна, устарела или была обновлена тренером.':'Не удалось получить данные. Проверь интернет и повтори попытку.');
+    root.innerHTML=`<div class="pp-error" role="alert"><b>${E(title)}</b><span>${E(detail)}</span><button type="button" class="pp-retry" onclick="window.location.reload()">Повторить</button></div>`;
+  }
+  // Supabase can hang while restoring an old session in iOS WebKit.
+  // A shared client link is also available to an anonymous caller; do not
+  // block it indefinitely on a stale local session or stalled network RPC.
+  function bounded(promise,ms=9000){
+    let timer;
+    return Promise.race([
+      Promise.resolve(promise),
+      new Promise((_,reject)=>{timer=W.setTimeout(()=>reject(new Error('Превышено время ожидания загрузки')),ms)})
+    ]).finally(()=>W.clearTimeout(timer));
+  }
   async function hash(token){const bytes=new TextEncoder().encode(token),out=await crypto.subtle.digest('SHA-256',bytes);return[...new Uint8Array(out)].map(x=>x.toString(16).padStart(2,'0')).join('')}
   W.publicProgressMetricV321=function(key){measureKey=String(key||'');const panel=D.getElementById('publicMeasurePanel');if(panel)panel.outerHTML=measurePanel()};
   W.publicProgressNutritionGoalV325=function(key){if(!NUTRITION_GOALS.some(([value])=>value===key)||!data?.nutrition?.goals?.[key])return;try{mealContext();W.UNVRSLMealUI.selectProtocol(key,mealState.nutritionPlannerV311.result);}catch(error){W.toast?.(error.message);const panel=D.getElementById('publicNutritionPanel');if(panel)panel.outerHTML=nutritionPanel();}};
@@ -178,10 +194,32 @@
     try{
       const token=new URLSearchParams(W.location.hash.replace(/^#/, '')).get('t')||'';
       if(!/^[A-Za-z0-9_-]{40,80}$/.test(token))return fail();
-      if(!W.supabase?.createClient||!W.UNVRSL_CLOUD?.url||!W.UNVRSL_CLOUD?.anonKey)throw new Error('Сервис временно недоступен. Попробуй открыть ссылку позже.');
-      api=W.supabase.createClient(W.UNVRSL_CLOUD.url,W.UNVRSL_CLOUD.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});await api.auth.getSession();shareHash=await hash(token);const result=await api.rpc('get_offline_progress_share_v334',{p_token_hash:shareHash});
-      if(result.error)throw result.error;if(!result.data?.data)return fail();data=result.data.data;actorSource=sourceKey(result.data.viewer_source);render(result.data.updated_at)
-    }catch(e){console.warn('UNVRSL public progress',e);fail(e?.message)}
+      if(!W.supabase?.createClient||!W.UNVRSL_CLOUD?.url||!W.UNVRSL_CLOUD?.anonKey)throw new Error('Сервис временно недоступен. Проверь подключение и повтори попытку.');
+      shareHash=await bounded(hash(token),3000);
+      api=W.supabase.createClient(W.UNVRSL_CLOUD.url,W.UNVRSL_CLOUD.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+      let result;
+      try{
+        // RPC resolves the existing session itself; an extra getSession()
+        // could wait forever on a locked Safari storage refresh.
+        result=await bounded(api.rpc('get_offline_progress_share_v334',{p_token_hash:shareHash}));
+        if(result.error)throw result.error;
+      }catch(firstError){
+        console.warn('UNVRSL public progress: retrying without session',firstError?.code||firstError?.name||'request failed');
+        const guest=W.supabase.createClient(W.UNVRSL_CLOUD.url,W.UNVRSL_CLOUD.anonKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+        const fallback=await bounded(guest.rpc('get_offline_progress_share_v334',{p_token_hash:shareHash}));
+        if(fallback.error)throw fallback.error;
+        result=fallback;
+        api=guest;
+      }
+      if(!result.data?.data)return fail();
+      data=result.data.data;
+      actorSource=sourceKey(result.data.viewer_source);
+      render(result.data.updated_at);
+      W.__unvrslProgressFinish?.();
+    }catch(e){
+      console.warn('UNVRSL public progress',e?.code||e?.name||'load failed');
+      fail('Не получилось получить данные клиента. Проверь подключение и нажми «Повторить».');
+    }
   })();
 })();
 
