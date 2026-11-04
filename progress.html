@@ -71,6 +71,8 @@
   <script src="cloud-config.js?v=380"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
   <script src="exercise-picker.js?v=380"></script>
+  <!-- Load the client share before optional nutrition tools so they cannot block progress. -->
+  <script src="public-progress.js?v=601"></script>
   <link rel="stylesheet" href="meal-planner.css?v=518">
   <script src="meal-recipes-data.js?v=518"></script>
   <script src="nutrition-state.js?v=518"></script>
@@ -84,7 +86,6 @@
 <script src="meal-planner-ui.js?v=518"></script>
 <script src="recipe-builder-ui.js?v=518"></script>
 <script src="interface-runtime.js?v=518"></script>
-  <script src="public-progress.js?v=601"></script>
   <script src="workout-domain.js?v=591"></script>
   <script src="strength-progress.js?v=590"></script>
 </body>
