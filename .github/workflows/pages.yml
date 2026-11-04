@@ -28,6 +28,8 @@ jobs:
           for file in *.js; do
             node --check "$file"
           done
+      - name: Test client progress link loading
+        run: node --test tests/public-progress-loader-v601.test.cjs
       # Production is gated by current canonical prescription and persistence
       # contracts. The complete legacy suite remains visible in Check JavaScript;
       # its historical per-session volume and v546 cache fixtures need migration.
