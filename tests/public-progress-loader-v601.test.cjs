@@ -53,8 +53,8 @@ test('client page starts its own loader before optional nutrition scripts',()=>{
   assert.ok(main>0&&meals>main);
   assert.match(page,/window\.__unvrslProgressFinish/);
   assert.match(page,/UNVRSL_PUBLIC_SUPABASE_READY/);
-  assert.match(page,/unpkg\\.com\\/@supabase/);
-  assert.match(source,/await bounded\\(W\\.UNVRSL_PUBLIC_SUPABASE_READY,14000\\)/);
+  assert.match(page,/unpkg\.com\/@supabase/);
+  assert.match(source,/await bounded\(W\.UNVRSL_PUBLIC_SUPABASE_READY,14000\)/);
   assert.match(page,/23000/);
   assert.match(page,/pp-retry/);
 });
