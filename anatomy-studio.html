@@ -152,7 +152,9 @@ async function init(){
  model=gltf.scene;scene.add(model);
  model.traverse(o=>{if(!o.isMesh)return;meshes.push(o);
    if(o.userData.layer==='skeleton'){o.userData.base=o.material;return}
-   const m=o.material.clone();m.color=new T.Color('#efd0bd');m.roughness=.85;m.metalness=0;m.vertexColors=true;
+   const m=o.material.clone();m.color=new T.Color('#f8d4c1');m.roughness=.82;m.metalness=0;m.vertexColors=true;
+   // Muted anatomical peach: keep original tendon gradients and muscle shading.
+   m.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\n diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.90,.68,.58),.62);');};
    o.userData.base=m;
  });
  outfit=shorts();scene.add(outfit);paint();
