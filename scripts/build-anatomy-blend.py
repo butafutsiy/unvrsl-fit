@@ -279,7 +279,8 @@ def studio(scene, h, destination):
     try:scene.render.engine="BLENDER_EEVEE_NEXT"
     except:scene.render.engine="BLENDER_EEVEE"
     scene.render.film_transparent=False
-    scene.view_settings.view_transform="AgX" if "AgX" in [e.identifier for e in bpy.types.ColorManagedViewSettings.bl_rna.properties["view_transform"].enum_items] else "Standard"
+    try: scene.view_settings.view_transform="AgX"
+    except Exception: scene.view_settings.view_transform="Standard"
     scene.camera.data.lens=48
     scene.render.fps=30;scene.frame_start=1;scene.frame_end=240
     # Camera makes one full rotation as an editable Blender animation.
