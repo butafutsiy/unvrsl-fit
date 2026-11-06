@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111017">
+<meta name="description" content="UNVRSL FIT Anatomy: интерактивная 3D-карта мышц на основе нашей модели человека.">
+<title>3D Anatomy · UNVRSL FIT</title>
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<style>
+:root{--bg:#0c0c11;--panel:#171720;--line:#30303b;--text:#f5f3f8;--muted:#9592a3;--accent:#c29af8;--hot:#ff476b;color-scheme:dark;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text)}button,input{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent}a{color:inherit;text-decoration:none}
+header{min-height:82px;display:flex;align-items:center;gap:17px;max-width:1600px;margin:0 auto;padding:14px 28px;border-bottom:1px solid #24242f}
+.back{width:39px;height:39px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:21px;color:#d9d6e1}
+.brand{font-weight:900;font-size:21px;letter-spacing:-.9px}.brand small{display:block;font-size:9px;letter-spacing:2.15px;margin-top:4px;color:#aaa4ba}
+.top-label{margin-left:auto;border:1px solid #46364e;background:#281d31;color:#d1adea;padding:8px 13px;border-radius:100px;font-weight:750;font-size:10px;letter-spacing:1px}
+.shell{max-width:1600px;margin:0 auto;padding:22px 28px 38px}
+.heading{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:21px}.eyebrow{font-size:10px;letter-spacing:2.7px;color:#bb9cdf;font-weight:800}
+h1{font-size:clamp(31px,4vw,53px);margin:10px 0 0;font-weight:850;line-height:1.05;letter-spacing:-2.4px}
+h1 em{font-style:normal;color:#a49eae}
+.heading p{max-width:360px;color:#9d99aa;font-size:12px;line-height:1.6;margin:0}
+.workspace{display:grid;grid-template-columns:minmax(215px,265px) minmax(0,1fr) minmax(230px,298px);gap:12px;align-items:stretch}
+.panel,.stage{border:1px solid #30303b;border-radius:22px;overflow:hidden;min-width:0}
+.panel{background:#171720;padding:19px}.panel h2{font-size:17px;margin:0;letter-spacing:-.4px}
+.panel-sub{color:#aaa4b3;font-size:11px;margin:7px 0 17px;line-height:1.5}
+.search{display:flex;align-items:center;border:1px solid #393944;border-radius:12px;background:#23232c;padding:0 11px;gap:7px}
+.search span{font-size:17px;color:#918c9e}.search input{background:none;color:#fff;border:0;outline:0;width:100%;padding:12px 0;font-size:13px}.search input::placeholder{color:#777381}
+.filter{display:flex;gap:5px;margin:14px 0}.filter button{background:#2b2a36;color:#a5a1b1;border:1px solid transparent;border-radius:9px;padding:9px 12px;font-size:11px;font-weight:800}.filter button.active{background:#54396d;color:#f8edff;border-color:#8762a2}
+.muscle-list{display:flex;flex-direction:column;gap:4px;max-height:594px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#4d4354 transparent}
+.item{display:flex;text-align:left;align-items:center;gap:10px;width:100%;padding:11px 10px;border-radius:10px;color:#b9b3c0;background:none;border:1px solid transparent;font-size:12px;line-height:1.25}
+.item:hover{background:#28232f}.item.active{background:#392438;border-color:#754354;color:white}
+.dot{height:8px;width:8px;flex:0 0 8px;border-radius:50%;background:#8e829b}.item.active .dot{background:var(--hot);box-shadow:0 0 14px #ff476b99}.item svg{margin-left:auto}
+.empty{color:var(--muted);padding:20px 3px;font-size:12px}
+.stage{position:relative;min-height:690px;background:radial-gradient(ellipse at 48% 39%,#3e3c49 0%,#252633 46%,#161820 85%);isolation:isolate}
+#scene{position:absolute;inset:0;touch-action:none}#scene canvas{height:100%;width:100%;display:block;touch-action:none}
+.stage:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 78%,#16182055 100%)}
+.stage-top{position:absolute;top:20px;left:20px;display:flex;gap:9px;align-items:center;font-size:9px;font-weight:800;letter-spacing:1.75px;color:#dad8e3;z-index:2;pointer-events:none}
+.status-dot{height:7px;width:7px;border-radius:50%;background:#b8efcc}
+.view-controls{position:absolute;right:14px;top:14px;background:#13151de8;border:1px solid #41414c;padding:4px;display:flex;gap:3px;border-radius:13px;z-index:2}
+.view-controls button{font-size:10px;color:#aaa8b3;padding:9px 10px;border:0;border-radius:9px;background:none}
+.view-controls button.active{background:#464452;color:#fff}
+.bottom-hint{position:absolute;bottom:18px;width:100%;text-align:center;color:#b5b2c3;font-size:10px;z-index:2;pointer-events:none}
+.loading{position:absolute;inset:0;z-index:4;display:grid;place-content:center;gap:10px;text-align:center;color:#eee;background:#252533ed;padding:30px;line-height:1.5;font-size:13px}
+.loading small{font-size:11px;color:#aaa5b8}
+.loading.hidden{display:none}
+.right-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.right-top .eyebrow{font-size:9px}.selected-name{font-size:26px;letter-spacing:-1.15px;line-height:1.05;font-weight:850;margin:15px 0 7px}
+.latin{font-size:12px;font-style:italic;color:#aca5b5;margin:0 0 23px}
+.information{padding-top:17px;border-top:1px solid #34313b;margin-top:17px}
+.kicker{font-size:9px;letter-spacing:1.7px;color:#a897bd;font-weight:850;margin-bottom:8px}.information p{font-size:12px;line-height:1.7;color:#d1cad7;margin:0}
+.mini-label{display:flex;align-items:center;gap:8px;font-size:11px;color:#bdb6c6}
+.mini-label i{background:var(--hot);width:9px;height:9px;display:inline-block;border-radius:100%}
+.note{margin-top:24px;border:1px solid #473647;background:#28202a;padding:12px;border-radius:12px;font-size:10px;line-height:1.55;color:#b9abba}
+.tools{margin-top:12px;border:1px solid #30303b;border-radius:20px;background:#171720;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tool-group{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tool-label{color:#9d98ac;font-size:10px;text-transform:uppercase;letter-spacing:1.3px;font-weight:800;margin-right:5px}
+.mode{border:1px solid #3a3945;padding:10px 14px;border-radius:11px;background:#262632;color:#aba6b7;font-size:11px;font-weight:750}
+.mode.active{background:#4d345f;border-color:#80608f;color:white}
+.action{border:1px solid #413f4a;background:#272631;color:#d3cfdd;border-radius:11px;padding:11px 13px;font-size:11px}
+.action.primary{background:#c2a2ea;color:#23182e;border-color:#c2a2ea;font-weight:800}
+.explain{margin:17px 4px 0;display:flex;justify-content:space-between;gap:20px;color:#9692a0;font-size:10px;line-height:1.6}.explain a{text-decoration:underline;text-underline-offset:3px}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #c7aff5;outline-offset:2px}
+@media(max-width:1100px){.workspace{grid-template-columns:minmax(0,1fr) 252px}.stage{grid-row:1;grid-column:1;min-height:650px}.detail{grid-row:1;grid-column:2}.library{grid-column:1/-1}.muscle-list{max-height:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.panel{padding:16px}.item{padding:10px 9px}}
+@media(max-width:720px){header{min-height:73px;padding:12px 16px}.brand{font-size:19px}.brand small{font-size:8px}.top-label{font-size:8px;letter-spacing:0;padding:8px}.shell{padding:21px 12px 35px}.heading{display:block;padding:0 5px}.heading p{margin-top:12px;font-size:11px}.workspace{display:flex;flex-direction:column;gap:10px}.stage{order:0;height:550px;min-height:550px}.detail{order:1}.library{order:2}.stage-top{top:65px;left:15px;font-size:8px}.view-controls{top:11px;right:9px}.view-controls button{padding:9px 11px}.panel{border-radius:17px}.muscle-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.tool-group{gap:7px}.tool-label{flex-basis:100%}.mode{padding:10px 12px}.tools{gap:15px;padding:14px}.explain{display:block}.explain a{display:block;margin-top:8px}}
+@media(max-width:380px){.stage{height:500px;min-height:500px}.view-controls button{padding:8px}.item{font-size:11px}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}
+</script>
+</head>
+<body>
+<header>
+<a class="back" href="./" aria-label="Вернуться в UNVRSL FIT">‹</a>
+<a class="brand" href="./">UNVRSL FIT<small>ANATOMY LAB / 3D</small></a>
+<a class="top-label" href="./anatomy-studio.html" title="Студия вертикальных анатомических видео">СТУДИЯ ВИДЕО · 9:16</a>
+</header>
+<main class="shell">
+<div class="heading"><div><span class="eyebrow">01 / ANATOMY LAB</span><h1>Изучи тело. <em>Пойми движение.</em></h1></div><p>Наш атлетичный 3D-манекен. Поворачивай модель, выбирай мышечные области и изучай их функции в тренировках.</p></div>
+<div class="workspace">
+<aside class="panel library" aria-label="Каталог мышц">
+<h2>Мышечные группы</h2><p class="panel-sub">Нажми на область модели или выбери мышцу.</p>
+<label class="search"><span>⌕</span><input id="query" type="search" placeholder="Название мышцы..." autocomplete="off" aria-label="Поиск мышц"></label>
+<div class="filter" role="group" aria-label="Фильтр по областям"><button type="button" class="active" data-filter="all">Все</button><button type="button" data-filter="upper">Верх</button><button type="button" data-filter="lower">Низ</button></div>
+<div id="muscle-list" class="muscle-list"></div>
+</aside>
+<section class="stage" aria-label="Интерактивный просмотр 3D-модели человека">
+<div id="scene"></div>
+<div class="stage-top"><i class="status-dot"></i> НАША 3D-МОДЕЛЬ · ОБЗОР 360°</div>
+<div class="view-controls" role="group" aria-label="Ракурс"><button type="button" data-view="front" class="active">Спереди</button><button type="button" data-view="side">Сбоку</button><button type="button" data-view="back">Сзади</button></div>
+<div class="bottom-hint">Проведи пальцем, чтобы повернуть · Двумя пальцами, чтобы приблизить · Коснись мышцы</div>
+<div id="loading" class="loading" role="status"><b>Загружаем модель UNVRSL FIT…</b><small>На первом открытии нужно соединение с интернетом.</small></div>
+</section>
+<aside class="panel detail" aria-live="polite">
+<div class="right-top"><span class="eyebrow">АНАТОМИЧЕСКАЯ КАРТОЧКА</span><span class="mini-label"><i></i>ВЫБРАНО</span></div>
+<div id="muscle-name" class="selected-name">Грудные мышцы</div><p id="muscle-latin" class="latin">Musculus pectoralis major</p>
+<div class="information"><div class="kicker">ОСНОВНЫЕ ФУНКЦИИ</div><p id="muscle-function"></p></div>
+<div class="information"><div class="kicker">ПРИМЕРЫ УПРАЖНЕНИЙ</div><p id="muscle-examples"></p></div>
+<div class="information"><div class="kicker">ВИДИМАЯ ОБЛАСТЬ</div><p id="muscle-side"></p></div>
+<div class="note">Это учебная карта приблизительных мышечных областей на нашей поверхности MakeHuman, а не послойная анатомическая сегментация. Подсветка не измеряет активацию мышцы.</div>
+</aside>
+</div>
+<section class="tools" aria-label="Настройки 3D-модели">
+<div class="tool-group"><span class="tool-label">Отображение</span><button type="button" class="mode active" data-mode="muscle">Подсветка</button><button type="button" class="mode" data-mode="neutral">Нейтрально</button><button type="button" class="mode" data-mode="wire">3D-сетка</button></div>
+<div class="tool-group"><button type="button" class="action" id="rotate" aria-pressed="false">↻ Автовращение</button><button type="button" class="action primary" id="reset">Сбросить вид</button></div>
+</section>
+<div class="explain"><span>В дальнейшем: отдельные мышцы, глубокие слои, начала и прикрепления, траектории движений и упражнения UNVRSL FIT. Эти функции пока не реализованы.</span><a href="./assets/3d/NOTICE.md">Модель и лицензии: MakeHuman · CC0 / Three.js · MIT</a></div>
+</main>
+<script type="module">
+import * as T from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $ = s => document.querySelector(s);
+const data = [
+ {id:'chest',name:'Грудные мышцы',latin:'Pectoralis major',area:'upper',side:'Передняя поверхность грудной клетки',action:'Приведение плеча, горизонтальное приведение и внутренняя ротация плечевой кости.',ex:'Жим лёжа, жим в тренажёре, сведения рук.',keys:'грудь pec chest'},
+ {id:'delts',name:'Дельтовидные',latin:'Deltoideus',area:'upper',side:'Передняя, боковая и задняя поверхности плеча',action:'Передняя часть участвует в сгибании плеча, средняя в отведении, задняя в разгибании и горизонтальном отведении.',ex:'Махи в стороны, жим над головой, обратные разведения.',keys:'дельты плечи shoulders'},
+ {id:'biceps',name:'Бицепс плеча',latin:'Biceps brachii',area:'upper',side:'Передняя поверхность плеча',action:'Сгибание локтя и супинация предплечья, длинная головка также пересекает плечевой сустав.',ex:'Сгибания со штангой, гантелями и на блоке.',keys:'бицепсы arm'},
+ {id:'triceps',name:'Трицепс плеча',latin:'Triceps brachii',area:'upper',side:'Задняя поверхность плеча',action:'Разгибание локтя. Длинная головка пересекает плечевой сустав и участвует в его движениях.',ex:'Разгибания на блоке, из-за головы, узкие жимы.',keys:'трицепсы arm'},
+ {id:'forearms',name:'Мышцы предплечья',latin:'Antebrachii musculi',area:'upper',side:'Предплечье с ладонной и тыльной стороны',action:'Сгибание и разгибание кисти и пальцев, участие в пронации и супинации.',ex:'Удержание снарядов, сгибания кисти, молотковые сгибания.',keys:'предплечья кисти'},
+ {id:'traps',name:'Трапециевидные',latin:'Trapezius',area:'upper',side:'Верхняя часть спины и задняя поверхность шеи',action:'Подъём, опускание, приведение и вращение лопатки в зависимости от пучков.',ex:'Шраги, тяги, подъёмы рук над головой.',keys:'трапеции traps'},
+ {id:'lats',name:'Широчайшие',latin:'Latissimus dorsi',area:'upper',side:'Заднебоковая поверхность туловища',action:'Приведение, разгибание и внутренняя ротация плеча.',ex:'Подтягивания, вертикальная тяга, пуловер.',keys:'спина широчайшая'},
+ {id:'abs',name:'Прямая мышца живота',latin:'Rectus abdominis',area:'upper',side:'Передняя брюшная стенка',action:'Сгибание позвоночника и контроль положения таза.',ex:'Скручивания, обратные скручивания.',keys:'пресс живот'},
+ {id:'obliques',name:'Косые мышцы живота',latin:'Obliquus externus et internus',area:'upper',side:'Боковые поверхности живота',action:'Сгибание и вращение туловища, поддержание внутрибрюшного давления.',ex:'Антиротационные упражнения, боковая планка.',keys:'косые пресс'},
+ {id:'lumbar',name:'Разгибатели спины',latin:'Erector spinae',area:'upper',side:'Паравертебральная область поясницы',action:'Разгибание и стабилизация позвоночника, контроль наклона туловища.',ex:'Гиперэкстензия, румынская тяга.',keys:'поясница'},
+ {id:'glutes',name:'Ягодичные мышцы',latin:'Gluteus maximus et medius',area:'lower',side:'Задняя и боковая поверхности таза',action:'Разгибание и отведение бедра, стабилизация таза.',ex:'Ягодичный мостик, приседания, отведения.',keys:'ягодицы'},
+ {id:'quads',name:'Квадрицепс',latin:'Quadriceps femoris',area:'lower',side:'Передняя поверхность бедра',action:'Разгибание коленного сустава; прямая мышца бедра также участвует в сгибании тазобедренного.',ex:'Приседания, жим ногами, разгибания ног.',keys:'перед бедра'},
+ {id:'hamstrings',name:'Задняя поверхность бедра',latin:'Hamstrings',area:'lower',side:'Задняя поверхность бедра',action:'Сгибание колена и разгибание бедра у двусуставных мышц группы.',ex:'Сгибания ног, румынская тяга.',keys:'бицепс бедра'},
+ {id:'adductors',name:'Приводящие бедра',latin:'Adductores femoris',area:'lower',side:'Медиальная поверхность бедра',action:'Приведение бедра, участие в контроле движения тазобедренного сустава.',ex:'Приведение ног в тренажёре, широкие приседания.',keys:'внутреннее бедро'},
+ {id:'calves',name:'Икроножные и камбаловидные',latin:'Gastrocnemius et soleus',area:'lower',side:'Задняя поверхность голени',action:'Подошвенное сгибание стопы; икроножная также пересекает коленный сустав.',ex:'Подъёмы на носки стоя и сидя.',keys:'икры голень'}
+];
+let current='chest',group='all',mode='muscle',body,renderer,scene,camera,orbit,vertices,regions;
+let autoSpin=false,pointerDown=null;
+const colors={neutral:new T.Color('#c8c8ce'),muted:new T.Color('#a7a1ae'),hot:new T.Color('#ff476b'),soft:new T.Color('#bdb0ca')};
+const viewPositions={front:[0,1.11,3.30],side:[3.30,1.11,0],back:[0,1.11,-3.30]};
+const clamp=T.MathUtils.clamp;
+
+function classify(x,y,z){
+ const X=Math.abs(x);
+ if(y>1.28&&y<1.48&&X>.175&&X<.45)return 'delts';
+ if(X>.16&&X<.48&&y>1.03&&y<1.29)return z>=0?'biceps':'triceps';
+ if(X>.18&&X<.55&&y>.71&&y<=1.04)return 'forearms';
+ if(y>1.31&&y<1.49&&z<.022&&X<.185)return 'traps';
+ if(y>1.27&&y<1.46&&z>=.022&&X<.185)return 'chest';
+ if(y>1.10&&y<1.35&&z<.022&&X>.083&&X<.25)return 'lats';
+ if(y>1.07&&y<1.29&&z>=.015&&X<.102)return 'abs';
+ if(y>1.03&&y<1.30&&z>=.0&&X<.21)return 'obliques';
+ if(y>1.00&&y<1.25&&z<.02&&X<.13)return 'lumbar';
+ if(y>.80&&y<1.04&&z<.025&&X<.26)return 'glutes';
+ if(y>.52&&y<.88&&X<.125&&z>=0)return 'adductors';
+ if(y>.48&&y<.89&&X<.28)return z>=0?'quads':'hamstrings';
+ if(y>.16&&y<.54&&X<.29)return 'calves';
+ return null;
+}
+function buildCatalog(){
+ const input=$('#query').value.toLocaleLowerCase('ru').trim(),holder=$('#muscle-list');
+ holder.replaceChildren();
+ const matches=data.filter(m=>(group==='all'||m.area===group)&&(!input||(m.name+' '+m.latin+' '+m.keys).toLocaleLowerCase('ru').includes(input)));
+ matches.forEach(m=>{
+  const b=document.createElement('button');b.type='button';b.className='item'+(m.id===current?' active':'');
+  const dot=document.createElement('span');dot.className='dot';
+  const label=document.createElement('span');label.textContent=m.name;
+  b.append(dot,label);b.addEventListener('click',()=>select(m.id));holder.append(b);
+ });
+ if(!matches.length){const msg=document.createElement('div');msg.className='empty';msg.textContent='Совпадений не найдено';holder.append(msg)}
+}
+function select(id){
+ const m=data.find(x=>x.id===id);if(!m)return;
+ current=id;$('#muscle-name').textContent=m.name;$('#muscle-latin').textContent=m.latin;
+ $('#muscle-function').textContent=m.action;$('#muscle-examples').textContent=m.ex;$('#muscle-side').textContent=m.side;
+ buildCatalog();paint();
+}
+function paint(){
+ if(!body||!regions)return;
+ const attr=body.geometry.getAttribute('color'),array=attr.array;
+ for(let i=0;i<regions.length;i++){
+  let c=colors.neutral;
+  if(mode!=='neutral')c=regions[i]===current?colors.hot:(regions[i]?colors.soft:colors.muted);
+  const n=i*3;array[n]=c.r;array[n+1]=c.g;array[n+2]=c.b;
+ }
+ attr.needsUpdate=true;body.material.wireframe=mode==='wire';
+}
+function createHuman(json){
+ const geometry=new T.BufferGeometry();
+ vertices=new Float32Array(json.positions);
+ geometry.setAttribute('position',new T.BufferAttribute(vertices,3));
+ geometry.setIndex(json.indices);
+ geometry.setAttribute('skinIndex',new T.Uint16BufferAttribute(json.skinIndices,4));
+ geometry.setAttribute('skinWeight',new T.Float32BufferAttribute(json.skinWeights,4));
+ geometry.computeVertexNormals();
+ regions=Array.from({length:vertices.length/3},(_,i)=>classify(vertices[i*3],vertices[i*3+1],vertices[i*3+2]));
+ geometry.setAttribute('color',new T.BufferAttribute(new Float32Array(vertices.length),3));
+ const bones=json.bones.map(b=>{
+  const bone=new T.Bone();bone.name=b.name;bone.position.set(...b.head);
+  if(b.parent>=0){const p=json.bones[b.parent].head;bone.position.sub(new T.Vector3(...p))}
+  return bone;
+ });
+ json.bones.forEach((b,i)=>{if(b.parent>=0)bones[b.parent].add(bones[i])});
+ const material=new T.MeshStandardMaterial({vertexColors:true,roughness:.73,metalness:.04,side:T.FrontSide});
+ // Деликатные шорты как в существующей модели UNVRSL FIT.
+ material.onBeforeCompile=shader=>{
+  shader.vertexShader='varying vec3 restPos;\n'+shader.vertexShader;
+  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nrestPos=position;');
+  shader.fragmentShader='varying vec3 restPos;\n'+shader.fragmentShader;
+  shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\nfloat shorts=step(.83,restPos.y)*(1.-step(1.015,restPos.y));\ndiffuseColor.rgb=mix(diffuseColor.rgb,vec3(.06,.065,.09),shorts*.96);');
+ };
+ body=new T.SkinnedMesh(geometry,material);
+ json.bones.forEach((b,i)=>{if(b.parent<0)body.add(bones[i])});
+ const skeleton=new T.Skeleton(bones);body.bind(skeleton);body.normalizeSkinWeights();
+ body.frustumCulled=false;
+ // Нейтральная стойка с опущенными руками, без тренировочного инвентаря.
+ for(const side of ['L','R']){
+  const index=json.bones.findIndex(b=>b.name==='upperarm01.'+side);
+  const lower=json.bones.findIndex(b=>b.name==='lowerarm01.'+side);
+  const wrist=json.bones.findIndex(b=>b.name==='wrist.'+side);
+  if(index<0||lower<0||wrist<0)continue;
+  const shoulder=new T.Vector3(...json.bones[index].head);
+  const elbow=new T.Vector3(...json.bones[lower].head);
+  const direction=elbow.sub(shoulder).normalize();
+  bones[index].quaternion.setFromUnitVectors(direction,new T.Vector3(side==='L'?.11:-.11,-1,.02).normalize());
+ }
+ scene.add(body);paint();
+}
+function view(name){
+ const loc=viewPositions[name]||viewPositions.front;
+ camera.position.set(...loc);orbit.target.set(0,.95,0);orbit.update();
+ document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
+}
+function resize(){
+ if(!renderer)return;
+ const el=$('#scene'),w=el.clientWidth,h=el.clientHeight;
+ if(!w||!h)return;
+ camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);
+}
+async function start(){
+ try{
+  const sceneEl=$('#scene');scene=new T.Scene();
+  camera=new T.PerspectiveCamera(35,1,.06,40);
+  renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'});
+  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));
+  renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.4;
+  sceneEl.append(renderer.domElement);renderer.domElement.setAttribute('aria-label','3D-модель атлета');
+  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();renderer.setAnimationLoop(null);$('#loading').classList.remove('hidden');$('#loading').textContent='3D-контекст потерян. Обнови страницу.'});
+  orbit=new OrbitControls(camera,renderer.domElement);orbit.enablePan=false;orbit.enableDamping=true;orbit.autoRotateSpeed=.65;
+  orbit.minDistance=1.25;orbit.maxDistance=4.5;orbit.minPolarAngle=.22;orbit.maxPolarAngle=Math.PI*.78;
+  scene.add(new T.HemisphereLight('#ffffff','#464554',2.4));
+  const key=new T.DirectionalLight('#ffffff',3);key.position.set(3,4,5);scene.add(key);
+  const fill=new T.DirectionalLight('#d9bfff',1.2);fill.position.set(-2,2,-3);scene.add(fill);
+  const circle=new T.Mesh(new T.CircleGeometry(.95,80),new T.MeshStandardMaterial({color:'#26232b',roughness:.95}));
+  circle.rotation.x=-Math.PI/2;circle.position.y=-.015;scene.add(circle);
+  const response=await fetch('./assets/3d/human.json',{cache:'force-cache'});
+  if(!response.ok)throw Error('HTTP '+response.status);
+  createHuman(await response.json());resize();view('front');
+  new ResizeObserver(resize).observe(sceneEl);
+  const mouse=new T.Vector2(),ray=new T.Raycaster();
+  renderer.domElement.addEventListener('pointerdown',e=>{pointerDown=[e.clientX,e.clientY]});
+  renderer.domElement.addEventListener('pointerup',e=>{
+   if(!pointerDown||Math.hypot(e.clientX-pointerDown[0],e.clientY-pointerDown[1])>7){pointerDown=null;return}
+   pointerDown=null;
+   const r=renderer.domElement.getBoundingClientRect();
+   mouse.set((e.clientX-r.left)/r.width*2-1,1-(e.clientY-r.top)/r.height*2);
+   ray.setFromCamera(mouse,camera);
+   const hit=ray.intersectObject(body,false)[0];
+   if(!hit?.face)return;
+   const ids=[hit.face.a,hit.face.b,hit.face.c].map(i=>regions[i]);
+   const label=ids.find(id=>id&&ids.filter(x=>x===id).length>=2)||ids.find(Boolean);
+   if(label)select(label);
+  });
+  $('#loading').classList.add('hidden');
+  renderer.setAnimationLoop(()=>{if(document.hidden)return;orbit.autoRotate=autoSpin;orbit.update();renderer.render(scene,camera)});
+  window.__unvrslAnatomy={ready:true,renderer,body,select,view};
+ }catch(err){
+  console.error('UNVRSL Anatomy:',err);
+  $('#loading').innerHTML='<b>Не удалось загрузить 3D-модель.</b><small>Проверь подключение к интернету и поддержку WebGL.</small>';
+ }
+}
+$('#query').addEventListener('input',buildCatalog);
+document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{
+ group=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));buildCatalog();
+}));
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{
+ mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===b));paint();
+}));
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{autoSpin=false;$('#rotate').setAttribute('aria-pressed','false');$('#rotate').textContent='↻ Автовращение';view(b.dataset.view)}));
+$('#rotate').addEventListener('click',()=>{autoSpin=!autoSpin;$('#rotate').setAttribute('aria-pressed',String(autoSpin));$('#rotate').textContent=autoSpin?'Ⅱ Остановить вращение':'↻ Автовращение'});
+$('#reset').addEventListener('click',()=>{
+ autoSpin=false;$('#rotate').setAttribute('aria-pressed','false');$('#rotate').textContent='↻ Автовращение';
+ group='all';mode='muscle';$('#query').value='';
+ document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x.dataset.filter==='all'));
+ document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x.dataset.mode==='muscle'));
+ select('chest');if(orbit)view('front');
+});
+select(current);start();
+</script>
+</body>
+</html>
