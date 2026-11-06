@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f3eee9"><title>UNVRSL FIT | Anatomy Video Studio</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#30292b;background:#f3eee9;color-scheme:light}
+*{box-sizing:border-box}body{margin:0}button,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.45;cursor:wait}a{color:inherit}
+header{max-width:1280px;margin:auto;display:flex;gap:15px;align-items:center;padding:17px 24px;border-bottom:1px solid #ded5ce}
+header a{text-decoration:none;border:1px solid #d5cec9;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:21px}
+.brand{font-size:22px;font-weight:900;letter-spacing:-1px}.brand small{display:block;font-size:9px;letter-spacing:2px;color:#aa7c88}
+.pill{margin-left:auto;background:#f6dce0;border:1px solid #e7bfca;border-radius:99px;padding:8px 12px;font-size:9px;color:#9c4c60;font-weight:800}
+main{max-width:1280px;margin:auto;padding:24px}
+.sub{font-size:10px;color:#ac6c7b;font-weight:850;letter-spacing:2px}
+h1{font-size:clamp(33px,5vw,54px);line-height:1;letter-spacing:-2.7px;margin:10px 0 20px}
+h1 span{color:#b39ca3}
+.layout{display:grid;grid-template-columns:minmax(190px,250px) minmax(310px,1fr) minmax(205px,265px);gap:13px}
+.panel,.toolbar{border:1px solid #ddd4d0;background:#fffcf9;border-radius:18px;padding:17px}
+h2{font-size:18px;margin:0 0 10px}.muted{color:#897f83;font-size:12px;line-height:1.5}
+.search{width:100%;border:1px solid #dcd4d0;border-radius:10px;padding:11px;margin:8px 0;background:#f9f4f0;color:#30292b}
+.list{display:grid;gap:5px;max-height:530px;overflow:auto}
+.list button{font-size:12px;text-align:left;color:#746970;background:transparent;padding:10px;border:1px solid transparent;border-radius:9px}
+.list button.active{background:#fbe9ed;border-color:#ecc9d1;color:#9a3850;font-weight:850}
+.center{display:flex;align-items:center;flex-direction:column;gap:11px}
+.frame{position:relative;width:min(100%,364px);aspect-ratio:9/16;overflow:hidden;border:1px solid #d8cec5;border-radius:16px;background:radial-gradient(ellipse at 45% 35%,#fffbf7,#e8ded6);box-shadow:0 16px 35px #5b4d4819}
+#scene{position:absolute;inset:0}canvas{display:block;width:100%;height:100%;touch-action:none}
+.top{position:absolute;inset:15px 15px auto;display:flex;justify-content:space-between;pointer-events:none}
+.top b{font-size:15px;letter-spacing:-.4px}.top small{display:block;font-size:7px;letter-spacing:2px;margin-top:3px}.top span{font-size:10px;font-weight:800;color:#8a666c}
+.foot{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#998f8c;font-size:9px;pointer-events:none}
+.loading{position:absolute;inset:0;z-index:3;display:flex;justify-content:center;align-items:center;flex-direction:column;background:#f3ece5eb;text-align:center;padding:25px;font-size:13px}
+.loading small{font-size:10px;color:#8b7c80;margin-top:8px}.loading.hide{display:none}
+.toolbar{width:min(100%,364px);padding:14px}
+.buttons{display:flex;flex-wrap:wrap;gap:6px}
+.buttons button{padding:10px 11px;background:#f5efeb;border:1px solid #dfd3ce;border-radius:9px;font-size:11px;color:#62575b}
+.buttons button.active,.primary{background:#30282c!important;color:#fff!important;border-color:#30282c!important}
+.label{font-size:10px;font-weight:850;color:#a86a78;letter-spacing:1px;margin:0 0 9px}
+.tools{display:flex;gap:7px;margin-top:11px}.tools button{flex:1;padding:11px 7px;border-radius:10px;font-size:11px;background:#f5efeb;border:1px solid #dfd3ce;color:#655b5e}
+.info h2{margin-top:13px;font-size:23px;line-height:1.1;letter-spacing:-.8px}
+.info em{font-size:12px;color:#8b7d80}.info-section{border-top:1px solid #e3dad5;padding-top:15px;margin-top:18px}.info-section b{font-size:10px;color:#a86a78;letter-spacing:1px}.info-section p{font-size:12px;line-height:1.7;color:#665d61;margin-bottom:0}
+.note{background:#f9eeec;border-radius:11px;padding:12px;font-size:10px;line-height:1.6;color:#8a6b70;margin-top:18px}
+.credits{text-align:center;font-size:10px;color:#8b7e7d;line-height:1.6;margin:20px auto;max-width:900px}
+@media(max-width:1050px){.layout{grid-template-columns:1fr 240px}.center{grid-column:1}.info{grid-column:2}.library{grid-column:1/-1;grid-row:2}.list{max-height:none;grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:690px){header{padding:13px}.brand{font-size:19px}.pill{font-size:8px;padding:7px}.layout{display:flex;flex-direction:column}.center{order:0;width:100%}.info{order:1;width:100%}.library{order:2;width:100%}.list{grid-template-columns:repeat(2,minmax(0,1fr))}main{padding:18px 12px}.panel{width:100%}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
+</head><body>
+<header><a href="./" aria-label="Назад">‹</a><div class="brand">UNVRSL FIT<small>ANATOMY VIDEO STUDIO</small></div><span class="pill">9:16 · ПРОТОТИП</span></header>
+<main><div class="sub">3D · БИОМЕХАНИКА</div><h1>Анатомия <span>в кадре.</span></h1>
+<div class="layout">
+<aside class="panel library"><h2>Мышцы</h2><p class="muted">Выбери мышцу для подсветки или нажми на 3D-модель.</p><input id="search" class="search" type="search" placeholder="Поиск мышцы..." aria-label="Поиск мышцы"><div id="list" class="list"></div></aside>
+<div class="center"><div id="frame" class="frame"><div id="scene"></div><div class="top"><div><b>UNVRSL FIT</b><small>БИОМЕХАНИКА</small></div><span>3D · 9:16</span></div><div class="foot">Поверни пальцем · Масштабируй двумя</div><div id="loading" class="loading"><b>Загружаем анатомию...</b><small>Данные около 6 МБ, требуется интернет</small></div></div>
+<div class="toolbar"><p class="label">РАКУРС КАМЕРЫ</p><div class="buttons" id="views"><button class="active" data-view="three">3/4</button><button data-view="front">Спереди</button><button data-view="side">Сбоку</button><button data-view="back">Сзади</button></div>
+<div class="tools"><button id="spin">↻ Поворот</button><button id="shot" class="primary" disabled>Сохранить PNG</button></div>
+<div class="tools"><button id="record" class="primary" disabled>● Записать видео</button><button id="reset">Сбросить</button></div>
+<p id="status" class="muted">PNG экспортируется в 1080×1920. Запись видео зависит от возможностей браузера.</p></div></div>
+<aside class="panel info"><div class="sub">ВЫБРАННАЯ МЫШЦА</div><h2 id="name">Большая грудная</h2><em id="latin">Pectoralis major</em><div class="info-section"><b>ФУНКЦИЯ</b><p id="action"></p></div><div class="info-section"><b>В УПРАЖНЕНИЯХ</b><p id="exercise"></p></div><div class="info-section"><b>СЛОИ</b><div class="buttons" id="layers" style="margin-top:10px"><button data-layer="surface" class="active">Мышцы</button><button data-layer="deep">Глубже</button><button data-layer="bone">Кости</button></div></div><div class="note">Визуал стилизован под наш манекен: светлый фон, анатомический рельеф, чёрные шорты. Это отдельная анатомическая модель без рига. Анимация суставов и сокращений мышц ещё не реализована.</div></aside>
+</div>
+<p class="credits">Écorché (github.com/Charleeh/ecorche), CC BY-SA 4.0. Based on BodyParts3D, © The Database Center for Life Science, CC BY 4.0, and Z-Anatomy by Gauthier Kervyn, CC BY-SA 4.0. Educational visualisation, not clinical anatomy.</p></main>
+<script type="module">
+import * as T from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
+const $=s=>document.querySelector(s);
+const descriptions=[
+ ['Грудные','pectoralis major','Приведение, горизонтальное приведение и внутренняя ротация плеча.','Жим лёжа, сведения рук, кроссовер.'],
+ ['Дельтовидные','deltoid','Отведение, сгибание и разгибание плеча в зависимости от пучка.','Махи в стороны, жимы над головой, обратные разведения.'],
+ ['Трицепс','triceps brachii','Разгибание локтя; длинная головка пересекает плечевой сустав.','Разгибания на блоке и из-за головы.'],
+ ['Бицепс плеча','biceps brachii','Сгибание локтя и супинация предплечья.','Сгибания с гантелями и штангой.'],
+ ['Широчайшие','latissimus dorsi','Разгибание, приведение и внутренняя ротация плеча.','Подтягивания, вертикальная тяга, пуловер.'],
+ ['Трапециевидные','trapezius','Стабилизация, подъём, опускание и вращение лопатки.','Шраги, тяги, движения над головой.'],
+ ['Прямая мышца живота','rectus abdominis','Сгибание позвоночника и контроль таза.','Скручивания, обратные скручивания.'],
+ ['Ягодичные','gluteus maximus','Разгибание и наружная ротация бедра.','Ягодичный мостик, приседания, выпады.'],
+ ['Квадрицепс','rectus femoris|vastus','Разгибание колена, также сгибание бедра прямой мышцей.','Приседания, жим ногами, разгибания ног.'],
+ ['Задняя поверхность бедра','biceps femoris|semitendinosus|semimembranosus','Сгибание колена и разгибание бедра.','Сгибания ног, румынская тяга.'],
+ ['Икроножные','gastrocnemius','Подошвенное сгибание стопы, помощь в сгибании колена.','Подъёмы на носки.']
+];
+const cams={three:[1.45,1.3,3.3],front:[0,1.3,3.65],side:[3.65,1.3,0],back:[0,1.3,-3.65]};
+let renderer,scene,camera,controls,model,meshes=[],outfit,mode='surface',choice=descriptions[0],spin=false,recorder=null,recorded=[];
+const activeMaterial=new T.MeshStandardMaterial({color:'#ff536d',roughness:.65,emissive:'#661a2e',emissiveIntensity:.2});
+const fabric=new T.MeshStandardMaterial({color:'#232127',roughness:.91,side:T.DoubleSide});
+function shorts(){
+ const group=new T.Group();
+ const piece=(r1,r2,h,x,y)=>{const o=new T.Mesh(new T.CylinderGeometry(r1,r2,h,44,1,true),fabric);o.position.set(x,y,0);group.add(o)};
+ piece(.207,.247,.235,0,.9);piece(.121,.142,.19,-.122,.745);piece(.121,.142,.19,.122,.745);
+ const band=new T.Mesh(new T.CylinderGeometry(.204,.206,.045,44),new T.MeshStandardMaterial({color:'#131216',roughness:.92}));band.position.y=1.029;group.add(band);
+ return group;
+}
+function list(){
+ const q=$('#search').value.toLowerCase(),root=$('#list');root.replaceChildren();
+ descriptions.filter(m=>(m[0]+' '+m[1]).toLowerCase().includes(q)).forEach(m=>{
+ const b=document.createElement('button');b.textContent=m[0];b.classList.toggle('active',m===choice);b.onclick=()=>choose(m);root.append(b);
+ });
+}
+function choose(m){
+ choice=m;$('#name').textContent=m[0];$('#latin').textContent=m[1];$('#action').textContent=m[2];$('#exercise').textContent=m[3];list();paint();
+}
+function paint(){
+ meshes.forEach(m=>{
+ const layer=m.userData.layer||'',name=(m.userData.name||m.name).toLowerCase();
+ m.visible=mode==='bone'?layer==='skeleton':mode==='deep'?layer==='deep muscles'||layer==='skeleton':layer==='superficial muscles';
+ m.material=m.visible&&choice[1].split('|').some(t=>name.includes(t))?activeMaterial:m.userData.base;
+ });
+ if(outfit)outfit.visible=mode==='surface';
+}
+function view(name){
+ camera.position.set(...cams[name]);controls.target.set(0,.94,0);controls.update();
+ document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
+}
+function dimensions(w,h){camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}
+function resize(){
+ if(!renderer)return;const r=$('#scene').getBoundingClientRect();dimensions(r.width,r.height);
+}
+function save(){
+ const ratio=renderer.getPixelRatio(),r=$('#scene').getBoundingClientRect();
+ try{
+ renderer.setPixelRatio(1);dimensions(1080,1920);renderer.render(scene,camera);
+ const a=document.createElement('a');a.href=renderer.domElement.toDataURL('image/png');a.download='UNVRSL-FIT-Anatomy-1080x1920.png';a.click();
+ }catch(e){$('#status').textContent='Не удалось сохранить PNG: '+e.message}
+ finally{renderer.setPixelRatio(ratio);dimensions(r.width,r.height)}
+}
+function record(){
+ if(recorder?.state==='recording'){recorder.stop();return}
+ if(!window.MediaRecorder||!renderer.domElement.captureStream){$('#status').textContent='Запись видео недоступна, используй запись экрана телефона.';return}
+ const type=['video/mp4','video/webm;codecs=vp9','video/webm'].find(MediaRecorder.isTypeSupported.bind(MediaRecorder));
+ if(!type){$('#status').textContent='Формат записи не поддерживается: сохрани PNG или используй запись экрана.';return}
+ const stream=renderer.domElement.captureStream(30);recorded=[];
+ try{recorder=new MediaRecorder(stream,{mimeType:type,videoBitsPerSecond:8000000})}
+ catch(e){$('#status').textContent=e.message;return}
+ recorder.ondataavailable=e=>{if(e.data.size)recorded.push(e.data)};
+ recorder.onstop=()=>{
+ const u=URL.createObjectURL(new Blob(recorded,{type}));const a=document.createElement('a');a.href=u;a.download='UNVRSL-FIT-anatomy.'+(type.includes('mp4')?'mp4':'webm');a.click();setTimeout(()=>URL.revokeObjectURL(u),20000);
+ stream.getTracks().forEach(t=>t.stop());$('#record').textContent='● Записать видео';spin=false;$('#spin').textContent='↻ Поворот';
+ };
+ recorder.start();$('#record').textContent='■ Завершить видео';$('#status').textContent='Идёт запись оборота камеры. Нажми «Завершить видео».';
+ spin=true;$('#spin').textContent='Ⅱ Пауза вращения';
+}
+async function init(){
+ try{
+ scene=new T.Scene();scene.background=new T.Color('#f2eae2');
+ renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,alpha:false,powerPreference:'high-performance'});
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.45;
+ $('#scene').append(renderer.domElement);camera=new T.PerspectiveCamera(32,9/16,.05,50);
+ controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=1.65;controls.maxDistance=5;controls.autoRotateSpeed=.65;
+ scene.add(new T.HemisphereLight('#ffffff','#ac9c90',2.2));
+ const key=new T.DirectionalLight('#fff4e9',3);key.position.set(2.5,4,4);scene.add(key);
+ const rim=new T.DirectionalLight('#ffe6dc',2);rim.position.set(-2,2,-3);scene.add(rim);
+ const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+ const urls=['https://cdn.jsdelivr.net/gh/Charleeh/ecorche@main/model/ecorche.meshopt.glb','https://charleeh.github.io/ecorche/model/ecorche.meshopt.glb'];
+ let gltf,lastError;for(const url of urls){try{gltf=await loader.loadAsync(url);break}catch(e){lastError=e}}
+ if(!gltf)throw lastError||new Error('model unavailable');
+ model=gltf.scene;scene.add(model);
+ model.traverse(o=>{if(!o.isMesh)return;meshes.push(o);
+   if(o.userData.layer==='skeleton'){o.userData.base=o.material;return}
+   const m=o.material.clone();m.color=new T.Color('#efd0bd');m.roughness=.85;m.metalness=0;m.vertexColors=true;
+   o.userData.base=m;
+ });
+ outfit=shorts();scene.add(outfit);paint();
+ resize();view('three');new ResizeObserver(resize).observe($('#scene'));
+ const ray=new T.Raycaster(),coords=new T.Vector2();let point;
+ renderer.domElement.addEventListener('pointerdown',e=>point=[e.clientX,e.clientY]);
+ renderer.domElement.addEventListener('pointerup',e=>{
+ if(!point||Math.hypot(point[0]-e.clientX,point[1]-e.clientY)>7){point=null;return}point=null;
+ const r=renderer.domElement.getBoundingClientRect();coords.set((e.clientX-r.left)/r.width*2-1,1-(e.clientY-r.top)/r.height*2);ray.setFromCamera(coords,camera);
+ const hit=ray.intersectObjects(meshes.filter(m=>m.visible),false)[0];if(!hit)return;
+ const name=(hit.object.userData.name||hit.object.name).toLowerCase();
+ const match=descriptions.find(m=>m[1].split('|').some(s=>name.includes(s)));if(match)choose(match);
+ });
+ renderer.setAnimationLoop(()=>{if(document.hidden)return;controls.autoRotate=spin;controls.update();renderer.render(scene,camera)});
+ $('#loading').classList.add('hide');$('#shot').disabled=false;$('#record').disabled=false;
+ window.__unvrslAnatomyStudio={ready:true,model,renderer,choose,view};
+ }catch(e){console.error(e);$('#loading').innerHTML='<b>Модель не загрузилась</b><small>Проверь интернет и поддержку WebGL. '+String(e.message||'')+'</small>'}
+}
+$('#search').oninput=list;document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{spin=false;$('#spin').textContent='↻ Поворот';view(b.dataset.view)});
+document.querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>{mode=b.dataset.layer;document.querySelectorAll('[data-layer]').forEach(x=>x.classList.toggle('active',x===b));paint()});
+$('#spin').onclick=()=>{spin=!spin;$('#spin').textContent=spin?'Ⅱ Пауза вращения':'↻ Поворот'};
+$('#shot').onclick=save;$('#record').onclick=record;
+$('#reset').onclick=()=>{mode='surface';spin=false;$('#spin').textContent='↻ Поворот';document.querySelectorAll('[data-layer]').forEach(b=>b.classList.toggle('active',b.dataset.layer==='surface'));choose(descriptions[0]);view('three')};
+choose(choice);init();
+</script></body></html>
