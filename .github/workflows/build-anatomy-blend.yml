@@ -23,7 +23,7 @@ jobs:
       - name: Install Blender
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends blender
+          sudo apt-get install -y --no-install-recommends blender python3-numpy
           blender --version | head -3
       - name: Download Écorché model (CC BY-SA 4.0)
         run: |
