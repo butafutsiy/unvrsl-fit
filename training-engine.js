@@ -87,7 +87,7 @@
  W.trainingInitializeSetWeights=initializeSetWeights;
  async function ensureLoadModel(){
   if(W.trainingLoadModel292?.run)return true;
-  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=598';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
+  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=603';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
   for(let i=0;i<40;i++){if(W.trainingLoadModel292?.run)return true;await new Promise(r=>setTimeout(r,50))}
   return !!W.trainingLoadModel292?.run
  }
@@ -128,7 +128,7 @@
   try{
    W.unvrslTrainingPrescriptionPrepareV292?.(cur);
    const ok=await ensureLoadModel();
-   if(ok)await W.trainingLoadModel292.run(true);
+   if(ok)await (W.trainingLoadModel292.schedule?.()??W.trainingLoadModel292.run(true));
    W.save?.();W.startPage?.()
   }catch(e){console.warn('training engine v295 prepare',e)}
   return true
@@ -174,7 +174,7 @@
    try{await prepare(cur);enhanceDom()}catch(e){console.warn('v295 prepare before reveal',e);W.toast?.('Не удалось подготовить веса')}finally{busy=false;document.documentElement?.classList?.remove('te200-preparing');try{W.closeModal?.()}catch(_){}}
    setTimeout(tick,0);return
   }
-  const cur=W.st?.current;if(!cur)return;lockLegacy(cur);attachReadiness(cur,d,adjust);(cur.ex||[]).forEach(ex=>{(ex.set||[]).forEach(s=>{if(s.ok||s.skipped||s.manualOverride||s.weightSource==='manual'||num(s.plannedW)<=0)return;s.w=todayWeight(s.plannedW,ex,cur)})});try{W.save?.();W.startPage?.();W.closeModal?.()}catch(_){}try{await W.trainingLoadModel292?.run?.(true)}catch(_){}setTimeout(enhanceDom,0);if(adjust)W.toast?.(readinessText(d).label)
+  const cur=W.st?.current;if(!cur)return;lockLegacy(cur);attachReadiness(cur,d,adjust);(cur.ex||[]).forEach(ex=>{(ex.set||[]).forEach(s=>{if(s.ok||s.skipped||s.manualOverride||s.weightSource==='manual'||num(s.plannedW)<=0)return;s.w=todayWeight(s.plannedW,ex,cur)})});try{W.save?.();W.startPage?.();W.closeModal?.()}catch(_){}try{await (W.trainingLoadModel292?.schedule?.()??W.trainingLoadModel292?.run?.(true))}catch(_){}setTimeout(enhanceDom,0);if(adjust)W.toast?.(readinessText(d).label)
  }
  function domSignature(cur){return JSON.stringify([cur.id,cur.trainingWeightPolicy214,cur.trainingLoadModelRevision||0,cur.trainingLoadModelAt||'',!!cur.trainingReadinessDone,!!cur.readinessAdjusted,cur.readiness?.score??null,(cur.ex||[]).map(ex=>[key(ex),ex.programWeightMode,ex.weightDecision,ex.trainingProgression292?.action||'',ex.trainingProgression292?.reason||'',(ex.set||[]).map(s=>[s.dismissedRecommendation,s.testOmitted,num(s.programW),num(s.recommendedW),!!s.trainingIntensity292,num(s.plannedW),num(s.w),!!s.ok,s.actualReps,s.actualRpe,s.recommendation?.repRange,s.recommendation?.basis?.date,s.recommendation?.excludedHistory,s.recommendation?.strength,s.recommendation?.conflict,s.recommendation?.nextSetSuggestion?.weight])])])}
  function enhanceDom(){const cur=W.st?.current,root=document.getElementById('start');if(!cur||!root)return;if(root.contains(document.activeElement)&&document.activeElement?.matches?.('input,textarea,select'))return;const sig=domSignature(cur);if(root.dataset.te200Sig===sig&&root.querySelector('.te200-readiness'))return;root.querySelectorAll('.te200-rec,.te200-auto,.te200-readiness,.te405-next').forEach(x=>x.remove());const cards=[...root.querySelectorAll('.exercise')],seen=new Set();
@@ -258,7 +258,7 @@
  function installStartHooks(){['begin','beginProgramDay','beginRemotePlan'].forEach(installStart)}
  async function tick(){installStartHooks();const cur=W.st?.current;if(!cur?.id||cur.ended)return;lockLegacy(cur);const id=String(cur.id);if(id!==last){last=id;busy=false;const root=document.getElementById('start');if(root)delete root.dataset.te200Sig}if(busy)return;busy=true;try{if(cur.trainingEngineRevision!==REV){const ok=await prepare(cur);if(!ok)return}else if(!W.trainingLoadModel292?.run){await ensureLoadModel()}
    if(WorkoutDomain.normalizePendingWeights(cur,workoutRegistry,st.exerciseWeightProfiles||{})){
-    W.save?.({draftOnly:true});await W.trainingLoadModel292?.run?.(true);W.startPage?.();
+    W.save?.({draftOnly:true});await (W.trainingLoadModel292?.schedule?.()??W.trainingLoadModel292?.run?.(true));W.startPage?.();
    }
    enhanceDom()}finally{busy=false}}
  W.trainingApplyRecommendation200=applyRecommendation;W.trainingRestoreProgram200=restoreProgram;W.trainingShowReadiness200=showReadiness;W.trainingConfirmReadiness200=confirm;W.trainingUpdateReadiness200=updateReadiness;W.trainingRequestProgramStartV382=requestProgramStart;W.trainingEngine200Tick=tick;

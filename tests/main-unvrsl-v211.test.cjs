@@ -72,7 +72,7 @@ test('program editor builds SLDR on one weight with falling reps and 15-second p
 test('automatic readiness never raises the program weight at workout start',async()=>{
   const program={id:'mine',weeks:[{days:[{name:'B',ex:[{n:'Жим лёжа',sourceId:'bench',method:'STANDARD',sets:[{w:110,r:6},{w:110,r:6}]}]}]}]};
   const context={
-    console,setInterval:()=>0,setTimeout:()=>0,
+    console,setInterval:()=>0,setTimeout,clearTimeout,queueMicrotask,
     document:{addEventListener(){},createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null,querySelectorAll:()=>[]},
     st:{programs:[program],sessions:[],readinessLog:[],current:{id:'current',programId:'mine',w:1,c:'B',target:8,trainingReadinessDone:true,readinessAdjusted:true,readiness:{percent:10,factor:1.1,manual:false},ex:[{n:'Жим лёжа',sourceId:'bench',set:[{w:125,r:6,ok:false},{w:125,r:6,ok:false}]}]}},
     programById:id=>id==='mine'?program:null,baseExerciseName:name=>String(name).replace(/\s+—\s+.*$/,'').trim(),save:()=>{},startPage:()=>{},UNVRSL_METHOD_V211:require('../unvrsl-method.js')
@@ -97,7 +97,7 @@ test('autoweight fills missing loads while prescribed loads require explicit acc
     {n:'Тяга блока',sourceId:'row',set:[{w:60,r:8,rpe:8,ok:true}]}
   ]};
   const context={
-    console,setInterval:()=>0,setTimeout:()=>0,
+    console,setInterval:()=>0,setTimeout,clearTimeout,queueMicrotask,
     document:{addEventListener(){},createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null,querySelectorAll:()=>[]},
     st:{programs:[program],sessions:[previous],readinessLog:[],current:{id:'current',programId:'mine',w:1,c:'B',target:8,ex:[
       {n:'Жим лёжа',sourceId:'bench',set:[{w:110,r:6,ok:false}]},

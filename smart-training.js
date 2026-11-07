@@ -140,7 +140,7 @@ function applyReplacement(indices,oldToken,newToken,sourceId){
    set.w='';set.manualOverride=false;set.weightSource='replacement';set.launchWeightCaptured206=true;
   }
  });
- save();closeModal();window.__replacement=null;startPage();window.trainingLoadModel292?.run?.(true);toast(`Замена: ${newName}`)
+ save();closeModal();window.__replacement=null;startPage();window.trainingLoadModel292?.schedule?.({exerciseIndices:indices});toast(`Замена: ${newName}`)
 }
 
 save();setTimeout(()=>{renderBodyFilters();renderExerciseResults()},0);

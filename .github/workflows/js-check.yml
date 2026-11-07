@@ -204,6 +204,7 @@ jobs:
           done
           export UNVRSL_PLAYWRIGHT="$RUNNER_TEMP/unvrsl-browser/node_modules/playwright"
           export UNVRSL_AUDIT_OUTPUT="$RUNNER_TEMP/unvrsl-layout-proof"
+          node tests/browser-equipment-performance.cjs
           node tests/browser-program-audit.cjs
           node tests/browser-pwa-persistence.cjs
           node tests/browser-management-cleanup.cjs
@@ -248,4 +249,6 @@ jobs:
         env:
           UNVRSL_JSDOM: ${{ runner.temp }}/unvrsl-ios/node_modules/jsdom
           UNVRSL_FAKE_IDB: ${{ runner.temp }}/unvrsl-ios/node_modules/fake-indexeddb
-        run: node tests/runtime-ios-entry.cjs
+        run: |
+          node tests/runtime-ios-entry.cjs
+          node tests/runtime-equipment-performance.cjs

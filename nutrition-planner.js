@@ -387,7 +387,7 @@
     D.addEventListener('change',onFieldChange);W.unvrslNutritionPlannerV311={calculate,recommendedActivityFactor,bmrFor,goalResult,refreshActivityPreview,version:VERSION};
     const start=()=>{ensureStyle();renderCard()};
     if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
-    let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;renderCard()})}).observe(D.documentElement,{childList:true,subtree:true});
+    let queued=false;const plan=D.getElementById('plan');if(plan)new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;renderCard()})}).observe(plan,{childList:true,subtree:true});
     D.addEventListener('click',e=>{if(e.target?.closest?.('[data-p="plan"]'))setTimeout(renderCard,60)},true);
   }
   return {calculate,recommendedActivityFactor,bmrFor,goalResult,validate,refreshActivityPreview,boot,version:VERSION};

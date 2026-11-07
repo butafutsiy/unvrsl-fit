@@ -29,7 +29,7 @@ function ui(){
  const st={current:{ex:[exercise(),exercise()]},equipmentProfiles:{rack:profile},sessions:[{ex:[exercise()]}]};
  const fields={},doc={getElementById:id=>fields[id]||null,createElement:()=>({}),head:{append(){}}};
  let recalcs=0;const messages=[];
- const w={WorkoutDomain:A,st,addEventListener(){},save(){},modal(){},toast:x=>messages.push(x),trainingLoadModel292:{run(){recalcs++}}};
+ const w={WorkoutDomain:A,st,addEventListener(){},save(){},modal(){},toast:x=>messages.push(x),trainingLoadModel292:{schedule(){recalcs++}}};
  vm.runInNewContext(fs.readFileSync(require.resolve('../equipment-profiles-v405.js'),'utf8'),{window:w,document:doc,workoutRegistry:A.registry([{id:'bench',n:'Bench',eq:'barbell',loadType:'external_total'}])});
  function save(step,available=''){
   for(const [k,value] of Object.entries({Name:'Rack',Type:'barbell',Unit:'TOTAL',Step:step,Available:available,Base:20}))fields['eq405'+k]={value};

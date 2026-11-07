@@ -100,7 +100,7 @@
   let recalculating=false;
   async function sync(force=false){
     wrapLoadModel();const changed=prepare(),model=W.trainingLoadModel292||W.trainingLoadModel258;
-    if((changed||force)&&model?.run&&!recalculating){recalculating=true;try{await model.run(true)}catch(e){console.warn('UNVRSL prescription bridge v292',e)}finally{recalculating=false}}
+    if((changed||force)&&model?.run&&!recalculating){recalculating=true;try{await (model.schedule?.()??model.run(true))}catch(e){console.warn('UNVRSL prescription bridge v292',e)}finally{recalculating=false}}
     if(changed||force)try{W.trainingEngine200Tick?.()}catch(_){ }
   }
 

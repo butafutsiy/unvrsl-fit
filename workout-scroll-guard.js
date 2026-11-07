@@ -73,10 +73,10 @@
       finally{
         if(snap){
           restore(snap);
-          const revision=scrollRevision;
+          const revision=scrollRevision,restoredY=scrollY();
           W.requestAnimationFrame(()=>{
             // Do not yank the page back when the user began a new gesture.
-            if(scrollRevision===revision)restore(snap);
+            if(scrollRevision===revision&&Math.abs(scrollY()-restoredY)<=1)restore(snap);
           });
         }
       }
