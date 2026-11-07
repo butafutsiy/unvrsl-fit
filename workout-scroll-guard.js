@@ -14,7 +14,20 @@
   const workoutOpen=()=>START.classList.contains('active')&&!!W.st?.current;
   const scroller=()=>D.scrollingElement||D.documentElement;
   const scrollY=()=>Math.max(0,Number(W.scrollY??scroller()?.scrollTop??D.body?.scrollTop??0));
-  let scrollRevision=0;
+  let scrollRevision=0,pendingRender=false,focusTransition=false,flushTimer=0;
+  const editing=()=>!!D.activeElement?.matches?.('input,textarea,select,[contenteditable="true"]');
+  // A change event fires between blur and the next focus on iOS. Keep the
+  // mounted inputs for that whole transition, including keyboard Next/Previous.
+  D.addEventListener('focusout',()=>{
+    focusTransition=true;
+    clearTimeout(flushTimer);
+    flushTimer=setTimeout(()=>{
+      focusTransition=false;
+      if(pendingRender&&!editing()&&!D.getElementById('modal')?.classList.contains('show')){
+        pendingRender=false;W.startPage?.();
+      }
+    },300);
+  });
   W.addEventListener('scroll',()=>{scrollRevision++},{passive:true});
 
   function snapshot(){
@@ -27,24 +40,10 @@
         cardIndex=i;cardTop=rect.top;break;
       }
     }
-    const active=D.activeElement;
-    const inputs=[...START.querySelectorAll('input')];
-    const inputIndex=active&&START.contains(active)?inputs.indexOf(active):-1;
-    let selection=null;
-    if(inputIndex>=0){
-      try{selection=[active.selectionStart,active.selectionEnd]}catch(_){}
-    }
-    return {id:String(W.st.current.id||''),y:scrollY(),cardIndex,cardTop,inputIndex,selection};
+    return {id:String(W.st.current.id||''),y:scrollY(),cardIndex,cardTop};
   }
   function restore(snap){
     if(!snap||!workoutOpen()||String(W.st.current.id||'')!==snap.id)return;
-    if(snap.inputIndex>=0&&(!D.activeElement||D.activeElement===D.body)){
-      const fresh=START.querySelectorAll('input')[snap.inputIndex];
-      if(fresh){
-        try{fresh.focus({preventScroll:true})}catch(_){}
-        try{if(snap.selection)fresh.setSelectionRange(...snap.selection)}catch(_){}
-      }
-    }
     let y=snap.y;
     if(snap.cardIndex>=0){
       const card=START.querySelectorAll('.exercise')[snap.cardIndex];
@@ -63,6 +62,12 @@
     const base=W.startPage;
     if(typeof base!=='function'||base.__unvrslScrollGuardV598)return;
     const wrapped=function(){
+      // Never replace a focused form or refocus a field the user just left.
+      // Cancellation/finishing still render immediately once current is empty.
+      if(workoutOpen()&&(editing()||focusTransition)){
+        pendingRender=true;return;
+      }
+      pendingRender=false;
       const snap=snapshot();
       try{return base.apply(this,arguments)}
       finally{

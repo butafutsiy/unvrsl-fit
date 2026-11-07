@@ -8,7 +8,7 @@
  W.unvrslScrollTop=()=>W.scrollY||scrollRoot().scrollTop||0;
  W.unvrslScrollTo=(...args)=>W.scrollTo(...args);
  W.unvrslScrollBy=(...args)=>W.scrollBy(...args);
- let queued=false;
+ let queued=false,focusSettling=false,focusTimer=0;
  function visible(element){
   if(!element)return false;
   const css=W.getComputedStyle(element),r=element.getBoundingClientRect();
@@ -19,6 +19,9 @@
   const height=W.innerHeight;
   // A modal owns its own scroll pane; keep the underlying page stationary.
   if(D.getElementById('modal')?.classList.contains('show'))return;
+  // Hiding navigation for the keyboard must not shrink the page's scroll
+  // range and clamp its position while Safari is revealing a focused field.
+  if(focusSettling||D.activeElement?.matches?.('input,textarea,select,[contenteditable="true"]'))return;
   const controls=[nav,timer].filter(visible);
   if(visible(nav))controls.push(...[...nav.querySelectorAll('.ico')].filter(visible));
   const edge=controls.reduce((top,el)=>Math.min(top,el.getBoundingClientRect().top),height);
@@ -28,7 +31,8 @@
  W.UNVRSLViewport={scrollRoot,refresh};
  W.addEventListener('resize',refresh,{passive:true});
  W.visualViewport?.addEventListener('resize',refresh,{passive:true});
- D.addEventListener('focusin',refresh);D.addEventListener('focusout',refresh);
+ D.addEventListener('focusin',event=>{if(event.target?.matches?.('input,textarea,select,[contenteditable="true"]')){clearTimeout(focusTimer);focusSettling=true;}});
+ D.addEventListener('focusout',()=>{clearTimeout(focusTimer);focusTimer=setTimeout(()=>{focusSettling=false;refresh()},350);});
  for(const event of ['unvrsl:app-ready','unvrsl:modules-ready','unvrsl:cloud-modules-settled','unvrsl:deferred-modules-ready'])W.addEventListener(event,refresh);
  const observer=new MutationObserver(refresh);
  for(const element of [nav,timer,D.getElementById('modal')])if(element)observer.observe(element,{attributes:true,attributeFilter:['class','style'],childList:true,subtree:element===nav});

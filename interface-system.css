@@ -50,7 +50,7 @@ html body .mp-source-badge{display:block;font-size:12px;color:var(--muted);margi
 html body .check{min-width:44px}html body .color{width:44px;height:44px}
 html body .strength-value-pill rect{fill:var(--action)!important}html body .strength-marker.e1 .strength-value-pill rect{fill:#17679e!important}
 html[data-theme="light"] body .green,html[data-theme="light"] body .nav button.active{color:var(--action)!important}
-html body #modal.modal{height:var(--visible-height,100dvh);bottom:auto}
+html body #modal.modal{top:var(--visible-top,0px);height:var(--visible-height,100dvh);bottom:auto}
 
 /* Legacy mobile inset rules must not combine with desktop translateX. */
 html body .nav{left:8px!important;right:8px!important;width:auto!important;max-width:760px!important;transform:none!important}

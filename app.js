@@ -87,7 +87,27 @@ function toggleSet(ei,si,options={}){
  if(x.ok&&e.rest>0&&options.timer!==false)timer(e.rest);
  startPage();
 }
-async function cancelWorkout(){if(!st.current||window.__workoutFinishing)return;if(!confirm('Удалить незавершённую тренировку? Внесённые результаты будут потеряны'))return;const active=st.current;try{const closed=window.closeWorkoutDraft?await window.closeWorkoutDraft(st,active,'discarded'):(workoutStore.discard(st),true);if(!closed){toast('Не удалось сохранить отмену. Черновик остаётся на месте');return}stopTimer();startPage();window.showWorkoutDraft?.();toast('Тренировка отменена')}catch(error){console.warn('Workout cancellation failed',error);toast('Не удалось отменить тренировку. Черновик сохранён')}}
+async function cancelWorkout(){
+ if(!st.current||window.__workoutFinishing)return;
+ if(!confirm('Удалить незавершённую тренировку? Внесённые результаты будут потеряны'))return;
+ const active=st.current;
+ // Use the same lifecycle lock as completion: account reconciliation must
+ // not replace the state object while its draft is closing asynchronously.
+ window.__workoutFinishing=true;
+ try{
+  const closed=window.closeWorkoutDraft?await window.closeWorkoutDraft(st,active,'discarded'):(workoutStore.discard(st),true);
+  if(!closed){toast('Не удалось сохранить отмену. Черновик остаётся на месте');return}
+  workoutStore.restore(st);
+  stopTimer();
+  // Mark the cancellation as a new local account revision, so an older cloud
+  // draft cannot win the next merge after navigation or reopening the app.
+  save();
+  startPage();window.showWorkoutDraft?.();
+  window.dispatchEvent(new CustomEvent('unvrsl:workout-discarded',{detail:{sessionId:active.id}}));
+  toast('Тренировка отменена');
+ }catch(error){console.warn('Workout cancellation failed',error);toast('Не удалось отменить тренировку. Черновик сохранён')}
+ finally{window.__workoutFinishing=false}
+}
 function finish(){return window.completeWorkout()}
 function summary(s){return window.renderWorkoutSummary(s)}
 

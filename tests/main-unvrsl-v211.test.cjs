@@ -73,7 +73,7 @@ test('automatic readiness never raises the program weight at workout start',asyn
   const program={id:'mine',weeks:[{days:[{name:'B',ex:[{n:'Жим лёжа',sourceId:'bench',method:'STANDARD',sets:[{w:110,r:6},{w:110,r:6}]}]}]}]};
   const context={
     console,setInterval:()=>0,setTimeout:()=>0,
-    document:{createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null,querySelectorAll:()=>[]},
+    document:{addEventListener(){},createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null,querySelectorAll:()=>[]},
     st:{programs:[program],sessions:[],readinessLog:[],current:{id:'current',programId:'mine',w:1,c:'B',target:8,trainingReadinessDone:true,readinessAdjusted:true,readiness:{percent:10,factor:1.1,manual:false},ex:[{n:'Жим лёжа',sourceId:'bench',set:[{w:125,r:6,ok:false},{w:125,r:6,ok:false}]}]}},
     programById:id=>id==='mine'?program:null,baseExerciseName:name=>String(name).replace(/\s+—\s+.*$/,'').trim(),save:()=>{},startPage:()=>{},UNVRSL_METHOD_V211:require('../unvrsl-method.js')
   };
@@ -98,7 +98,7 @@ test('autoweight fills missing loads while prescribed loads require explicit acc
   ]};
   const context={
     console,setInterval:()=>0,setTimeout:()=>0,
-    document:{createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null,querySelectorAll:()=>[]},
+    document:{addEventListener(){},createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null,querySelectorAll:()=>[]},
     st:{programs:[program],sessions:[previous],readinessLog:[],current:{id:'current',programId:'mine',w:1,c:'B',target:8,ex:[
       {n:'Жим лёжа',sourceId:'bench',set:[{w:110,r:6,ok:false}]},
       {n:'Тяга блока',sourceId:'row',set:[{w:0,r:8,ok:false}]}
@@ -188,7 +188,7 @@ test('start picker opens the workout preview before beginning the session',()=>{
     st:{startProgramWeeks:{},programs:[],week:3,primaryProgramId:'__builtin_cycle__',startProgramId:'__builtin_cycle__'},
     ROUTINES:[],RPE:{3:8.5},save:()=>{},
     begin:()=>calls.push(['begin']),preview:(week,day)=>calls.push(['preview',week,day]),
-    document:{createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null}
+    document:{addEventListener(){},createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null}
   };
   context.window=context;
   vm.runInNewContext(fs.readFileSync(require.resolve('../start-program-picker.js'),'utf8'),context);
@@ -205,7 +205,7 @@ test('calendar planner can remove, restore and replace a planned workout',()=>{
     plannedForDate:d=>String(d instanceof Date?d.toISOString().slice(0,10):d).slice(0,10)==='2026-08-31'?base:null,
     iso:d=>d.toISOString().slice(0,10),parseDate:s=>new Date(`${s}T12:00:00`),
     save:()=>{},home:()=>{},modal:()=>{},closeModal:()=>{},toast:()=>{},preview:(w,c)=>calls.push(['builtin',w,c]),previewPrimaryProgramDay:(id,wi,di)=>calls.push(['program',id,wi,di]),
-    document:{createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null}
+    document:{addEventListener(){},createElement:()=>({}),head:{appendChild:()=>{}},getElementById:()=>null}
   };
   context.window=context;
   vm.runInNewContext(fs.readFileSync(require.resolve('../calendar-planner.js'),'utf8'),context);
