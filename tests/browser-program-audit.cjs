@@ -53,7 +53,7 @@ const output=process.env.UNVRSL_AUDIT_OUTPUT||'/workspace/unvrsl-floating-audit'
    assert.ok(dock.at(-1).scrollTop>0);
    // Check actual hit targets while the recommendation passes the old overlap position.
    for(const selector of ['.te200-rec-main b','.te406-plan-comparison','.te200-rec summary','.te200-rec-apply']){
-    await page.locator(selector).first().evaluate(el=>el.scrollIntoView({block:'center'}));
+    await page.locator(selector).first().evaluate(async el=>{el.scrollIntoView({block:'center'});await new Promise(requestAnimationFrame)});
     const target=await page.locator(selector).first().evaluate(el=>{
      const r=el.getBoundingClientRect(),nav=document.querySelector('.nav .start .ico').getBoundingClientRect();
      const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);

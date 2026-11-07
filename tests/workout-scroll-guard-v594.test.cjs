@@ -9,7 +9,7 @@ const read=name=>fs.readFileSync(path.join(__dirname,'..',name),'utf8');
 test('release v594 installs workout scroll guard without a fixed-nav compositor hint',()=>{
   const html=read('index.html');
   assert.match(html,/__unvrslRelease='v(?:59[4-9]|[6-9]\d{2})'/);
-  assert.match(html,/workout-scroll-guard\.js\?v=602/);
+  assert.match(html,/workout-scroll-guard\.js\?v=603/);
   assert.match(html,/sw\.js\?v=(?:59[4-9]|[6-9]\d{2})/);
   assert.match(read('sw.js'),/SW_RELEASE = "v(?:59[4-9]|[6-9]\d{2})"/);
   assert.doesNotMatch(read('mobile-final-fix.js'),/will-change:transform;backface-visibility:hidden/);
@@ -82,4 +82,9 @@ test('healthy fixed nav is not translated during page scrolling',()=>{
   e.fire('scroll');
   e.flush();
   assert.equal(e.offset(),0);
+});
+
+test('a new scroll position wins before its delayed browser scroll event arrives',()=>{
+  const e=environment(false);e.setY(250);e.win.startPage();
+  e.setY(400);e.flush();assert.equal(e.getY(),400);
 });

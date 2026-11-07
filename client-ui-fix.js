@@ -116,7 +116,7 @@
       const result=current.apply(this,arguments);
       if(active&&live){
         if(live.dataset)live.dataset.clientWorkoutRenderSig=workoutRenderSignature();
-        if(snapshot)requestAnimationFrame(()=>restoreWorkoutScroll(live,snapshot));
+        if(snapshot){const renderedY=window.unvrslScrollTop?.()??window.scrollY??0;requestAnimationFrame(()=>{const y=window.unvrslScrollTop?.()??window.scrollY??0;if(Math.abs(y-renderedY)<=1)restoreWorkoutScroll(live,snapshot)})}
       }
       return result;
     };
