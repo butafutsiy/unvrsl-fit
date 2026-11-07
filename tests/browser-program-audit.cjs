@@ -36,7 +36,7 @@ const output=process.env.UNVRSL_AUDIT_OUTPUT||'/workspace/unvrsl-floating-audit'
    await page.evaluate(async()=>{
     closeModal();programBeginDayCoreV382('visual-plan',0,0);await trainingEngine200Tick();
     const e=st.current.ex[0];st.sessions=[{id:'previous',date:'2026-10-01',ended:1,ex:[{...e,set:[{w:100,r:8,rpe:8,ok:true},{w:100,r:8,rpe:8,ok:true}]}]}];
-    trainingLoadModel292.run();nav('start');await trainingEngine200Tick();
+    await trainingLoadModel292.schedule();nav('start');await trainingEngine200Tick();await trainingLoadModel292.whenIdle();
    });await page.waitForTimeout(100);
    await page.locator('.te200-rec-main').scrollIntoViewIfNeeded();
    await page.screenshot({path:`${output}/workout-${theme}-${width}.png`});
@@ -57,7 +57,7 @@ const output=process.env.UNVRSL_AUDIT_OUTPUT||'/workspace/unvrsl-floating-audit'
     const target=await page.locator(selector).first().evaluate(el=>{
      const r=el.getBoundingClientRect(),nav=document.querySelector('.nav .start .ico').getBoundingClientRect();
      const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
-     return{top:r.top,bottom:r.bottom,controlTop:nav.top,hit:!!hit&&(hit===el||el.contains(hit))};
+     return{top:r.top,bottom:r.bottom,controlTop:nav.top,hit:!!hit&&(hit===el||el.contains(hit)),active:document.querySelector('.page.active')?.id,parents:[el,...(function*(n){while(n.parentElement){n=n.parentElement;yield n}})(el)].slice(0,7).map(n=>({tag:n.tagName,cls:n.className,display:getComputedStyle(n).display,hidden:n.hidden}))};
     });assert.ok(target.hit&&target.bottom<=target.controlTop,JSON.stringify({selector,...target}));
    }
    await page.locator('.te200-rec').evaluate(el=>el.scrollIntoView({block:'center'}));await page.waitForTimeout(80);
