@@ -20,7 +20,7 @@
   function useWeekIntensity(w){return !!weekBand(w)&&w?.useIntensity!==false}
   function weightMode(e){const mode=e?.parameterOverrides?.weight?.mode||e?.weightMode;if(mode==='auto'||mode==='manual')return mode;return (e?.sets||[]).some(s=>num(s?.w)>0)?'manual':'auto'}
   function saveState(){try{if(typeof save==='function')save();else W.save?.()}catch(_){}}
-  function recalc(force=true){try{return W.trainingLoadModel292?.run?.(force)||W.trainingLoadModel258?.run?.(force)}catch(_){return null}}
+  function recalc(force=true){try{return W.trainingLoadModel292?.schedule?.()||W.trainingLoadModel292?.run?.(force)||W.trainingLoadModel258?.run?.(force)}catch(_){return null}}
   function style(){
     if(D.getElementById('program-intensity-autoweight-v261-style'))return;
     const s=D.createElement('style');s.id='program-intensity-autoweight-v261-style';s.textContent=`

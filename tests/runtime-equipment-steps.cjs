@@ -15,7 +15,7 @@ const {make,wait,errors}=require('./runtime-v392.cjs');
   e.equipmentProfileId=eq.id;e.equipmentProfile={...eq};e.set.forEach(s=>{s.equipmentProfileId=eq.id});st.equipmentProfiles={fractional:eq};
   const old=JSON.parse(JSON.stringify(e));old.set=Array.from({length:5},(_,i)=>({w:134.3,r:3,rpe:9,ok:i<3,equipmentProfileId:eq.id}));
   st.sessions=[{id:'heavy',date:'2026-10-02',started:Date.parse('2026-10-02'),ended:Date.parse('2026-10-02')+1000,ex:[old]}];
-  const render=async()=>{await trainingLoadModel292.run();startPage();await trainingEngine200Tick();return document.querySelector('#start .te200-rec')};
+  const render=async()=>{await trainingLoadModel292.whenIdle();await trainingLoadModel292.run();startPage();await trainingEngine200Tick();return document.querySelector('#start .te200-rec')};
   let card=await render();const before=card.querySelector('b').textContent;
   const eqKey=encodeURIComponent(workoutRegistry.identity(e)+'@0');
   equipmentEdit405(eqKey,'fractional');document.getElementById('eq405Step').value='0,5';

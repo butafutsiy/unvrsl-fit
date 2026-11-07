@@ -129,7 +129,10 @@
 
   function install(){ensureStyle();installPrescription();installBegin();installGroupCard();installCard();installEdit();installToggle();repairCurrent()}
   let queued=false;const queue=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;install()})};
-  const mo=typeof MutationObserver==='function'?new MutationObserver(queue):null;mo?.observe(D.documentElement,{childList:true,subtree:true});
+  const mo=typeof MutationObserver==='function'?new MutationObserver(records=>{
+    if(records.some(record=>[...record.addedNodes,...record.removedNodes].some(node=>node.nodeType===1)))queue();
+  }):null;
+  for(const id of ['plan','sheet','start']){const root=D.getElementById(id);if(root)mo?.observe(root,{childList:true,subtree:true})}
   ['unvrsl:modules-ready','unvrsl:app-ready','unvrsl:cloud-ready','unvrsl:training-engine-ready'].forEach(ev=>W.addEventListener?.(ev,queue,{passive:true}));
   [0,60,140,300,700,1400,2600,5000].forEach(ms=>setTimeout(install,ms));setInterval(install,1200)
 })();

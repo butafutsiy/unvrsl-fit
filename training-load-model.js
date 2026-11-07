@@ -23,7 +23,7 @@
     for (const session of local) {
       if (!session?.id || deleted.has(String(session.id))) continue;
       const previous = byId.get(String(session.id));
-      if (!previous || (session.userId === userId || !session.userId) && completedCount(session) > completedCount(previous))
+      if (!previous || (session.userId === userId || !session.userId) && completedCount(session) >= completedCount(previous))
         byId.set(String(session.id), session);
     }
     const base=W.unvrslCalibrationLibrary?.sessions(st,[...byId.values()],st.current,userId)||[...byId.values()];
@@ -57,18 +57,17 @@
           userId, pendingCompletion: false,
         }).filter(Boolean),
       };
-      run();
+      schedule();
     })().catch(error => { console.warn('Recommendation history', error); })
       .finally(() => { historyRequest = null; });
     return historyRequest;
   }
-  function run() {
-    if (running) return false;
+  function* calculate(options = {}) {
     const cur = st.current;
     if (!cur || cur.pendingCompletion) return false;
-    running = true;
     let changed = false, weightsChanged = false;
-    try {
+    let scope = Array.isArray(options?.exerciseIndices) ? new Set(options.exerciseIndices) : null;
+    {
       // Build the scoped history once for the entire calculation, not twice
       // for every individual set. Repeated large JSON/history scans can lock
       // the iPhone main thread before the workout becomes interactive.
@@ -81,9 +80,12 @@
       ).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
       changed=A.repairLegacyEffortTargets(cur)||changed;
       changed=A.prepareTestBlocks(cur,workoutRegistry)||changed;
+      if(changed)scope=null;
       W.equipmentAttachDefaults405?.(cur);
       W.trainingInitializeSetWeights?.(cur);
-      for (const ex of cur.ex || []) {
+      for (const [exerciseIndex, ex] of (cur.ex || []).entries()) {
+        if(scope&&!scope.has(exerciseIndex))continue;
+        const fatigueCache=new Map();
         if (["time","distance"].includes(A.loadType(ex,workoutRegistry))) {
           for (const set of ex.set || []) {
             if (set.recommendation || set.recommendedW != null) changed = true;
@@ -98,6 +100,7 @@
           ex.implementCount = ex.implementCount || row.implementCount;
         }
         for (const set of ex.set || []) {
+          if(st.current!==cur||cur.ended||cur.pendingCompletion)return false;
           if (set.ok || set.skipped) continue;
           const rec = A.recommend(
             ex,
@@ -107,14 +110,20 @@
             workoutRegistry,
             st.exerciseWeightProfiles || {},
           );
-          const observations=eligibleHistory.flatMap(old=>{
-            const match=(old.ex||[]).find(x=>A.loadComparable(ex,x,workoutRegistry,set,x.set?.[0]||{})&&A.method(ex,set)===A.method(x,x.set?.[0]||{}));if(!match)return [];
-            const done=(match.set||[]).filter(x=>A.complete(match,x,workoutRegistry)),target=A.effortTarget(match,done[0]||{},old),range=A.repRange(match,done[0]||{});
-            const estimate=A.strengthEstimate(ex,A.history(ex,[old],workoutRegistry),workoutRegistry,[],set).estimate;
-            return [{e1rm:estimate,actualRpe:done.length?Math.max(...done.map(x=>A.effortRpe(x)||0)):null,targetRpe:target.hi,actualReps:done.length?Math.min(...done.map(x=>A.number(x.actualReps??x.r)||0)):null,minReps:range.lo,techniqueFailed:(match.set||[]).some(x=>x.techniqueFailed),skippedSets:(match.set||[]).filter(x=>x.skipped).length,wellbeing:old.wellbeing?.status||old.wellbeing,fatigueHigh:old.wellbeing?.fatigueHigh===true}];
-          });
-          observations.forEach((x,i)=>{x.previousE1rm=observations[i-1]?.e1rm;});
-          rec.fatigue=A.fatigueSignals(observations);
+          // This evidence is identical for sets with the same load context.
+          // Keep the cache inside this calculation, never across user edits.
+          const fatigueKey=JSON.stringify([A.method(ex,set),set.equipmentProfileId,set.equipmentSnapshot,set.loadUnit,set.loadType,set.techniqueId,set.setRole,set.role]);
+          if(!fatigueCache.has(fatigueKey)){
+            const observations=eligibleHistory.flatMap(old=>{
+              const match=(old.ex||[]).find(x=>A.loadComparable(ex,x,workoutRegistry,set,x.set?.[0]||{})&&A.method(ex,set)===A.method(x,x.set?.[0]||{}));if(!match)return [];
+              const done=(match.set||[]).filter(x=>A.complete(match,x,workoutRegistry)),target=A.effortTarget(match,done[0]||{},old),range=A.repRange(match,done[0]||{});
+              const estimate=A.strengthEstimate(ex,A.history(ex,[old],workoutRegistry),workoutRegistry,[],set).estimate;
+              return [{e1rm:estimate,actualRpe:done.length?Math.max(...done.map(x=>A.effortRpe(x)||0)):null,targetRpe:target.hi,actualReps:done.length?Math.min(...done.map(x=>A.number(x.actualReps??x.r)||0)):null,minReps:range.lo,techniqueFailed:(match.set||[]).some(x=>x.techniqueFailed),skippedSets:(match.set||[]).filter(x=>x.skipped).length,wellbeing:old.wellbeing?.status||old.wellbeing,fatigueHigh:old.wellbeing?.fatigueHigh===true}];
+            });
+            observations.forEach((x,i)=>{x.previousE1rm=observations[i-1]?.e1rm;});
+            fatigueCache.set(fatigueKey,A.fatigueSignals(observations));
+          }
+          rec.fatigue={...fatigueCache.get(fatigueKey)};
           if(rec.fatigue.suggestDeload)rec.reason+='; несколько признаков усталости: предложена ранняя разгрузка';
           const suggested=A.recommendationWeight(rec);
           if (JSON.stringify(set.recommendation) !== JSON.stringify(rec) || set.recommendedW !== suggested) {
@@ -164,8 +173,11 @@
             ex.programWeightMode === "adaptive"
               ? (set.weightSource === 'auto' ? 'adaptive_auto' : 'recommendation_pending')
               : ex.weightDecision;
+          // Yield between sets so the rest timer, touch and input can run.
+          yield;
         }
       }
+      if(st.current!==cur||cur.ended||cur.pendingCompletion)return false;
       cur.trainingLoadModelRevision = 292;
       cur.trainingMathOwner = "workout-domain";
       if (changed) {
@@ -174,10 +186,60 @@
         W.trainingEngine200Tick?.();
       }
       return changed;
-    } finally {
-      running = false;
     }
   }
+  function run(options = {}) {
+    if(running)return false;
+    running=true;
+    try{
+      const work=calculate(options);let next;
+      do{next=work.next()}while(!next.done);
+      return next.value;
+    }finally{running=false}
+  }
+  let pendingCalculation=null,resolveCalculation=null,allRequested=false;
+  const requestedIndices=new Set();
+  async function drain(){
+    if(W.document?.visibilityState==='hidden')return;
+    if(running){setTimeout(drain,0);return}
+    running=true;let changed=false;
+    try{
+      while(allRequested||requestedIndices.size){
+        const options=allRequested?{}:{exerciseIndices:[...requestedIndices]};
+        allRequested=false;requestedIndices.clear();
+        W.unvrslTrainingPrescriptionPrepareV292?.(st.current);
+        const work=calculate(options);let next;
+        do{
+          next=work.next();
+          if(!next.done)await new Promise(resolve=>setTimeout(resolve,0));
+        }while(!next.done);
+        changed=!!next.value||changed;
+      }
+    }catch(error){console.warn('Recommendation calculation',error)}
+    finally{
+      running=false;
+      const resolve=resolveCalculation;
+      pendingCalculation=null;resolveCalculation=null;
+      resolve?.(changed);
+      if(typeof W.CustomEvent==='function')W.dispatchEvent?.(new W.CustomEvent('unvrsl:recommendations-updated'));
+    }
+  }
+  function schedule(options = {}){
+    if(typeof setTimeout!=='function')return Promise.resolve(run(options));
+    if(Array.isArray(options?.exerciseIndices)){
+      const ex=st.current?.ex||[];
+      const keys=new Set(options.exerciseIndices.map(i=>ex[i]).filter(Boolean).map(e=>workoutRegistry.identity(e)));
+      ex.forEach((e,i)=>{if(keys.has(workoutRegistry.identity(e)))requestedIndices.add(i)});
+    }else allRequested=true;
+    if(!pendingCalculation){
+      pendingCalculation=new Promise(resolve=>{resolveCalculation=resolve});
+      setTimeout(drain,0);
+    }
+    return pendingCalculation;
+  }
+  W.document?.addEventListener?.('visibilitychange',()=>{
+    if(W.document.visibilityState!=='hidden'&&pendingCalculation&&!running)setTimeout(drain,0);
+  });
   const readinessWeight = (v, ex, cur) => {
     const factor = cur?.trainingReadinessDone && cur?.readinessAdjusted
       ? (A.number(cur?.readiness?.factor) || 1)
@@ -188,7 +250,7 @@
       factor < 1 ? "down" : undefined,
     );
   };
-  const api = { run, readinessWeight, history: recommendationHistory, version: 438 };
+  const api = { run, schedule, whenIdle:()=>pendingCalculation||Promise.resolve(false), readinessWeight, history: recommendationHistory, version: 603 };
   W.trainingLoadModel292 = api;
   W.trainingLoadModel258 = api;
   W.unvrslTrainingReadinessWeightV292 = readinessWeight;
@@ -201,12 +263,13 @@
     "unvrsl:cloud-ready",
     "unvrsl:history-updated",
     "unvrsl:prescription-updated",
-  ].forEach((name) => W.addEventListener(name, () => {
-    run();
-    if (name === 'unvrsl:cloud-ready' || name === 'unvrsl:history-updated')
-      refreshOwnedHistory(name === 'unvrsl:history-updated');
+  ].forEach((name) => W.addEventListener(name, event => {
+    const index=event?.detail?.exerciseIndex;
+    schedule(name==='unvrsl:workout-set-changed'&&Number.isInteger(index)?{exerciseIndices:[index]}:{});
+    if (name === 'unvrsl:cloud-ready')refreshOwnedHistory();
+    if(name==='unvrsl:history-updated'&&event?.detail?.refreshCloud===true)refreshOwnedHistory(true);
   }));
   // A restored workout can already contain yesterday's recommendation. The
   // engine's initial ready event may have fired before this module loaded.
-  Promise.resolve().then(() => { run(); refreshOwnedHistory(); });
+  Promise.resolve().then(() => { schedule(); refreshOwnedHistory(); });
 })();

@@ -52,6 +52,7 @@ test('W5 Romanian deadlift uses September 21 for its 4–6 recommendation after 
   ];
   vm.runInNewContext(read('training-load-model.js'),context);
   await Promise.resolve();
+  await context.trainingLoadModel292.run();
   assert.deepEqual(JSON.parse(JSON.stringify(oldSet.recommendation.repRange)),{lo:4,hi:6});
   assert.equal(oldSet.recommendation.basis.date,'2026-09-21');
   assert.equal(oldSet.recommendation.basis.estimatedOneRepMax,182);

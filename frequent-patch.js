@@ -96,7 +96,31 @@ customCatalog=function(){
 let cloudModulesLoading=false,cloudModulesLoaded=false;
 const startupAssetsSeen=new Set();
 function markStartupAsset(src){const key=String(src||'').replace(/[?#].*$/,'');if(startupAssetsSeen.has(key))return;startupAssetsSeen.add(key);try{(window.unvrslStartupAssetLoadedV320||window.unvrslStartupAssetLoadedV319)?.(key)}catch(_){ }}
-function loadExternalScript(src){if(!/^https?:/.test(src)&&/\.js(?:\?|$)/.test(src)){const u=new URL(src,location.href);u.searchParams.set('v',String(window.__unvrslRelease||'v561').replace(/^v/,''));src=u.pathname+u.search}return new Promise((resolve,reject)=>{const done=value=>{markStartupAsset(src);resolve(value)};const key=String(src).replace(/^\.\//,'');if(document.querySelector(`script[data-unvrsl-src="${src}"],script[data-unvrsl-src="${key}"],script[data-dyn="${src}"],script[data-dyn="./${key}"]`))return done();const s=document.createElement('script');s.src=src;s.async=false;s.dataset.unvrslSrc=key;s.onload=()=>done();s.onerror=()=>{s.remove();reject(new Error(`Failed to load ${src}`))};document.body.appendChild(s)})}
+const scriptLoads=new Map();
+document.addEventListener('load',event=>{if(event.target?.tagName==='SCRIPT')event.target.dataset.unvrslLoaded='1'},true);
+function scriptIdentity(src){const url=new URL(src,location.href);return url.origin===location.origin?url.origin+url.pathname:url.href}
+function loadExternalScript(src){
+ if(!/^https?:/.test(src)&&/\.js(?:\?|$)/.test(src)){
+  const url=new URL(src,location.href);url.searchParams.set('v',String(window.__unvrslRelease||'v561').replace(/^v/,''));src=url.pathname+url.search;
+ }
+ const identity=scriptIdentity(src);
+ if(scriptLoads.has(identity))return scriptLoads.get(identity);
+ // Classic scripts already parsed by the shell have executed. Reuse them
+ // even when a legacy loader requested another cache-busting query string.
+ const existing=[...document.querySelectorAll('script[src]')].find(node=>scriptIdentity(node.src)===identity);
+ if(existing&&(existing.dataset.unvrslLoaded==='1'||!Object.keys(existing.dataset).length&&!existing.async&&!existing.defer)){markStartupAsset(src);return Promise.resolve()}
+ let script;
+ const promise=new Promise((resolve,reject)=>{
+  const done=()=>{if(script)script.dataset.unvrslLoaded='1';markStartupAsset(src);resolve()};
+  if(existing){existing.addEventListener('load',done,{once:true});existing.addEventListener('error',()=>{existing.remove();scriptLoads.delete(identity);reject(new Error(`Failed to load ${src}`))},{once:true});return}
+  script=document.createElement('script');script.src=src;script.async=false;script.dataset.unvrslSrc=String(src).replace(/^\.\//,'');
+  script.onload=done;
+  script.onerror=()=>{script.remove();scriptLoads.delete(identity);reject(new Error(`Failed to load ${src}`))};
+ });
+ scriptLoads.set(identity,promise);
+ if(script)document.body.appendChild(script);
+ return promise;
+}
 window.loadExternalScript=loadExternalScript;
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function loadCriticalScript(src){

@@ -375,7 +375,7 @@
     return `<div class="wf-grid ${weighted?'':'wf-single'}">${weighted?`<label><span>${A.loadType(e,reg)==='per_dumbbell'?'Вес одной гантели, кг':'Фактический вес, кг'}</span><div class="wf-stepper"><button type="button" data-wf-weight="-1" aria-label="Уменьшить вес на шаг оборудования">−</button><input name="weight" inputmode="decimal" value="${esc(d.weight)}" placeholder="Вес" autocomplete="off"><button type="button" data-wf-weight="1" aria-label="Увеличить вес на шаг оборудования">+</button></div></label>`:''}<label><span>${metric}</span><input name="reps" inputmode="${A.legReps(e)?'text':'decimal'}" value="${esc(d.reps)}" placeholder="Факт" autocomplete="off"></label></div>${weighted&&A.pairedLoad(e,reg,set)?'<div class="wf-sub">Вес одной стороны. Можно ввести 25 / 25.</div>':''}${measured(type)?'<div class="wf-sub">Для времени и дистанции запас повторений (RIR) не требуется.</div>':rirMarkup(d.rir)}<label class="wf-check"><input name="technique" type="checkbox" ${d.technique?'checked':''}>Техника сохранена</label><label class="wf-check"><input name="pain" type="checkbox" ${d.pain?'checked':''}>Возникла боль</label>${calibration?'<div class="wf-sub">Разминка выполняется отдельно. При боли останови подбор веса.</div>':''}`;
   }
   function auto(row){const s=session(),e=s.ex[row.ei],set=e.set[row.si];
-    W.trainingLoadModel292?.run();const rec=set.recommendation;
+    W.trainingLoadModel292?.run({exerciseIndices:[row.ei]});const rec=set.recommendation;
     if(e.programWeightMode==='adaptive'&&rec&&(rec.sessionIds?.length||rec.nextSetSuggestion)&&rec.action!=='stop'&&A.applyAuto(set,rec))save();
   }
   function focusMarkup(){const s=session(),f=s.focusState;
@@ -518,7 +518,7 @@
       delete s.focusState.inputs;delete s.focusState.notice;
       const following=F.next(s,row),rest=F.restAfter(s,row,following);if(d.cardio){rest.seconds=0;if(s.focusState.cardioTimers)delete s.focusState.cardioTimers[C.key(row)];}if(calibrationAttempt)rest.seconds=Math.max(0,rest.seconds-Math.floor((Date.now()-calibrationAttempt.at)/1000));s.focusState.token=following?F.token(following):null;
       if(rest.seconds>0){s.focusState.rest={...rest,nextLabel:following?`Далее: ${s.ex[following.ei].n}`:'Все подходы отмечены'};W.timer?.(rest.seconds,rest.label);}
-      save();W.trainingLoadModel292?.run();render();return true;
+      save();W.trainingLoadModel292?.schedule?.({exerciseIndices:[row.ei]});render();return true;
     }catch(error){if(!set.ok)revert();message(error.message||'Не удалось записать подход');}finally{writing=false;}
   }
   function recordCalibration(form){const s=session(),d=s.loadCalibrationDraft,e=s.ex[d.ei];if(writing||d.halted||d.committed||d.attempts.length>=3)return;
@@ -533,7 +533,7 @@
     d.attempts.push(attempt);const decision=probeResult(d);
     d.form={weight:String(decision.nextWeight),reps:'',rir:'',technique:false,pain:false};save();W.timer?.(Number(e.rest)||120,'Отдых между пробными подходами');render();
   }
-  function finishCalibration(credit=false,unconfirmed=false){const s=session(),d=s?.loadCalibrationDraft;if(!d||d.halted||d.committed||writing)return;
+  async function finishCalibration(credit=false,unconfirmed=false){const s=session(),d=s?.loadCalibrationDraft;if(!d||d.halted||d.committed||d.finishing||writing)return;
     const e=s.ex[d.ei],target=e?.set?.[d.targetIndex??e.set.findIndex(x=>!x.ok&&!x.skipped)];
     if(!target||target.ok||target.skipped||!A.loadComparable(e,d.exercise,reg,target,d.targetSet)||A.method(e,target)!==A.method(d.exercise,d.targetSet)||JSON.stringify(F.probeTarget(e,target,s,A))!==JSON.stringify(F.probeTarget(d.exercise,d.targetSet,s,A)))return message('Задание, оборудование или упражнение изменилось. Начни новый подбор веса.');
     const attempt=d.attempts.at(-1),decision=probeResult(d);
@@ -544,6 +544,10 @@
     if(ev&&!(s.calibrationSessions||[]).some(x=>x.id===ev.id))(s.calibrationSessions||(s.calibrationSessions=[])).push(ev);
     const rollback=()=>{if(ev)s.calibrationSessions=(s.calibrationSessions||[]).filter(x=>x.id!==ev.id);if(credit)delete attempt.credited;};
     if(!save()){rollback();return;}
+    d.finishing=true;
+    const actions=[...root.querySelectorAll('[data-wf-action="save-calibration"],[data-wf-action="credit-calibration"],[data-wf-action="use-unconfirmed"]')].map(button=>({button,label:button.textContent}));
+    actions.forEach(({button})=>{button.disabled=true;button.textContent='Сохраняем…'});
+    try{
     const previousFocus=s.focusState;
     s.focusState={...(s.focusState||{}),enabled:true,workoutId:s.id,token:`${d.ei}:${e.set.indexOf(target)}`,notice:'Первый вес сохранён под сегодняшнее задание. Другие диапазоны пока предварительные.'};
     delete s.focusState.inputs;delete s.focusState.rest;
@@ -559,10 +563,11 @@
       }
     }else{
       if(unconfirmed){target.w=attempt.weight;target.weightSource='trial_unconfirmed';s.focusState.notice='Вес выбран без силовой оценки. Запас пока не оценён; автоматического повышения по этой пробе не будет.';}
-      W.stopTimer?.();W.trainingLoadModel292?.run();
-      for(const ex of s.ex)for(const x of ex.set||[]){const r=x.recommendation;if(ex.programWeightMode==='adaptive'&&r?.sessionIds?.length&&A.applyAuto(x,r))ex.weightDecision='calibrated';}
-      view='focus';
+      W.stopTimer?.();view='focus';
     }
+    await (W.trainingLoadModel292?.schedule?.({exerciseIndices:[d.ei]})??W.trainingLoadModel292?.run?.({exerciseIndices:[d.ei]}));
+    if(session()!==s)return;
+    if(!credit)for(const x of e.set||[]){const r=x.recommendation;if(e.programWeightMode==='adaptive'&&r?.sessionIds?.length&&A.applyAuto(x,r))e.weightDecision='calibrated';}
     // Keep validated test sets across sessions and abandoned workouts.
     // This stores evidence, not a fake completed workout; exercise, equipment,
     // technique and user ownership remain part of the saved comparison key.
@@ -575,18 +580,19 @@
           samples:ev.ex?.[0]?.set?.length||0,
           equipmentProfileId:e.equipmentProfileId||null};
         save();
-        W.trainingLoadModel292?.run?.(true);
         const next=e.set?.find(x=>!x.ok&&!x.skipped),suggested=next?.recommendation?A.recommendationWeight(next.recommendation):null;
         s.focusState.notice=suggested>0
           ?`Тестовые подходы сохранены. Предварительный рабочий вес: ${A.weightText(e,suggested,reg,next)} кг. Дальше уточняем по рабочим подходам.`
           :`Тестовые подходы сохранены для упражнения. Расчётный 1ПМ: ${strength?.estimate?Number(strength.estimate.toFixed(1))+' кг':'пока предварительный'}. Продолжи тренировку.`;
       }
     }
-    d.committed=true;save();W.startPage?.();render();
+    d.committed=true;delete s.focusState.inputs;save();W.startPage?.();render();
+    }catch(error){console.warn('Calibration save',error);message('Не удалось сохранить рабочий вес. Повтори попытку.')}
+    finally{d.finishing=false;actions.forEach(({button,label})=>{if(button.isConnected){button.disabled=false;button.textContent=label}})}
   }
   root.addEventListener('toggle',event=>{if(!event.target.matches?.('[data-wf-warmup]')||!session())return;const f=session().focusState;if(f.warmupOpen!==event.target.open){f.warmupOpen=event.target.open;save();}},true);
   root.addEventListener('submit',event=>{event.preventDefault();if(event.target.dataset.wfForm==='work')record(event.target);else if(event.target.dataset.wfForm==='calibration')recordCalibration(event.target);else if(event.target.dataset.wfForm==='cardio')record(event.target)});
-  root.addEventListener('input',event=>{if(!session()||!event.target.name)return;if(event.target.dataset.wfWarmupField){const el=event.target.closest('[data-wf-warmup-row]'),f=session().focusState,key=`${el.dataset.ei}:${el.dataset.wfWarmupRow}`;((f.warmupInputs||={})[key]||={})[event.target.dataset.wfWarmupField]=event.target.value;save();return;}const form=event.target.form;if(!form?.dataset.wfForm)return;const d=readForm(form);if(view==='calibration')cur().loadCalibrationDraft.form=d;else cur().focusState.inputs={...cur().focusState.inputs,...d};save()});
+  root.addEventListener('input',event=>{if(!session()||!event.target.name)return;if(event.target.dataset.wfWarmupField){const el=event.target.closest('[data-wf-warmup-row]'),f=session().focusState,key=`${el.dataset.ei}:${el.dataset.wfWarmupRow}`;((f.warmupInputs||={})[key]||={})[event.target.dataset.wfWarmupField]=event.target.value;save();return;}const form=event.target.form;if(!form?.dataset.wfForm)return;const d=readForm(form);if(view==='calibration')cur().loadCalibrationDraft.form=d;else cur().focusState.inputs={...cur().focusState.inputs,...d,touched:true};save()});
   root.addEventListener('change',event=>{if(!event.target.matches('[data-wf-select]'))return;cur().focusState.token=event.target.value;delete cur().focusState.inputs;panel=null;save();render()});
   root.addEventListener('click',event=>{
     const b=event.target.closest('button');if(!b||b.disabled)return;
@@ -640,6 +646,12 @@
   }
   W.addEventListener('unvrsl:workout-rendered',mount);
   W.addEventListener('unvrsl:workout-set-changed',()=>{if(!writing&&view==='focus'&&!root.hidden&&!root.contains(D.activeElement))render()});
+  W.addEventListener('unvrsl:recommendations-updated',()=>{
+    const s=session();if(!s||writing||s.loadCalibrationDraft?.finishing||view!=='focus'||root.hidden||root.querySelector('input:focus,textarea:focus,select:focus'))return;
+    const draft=s.focusState?.inputs;
+    if(draft&&!draft.touched&&!draft.reps&&draft.rir==='')delete s.focusState.inputs;
+    render();
+  });
   W.addEventListener('unvrsl:auth-changed',()=>{if(view){view=null;root.hidden=true;D.body.classList.remove('workout-focus-open');D.documentElement.classList.remove('workout-focus-open');background(false);}});
   W.addEventListener('unvrsl:cloud-ready',mount);W.addEventListener('unvrsl:modules-ready',mount);
   W.addEventListener('focus',()=>{if(view)render()});

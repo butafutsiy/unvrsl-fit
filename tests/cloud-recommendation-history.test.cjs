@@ -52,3 +52,23 @@ test('recommendation reloads completed cloud workout, even when local cache lack
   listeners['unvrsl:workout-set-changed']();
   assert.equal(current.ex[0].set[0].recommendation.basis.date, '2026-09-12');
 });
+
+test('local history events reuse the owned cloud cache instead of downloading it again',async()=>{
+  let requests=0;const listeners={};
+  const query={select(){return this},eq(){return this},order(){return this},async range(){requests++;return {data:[],error:null}}};
+  const c={console,st:{sessions:[],current:null},cloud:{user:{id:'owner'},client:{from:()=>query}},save(){},addEventListener(name,fn){listeners[name]=fn},WorkoutDomain:domain,workoutRegistry:domain.registry([])};c.window=c;
+  vm.runInNewContext(script,c);await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requests,1);
+  for(let i=0;i<5;i++)listeners['unvrsl:history-updated']({detail:{sessions:1}});
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(requests,1);
+  c.st.sessions.push({...past('local-new','2026-09-21',140,7),userId:'owner'});
+  assert.ok(c.trainingLoadModel292.history().some(s=>s.id==='local-new'),'fresh local evidence is immediately available without another download');
+});
+
+test('edited local history wins over an older duplicate with the same completed set count',async()=>{
+  const stale={...past('same','2026-09-21',100,7),userId:'owner'};
+  const query={select(){return this},eq(){return this},order(){return this},async range(){return {data:[{payload:stale}],error:null}}};
+  const c={console,st:{sessions:[{...past('same','2026-09-21',120,7),userId:'owner'}],current:null},cloud:{user:{id:'owner'},client:{from:()=>query}},save(){},addEventListener(){},WorkoutDomain:domain,workoutRegistry:domain.registry([])};c.window=c;
+  vm.runInNewContext(script,c);await new Promise(resolve=>setImmediate(resolve));
+  const history=c.trainingLoadModel292.history();assert.equal(history.length,1);assert.equal(history[0].ex[0].set[0].w,120);
+});

@@ -126,7 +126,7 @@ test('equipment editor saves an independent policy and refreshes pending snapsho
  const f=fixture('canon:high_bar_squat',100,{id:'rack',name:'Rack',type:'barbell',loadUnit:'TOTAL',weightStep:2.5,availableLoads:[],exerciseKey:'canon:high_bar_squat'});
  f.pending.equipmentSnapshot={...f.e.equipmentProfile};f.done.equipmentSnapshot={...f.e.equipmentProfile};
  const past=JSON.parse(JSON.stringify(f.session)),fields={},state={current:f.session,sessions:[past],programs:[],equipmentProfiles:{rack:{...f.e.equipmentProfile}}};
- let recalcs=0;const w={WorkoutDomain:A,ExerciseLoadPolicies:P,st:state,addEventListener(){},save(){},modal(){},toast(){},trainingLoadModel292:{run(){recalcs++}}};
+ let recalcs=0;const w={WorkoutDomain:A,ExerciseLoadPolicies:P,st:state,addEventListener(){},save(){},modal(){},toast(){},trainingLoadModel292:{schedule(){recalcs++}}};
  const doc={getElementById:id=>fields[id]||null,createElement:()=>({}),head:{append(){}}};
  vm.runInNewContext(fs.readFileSync(require.resolve('../equipment-profiles-v405.js'),'utf8'),{window:w,document:doc,workoutRegistry:reg});
  const values={Name:'Rack',Type:'barbell',Unit:'TOTAL',Step:'0,5',Available:'',Base:20,PolicyL1:2.5,PolicyL2:5,PolicyH1:6,PolicyH2:8,PolicyH3:10,PolicyCapUp:6,PolicyCapDown:15,PolicyStepsUp:3,PolicyStepsDown:6,PolicyOffset:-.5,PolicyTolerance:.5};
