@@ -8,7 +8,10 @@
   function sync(){
     const modal=D.getElementById('modal'),isOpen=!!modal?.classList.contains('show');
     if(isOpen&&!open){previousFocus=D.activeElement;const target=modal.querySelector('.modal-close-global,button,input');target?.focus({preventScroll:true});if(!historyEntry){W.history.pushState({...W.history.state,unvrslModal:true},'');historyEntry=true;}}
-    if(!isOpen&&open){if(previousFocus?.isConnected)previousFocus.focus({preventScroll:true});if(historyEntry&&!handlingPop){historyEntry=false;W.history.back();}}open=isOpen;
+    if(!isOpen&&open){// A hidden modal input must release the keyboard. Returning focus to an
+      // exercise input would immediately open it again behind the closed sheet.
+      if(modal?.contains(D.activeElement))D.activeElement.blur();
+      if(previousFocus?.isConnected&&!previousFocus.matches('input,textarea,select,[contenteditable="true"]'))previousFocus.focus({preventScroll:true});if(historyEntry&&!handlingPop){historyEntry=false;W.history.back();}}open=isOpen;
     D.querySelectorAll('.field label:not([for])').forEach((label,index)=>{const control=label.parentElement.querySelector('input,select,textarea');if(control){if(!control.id)control.id='ui-field-'+index;label.htmlFor=control.id;}});
     D.querySelectorAll('.nav .ico').forEach(icon=>icon.setAttribute('aria-hidden','true'));
     D.querySelectorAll('.setrow input').forEach((input,index)=>{if(!input.hasAttribute('aria-label'))input.setAttribute('aria-label',input.inputMode==='numeric'?'Количество повторений':'Рабочий вес, кг');});
@@ -22,6 +25,9 @@
   W.addEventListener('unvrsl:sync-state',syncStatus);
   const close=W.closeModal;if(typeof close==='function')W.closeModal=function(){if(D.querySelector('.mp-composition[data-dirty="true"]')&&!W.confirm('Состав блюда изменён, но ещё не сохранён. Закрыть без сохранения?'))return;return close.apply(this,arguments);};
   W.addEventListener('popstate',()=>{if(!open)return;historyEntry=false;handlingPop=true;const back=D.querySelector('#cook-name')?D.querySelector('[data-cook="back"]'):D.querySelector('[data-mp="ingredient-back"],[data-mp="replace-back"]');if(back)back.click();else W.closeModal?.();handlingPop=false;if(D.getElementById('modal')?.classList.contains('show')){W.history.pushState({...W.history.state,unvrslModal:true},'');historyEntry=true;}});
-  if(W.visualViewport){const update=()=>{D.documentElement.style.setProperty('--visible-height',W.visualViewport.height+'px');};W.visualViewport.addEventListener('resize',update);update();}
+  if(W.visualViewport){const update=()=>{
+    D.documentElement.style.setProperty('--visible-height',W.visualViewport.height+'px');
+    D.documentElement.style.setProperty('--visible-top',W.visualViewport.offsetTop+'px');
+  };W.visualViewport.addEventListener('resize',update);W.visualViewport.addEventListener('scroll',update);update();}
   const sheet=D.getElementById('sheet'),modal=D.getElementById('modal');if(sheet)new MutationObserver(sync).observe(sheet,{childList:true,subtree:true});if(modal)new MutationObserver(sync).observe(modal,{attributes:true,attributeFilter:['class']});sync();
 })(window);

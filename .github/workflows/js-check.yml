@@ -234,3 +234,18 @@ jobs:
           node tests/runtime-builtin-engine-cycle.cjs
           node tests/runtime-eight-week-cycle.cjs
           node tests/runtime-cycle-settings.cjs
+
+  ios-entry-regressions:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated DOM and IndexedDB test dependencies
+        run: npm install --prefix "$RUNNER_TEMP/unvrsl-ios" --no-audit --no-fund jsdom@26.1.0 fake-indexeddb@6.2.4
+      - name: Verify mounted workout inputs, equipment viewport and durable cancellation
+        env:
+          UNVRSL_JSDOM: ${{ runner.temp }}/unvrsl-ios/node_modules/jsdom
+          UNVRSL_FAKE_IDB: ${{ runner.temp }}/unvrsl-ios/node_modules/fake-indexeddb
+        run: node tests/runtime-ios-entry.cjs
