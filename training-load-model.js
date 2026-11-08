@@ -182,7 +182,7 @@
       cur.trainingMathOwner = "workout-domain";
       if (changed) {
         save({ draftOnly: true });
-        if (weightsChanged) W.startPage?.();
+        if (weightsChanged) syncWeights();
         W.trainingEngine200Tick?.();
       }
       return changed;
@@ -240,6 +240,19 @@
   W.document?.addEventListener?.('visibilitychange',()=>{
     if(W.document.visibilityState!=='hidden'&&pendingCalculation&&!running)setTimeout(drain,0);
   });
+  function syncWeights(){
+    const D=W.document,cur=st.current;if(!D?.querySelectorAll||!cur)return;
+    D.querySelectorAll('#start .setrow input').forEach(input=>{
+      if(D.activeElement===input)return;
+      const handler=input.getAttribute('onchange')||'';
+      const match=handler.match(/editWorkoutWeight\(\s*(\d+)\s*,\s*(\d+)/)||handler.match(/editSet\(\s*(\d+)\s*,\s*(\d+)\s*,\s*['"]w['"]/);
+      if(!match)return;
+      const e=cur.ex?.[Number(match[1])],set=e?.set?.[Number(match[2])];if(!set)return;
+      const value=A.weightText(e,set.w,workoutRegistry,set);
+      if(input.value!==value)input.value=value;
+    });
+  }
+  W.unvrslSyncWorkoutWeightsV604=syncWeights;
   const readinessWeight = (v, ex, cur) => {
     const factor = cur?.trainingReadinessDone && cur?.readinessAdjusted
       ? (A.number(cur?.readiness?.factor) || 1)
@@ -250,7 +263,7 @@
       factor < 1 ? "down" : undefined,
     );
   };
-  const api = { run, schedule, whenIdle:()=>pendingCalculation||Promise.resolve(false), readinessWeight, history: recommendationHistory, version: 603 };
+  const api = { run, schedule, syncWeights, whenIdle:()=>pendingCalculation||Promise.resolve(false), readinessWeight, history: recommendationHistory, version: 603 };
   W.trainingLoadModel292 = api;
   W.trainingLoadModel258 = api;
   W.unvrslTrainingReadinessWeightV292 = readinessWeight;

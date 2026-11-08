@@ -14,6 +14,7 @@
  const key=e=>e?.sourceId?`id:${e.sourceId}`:`n:${base(e?.n).toLowerCase()}`;
  if(!Array.isArray(W.st?.readinessLog))W.st.readinessLog=[];
  const style=document.createElement('style');style.id='training-engine-v200-style';style.textContent=`
+ #start{overflow-anchor:none}
  .te200-rec{display:block!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;margin:9px 0 2px;padding:9px 11px;border-radius:14px;background:#191d1a;border:1px solid rgba(48,209,88,.28);overflow:visible!important}
  .te200-rec .te200-rec-main{display:block!important;min-width:0!important;width:auto!important;max-width:none!important}.te200-rec b{display:block;font-size:12px;color:#30d158}.te200-rec span{display:block;font-size:11px;color:#8e8e93;margin-top:2px;white-space:normal}.te200-rec .te200-rec-actions{display:flex!important;flex-wrap:wrap!important;gap:8px!important;width:100%!important;margin-top:12px!important}.te200-rec .te200-rec-actions>button{flex:1 1 180px;min-width:0;min-height:42px;padding:9px 12px;border-radius:13px;font-size:12px;font-weight:850}.te200-rec .te200-rec-actions>.te200-rec-apply{flex:2 1 240px;background:#30d158;color:#061108}.te200-rec>.te200-rec-apply{display:block!important;width:100%!important;min-width:0;min-height:42px;margin-top:12px;padding:9px 12px;border-radius:13px;background:#30d158;color:#061108;font-size:12px;font-weight:850}.te200-rec>.btn:not(.te200-rec-apply){display:block!important;width:100%!important;min-height:42px;margin-top:8px}.te200-rec .te200-rec-apply:disabled{background:#313135;color:#85858b;cursor:default}
  .te200-rec .te200-rec-quick{font-size:11px;color:#91929a;margin-top:4px;line-height:1.3}
@@ -87,7 +88,7 @@
  W.trainingInitializeSetWeights=initializeSetWeights;
  async function ensureLoadModel(){
   if(W.trainingLoadModel292?.run)return true;
-  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=603';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
+  if(!document.querySelector('script[data-unvrsl-load-model-v292]')){const s=document.createElement('script');s.src='training-load-model.js?v=604';s.async=false;s.dataset.unvrslLoadModelV292='1';document.body.appendChild(s)}
   for(let i=0;i<40;i++){if(W.trainingLoadModel292?.run)return true;await new Promise(r=>setTimeout(r,50))}
   return !!W.trainingLoadModel292?.run
  }
@@ -142,8 +143,8 @@
  }
  function readinessPercent(cur){if(!cur?.trainingReadinessDone||!cur?.readinessAdjusted)return'';const p=Math.round(((num(cur?.readiness?.factor)||1)-1)*1000)/10;return`${p>0?'+':''}${String(p).replace('.',',')}%`}
  function v292Ready(group,cur){return Number(cur?.trainingLoadModelRevision)===292&&group.some(ex=>ex?.trainingProgression292?.actualEffort===true||(ex?.set||[]).some(s=>s?.recommendation?.testWeekSuggestion))&&group.some(ex=>(ex?.set||[]).some(s=>N(s?.recommendedW)!=null&&!!s?.trainingIntensity292))}
- function applyRecommendation(k){const cur=W.st?.current;if(!cur)return;const idx=groupIndices(cur,k),prescribed=idx.some(i=>cur.ex?.[i]?.programWeightMode==='prescribed');if(!prescribed){W.toast?.('Здесь вес выставляется автоматически');return}idx.forEach(i=>{const ex=cur.ex[i];if(ex?.programWeightMode!=='prescribed')return;(ex.set||[]).forEach(s=>{if(s.ok||s.manualOverride||s.weightSource==='manual'||s.recommendation?.action==='stop'||s.recommendation?.canApply===false||s.recommendation?.planPreserved||N(s.recommendedW)==null||!s.trainingIntensity292)return;if(!WorkoutDomain.acceptRecommendation(s,s.recommendation))return;s.baselineW=s.plannedW;s.baselineSource='prescribed_recommendation_v292';s.w=s.recommendation?.wellbeingResolved?s.plannedW:todayWeight(s.plannedW,ex,cur)});ex.weightDecision='recommendation'});try{W.save?.();W.startPage?.()}catch(_){}setTimeout(enhanceDom,0);W.toast?.('Рекомендованный вес применён')}
- function restoreProgram(k){const cur=W.st?.current;if(!cur)return;groupIndices(cur,k).forEach(i=>{const ex=cur.ex[i];if(ex?.programWeightMode!=='prescribed')return;(ex.set||[]).forEach(s=>{if(s.ok||s.manualOverride||num(s.programW)<=0)return;s.plannedW=num(s.programW);s.baselineW=s.plannedW;s.baselineSource='program';s.w=todayWeight(s.plannedW,ex,cur)});ex.weightDecision='program'});try{W.save?.();W.startPage?.()}catch(_){}setTimeout(enhanceDom,0)}
+ function applyRecommendation(k){const cur=W.st?.current;if(!cur)return;const idx=groupIndices(cur,k),prescribed=idx.some(i=>cur.ex?.[i]?.programWeightMode==='prescribed');if(!prescribed){W.toast?.('Здесь вес выставляется автоматически');return}idx.forEach(i=>{const ex=cur.ex[i];if(ex?.programWeightMode!=='prescribed')return;(ex.set||[]).forEach(s=>{if(s.ok||s.manualOverride||s.weightSource==='manual'||s.recommendation?.action==='stop'||s.recommendation?.canApply===false||s.recommendation?.planPreserved||N(s.recommendedW)==null||!s.trainingIntensity292)return;if(!WorkoutDomain.acceptRecommendation(s,s.recommendation))return;s.baselineW=s.plannedW;s.baselineSource='prescribed_recommendation_v292';s.w=s.recommendation?.wellbeingResolved?s.plannedW:todayWeight(s.plannedW,ex,cur)});ex.weightDecision='recommendation'});try{W.save?.();W.unvrslSyncWorkoutWeightsV604?.();enhanceDom()}catch(_){}setTimeout(enhanceDom,0);W.toast?.('Рекомендованный вес применён')}
+ function restoreProgram(k){const cur=W.st?.current;if(!cur)return;groupIndices(cur,k).forEach(i=>{const ex=cur.ex[i];if(ex?.programWeightMode!=='prescribed')return;(ex.set||[]).forEach(s=>{if(s.ok||s.manualOverride||num(s.programW)<=0)return;s.plannedW=num(s.programW);s.baselineW=s.plannedW;s.baselineSource='program';s.w=todayWeight(s.plannedW,ex,cur)});ex.weightDecision='program'});try{W.save?.();W.unvrslSyncWorkoutWeightsV604?.();enhanceDom()}catch(_){}setTimeout(enhanceDom,0)}
  function readiness(){const g=id=>num(document.getElementById(id)?.value||3),sl=g('te200Sleep'),en=g('te200Energy'),so=g('te200Sore'),st=g('te200Stress'),pos=v=>(v-1)/4,neg=v=>(5-v)/4,score=Math.round(pos(sl)*25+pos(en)*30+neg(so)*30+neg(st)*15);let percent=0;if(score<30)percent=-10;else if(score<50)percent=-7.5;else if(score<70)percent=-5;else if(score<85)percent=-2.5;return{sleep:sl,energy:en,soreness:so,stress:st,score,percent,factor:1+percent/100,skipped:false,at:new Date().toISOString()}}
  function item(id,label,left,right){return `<div class="te200-item"><b><span>${label}</span><span id="${id}V">3</span></b><input id="${id}" data-touched="0" type="range" min="1" max="5" value="3" oninput="this.dataset.touched='1';document.getElementById('${id}V').textContent=this.value;trainingUpdateReadiness200()"><div class="te200-scale"><span>${left}</span><span>${right}</span></div></div>`}
  function readinessText(d){const p=num(d?.percent),label=p<0?`Убавить ${String(Math.abs(p)).replace('.',',')}%`:'Оставить базовый вес';return{label,meta:`Готовность ${d?.score??0}/100 · решение применяется только после нажатия кнопки`}}
@@ -177,7 +178,23 @@
   const cur=W.st?.current;if(!cur)return;lockLegacy(cur);attachReadiness(cur,d,adjust);(cur.ex||[]).forEach(ex=>{(ex.set||[]).forEach(s=>{if(s.ok||s.skipped||s.manualOverride||s.weightSource==='manual'||num(s.plannedW)<=0)return;s.w=todayWeight(s.plannedW,ex,cur)})});try{W.save?.();W.startPage?.();W.closeModal?.()}catch(_){}try{await (W.trainingLoadModel292?.schedule?.()??W.trainingLoadModel292?.run?.(true))}catch(_){}setTimeout(enhanceDom,0);if(adjust)W.toast?.(readinessText(d).label)
  }
  function domSignature(cur){return JSON.stringify([cur.id,cur.trainingWeightPolicy214,cur.trainingLoadModelRevision||0,cur.trainingLoadModelAt||'',!!cur.trainingReadinessDone,!!cur.readinessAdjusted,cur.readiness?.score??null,(cur.ex||[]).map(ex=>[key(ex),ex.programWeightMode,ex.weightDecision,ex.trainingProgression292?.action||'',ex.trainingProgression292?.reason||'',(ex.set||[]).map(s=>[s.dismissedRecommendation,s.testOmitted,num(s.programW),num(s.recommendedW),!!s.trainingIntensity292,num(s.plannedW),num(s.w),!!s.ok,s.actualReps,s.actualRpe,s.recommendation?.repRange,s.recommendation?.basis?.date,s.recommendation?.excludedHistory,s.recommendation?.strength,s.recommendation?.conflict,s.recommendation?.nextSetSuggestion?.weight])])])}
- function enhanceDom(){const cur=W.st?.current,root=document.getElementById('start');if(!cur||!root)return;if(root.contains(document.activeElement)&&document.activeElement?.matches?.('input,textarea,select'))return;const sig=domSignature(cur);if(root.dataset.te200Sig===sig&&root.querySelector('.te200-readiness'))return;root.querySelectorAll('.te200-rec,.te200-auto,.te200-readiness,.te405-next').forEach(x=>x.remove());const cards=[...root.querySelectorAll('.exercise')],seen=new Set();
+ // Recommendation panels can change height above the user's current set.
+ // Anchor an existing row/header; never replace or refocus the workout inputs.
+ let lastInteractionRow=null;
+ for(const event of ['pointerdown','focusin','click'])document.addEventListener?.(event,e=>{const row=e.target?.closest?.('#start .setrow');if(row)lastInteractionRow=row},true);
+ function viewportAnchor(root){
+  if(!root.classList.contains('active')||document.getElementById('modal')?.classList.contains('show'))return null;
+  const top=Math.max(0,document.querySelector('.topbar')?.getBoundingClientRect().bottom||0),bottom=W.innerHeight-120;
+  const visible=node=>{if(!node?.isConnected)return false;const r=node.getBoundingClientRect();return r.bottom>top+4&&r.top<bottom};
+  const node=visible(lastInteractionRow)?lastInteractionRow:W.scrollY>0?[...root.querySelectorAll('.exname,.setrow,.workout-finish-card')].find(visible):null;
+  return node?{node,top:node.getBoundingClientRect().top}:null;
+ }
+ function restoreViewportAnchor(anchor){
+  if(!anchor?.node.isConnected)return;
+  const delta=anchor.node.getBoundingClientRect().top-anchor.top;
+  if(Math.abs(delta)>1)(W.unvrslScrollBy||W.scrollBy).call(W,{top:delta,left:0,behavior:'auto'});
+ }
+ function enhanceDom(){const cur=W.st?.current,root=document.getElementById('start');if(!cur||!root)return;if(root.contains(document.activeElement)&&document.activeElement?.matches?.('input,textarea,select'))return;const sig=domSignature(cur);if(root.dataset.te200Sig===sig&&root.querySelector('.te200-readiness'))return;const anchor=viewportAnchor(root);root.querySelectorAll('.te200-rec,.te200-auto,.te200-readiness,.te405-next').forEach(x=>x.remove());const cards=[...root.querySelectorAll('.exercise')],seen=new Set();
   const groups=typeof groupIndexedEntries==='function'?groupIndexedEntries(cur.ex):cur.ex.map((e,i)=>({entries:[e],indices:[i]}));
   groups.forEach((group,index)=>{const ex=group.entries[0],card=cards[index];if(!card||['time','distance'].includes(WorkoutDomain.loadType(ex,workoutRegistry)))return;const pending=group.entries.flatMap(e=>(e.set||[]).filter(s=>!s.ok&&!s.skipped).map(s=>({e,s}))),item=pending.find(x=>x.s.recommendation);if(!item)return;
    const rec=item.s.recommendation;if(rec.proposalKey&&item.s.dismissedRecommendation===rec.proposalKey)return;
@@ -240,17 +257,17 @@
       if(latest.canApply===false||latest.planPreserved||WorkoutDomain.recommendationWeight(latest)==null)continue;
       if(WorkoutDomain.acceptRecommendation(s,latest)){s.recommendation=latest;s.recommendedW=WorkoutDomain.recommendationWeight(latest);e.weightDecision='recommendation';count++;}
      }
-     if(count){W.save();W.startPage()}else W.toast?.('Недостаточно данных для применения рекомендации');
+     if(count){W.save();W.unvrslSyncWorkoutWeightsV604?.();enhanceDom();W.trainingLoadModel292?.schedule?.({exerciseIndices:group.indices})}else W.toast?.('Недостаточно данных для применения рекомендации');
     };
     actions.append(button);
     const cancel=document.createElement('button');cancel.type='button';cancel.className='btn';cancel.textContent='Отменить';
-    cancel.onclick=()=>{for(const {s} of pending)if(s.recommendation)WorkoutDomain.dismissRecommendation(s,s.recommendation);W.save();W.startPage()};
+    cancel.onclick=()=>{for(const {s} of pending)if(s.recommendation)WorkoutDomain.dismissRecommendation(s,s.recommendation);W.save();enhanceDom()};
     actions.append(cancel);el.append(actions);
    }
    card.querySelector('.row')?.insertAdjacentElement('afterend',el);
    showHint();
   });
-  const head=root.querySelector('.workout-head')||root.firstElementChild;if(head){const b=document.createElement('button');b.className='te200-readiness'+(cur.trainingReadinessDone?' done':'');b.type='button';const rp=readinessPercent(cur);b.textContent=cur.trainingReadinessDone?(cur.readiness?.skipped?'Самочувствие · базовый вес':rp?`Самочувствие · ${rp}`:'Самочувствие · вес оставить'):'Самочувствие · рассчитать коррекцию';b.onclick=showReadiness;head.insertAdjacentElement('afterend',b)}root.dataset.te200Sig=sig
+  const head=root.querySelector('.workout-head')||root.firstElementChild;if(head){const b=document.createElement('button');b.className='te200-readiness'+(cur.trainingReadinessDone?' done':'');b.type='button';const rp=readinessPercent(cur);b.textContent=cur.trainingReadinessDone?(cur.readiness?.skipped?'Самочувствие · базовый вес':rp?`Самочувствие · ${rp}`:'Самочувствие · вес оставить'):'Самочувствие · рассчитать коррекцию';b.onclick=showReadiness;head.insertAdjacentElement('afterend',b)}root.dataset.te200Sig=sig;restoreViewportAnchor(anchor)
  }
  let last='',busy=false;
  function assignStart(name,fn){W[name]=fn;try{if(name==='begin')begin=fn;else if(name==='beginProgramDay')beginProgramDay=fn;else if(name==='beginRemotePlan')beginRemotePlan=fn}catch(_){}}
@@ -258,7 +275,7 @@
  function installStartHooks(){['begin','beginProgramDay','beginRemotePlan'].forEach(installStart)}
  async function tick(){installStartHooks();const cur=W.st?.current;if(!cur?.id||cur.ended)return;lockLegacy(cur);const id=String(cur.id);if(id!==last){last=id;busy=false;const root=document.getElementById('start');if(root)delete root.dataset.te200Sig}if(busy)return;busy=true;try{if(cur.trainingEngineRevision!==REV){const ok=await prepare(cur);if(!ok)return}else if(!W.trainingLoadModel292?.run){await ensureLoadModel()}
    if(WorkoutDomain.normalizePendingWeights(cur,workoutRegistry,st.exerciseWeightProfiles||{})){
-    W.save?.({draftOnly:true});await (W.trainingLoadModel292?.schedule?.()??W.trainingLoadModel292?.run?.(true));W.startPage?.();
+    W.save?.({draftOnly:true});await (W.trainingLoadModel292?.schedule?.()??W.trainingLoadModel292?.run?.(true));W.unvrslSyncWorkoutWeightsV604?.();
    }
    enhanceDom()}finally{busy=false}}
  W.trainingApplyRecommendation200=applyRecommendation;W.trainingRestoreProgram200=restoreProgram;W.trainingShowReadiness200=showReadiness;W.trainingConfirmReadiness200=confirm;W.trainingUpdateReadiness200=updateReadiness;W.trainingRequestProgramStartV382=requestProgramStart;W.trainingEngine200Tick=tick;
