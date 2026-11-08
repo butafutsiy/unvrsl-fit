@@ -204,6 +204,7 @@ jobs:
           done
           export UNVRSL_PLAYWRIGHT="$RUNNER_TEMP/unvrsl-browser/node_modules/playwright"
           export UNVRSL_AUDIT_OUTPUT="$RUNNER_TEMP/unvrsl-layout-proof"
+          node tests/browser-workout-scroll.cjs
           node tests/browser-equipment-performance.cjs
           node tests/browser-program-audit.cjs
           node tests/browser-pwa-persistence.cjs
@@ -252,3 +253,4 @@ jobs:
         run: |
           node tests/runtime-ios-entry.cjs
           node tests/runtime-equipment-performance.cjs
+          node tests/runtime-workout-stability.cjs
