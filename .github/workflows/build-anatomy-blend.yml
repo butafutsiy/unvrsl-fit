@@ -1,0 +1,54 @@
+name: Build UNVRSL Blender Anatomy Studio
+
+on:
+  push:
+    branches:
+      - feature/anatomy-atlas-prototype
+    paths:
+      - scripts/build-anatomy-blend.py
+      - .github/workflows/build-anatomy-blend.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  blender-scene:
+    name: Package Blender scene
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout UNVRSL FIT
+        uses: actions/checkout@v4
+      - name: Install Blender
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender python3-numpy
+          blender --version | head -3
+      - name: Download Écorché model (CC BY-SA 4.0)
+        run: |
+          mkdir -p _build output
+          curl --fail --location --retry 3 --output _build/ecorche.glb \
+            https://raw.githubusercontent.com/Charleeh/ecorche/main/model/ecorche.glb
+          test "$(stat -c%s _build/ecorche.glb)" -gt 10000000
+      - name: Build and save scene
+        run: |
+          blender --background --threads 4 --python scripts/build-anatomy-blend.py -- \
+            --ecorche _build/ecorche.glb \
+            --human assets/3d/human.json \
+            --output output/UNVRSL_FIT_Anatomy_Studio.blend
+          test -s output/UNVRSL_FIT_Anatomy_Studio.blend
+      - name: Include documentation and source credits
+        if: always()
+        run: |
+          cp docs/anatomy-studio.md output/README_Anatomy_Studio.md
+          cp assets/3d/NOTICE.md output/MAKEHUMAN_CREDITS.md
+          printf 'Écorché (github.com/Charleeh/ecorche), CC BY-SA 4.0.\nBased on BodyParts3D © The Database Center for Life Science, CC BY 4.0, and Z-Anatomy by Gauthier Kervyn, CC BY-SA 4.0.\nAny derivatives of this anatomy model redistributed must comply with CC BY-SA 4.0.\n' > output/ECORCHE_CREDITS.txt
+      - name: Upload Blender project
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: UNVRSL-FIT-Anatomy-Blender
+          path: output/
+          retention-days: 30
+          if-no-files-found: error
