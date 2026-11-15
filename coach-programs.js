@@ -108,7 +108,7 @@ function programExerciseDetails(pid,wi,e){
  const text=prescriptionText(e,pid,wi);
  if(e.kind==='cardio'||e.workMode==='timer'||e.loadType==='time')return text;
  const q=window.programResolveExerciseParametersV381?.(pid,wi,e),pct=q?.defaults?.intensity;
- const intensity=pct?.[0]>0?` · ${q.kind==='isolation'?'Изоляция':'База'} ${pct.join('–')}%`:'';
+ const intensity=e.targetIntensityMax!==0&&pct?.[0]>0?` · ${q.kind==='isolation'?'Изоляция':'База'} ${pct.join('–')}%`:'';
  return `${text}${intensity}${q?.tempo?.value?` · темп ${esc(q.tempo.value)}`:''}${q?.rest?.value?` · отдых ${q.rest.value} сек`:''}`;
 }
 window.programExerciseDetails=programExerciseDetails;
@@ -153,12 +153,14 @@ function beginProgramDay(pid,wi,di){
  (window.WorkoutFocusFlow?.programEntries(d.ex)||d.ex).forEach(b=>{
   if(b.kind==='cardio'||b.cardioMachineId){
     const seconds=Number(b.durationSec||b.workSeconds||b.sets?.[0]?.workSeconds)||0;
-    const duration=Math.max(1,Math.round(seconds||Number(b.cardio?.durationMin||30)*60));
+    const objective=['distance','calories'].includes(b.cardio?.mode);
+    const duration=objective?0:Math.max(1,Math.round(seconds||Number(b.cardio?.durationMin||30)*60));
     ex.push({n:b.n,d:b.note||'',kind:'cardio',mode:'timer',loadType:'time',sourceId:b.sourceId||null,
-      rest:0,target:b.rpe||6,workSeconds:duration,timedSeconds:duration,
-      cardioMachineId:b.cardioMachineId||null,cardio:{...(b.cardio||{}),durationMin:duration/60},
+      programExerciseId:b.id||null,superGroup:b.superGroup||null,superPos:b.superPos,superSize:b.superSize,transitionSec:b.transitionSec,afterGroupRestSec:b.afterGroupRestSec,
+      rest:b.rest??0,workSeconds:duration,timedSeconds:duration,
+      cardioMachineId:b.cardioMachineId||null,cardio:{...(b.cardio||{}),durationMin:objective?null:duration/60},
       set:(b.sets?.length?b.sets:[{workSeconds:duration}]).map((s,i)=>({
-        n:i+1,workSeconds:Number(s.workSeconds)||duration,
+        n:i+1,workSeconds:objective?0:Number(s.workSeconds)||duration,
         reportedKcal:s.reportedKcal??b.cardio?.reportedKcal??null,
         weightKg:s.weightKg??b.cardio?.weightKg??null,rpe:'',ok:false}))});
     return;
@@ -369,7 +371,7 @@ window.cycleReplacePhase=function(pid,wi,phase){
 window.cycleUndo=function(pid){const p=programById(pid);if(!p?.previousCycle)return;Object.assign(p,p.previousCycle);delete p.previousCycle;p.updated=Date.now();save();renderProgramEditor();};
 
 window.cycleExercisePreview=function(p,d,e){
- if(!p.cycleOptions||e.method==='SUPERSET')return '';
+ if(!p.cycleOptions||e.method==='SUPERSET'||e.kind==='cardio'||e.targetIntensityMax===0)return '';
  const w=p.weeks[programUi.week],spec=w?.weeklyLoadProfile?.[WorkoutDomain.exerciseKind(e,workoutRegistry)];if(!spec?.sets)return '';
  const target={...(e.sets?.[0]||{}),targetRepMin:spec.reps[0],targetRepMax:spec.reps[1],targetRpeMin:spec.rpe[0],targetRpeMax:spec.rpe[1],targetIntensityMin:spec.pct[0],targetIntensityMax:spec.pct[1],ok:false};
  const current={id:'cycle-preview',date:iso(),userId:p.assignedUserId||p.clientId||p.userId||window.cloud?.user?.id,dayRole:d.role,weeklyLoadProfile:w.weeklyLoadProfile,deload:w.deload,testWeek:w.testWeek,programId:p.id,w:w.n,programWeekIntensityMin:w.intensityMin,programWeekIntensityMax:w.intensityMax,ex:[{...e,set:[target]}]};
@@ -425,3 +427,4 @@ function cyclePreserveExerciseEdits(e,old){
  if(old.parameterOverrides?.version)e.parameterOverrides.version=old.parameterOverrides.version;
  for(const key of ['effortSourceMode','effortType','rpeMin','rpeMax','tempoMode','tempo','restMode','rest','weightMode'])if(old[key]!=null)e[key]=old[key];
 }
+

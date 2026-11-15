@@ -99,13 +99,13 @@
 
   const basePrescription=window.prescriptionText;
   if(typeof basePrescription==='function'){
-    const wrapped=function(e){if(isCardio(e)){const sec=Number(e.durationSec||e.workSeconds||legacyDurationSeconds(e)||e.sets?.[0]?.workSeconds||0),count=e.sets?.length||1;return `${count>1?`${count}×`:''}${fmtTime(sec)} · RPE ${e.rpe||6}${e.rest?` · отдых ${e.rest} сек`:''}`}return basePrescription.apply(this,arguments)};
+    const wrapped=function(e){if(isCardio(e)){if(['distance','calories'].includes(e.cardio?.mode))return basePrescription.apply(this,arguments);const sec=Number(e.durationSec||e.workSeconds||legacyDurationSeconds(e)||e.sets?.[0]?.workSeconds||0),count=e.sets?.length||1;return `${count>1?`${count}×`:''}${fmtTime(sec)} · RPE ${e.rpe||6}${e.rest?` · отдых ${e.rest} сек`:''}`}return basePrescription.apply(this,arguments)};
     window.prescriptionText=wrapped;try{prescriptionText=wrapped}catch(e){}
   }
 
   function convertCurrent(pid,wi,di){
     const p=typeof programById==='function'?programById(pid):null,d=p?.weeks?.[wi]?.days?.[di],cur=st?.current;if(!p||!d||!cur||String(cur.programId||'')!==String(p.id))return false;
-    let changed=false;(d.ex||[]).forEach((src,i)=>{if(!isCardio(src)||!cur.ex?.[i])return;const dst=cur.ex[i],seconds=Number(src.durationSec||src.workSeconds||legacyDurationSeconds(src)||src.sets?.[0]?.workSeconds||60);dst.n=src.n;dst.d=src.note||'';dst.rest=Number(src.rest||0);dst.target=Number(src.rpe||cur.target||6);dst.tempo=src.tempo||'равномерный';dst.mode='timer';dst.kind='cardio';dst.workSeconds=seconds;dst.timedSeconds=seconds;dst.sourceId=src.sourceId||legacyPresetForName(src.n)?.id||null;dst.set=Array.from({length:src.sets?.length||1},(_,si)=>({n:si+1,workSeconds:seconds,rpe:'',ok:false}));changed=true});
+    let changed=false;(d.ex||[]).forEach((src,i)=>{if(!isCardio(src)||['distance','calories'].includes(src.cardio?.mode)||!cur.ex?.[i])return;const dst=cur.ex[i],seconds=Number(src.durationSec||src.workSeconds||legacyDurationSeconds(src)||src.sets?.[0]?.workSeconds||60);dst.n=src.n;dst.d=src.note||'';dst.rest=Number(src.rest||0);dst.target=Number(src.rpe||cur.target||6);dst.tempo=src.tempo||'равномерный';dst.mode='timer';dst.kind='cardio';dst.workSeconds=seconds;dst.timedSeconds=seconds;dst.sourceId=src.sourceId||legacyPresetForName(src.n)?.id||null;dst.set=Array.from({length:src.sets?.length||1},(_,si)=>({n:si+1,workSeconds:seconds,rpe:'',ok:false}));changed=true});
     if(changed){save();try{startPage()}catch(e){}}return changed
   }
 
@@ -128,7 +128,7 @@
   const baseGroup=window.exerciseGroupCard;
   if(typeof baseGroup==='function'){
     const wrapped=function(s,group){
-      const timed=group?.entries?.length&&group.entries.every(e=>e?.mode==='timer');if(!timed)return baseGroup.apply(this,arguments);
+      const timed=group?.entries?.length&&group.entries.every(e=>e?.mode==='timer'&&!['distance','calories'].includes(e.cardio?.mode));if(!timed)return baseGroup.apply(this,arguments);
       const title=typeof displayExerciseName==='function'?displayExerciseName(group.base):group.base,last=group.entries.at(-1),restSec=Number(last?.rest||0),rows=[];group.entries.forEach((e,local)=>{const ei=group.indices[local];(e.set||[]).forEach((x,si)=>rows.push({e,x,ei,si,label:typeof variantLabel==='function'?variantLabel(e.n,si):String(si+1)}))});
       return `<div class="exercise cardio-program-ex"><div class="row between"><div class="grow"><div class="exname">${esc(title)}</div><div class="rule-line">Кардио по времени${restSec?` · отдых ${restSec} сек`:''}</div><div class="chips compact"><span class="chip green">RPE ${rows[0]?.e?.target||s.target||6}</span><span class="chip">ТАЙМЕР</span></div></div>${restSec?`<button class="btn tiny" onclick="timer(${restSec})">⏱</button>`:''}</div><div class="sethead anton-set-head"><span>Сет</span><span>время</span><span>таймер</span><span>RPE</span><span></span></div>${rows.map(z=>{const sec=Number(z.x.workSeconds||z.e.workSeconds||60);return `<div class="anton-time-set"><span class="setnum">${esc(z.label)}</span><b>${fmtTime(sec)}</b><button class="btn tiny anton-work-timer" onclick="cardioWorkTimer(${sec},'${encodeURIComponent(z.e.n)}')">▶ Таймер</button><input inputmode="decimal" value="${z.x.rpe||''}" placeholder="${z.e.target||s.target||6}" onchange="editSet(${z.ei},${z.si},'rpe',this.value)"><button class="check ${z.x.ok?'done':''}" onclick="toggleSet(${z.ei},${z.si})">${z.x.ok?'✓':'○'}</button></div>`}).join('')}</div>`
     };
