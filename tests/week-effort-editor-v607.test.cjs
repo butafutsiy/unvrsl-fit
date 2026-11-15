@@ -2,11 +2,18 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 const domain=require('../workout-domain.js'),planApi=require('../upper-lower-supersets-plan.js');
 const read=p=>fs.readFileSync(require.resolve('../'+p),'utf8');
-function fixture(wi=1){
+function fixture(wi=1,effortOnly=true){
   const plan=planApi.build(null,'2026-11-16'),fields=new Map(),percent=[{hidden:false},{hidden:false}],isoFields=[{hidden:false},{hidden:false}];
+  if(effortOnly){
+    const w=plan.weeks[wi];w.useIntensity=false;delete w.intensityMin;delete w.intensityMax;
+    for(const k of ['baseRepMin','baseRepMax','isolationRepMin','isolationRepMax'])delete w[k];
+    w.rpeMin=wi?8:7;w.rpeMax=wi?9:8;
+    w.weeklyLoadProfile.pct=[0,0];w.weeklyLoadProfile.base={pct:[0,0],sets:3,reps:[8,12],rpe:wi?[8,8]:[7,8],rir:wi?[2,2]:[2,3]};
+    w.weeklyLoadProfile.isolation={pct:[0,0],sets:3,reps:[12,15],rpe:wi?[8,9]:[7,8],rir:wi?[1,2]:[2,3]};
+  }
   const band={textContent:''},help={textContent:''};let saved=0;
   function input(id,value=''){const e={value,checked:false,addEventListener(){},closest(){return isoFields[id.endsWith('Min')?0:1]}};fields.set(id,e);return e;}
-  input('pi261Min');input('pi261Max');input('pi261Use');
+  input('pi261Min');input('pi261Max');input('pi261Use').checked=plan.weeks[wi].useIntensity;
   const saveButton={textContent:'Сохранить профиль недели',dataset:{},removeAttribute(){},getAttribute(){return ''},addEventListener(){}};
   const card={querySelector(q){if(q==='.pi261-band')return band;if(q==='.wr264-effort-help')return help;return null},
     querySelectorAll(q){if(q==='[data-week-percent-fields]')return percent;if(q==='button')return [saveButton];return []},appendChild(){}};
@@ -50,4 +57,15 @@ test('percentage-based profiles still validate and save an explicit percentage c
   f.ctx.weekEditorTest.saveProfile(f.plan,1);
   assert.equal(f.plan.weeks[1].useIntensity,true);assert.equal(f.plan.weeks[1].intensityMin,75);
   assert.deepEqual(Array.from(f.plan.weeks[1].weeklyLoadProfile.isolation.pct),[60,65]);
+});
+
+test('percentage plan editor shows both authored week corridors and independent RPE',()=>{
+  for(const wi of [0,1]){
+    const f=fixture(wi,false),v=id=>Number(f.fields.get(id).value);
+    assert.deepEqual([v('pi261Min'),v('pi261Max')],wi?[75,80]:[70,75]);
+    assert.deepEqual([v('wr264IsoPctMin'),v('wr264IsoPctMax')],wi?[65,70]:[70,75]);
+    assert.deepEqual([v('wr264RpeMin'),v('wr264RpeMax')],[7,8]);
+    assert.deepEqual([v('wr264IsoRpeMin'),v('wr264IsoRpeMax')],[8,9]);
+    assert.ok(f.percent.every(e=>!e.hidden));assert.ok(f.isoFields.every(e=>!e.hidden));
+  }
 });

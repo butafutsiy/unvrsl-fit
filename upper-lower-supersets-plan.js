@@ -1,6 +1,6 @@
 'use strict';
 ((root,factory)=>{
-  const api=factory();
+  const api=factory(typeof module==='object'&&module.exports?require('./workout-domain.js'):root?.WorkoutDomain);
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(!root)return;
   root.UpperLowerSupersetsPlan=api;
@@ -63,12 +63,6 @@
     const size=members.length,title=size===3?'Трисет':'Суперсет';
     return `<section class="card" data-upper-lower-group="${ei}"><b>${title} · ${e.sets?.length||3} круга</b><div class="muted small" style="margin:8px 0">${size===3?'A → B → C':'A → B'} · переход без отдыха · после круга ${members.at(-1).e.afterGroupRestSec} сек.</div>${members.map(x=>row.call(this,p,d,x.e,x.i)).join('')}</section>`;
   };
-  const preview=root.cycleExercisePreview;
-  if(typeof preview==='function')root.cycleExercisePreview=function(p){
-    // This authored cycle progresses by repetitions/RPE, without a %1RM target.
-    if(p?.seedId===api.ID)return '';
-    return preview.apply(this,arguments);
-  };
   let upgrading=false;
   async function upgradeSavedPlans(){
     if(upgrading||adding)return;
@@ -95,8 +89,8 @@
   root.addEventListener('unvrsl:cloud-ready',upgradeSavedPlans);
   if(root.__unvrslStartupComplete){upgradeSavedPlans();showLinkedPlan();}
 
-})(typeof window==='undefined'?null:window,()=>{
-  const REVISION=2,ID='semen-upper-lower-supersets-2w',NAME='Верх / низ · суперсеты · 2 недели';
+})(typeof window==='undefined'?null:window,(defaultDomain)=>{
+  const REVISION=3,ID='semen-upper-lower-supersets-2w',NAME='Верх / низ · суперсеты · 2 недели';
   // Array: exercise name, kind, working sets, low/high reps, RPE, note, load type.
   const days=[
     {name:'День 1 · Низ',groups:[
@@ -144,58 +138,67 @@
     date.setUTCDate(date.getUTCDate()+days);
     return date.toISOString().slice(0,10);
   }
-  function weekProfile(wi){
-    const rpe=wi?[8,9]:[7,8];
-    const spec=(reps,effort)=>({pct:[0,0],sets:3,reps,rpe:effort,rir:[10-effort[1],10-effort[0]]});
-    return {week:wi+1,phase:wi?'progression':'adaptation',pct:[0,0],rpe,
-      deload:false,test:false,tempo:'2-1-1',baseRest:[90,150],isoRest:[60,120],
-      base:spec([8,12],wi?[8,8]:[7,8]),isolation:spec([12,15],rpe),
-      focus:wi?'Прогрессия: сначала повторы; после верхней границы во всех подходах добавить 2,5–5% веса при целевом RPE.':'Подбор нагрузки: RPE 7–8, RIR 2–3. Освоить порядок кругов без отказа.'};
+  function weekProfile(wi,domain=defaultDomain){
+    const profile=JSON.parse(JSON.stringify(domain.weekProfiles[wi+1]));
+    // Keep the original three paired rounds; do not split four base sets
+    // against three isolation sets inside a mixed superset.
+    profile.week=wi+1;profile.base.sets=3;profile.isolation.sets=3;
+    profile.rpe=[Math.min(profile.base.rpe[0],profile.isolation.rpe[0]),Math.max(profile.base.rpe[1],profile.isolation.rpe[1])];
+    profile.baseRest=[120,150];profile.isoRest=[60,120];
+    profile.focus=wi?'Рабочая неделя: база 75–80%, 8–10 повторений, RPE 7–8; изоляция 65–70%, 12–15 повторений, RPE 8–9.':'Объёмная неделя: база 70–75%, 10–12 повторений, RPE 7–8; изоляция 70–75%, 10–12 повторений, RPE 8–9.';
+    return profile;
   }
-  function build(domain,startDate){
+  function build(domain=defaultDomain,startDate){
+    domain=domain?.weekProfiles?domain:defaultDomain;
     if(!startDate){
       const date=new Date();
       date.setDate(date.getDate()+(8-date.getDay())%7);
       startDate=[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
     }
-    const weeks=Array.from({length:2},(_,wi)=>({
-      n:wi+1,
-      loadProfileManual:true,useIntensity:false,
-      rpeMin:wi?8:7,rpeMax:wi?9:8,rirMin:wi?1:2,rirMax:wi?2:3,
-      phase:wi?'progression':'adaptation',deload:false,testWeek:false,
-      weeklyLoadProfile:weekProfile(wi),
-      tempo:'2-1-1',baseRestMin:90,baseRestMax:150,isolationRestMin:60,isolationRestMax:120,
-      focus:wi?'Неделя 2: добавляй повторения в указанном диапазоне либо 2,5–5% веса только при сохранении целевого RPE.':'Неделя 1: подбор нагрузки и контроль техники; основные упражнения без отказа.',
-      days:days.map((day,di)=>({
-        id:ID+'-w'+(wi+1)+'-d'+(di+1),name:day.name,role:'Middle',date:datePlus(startDate,wi*7+di*3),
-        ex:day.groups.flatMap((group,gi)=>group.items.map((row,ei)=>{
-          const [n,kind,count,min,max,baseRpe,extra,loadType]=row;
-          const rpeMin=wi?8:7,rpeMax=wi&&baseRpe>8?9:8,rpe=(rpeMin+rpeMax)/2;
-          const rest=ei===group.items.length-1?group.rest:0;
-          const tempo=/носки/.test(n)?'2-1-2':'2-1-1';
-          const isGroup=group.items.length>1;
-          const note=[group.name+' · отдых после связки '+group.rest+' сек.',extra,wi?'Неделя 2: увеличить повторы либо вес при сохранении RPE.':'Неделя 1: подобрать рабочий вес.'].filter(Boolean).join(' ');
-          return {
-            id:ID+'-w'+(wi+1)+'-d'+(di+1)+'-g'+(gi+1)+'-e'+(ei+1),
-            n,kind,method:'STANDARD',loadType:loadType||undefined,
-            repCounting:/болгар|одной ногой/i.test(n)?'per_leg':undefined,
-            ...(isGroup?{superGroup:ID+'-w'+(wi+1)+'-d'+(di+1)+'-g'+(gi+1),superPos:ei,superSize:group.items.length,transitionSec:0,afterGroupRestSec:group.rest}:{}),
-            reps:{mode:'manual',min,max},originalSets:count,originalRepRange:[min,max],
-            rpe,rpeMin,rpeMax,rirMin:10-rpeMax,rirMax:10-rpeMin,effortSourceMode:'manual',
-            tempoMode:'manual',tempo,restMode:'manual',rest,restMin:rest,restMax:rest,
-            weightMode:'auto',parameterOverrides:{version:386,effort:{mode:'manual',type:'rpe',rpeMin,rpeMax,rirMin:10-rpeMax,rirMax:10-rpeMin},tempo:{mode:'manual',value:tempo},rest:{mode:'manual',min:rest,max:rest},weight:{mode:'auto',value:0}},
-            note,sets:Array.from({length:count},()=>({w:0,r:min,tempo,rest,targetRepMin:min,targetRepMax:max,targetRpeMin:rpeMin,targetRpeMax:rpeMax,targetRirMin:10-rpeMax,targetRirMax:10-rpeMin,allowFailure:false}))
-          };
+    const weeks=Array.from({length:2},(_,wi)=>{
+      const profile=weekProfile(wi,domain);
+      return {
+        n:wi+1,loadProfileManual:true,useIntensity:true,
+        intensityMin:profile.pct[0],intensityMax:profile.pct[1],
+        rpeMin:profile.rpe[0],rpeMax:profile.rpe[1],rirMin:10-profile.rpe[1],rirMax:10-profile.rpe[0],
+        baseRepMin:profile.base.reps[0],baseRepMax:profile.base.reps[1],
+        isolationRepMin:profile.isolation.reps[0],isolationRepMax:profile.isolation.reps[1],
+        phase:profile.phase,deload:false,testWeek:false,weeklyLoadProfile:profile,
+        tempo:profile.tempo,baseRestMin:120,baseRestMax:150,isolationRestMin:60,isolationRestMax:120,focus:profile.focus,
+        days:days.map((day,di)=>({
+          id:ID+'-w'+(wi+1)+'-d'+(di+1),name:day.name,role:'Middle',date:datePlus(startDate,wi*7+di*3),
+          ex:day.groups.flatMap((group,gi)=>group.items.map((row,ei)=>{
+            const [n,kind,count,originalMin,originalMax,,extra,sourceLoadType]=row;
+            const spec=profile[kind==='isolation'?'isolation':'base'];
+            const bodyweight=/Подъёмы корпуса/.test(n),[min,max]=bodyweight?[15,20]:spec.reps;
+            const [rpeMin,rpeMax]=bodyweight?[8,8]:spec.rpe,rpe=(rpeMin+rpeMax)/2;
+            const [pctMin,pctMax]=bodyweight?[0,0]:spec.pct;
+            const rest=ei===group.items.length-1?group.rest:0,tempo=profile.tempo,isGroup=group.items.length>1;
+            const note=[group.name+' · отдых после связки '+group.rest+' сек.',extra,
+              bodyweight?'Пресс: 15–20 повторений, RPE 8; без расчёта %1ПМ.':`${pctMin}–${pctMax}% своего e1RM · ${min}–${max} повторений · RPE ${rpeMin}–${rpeMax}.`,
+              sourceLoadType==='bodyweight_added'?'Проценты от суммарной нагрузки: масса тела плюс отягощение. В поле веса только дополнительное отягощение.':'',
+              'В суперсете процент служит ориентиром; сохраняй заданные повторы и запас.'].filter(Boolean).join(' ');
+            return {
+              id:ID+'-w'+(wi+1)+'-d'+(di+1)+'-g'+(gi+1)+'-e'+(ei+1),
+              n,kind,method:'STANDARD',loadType:bodyweight?'bodyweight_only':sourceLoadType||undefined,
+              cycleManaged:!bodyweight,targetIntensityMin:pctMin,targetIntensityMax:pctMax,
+              repCounting:/болгар|одной ногой/i.test(n)?'per_leg':undefined,
+              ...(isGroup?{superGroup:ID+'-w'+(wi+1)+'-d'+(di+1)+'-g'+(gi+1),superPos:ei,superSize:group.items.length,transitionSec:0,afterGroupRestSec:group.rest}:{}),
+              reps:{mode:'manual',min,max},originalSets:count,originalRepRange:[originalMin,originalMax],
+              rpe,rpeMin,rpeMax,rirMin:10-rpeMax,rirMax:10-rpeMin,effortSourceMode:'manual',
+              tempoMode:'manual',tempo,restMode:'manual',rest,restMin:rest,restMax:rest,
+              weightMode:'auto',parameterOverrides:{version:386,effort:{mode:'manual',type:'rpe',rpeMin,rpeMax,rirMin:10-rpeMax,rirMax:10-rpeMin},tempo:{mode:'manual',value:tempo},rest:{mode:'manual',min:rest,max:rest},weight:{mode:'auto',value:0}},
+              note,sets:Array.from({length:count},()=>({w:0,r:min,tempo,rest,targetIntensityMin:pctMin,targetIntensityMax:pctMax,targetRepMin:min,targetRepMax:max,targetRpeMin:rpeMin,targetRpeMax:rpeMax,targetRirMin:10-rpeMax,targetRirMax:10-rpeMin,allowFailure:false}))
+            };
+          }))
         }))
-      }))
-    }));
+      };
+    });
     return {
-      id:ID,seedId:ID,sourceRevision:REVISION,name:NAME,author:'Семён Бутаков',
-      created:Date.now(),updated:Date.now(),
-      description:'2 тренировки в неделю: низ и верх. Три суперсета на низ + икры; три суперсета и трисет на верх + пресс. Прогрессия на 2 недели.',
-      principles:['Рабочие подходы не включают разминку.','Внутри суперсета/трисета только переход; отдых 60–150 сек после полного круга.','RIR = 10 − RPE.','Неделя 2: повторы в диапазоне или 2,5–5% веса при сохранении RPE.'],
-      cycleOptions:{weeks:2,daysPerWeek:2,startDate,targetDate:datePlus(startDate,13),testWeek:false,periodizationMode:'manual',weekProfiles:weeks.map(w=>w.weeklyLoadProfile),phaseSchedule:weeks.map(w=>w.phase)},
-      weeks
+      id:ID,seedId:ID,sourceRevision:REVISION,name:NAME,author:'Семён Бутаков',created:Date.now(),updated:Date.now(),
+      description:'Низ и верх: две недели по таблице процентов UNVRSL, с отдельными параметрами базы и изоляции. Суперсеты по 3 круга, икры 4 подхода, пресс 3 подхода.',
+      principles:['Рабочие подходы не включают разминку.','Суперсеты и трисет выполняются по кругам; отдых после полной связки.','Проценты считаются от e1RM конкретного упражнения и оборудования.','RIR = 10 − RPE. В связках рабочий вес уточняется по повторам и запасу.'],
+      cycleOptions:{weeks:2,daysPerWeek:2,startDate,targetDate:datePlus(startDate,13),testWeek:false,periodizationMode:'manual',weekProfiles:weeks.map(w=>w.weeklyLoadProfile),phaseSchedule:weeks.map(w=>w.phase)},weeks
     };
   }
   function upgrade(plan,domain){
@@ -203,20 +206,23 @@
     const fresh=build(domain,plan.weeks?.[0]?.days?.[0]?.date);
     for(let wi=0;wi<(plan.weeks||[]).length;wi++){
       const week=plan.weeks[wi],next=fresh.weeks[wi];if(!next)continue;
-      for(const key of ['loadProfileManual','useIntensity','rpeMin','rpeMax','rirMin','rirMax','phase','deload','testWeek','weeklyLoadProfile','focus'])week[key]=next[key];
+      for(const key of ['loadProfileManual','useIntensity','intensityMin','intensityMax','baseRepMin','baseRepMax','isolationRepMin','isolationRepMax','tempo','baseRestMin','baseRestMax','isolationRestMin','isolationRestMax','rpeMin','rpeMax','rirMin','rirMax','phase','deload','testWeek','weeklyLoadProfile','focus'])week[key]=next[key];
       for(const day of week.days||[])for(const ex of day.ex||[]){
         const target=next.days.flatMap(d=>d.ex).find(e=>e.id===ex.id);if(!target)continue;
-        for(const key of ['superGroup','superPos','superSize','transitionSec','afterGroupRestSec','rpe','rpeMin','rpeMax','rirMin','rirMax','effortSourceMode','restMode','rest','restMin','restMax']){
+        for(const key of ['reps','cycleManaged','targetIntensityMin','targetIntensityMax','tempo','tempoMode','superGroup','superPos','superSize','transitionSec','afterGroupRestSec','rpe','rpeMin','rpeMax','rirMin','rirMax','effortSourceMode','restMode','rest','restMin','restMax']){
           if(target[key]===undefined)delete ex[key];else ex[key]=target[key];
         }
-        ex.parameterOverrides={...ex.parameterOverrides,version:386,effort:{...target.parameterOverrides.effort},rest:{...target.parameterOverrides.rest}};
+        ex.note=[String(ex.note||'').replace(/(?:Неделя [12]:[^.]*\.|[0-9]+[–-][0-9]+% своего e1RM[^.]*\.)/g,'').trim(),target.note].filter(Boolean).join(' ');
+        if(target.loadType==='bodyweight_only')ex.loadType=target.loadType;
+        ex.parameterOverrides={...ex.parameterOverrides,version:386,effort:{...target.parameterOverrides.effort},rest:{...target.parameterOverrides.rest},tempo:{...target.parameterOverrides.tempo}};
+        delete ex.parameterOverrides.reps;
         for(const set of ex.sets||[]){
           if(set.ok||set.skipped)continue;
-          Object.assign(set,{rest:target.rest,targetRpeMin:target.rpeMin,targetRpeMax:target.rpeMax,targetRirMin:target.rirMin,targetRirMax:target.rirMax,allowFailure:false});
+          Object.assign(set,{r:target.reps.min,targetRepMin:target.reps.min,targetRepMax:target.reps.max,targetIntensityMin:target.targetIntensityMin,targetIntensityMax:target.targetIntensityMax,tempo:target.tempo,rest:target.rest,targetRpeMin:target.rpeMin,targetRpeMax:target.rpeMax,targetRirMin:target.rirMin,targetRirMax:target.rirMax,allowFailure:false});
         }
       }
     }
-    plan.cycleOptions=fresh.cycleOptions;plan.sourceRevision=REVISION;plan.updated=plan.updatedAt=Date.now();
+    plan.description=fresh.description;plan.principles=fresh.principles;plan.cycleOptions=fresh.cycleOptions;plan.sourceRevision=REVISION;plan.updated=plan.updatedAt=Date.now();
     return true;
   }
   return {ID,NAME,REVISION,days,build,upgrade};

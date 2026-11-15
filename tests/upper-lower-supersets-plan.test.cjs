@@ -8,12 +8,18 @@ test('saved manual periodization survives normalization and JSON roundtrip',()=>
   const p=model.normalizeProgram(JSON.parse(JSON.stringify(api.build(null,'2026-11-16'))));
   assert.equal(p.weeks.length,2);assert.equal(p.cycleOptions.periodizationMode,'manual');
   for(const [wi,w] of p.weeks.entries()){
-    assert.equal(w.useIntensity,false);assert.equal(w.testWeek,false);
+    assert.equal(w.useIntensity,true);assert.equal(w.testWeek,false);
     assert.equal(w.days[0].ex.length,7);assert.equal(w.days[1].ex.length,10);
     for(const e of w.days.flatMap(d=>d.ex)){
-      const hi=wi&&e.kind==='isolation'&&e.n!=='Подъёмы корпуса на наклонной скамье'?9:8;
-      assert.equal(e.rpeMin,wi?8:7);assert.equal(e.rpeMax,hi);
-      for(const s of e.sets){assert.equal(s.targetRpeMin,e.rpeMin);assert.equal(s.targetRpeMax,e.rpeMax);assert.equal(s.targetRirMin,10-hi);assert.equal(s.allowFailure,false);}
+      const bodyweight=e.loadType==='bodyweight_only',spec=w.weeklyLoadProfile[e.kind==='isolation'?'isolation':'base'];
+      const [lo,hi]=bodyweight?[8,8]:spec.rpe;
+      assert.equal(e.rpeMin,lo);assert.equal(e.rpeMax,hi);
+      assert.deepEqual([e.reps.min,e.reps.max],bodyweight?[15,20]:spec.reps);
+      for(const set of e.sets){
+        assert.equal(set.targetRpeMin,lo);assert.equal(set.targetRpeMax,hi);assert.equal(set.targetRirMin,10-hi);assert.equal(set.allowFailure,false);
+      }
+      const band=require('../workout-domain').intensityBand({programWeekUseIntensity:true,programWeekIntensityMin:w.intensityMin,programWeekIntensityMax:w.intensityMax},e,e.sets[0]);
+      assert.deepEqual(band,bodyweight?null:{lo:spec.pct[0]/100,hi:spec.pct[1]/100});
     }
   }
 });
@@ -33,21 +39,21 @@ test('supersets and triset rotate per round with rest only after the entire roun
     }
   }
 });
-test('upgrade preserves kilograms, equipment, exercise edits and completed sets; is idempotent',()=>{
+test('upgrade preserves kilograms, equipment, notes and completed sets; is idempotent',()=>{
   const p=api.build(null,'2026-11-16');p.sourceRevision=1;
   const e=p.weeks[0].days[0].ex[0];e.sets[0].w=123;e.equipmentProfileId='personal';
   e.note='Моя заметка';e.reps={mode:'manual',min:9,max:11};
   e.sets[1].ok=true;e.sets[1].targetRpeMin=9;
   const completed=JSON.stringify(e.sets[1]);
   assert.equal(api.upgrade(p),true);assert.equal(e.sets[0].w,123);
-  assert.equal(e.note,'Моя заметка');assert.equal(e.equipmentProfileId,'personal');assert.equal(e.reps.min,9);
+  assert.match(e.note,/Моя заметка/);assert.equal(e.equipmentProfileId,'personal');assert.equal(e.reps.min,10);
   assert.equal(JSON.stringify(e.sets[1]),completed);assert.equal(api.upgrade(p),false);
 });
 test('editor renders all group members once and startup only upgrades an existing personal plan',async()=>{
   const p=api.build(null,'2026-11-16');p.sourceRevision=1;
   const current={id:'unfinished',ex:[{set:[{w:100,ok:true}]}]},st={programs:[p],current,sessions:[{id:'history'}]};
   const before=JSON.stringify([current,st.sessions]),events={};let saves=0;
-  const root={st,WorkoutDomain:{},location:{href:'https://example.test/'},addEventListener(n,fn){events[n]=fn},
+  const root={st,WorkoutDomain:require('../workout-domain'),location:{href:'https://example.test/'},addEventListener(n,fn){events[n]=fn},
     programExerciseRow(_p,_d,e,ei){return `<p data-index="${ei}">${e.n}</p>`},save(){saves++}};
   vm.runInNewContext(source,{window:root,st,URL});
   const day=p.weeks[0].days[1],html=day.ex.map((e,i)=>root.programExerciseRow(p,day,e,i)).join('');
