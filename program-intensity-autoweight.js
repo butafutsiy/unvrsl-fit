@@ -28,22 +28,38 @@
       .pi261-week-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.pi261-week-title{font-weight:800;font-size:15px}.pi261-band{color:var(--green);font-size:13px;font-weight:800}
       .pi261-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.pi261-grid .field{margin:0}.pi261-presets{display:flex;flex-wrap:wrap;gap:6px;overflow:auto;padding:9px 0 2px;scrollbar-width:none}.pi261-presets::-webkit-scrollbar{display:none}
       .pi261-preset{white-space:nowrap;background:#29292d;border:1px solid #37373c;border-radius:999px;padding:7px 9px;font-size:11px;font-weight:750;color:#c8c8cd}.pi261-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid #303034}.pi261-toggle input{width:22px;height:22px;accent-color:var(--green)}
-      .pi261-note{color:#85858b;font-size:11px;line-height:1.4;margin-top:8px}.pi261-mode-note{font-size:11px;color:#85858b;margin-top:6px;line-height:1.35}.pi261-auto-input{opacity:.55}
+      .pi261-week [hidden]{display:none!important}.pi261-note{color:#85858b;font-size:11px;line-height:1.4;margin-top:8px}.pi261-mode-note{font-size:11px;color:#85858b;margin-top:6px;line-height:1.35}.pi261-auto-input{opacity:.55}
     `;D.head?.appendChild(s)
   }
 
+  function syncIntensityMode(){
+    const card=D.querySelector('#sheet .pi261-week');if(!card)return;
+    const enabled=D.getElementById('pi261Use')?.checked!==false;
+    card.querySelectorAll('[data-week-percent-fields]').forEach(el=>{el.hidden=!enabled});
+    for(const id of ['wr264IsoPctMin','wr264IsoPctMax']){
+      const el=D.getElementById(id),field=el?.closest('.field');if(field)field.hidden=!enabled;
+    }
+    const band=card.querySelector('.pi261-band');
+    if(band){
+      const lo=N(D.getElementById('pi261Min')?.value),hi=N(D.getElementById('pi261Max')?.value);
+      band.textContent=!enabled?'По усилию':lo>0&&hi>0?`${lo}–${hi}%`:'Задай проценты';
+    }
+    const help=card.querySelector('.wr264-effort-help');
+    if(help)help.textContent=enabled?'RIR = 10 − RPE. Нагрузка проверяется вместе с повторами и % e1RM.':'RIR = 10 − RPE. Вес подбирается по повторам и запасу. Проценты 1ПМ не заданы.';
+  }
+  W.programWeekIntensityModeV607=syncIntensityMode;
   function injectWeekCard(){
     style();const u=ui(),p=u?.pid?program(u.pid):null,wi=Number(u?.week)||0,w=p?.weeks?.[wi],sheet=D.getElementById('sheet'),bar=sheet?.querySelector('.weekbar');if(!p||!w||!bar)return;
     const editorKey=`${String(p.id)}|${wi}`,existing=sheet.querySelector('.pi261-week');
-    if(existing?.dataset?.editorKey===editorKey){W.dispatchEvent?.(new CustomEvent('unvrsl:program-intensity-mounted',{detail:{key:editorKey}}));return existing}
+    if(existing?.dataset?.editorKey===editorKey){syncIntensityMode();W.dispatchEvent?.(new CustomEvent('unvrsl:program-intensity-mounted',{detail:{key:editorKey}}));return existing}
     existing?.remove();const pct=weekBandPct(w),node=D.createElement('div');node.className='pi261-week';node.dataset.editorKey=editorKey;const lo=pct?.[0]??'',hi=pct?.[1]??'';
     node.innerHTML=`<div class="pi261-week-head"><div class="pi261-week-title">Интенсивность недели</div><div class="pi261-band">${pct?`${String(lo).replace('.',',')}–${String(hi).replace('.',',')}%`:'Не задана'}</div></div>
-      <div class="pi261-grid"><div class="field"><label>От, %</label><input id="pi261Min" inputmode="decimal" placeholder="70" value="${lo}"></div><div class="field"><label>До, %</label><input id="pi261Max" inputmode="decimal" placeholder="75" value="${hi}"></div></div>
-      <div class="pi261-presets">${[[60,65],[65,70],[70,75],[75,80],[80,85],[85,88],[88,90],[90,95],[95,100],[100,105]].map(([lo,hi])=>`<button class="pi261-preset" onclick="programWeekIntensityPresetV261(${lo},${hi})">${lo===100?'100+':`${lo}–${hi}`}%</button>`).join('')}</div>
-      <label class="pi261-toggle"><span><b>Учитывать при расчёте веса</b><div class="muted small">Корректировать нагрузку по интенсивности недели</div></span><input id="pi261Use" type="checkbox" ${w.useIntensity===false?'':'checked'}></label>
+      <div class="pi261-grid" data-week-percent-fields><div class="field"><label>От, %</label><input id="pi261Min" inputmode="decimal" placeholder="70" value="${lo}"></div><div class="field"><label>До, %</label><input id="pi261Max" inputmode="decimal" placeholder="75" value="${hi}"></div></div>
+      <div class="pi261-presets" data-week-percent-fields>${[[60,65],[65,70],[70,75],[75,80],[80,85],[85,88],[88,90],[90,95],[95,100],[100,105]].map(([lo,hi])=>`<button class="pi261-preset" onclick="programWeekIntensityPresetV261(${lo},${hi})">${lo===100?'100+':`${lo}–${hi}`}%</button>`).join('')}</div>
+      <label class="pi261-toggle"><span><b>Задать проценты от 1ПМ</b><div class="muted small">Корректировать нагрузку по интенсивности недели</div></span><input id="pi261Use" type="checkbox" onchange="programWeekIntensityModeV607()" ${w.useIntensity===false?'':'checked'}></label>
       <div class="pi261-note">Рекомендации учитывают завершённые подходы, шаг оборудования и самочувствие.</div>
       <button class="btn primary full" style="margin-top:11px" onclick="programWeekIntensitySaveV261('${String(p.id).replace(/'/g,"\\'")}',${wi})">Сохранить интенсивность</button>`;
-    bar.insertAdjacentElement('afterend',node);W.dispatchEvent?.(new CustomEvent('unvrsl:program-intensity-mounted',{detail:{key:editorKey}}));return node
+    bar.insertAdjacentElement('afterend',node);syncIntensityMode();W.dispatchEvent?.(new CustomEvent('unvrsl:program-intensity-mounted',{detail:{key:editorKey}}));return node
   }
 
   W.programWeekIntensityPresetV261=(lo,hi)=>{const a=D.getElementById('pi261Min'),b=D.getElementById('pi261Max');if(a)a.value=lo;if(b)b.value=hi};
@@ -74,3 +90,4 @@
   D.addEventListener?.('visibilitychange',()=>{if(!D.hidden)install()},{passive:true});
   install();injectWeekCard();
 })();
+
