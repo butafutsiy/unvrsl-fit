@@ -16,7 +16,8 @@ const response={data:{data:snapshot,updated_at:'2026-11-04',viewer_source:'clien
 async function runScenario(primary,anonymous,{fastTimeout=false}={}){
   const calls=[];
   const root={innerHTML:'<div class="pp-loader">Загружаю прогресс</div>',querySelectorAll:()=>[]};
-  let finished=0,timeoutCount=0,sessionChecks=0;
+  let finished=0,timeoutCount=0,sessionChecks=0,resolveFinished;
+  const completed=new Promise(resolve=>{resolveFinished=resolve});
   const window={
     location:{hash:'#t='+('a'.repeat(48)),reload(){}},
     UNVRSL_CLOUD:{url:'https://example.supabase.co',anonKey:'test-anon-key'},
@@ -33,17 +34,21 @@ async function runScenario(primary,anonymous,{fastTimeout=false}={}){
     },
     clearTimeout,
     localStorage:{getItem:()=>null,setItem(){}},
-    __unvrslProgressFinish(){finished++}
+    __unvrslProgressFinish(){finished++;resolveFinished()}
   };
   const document={getElementById:()=>root,addEventListener(){},title:''};
   vm.runInNewContext(source,{
     window,document,crypto:webcrypto,TextEncoder,URLSearchParams,
     requestAnimationFrame:cb=>cb(),setTimeout,clearTimeout,console:{warn(){}}
   },{filename:'public-progress.js'});
-  for(let i=0;i<50;i++){
-    await new Promise(resolve=>setImmediate(resolve));
-    if(finished)break;
-  }
+  // WebCrypto finishes on the worker pool; event-loop turns are not a clock.
+  // Wait for the actual loader completion, with a bounded failure deadline.
+  let deadline;
+  try{
+    await Promise.race([completed,new Promise((_,reject)=>{
+      deadline=setTimeout(()=>reject(Error('Progress loader did not finish')),1500);
+    })]);
+  }finally{clearTimeout(deadline)}
   return {html:root.innerHTML,calls,finished,sessionChecks};
 }
 
