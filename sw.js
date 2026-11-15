@@ -1,6 +1,6 @@
 "use strict";
 // Refresh shell for per-session working sets and compact rest timer.
-const SW_RELEASE = "v604",
+const SW_RELEASE = "v606",
   CACHE_PREFIX = "unvrsl-",
   SHELL = `${CACHE_PREFIX}shell-${SW_RELEASE}`,
   MEDIA = `${CACHE_PREFIX}media-${SW_RELEASE}`;
@@ -81,3 +81,4 @@ self.addEventListener("fetch", (event) => {
     })(),
   );
 });
+

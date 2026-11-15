@@ -20,6 +20,7 @@
       plan=trashed?JSON.parse(JSON.stringify(trashed.program)):api.build(root.WorkoutDomain);
       plan.archived=false;plan.updated=plan.updatedAt=Date.now();state.programs.push(plan);
     }
+    api.upgrade(plan,root.WorkoutDomain);
     plan.importedFromLink=true;
     root.unvrslRestoreProgramKeys?.(plan);
     state.primaryProgramId=plan.id;state.startProgramId=plan.id;
@@ -52,9 +53,50 @@
     shown=true;
     root.modal(`<div class="sheet-grabber"></div><h2>Твой тренировочный план</h2>${card()}<div class="muted small">Добавь в нужном аккаунте. День 1 доступен сразу. Текущая незавершённая тренировка сохранится. Повторное добавление откроет существующий план.</div>`);
   }
-  root.addEventListener('unvrsl:app-ready',showLinkedPlan);
+  // Keep exercises independently editable while presenting their shared rounds.
+  const row=root.programExerciseRow;
+  if(typeof row==='function')root.programExerciseRow=function(p,d,e,ei){
+    if(p?.seedId!==api.ID||!e?.superGroup)return row.apply(this,arguments);
+    if(d.ex[ei-1]?.superGroup===e.superGroup)return '';
+    const members=[];
+    for(let i=ei;i<d.ex.length&&d.ex[i].superGroup===e.superGroup;i++)members.push({e:d.ex[i],i});
+    const size=members.length,title=size===3?'Трисет':'Суперсет';
+    return `<section class="card" data-upper-lower-group="${ei}"><b>${title} · ${e.sets?.length||3} круга</b><div class="muted small" style="margin:8px 0">${size===3?'A → B → C':'A → B'} · переход без отдыха · после круга ${members.at(-1).e.afterGroupRestSec} сек.</div>${members.map(x=>row.call(this,p,d,x.e,x.i)).join('')}</section>`;
+  };
+  const preview=root.cycleExercisePreview;
+  if(typeof preview==='function')root.cycleExercisePreview=function(p){
+    // This authored cycle progresses by repetitions/RPE, without a %1RM target.
+    if(p?.seedId===api.ID)return '';
+    return preview.apply(this,arguments);
+  };
+  let upgrading=false;
+  async function upgradeSavedPlans(){
+    if(upgrading||adding)return;
+    const state=typeof st==='object'?st:root.st;
+    if(!state||!root.WorkoutDomain)return;
+    const plans=(state.programs||[]).filter(p=>p?.seedId===api.ID&&Number(p.sourceRevision||1)<api.REVISION);
+    if(!plans.length)return;
+    upgrading=true;
+    const backups=plans.map(p=>JSON.parse(JSON.stringify(p)));
+    try{
+      let changed=false;
+      for(const p of plans)changed=api.upgrade(p,root.WorkoutDomain)||changed;
+      if(!changed)return;
+      const ok=root.persistWorkoutState?await root.persistWorkoutState():root.save?.();
+      if(ok===false)throw Error('Не удалось сохранить настройки программы');
+      root.accountSyncNow?.({quiet:true});
+      root.render?.();
+    }catch(error){
+      plans.forEach((p,i)=>{Object.keys(p).forEach(k=>delete p[k]);Object.assign(p,backups[i])});
+      root.toast?.(error.message);
+    }finally{upgrading=false}
+  }
+  root.addEventListener('unvrsl:app-ready',()=>{upgradeSavedPlans();showLinkedPlan()});
+  root.addEventListener('unvrsl:cloud-ready',upgradeSavedPlans);
+  if(root.__unvrslStartupComplete){upgradeSavedPlans();showLinkedPlan();}
+
 })(typeof window==='undefined'?null:window,()=>{
-  const ID='semen-upper-lower-supersets-2w',NAME='Верх / низ · суперсеты · 2 недели';
+  const REVISION=2,ID='semen-upper-lower-supersets-2w',NAME='Верх / низ · суперсеты · 2 недели';
   // Array: exercise name, kind, working sets, low/high reps, RPE, note, load type.
   const days=[
     {name:'День 1 · Низ',groups:[
@@ -102,6 +144,14 @@
     date.setUTCDate(date.getUTCDate()+days);
     return date.toISOString().slice(0,10);
   }
+  function weekProfile(wi){
+    const rpe=wi?[8,9]:[7,8];
+    const spec=(reps,effort)=>({pct:[0,0],sets:3,reps,rpe:effort,rir:[10-effort[1],10-effort[0]]});
+    return {week:wi+1,phase:wi?'progression':'adaptation',pct:[0,0],rpe,
+      deload:false,test:false,tempo:'2-1-1',baseRest:[90,150],isoRest:[60,120],
+      base:spec([8,12],wi?[8,8]:[7,8]),isolation:spec([12,15],rpe),
+      focus:wi?'Прогрессия: сначала повторы; после верхней границы во всех подходах добавить 2,5–5% веса при целевом RPE.':'Подбор нагрузки: RPE 7–8, RIR 2–3. Освоить порядок кругов без отказа.'};
+  }
   function build(domain,startDate){
     if(!startDate){
       const date=new Date();
@@ -111,14 +161,16 @@
     const weeks=Array.from({length:2},(_,wi)=>({
       n:wi+1,
       loadProfileManual:true,useIntensity:false,
-      rpeMin:wi?8:7,rpeMax:wi?9:8.5,rirMin:wi?1:1.5,rirMax:wi?2:3,
+      rpeMin:wi?8:7,rpeMax:wi?9:8,rirMin:wi?1:2,rirMax:wi?2:3,
+      phase:wi?'progression':'adaptation',deload:false,testWeek:false,
+      weeklyLoadProfile:weekProfile(wi),
       tempo:'2-1-1',baseRestMin:90,baseRestMax:150,isolationRestMin:60,isolationRestMax:120,
       focus:wi?'Неделя 2: добавляй повторения в указанном диапазоне либо 2,5–5% веса только при сохранении целевого RPE.':'Неделя 1: подбор нагрузки и контроль техники; основные упражнения без отказа.',
       days:days.map((day,di)=>({
         id:ID+'-w'+(wi+1)+'-d'+(di+1),name:day.name,role:'Middle',date:datePlus(startDate,wi*7+di*3),
         ex:day.groups.flatMap((group,gi)=>group.items.map((row,ei)=>{
           const [n,kind,count,min,max,baseRpe,extra,loadType]=row;
-          const rpe=Math.min(9,baseRpe+(wi?0.5:0));
+          const rpeMin=wi?8:7,rpeMax=wi&&baseRpe>8?9:8,rpe=(rpeMin+rpeMax)/2;
           const rest=ei===group.items.length-1?group.rest:0;
           const tempo=/носки/.test(n)?'2-1-2':'2-1-1';
           const isGroup=group.items.length>1;
@@ -129,21 +181,43 @@
             repCounting:/болгар|одной ногой/i.test(n)?'per_leg':undefined,
             ...(isGroup?{superGroup:ID+'-w'+(wi+1)+'-d'+(di+1)+'-g'+(gi+1),superPos:ei,superSize:group.items.length,transitionSec:0,afterGroupRestSec:group.rest}:{}),
             reps:{mode:'manual',min,max},originalSets:count,originalRepRange:[min,max],
-            rpe,rpeMin:rpe,rpeMax:rpe,rirMin:10-rpe,rirMax:10-rpe,effortSourceMode:'manual',
+            rpe,rpeMin,rpeMax,rirMin:10-rpeMax,rirMax:10-rpeMin,effortSourceMode:'manual',
             tempoMode:'manual',tempo,restMode:'manual',rest,restMin:rest,restMax:rest,
-            weightMode:'auto',parameterOverrides:{version:386,effort:{mode:'manual',type:'rpe',rpeMin:rpe,rpeMax:rpe,rirMin:10-rpe,rirMax:10-rpe},tempo:{mode:'manual',value:tempo},rest:{mode:'manual',min:rest,max:rest},weight:{mode:'auto',value:0}},
-            note,sets:Array.from({length:count},()=>({w:0,r:min,tempo,rest}))
+            weightMode:'auto',parameterOverrides:{version:386,effort:{mode:'manual',type:'rpe',rpeMin,rpeMax,rirMin:10-rpeMax,rirMax:10-rpeMin},tempo:{mode:'manual',value:tempo},rest:{mode:'manual',min:rest,max:rest},weight:{mode:'auto',value:0}},
+            note,sets:Array.from({length:count},()=>({w:0,r:min,tempo,rest,targetRepMin:min,targetRepMax:max,targetRpeMin:rpeMin,targetRpeMax:rpeMax,targetRirMin:10-rpeMax,targetRirMax:10-rpeMin,allowFailure:false}))
           };
         }))
       }))
     }));
     return {
-      id:ID,seedId:ID,sourceRevision:1,name:NAME,author:'Семён Бутаков',
+      id:ID,seedId:ID,sourceRevision:REVISION,name:NAME,author:'Семён Бутаков',
       created:Date.now(),updated:Date.now(),
       description:'2 тренировки в неделю: низ и верх. Три суперсета на низ + икры; три суперсета и трисет на верх + пресс. Прогрессия на 2 недели.',
       principles:['Рабочие подходы не включают разминку.','Внутри суперсета/трисета только переход; отдых 60–150 сек после полного круга.','RIR = 10 − RPE.','Неделя 2: повторы в диапазоне или 2,5–5% веса при сохранении RPE.'],
+      cycleOptions:{weeks:2,daysPerWeek:2,startDate,targetDate:datePlus(startDate,13),testWeek:false,periodizationMode:'manual',weekProfiles:weeks.map(w=>w.weeklyLoadProfile),phaseSchedule:weeks.map(w=>w.phase)},
       weeks
     };
   }
-  return {ID,NAME,days,build};
+  function upgrade(plan,domain){
+    if(plan?.seedId!==ID||Number(plan.sourceRevision||1)>=REVISION)return false;
+    const fresh=build(domain,plan.weeks?.[0]?.days?.[0]?.date);
+    for(let wi=0;wi<(plan.weeks||[]).length;wi++){
+      const week=plan.weeks[wi],next=fresh.weeks[wi];if(!next)continue;
+      for(const key of ['loadProfileManual','useIntensity','rpeMin','rpeMax','rirMin','rirMax','phase','deload','testWeek','weeklyLoadProfile','focus'])week[key]=next[key];
+      for(const day of week.days||[])for(const ex of day.ex||[]){
+        const target=next.days.flatMap(d=>d.ex).find(e=>e.id===ex.id);if(!target)continue;
+        for(const key of ['superGroup','superPos','superSize','transitionSec','afterGroupRestSec','rpe','rpeMin','rpeMax','rirMin','rirMax','effortSourceMode','restMode','rest','restMin','restMax']){
+          if(target[key]===undefined)delete ex[key];else ex[key]=target[key];
+        }
+        ex.parameterOverrides={...ex.parameterOverrides,version:386,effort:{...target.parameterOverrides.effort},rest:{...target.parameterOverrides.rest}};
+        for(const set of ex.sets||[]){
+          if(set.ok||set.skipped)continue;
+          Object.assign(set,{rest:target.rest,targetRpeMin:target.rpeMin,targetRpeMax:target.rpeMax,targetRirMin:target.rirMin,targetRirMax:target.rirMax,allowFailure:false});
+        }
+      }
+    }
+    plan.cycleOptions=fresh.cycleOptions;plan.sourceRevision=REVISION;plan.updated=plan.updatedAt=Date.now();
+    return true;
+  }
+  return {ID,NAME,REVISION,days,build,upgrade};
 });
