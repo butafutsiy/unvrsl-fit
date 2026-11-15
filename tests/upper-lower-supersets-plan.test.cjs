@@ -58,6 +58,9 @@ test('editor renders all group members once and startup only upgrades an existin
   vm.runInNewContext(source,{window:root,st,URL});
   const day=p.weeks[0].days[1],html=day.ex.map((e,i)=>root.programExerciseRow(p,day,e,i)).join('');
   assert.equal((html.match(/data-upper-lower-group/g)||[]).length,4);
+  const sharedCopy={...p,id:'client-program-copy'};delete sharedCopy.seedId;
+  const sharedHtml=day.ex.map((e,i)=>root.programExerciseRow(sharedCopy,day,e,i)).join('');
+  assert.equal((sharedHtml.match(/data-upper-lower-group/g)||[]).length,4);
   assert.match(html,/Трисет/);assert.match(html,/A → B → C/);
   for(let i=0;i<day.ex.length;i++)assert.equal((html.match(new RegExp(`data-index="${i}"`,'g'))||[]).length,1);
   events['unvrsl:app-ready']();await new Promise(r=>setImmediate(r));

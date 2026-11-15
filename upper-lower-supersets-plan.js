@@ -56,10 +56,11 @@
   // Keep exercises independently editable while presenting their shared rounds.
   const row=root.programExerciseRow;
   if(typeof row==='function')root.programExerciseRow=function(p,d,e,ei){
-    if(p?.seedId!==api.ID||!e?.superGroup)return row.apply(this,arguments);
+    if(!e?.superGroup)return row.apply(this,arguments);
     if(d.ex[ei-1]?.superGroup===e.superGroup)return '';
     const members=[];
     for(let i=ei;i<d.ex.length&&d.ex[i].superGroup===e.superGroup;i++)members.push({e:d.ex[i],i});
+    if(members.length<2)return row.apply(this,arguments);
     const size=members.length,title=size===3?'Трисет':'Суперсет';
     return `<section class="card" data-upper-lower-group="${ei}"><b>${title} · ${e.sets?.length||3} круга</b><div class="muted small" style="margin:8px 0">${size===3?'A → B → C':'A → B'} · переход без отдыха · после круга ${members.at(-1).e.afterGroupRestSec} сек.</div>${members.map(x=>row.call(this,p,d,x.e,x.i)).join('')}</section>`;
   };
