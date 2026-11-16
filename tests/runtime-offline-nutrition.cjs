@@ -1,0 +1,34 @@
+'use strict';
+const {JSDOM}=require(process.env.UNVRSL_JSDOM||'jsdom');
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const dom=new JSDOM('<html><head></head><body><div id="sheet"></div></body></html>',{runScripts:'dangerously',url:'https://app.test/'}),w=dom.window;
+const db={offline_clients:[{id:'c1',trainer_id:'t1',display_name:'Client',sex:'male',birth_date:'2000-11-22',height_cm:183}],offline_client_measurements:[{id:'m1',offline_client_id:'c1',trainer_id:'t1',measure_date:'2026-10-01',weight_kg:96,measurements:{waist:90},entry_source:'client'}],offline_client_strengths:[{id:'s1',offline_client_id:'c1',trainer_id:'t1',exercise_key:'bench',exercise_name:'Жим',measured_at:'2026-10-01',weight_kg:100,reps:10,e1rm:133.3,entry_source:'client'}],offline_progress_shares:[{id:'share',trainer_id:'t1',offline_client_id:'c1'}]};
+let alerts=[],confirm=true;
+w.modal=html=>w.document.getElementById('sheet').innerHTML=html;w.alert=x=>alerts.push(x);w.confirm=()=>confirm;w.toast=()=>{};
+w.cloud={user:{id:'t1'},client:{from(table){let filters=[],action='',payload,single=false,range;const query={select(){return this},eq(k,v){filters.push([k,v]);return this},order(){return this},range(a,b){range=[a,b];return this},limit(){return this},single(){single=true;return this},maybeSingle(){single=true;return this},update(p){action='update';payload=p;return this},insert(p){action='insert';payload=p;return this},delete(){action='delete';return this},then(resolve,reject){try{let rows=db[table].filter(r=>filters.every(([k,v])=>r[k]===v));if(action==='insert'){db[table].push({...payload,id:'new'});rows=[db[table].at(-1)]}if(action==='update')rows.forEach(r=>Object.assign(r,payload));if(action==='delete')db[table]=db[table].filter(r=>!rows.includes(r));if(range)rows=rows.slice(range[0],range[1]+1);return Promise.resolve({data:single?rows[0]||null:rows,error:single&&!rows.length&&action?{message:'Row not found'}:null}).then(resolve,reject)}catch(e){return Promise.reject(e).then(resolve,reject)}}};return query}}};
+w.st={nutritionPlannerV311:{marker:'personal'},mealNutritionV1:{protocol:'maintain'}};w.eval(fs.readFileSync(require.resolve('../nutrition-planner.js'),'utf8'));
+w.WorkoutDomain=require('../workout-domain.js');w.eval(fs.readFileSync(require.resolve('../offline-progress.js'),'utf8'));
+
+(async()=>{
+ await w.offlineNutritionOpenV322('c1');
+ await new Promise(r=>setTimeout(r,10));
+ const personal=JSON.stringify(w.st),d=w.document;
+ const change=(id,value)=>{d.getElementById(id).value=value;d.getElementById(id).dispatchEvent(new w.Event('input',{bubbles:true}))};
+ assert.ok(d.getElementById('np311Result').textContent.includes('TDEE'));
+ assert.equal(d.getElementById('np600CardioDuration').hidden,true);
+ change('np600CardioSlider','3');change('np600MinutesSlider','45');change('np600Work','mobile');change('np600Intensity','high');
+ assert.equal(d.getElementById('np600Cardio').value,'3');
+ assert.equal(d.getElementById('np600CardioDuration').hidden,false);
+ change('np311Steps','12000');assert.equal(d.getElementById('np600StepsSlider').value,'12000');
+ w.offlineNutritionGoalV612('gain');assert.equal(d.querySelector('.np600-tab[aria-pressed=true]').textContent,'Набор');
+ assert.equal(d.querySelector('[onclick="saveAndApplyNutritionGoalV600()"]'),null);
+ await w.offlineNutritionCalculateV322();
+ const saved=db.offline_clients[0].nutrition_plan;
+ assert.equal(saved.inputs.cardioSessions,3);assert.equal(saved.inputs.cardioMinutes,45);assert.equal(saved.inputs.workType,'mobile');assert.equal(saved.inputs.trainingIntensity,'high');
+ assert.equal(JSON.stringify(w.st),personal,'client edits leave trainer nutrition unchanged');
+ await w.offlineNutritionOpenV322('c1');await new Promise(r=>setTimeout(r,10));assert.equal(d.getElementById('np600Cardio').value,'3');
+ change('np311Weight','');assert.match(d.getElementById('np311Result').textContent,/Проверь вес/);
+ await w.offlineNutritionCalculateV322();assert.equal(db.offline_clients[0].nutrition_plan.inputs.weight,96);
+ w.openNutritionPlannerV311();assert.equal(d.querySelector('[data-offline-nutrition]'),null);assert.ok(d.getElementById('np612Save').getAttribute('onclick').includes('calculateNutritionPlannerV311'));
+ console.log('PASS: shared calculator, live controls, client save/reopen, validation and trainer isolation');dom.window.close();
+})().catch(e=>{console.error(e);dom.window.close();process.exitCode=1});

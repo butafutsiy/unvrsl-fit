@@ -79,6 +79,8 @@ jobs:
         run: |
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
           node tests/runtime-offline-history.cjs
+          UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
+          node tests/runtime-offline-nutrition.cjs
       - name: Verify complete workout scenario
         run: |
           UNVRSL_JSDOM="$RUNNER_TEMP/unvrsl-tests/node_modules/jsdom" \
@@ -165,6 +167,7 @@ jobs:
           UNVRSL_JSDOM: ${{ runner.temp }}/unvrsl-offline/node_modules/jsdom
         run: |
           node tests/runtime-offline-history.cjs
+          node tests/runtime-offline-nutrition.cjs
           node tests/runtime-strength-deload-chart.cjs
           node tests/runtime-strength-equipment.cjs
 

@@ -123,7 +123,8 @@
       sex:profileSex||(['male','female'].includes(saved.sex)?saved.sex:''),
       age:profileAge??saved.age??'',height:profileHeight>=120&&profileHeight<=230?profileHeight:(saved.height??''),weight:profileWeight>=35&&profileWeight<=300?profileWeight:(saved.weight??''),
       overweight:saved.overweight===true||saved.overweight==='yes',steps:saved.steps??8000,strengthSessions:saved.strengthSessions??3,
-      dailyActivity:NUT_ACTIVITY[saved.dailyActivity]?saved.dailyActivity:'moderate',activityFactor:saved.activityFactor??''
+      dailyActivity:NUT_ACTIVITY[saved.dailyActivity]?saved.dailyActivity:'moderate',activityFactor:saved.activityFactor??'',
+      workType:saved.workType||'sedentary',trainingIntensity:saved.trainingIntensity||'moderate',cardioSessions:saved.cardioSessions??0,cardioMinutes:saved.cardioMinutes??30
     }
   }
   function nutritionIsStale(data){
@@ -139,37 +140,36 @@
   }
 
   function nutritionCore(){return W.unvrslNutritionPlannerV311}
-  function nutritionReadInputs(){
-    const val=id=>D.getElementById(id)?.value??'';
-    return{sex:val('ofnSex'),age:val('ofnAge'),height:val('ofnHeight'),weight:val('ofnWeight'),overweight:val('ofnOverweight')==='yes',steps:val('ofnSteps'),strengthSessions:val('ofnStrength'),dailyActivity:val('ofnDaily'),activityFactor:val('ofnFactor')}
-  }
-  function nutritionGoalHtml(goal){
-    if(!goal)return'';
-    return `<article class="ofn-goal"><div><b>${E(goal.title)}</b><strong>${calorieRange(goal)} ккал</strong></div><div class="ofn-macros"><span><small>Белок</small><b>${E(`${goal.protein[0]}–${goal.protein[1]} г`)}</b></span><span><small>Жиры</small><b>${E(`${goal.fat[0]}–${goal.fat[1]} г`)}</b></span><span><small>Углеводы</small><b>${E(`${goal.carbs[0]}–${goal.carbs[1]} г`)}</b></span></div><small class="ofn-check">Проверка: ${kcal(goal.check[0])} / ${kcal(goal.check[1])} ккал</small></article>`
-  }
-  function nutritionResultHtml(result){
-    if(!result)return'<div class="ofn-empty">Заполни данные и рассчитай КБЖУ.</div>';
-    const activity=result.activity?.automatic?'подобран автоматически':'выбран вручную',daily=NUT_ACTIVITY[result.inputs?.dailyActivity]||'—';
-    return `<div class="ofn-base"><div><span>BMR</span><b>${kcal(result.bmr?.value)} ккал</b><small>${E(result.bmr?.formula)}</small></div><div><span>Активность</span><b>× ${E(String(result.activity?.factor??'—').replace('.',','))}</b><small>${activity}</small></div><div><span>TDEE</span><b>${kcal(result.tdee)} ккал</b><small>поддержание</small></div></div><div class="ofn-formula">Использована формула <b>${E(result.bmr?.formula)}</b>: ${E(result.bmr?.reason)}. Учтено ${kcal(result.inputs?.steps)} шагов, ${E(fmt(result.inputs?.strengthSessions,0))} силовых и активность «${E(daily.toLowerCase())}».</div>${nutritionGoalHtml(result.goals?.cut)}${nutritionGoalHtml(result.goals?.maintain)}${nutritionGoalHtml(result.goals?.gain)}${result.inputs?.sex==='female'?'<div class="ofn-note">Для девушки жиры лучше не держать постоянно на самой нижней границе без отдельной причины.</div>':''}`
-  }
+  let nutritionGoal='cut';
+  function nutritionReadInputs(){return nutritionCore().readInputs()}
+  function nutritionResultHtml(result){return nutritionCore().resultHtml(result,{offline:true,goal:nutritionGoal})}
   function nutritionForm(data){
-    const inputs=nutritionDefaults(data),plan=nutritionPlan(data),result=plan?.result||null,core=nutritionCore(),selected=(a,b)=>String(a)===String(b)?' selected':'',auto=core?.recommendedActivityFactor?.(inputs)?.factor??1.55;
-    return `<div class="sheet-grabber"></div><div class="ofn-head"><div><button class="ofn-back" onclick="offlineClientDetail('${E(data.client.id)}')">‹ Клиент</button><h2>Расчёт КБЖУ</h2><span>${E(data.client.display_name)}</span></div><button class="btn tiny" onclick="closeModal()">✕</button></div><div class="ofn-flow">BMR → TDEE → цель → Б/Ж → углеводы остатком</div><div class="ofn-fields"><div class="field"><label>Пол</label><select id="ofnSex" onchange="offlineNutritionRefreshV322(true)"><option value=""${selected(inputs.sex,'')}>Указать</option><option value="male"${selected(inputs.sex,'male')}>Мужской</option><option value="female"${selected(inputs.sex,'female')}>Женский</option></select></div><div class="field"><label>Возраст, лет</label><input id="ofnAge" type="number" inputmode="numeric" min="14" max="100" value="${E(inputs.age)}" oninput="offlineNutritionRefreshV322(true)"></div><div class="field"><label>Рост, см</label><input id="ofnHeight" type="number" inputmode="decimal" min="120" max="230" value="${E(inputs.height)}" oninput="offlineNutritionRefreshV322(true)"></div><div class="field"><label>Вес, кг</label><input id="ofnWeight" type="number" inputmode="decimal" step="0.1" min="35" max="300" value="${E(inputs.weight)}" oninput="offlineNutritionRefreshV322(true)"></div><div class="field"><label>Есть лишний вес?</label><select id="ofnOverweight" onchange="offlineNutritionRefreshV322(true)"><option value="no"${selected(inputs.overweight,false)}>Нет</option><option value="yes"${selected(inputs.overweight,true)}>Да</option></select></div><div class="field"><label>Шагов в день</label><input id="ofnSteps" type="number" inputmode="numeric" min="0" max="50000" step="500" value="${E(inputs.steps)}" oninput="offlineNutritionRefreshV322(true)"></div><div class="field"><label>Силовых в неделю</label><input id="ofnStrength" type="number" inputmode="numeric" min="0" max="14" value="${E(inputs.strengthSessions)}" oninput="offlineNutritionRefreshV322(true)"></div><div class="field"><label>Активность вне тренировок</label><select id="ofnDaily" onchange="offlineNutritionRefreshV322(true)">${Object.entries(NUT_ACTIVITY).map(([key,name])=>`<option value="${key}"${selected(inputs.dailyActivity,key)}>${name}</option>`).join('')}</select></div><div class="field ofn-wide"><label>Коэффициент активности</label><select id="ofnFactor" onchange="offlineNutritionRefreshV322(true)"><option value=""${selected(inputs.activityFactor,'')}>Авто – ${String(auto).replace('.',',')}</option>${[1.2,1.375,1.55,1.725,1.9].map(value=>`<option value="${value}"${selected(inputs.activityFactor,value)}>${String(value).replace('.',',')} – вручную</option>`).join('')}</select><small id="ofnFactorHint">Авто сейчас: ×${String(auto).replace('.',',')}. Учтены шаги, силовые и активность вне тренировок.</small></div></div><div id="ofnStale" class="ofn-stale" ${nutritionIsStale(data)?'':'hidden'}>Данные отличаются от сохранённого расчёта. Нажми кнопку ниже, чтобы обновить результат.</div><button id="ofnSave" class="btn primary full" onclick="offlineNutritionCalculateV322('${E(data.client.id)}')">Рассчитать и сохранить клиенту</button><div id="ofnResult">${nutritionResultHtml(result)}</div>`
+    nutritionCore().ensureStyle();
+    return nutritionCore().formHtml(nutritionDefaults(data),null,{offline:true,goal:nutritionGoal,name:data.client.display_name});
   }
+  W.offlineNutritionGoalV612=function(key){
+    if(!['cut','maintain','gain'].includes(key))return;
+    nutritionGoal=key;W.offlineNutritionRefreshV322(false);
+  };
   W.offlineNutritionRefreshV322=function(markStale=false){
-    const core=nutritionCore(),select=D.getElementById('ofnFactor');if(!core?.recommendedActivityFactor||!select)return;
-    const auto=core.recommendedActivityFactor(nutritionReadInputs()).factor,option=select.querySelector('option[value=""]');if(option)option.textContent=`Авто – ${String(auto).replace('.',',')}`;
-    const hint=D.getElementById('ofnFactorHint');if(hint)hint.textContent=select.value?`Выбран вручную: ×${String(select.value).replace('.',',')}.`:`Авто сейчас: ×${String(auto).replace('.',',')}. Учтены шаги, силовые и активность вне тренировок.`;
-    if(markStale){const stale=D.getElementById('ofnStale');if(stale)stale.hidden=false}
+    const core=nutritionCore(),select=D.getElementById('np311Factor');if(!core||!select)return;
+    const inputs=nutritionReadInputs(),auto=core.recommendedActivityFactor(inputs);
+    const option=select.querySelector('option[value=""]');if(option)option.textContent=`Авто – ×${String(auto.factor).replace('.',',')}`;
+    const hint=D.getElementById('np311FactorHint');if(hint)hint.textContent=select.value?`Выбран вручную: ×${String(select.value).replace('.',',')}`:`Авто: ×${String(auto.factor).replace('.',',')}. ${auto.reason}.`;
+    const duration=D.getElementById('np600CardioDuration');if(duration)duration.hidden=!(Number(inputs.cardioSessions)>0);
+    const out=D.getElementById('np311Result');
+    if(out)try{out.innerHTML=nutritionResultHtml(core.calculate(inputs))}catch(error){out.innerHTML=`<div class="np311-empty" role="status">${E(error.message)}</div>`}
+    const note=D.getElementById('np600SaveHint');if(note)note.textContent=markStale?'Предпросмотр обновлён. Сохрани расчёт в карточку клиента.':'Изменяй параметры – результат обновляется сразу. Расчёт сохраняется только этому клиенту.';
   };
   W.offlineNutritionOpenV322=async function(id){
     let data=state.id===id&&state.data?state.data:null;
     if(!data){W.modal?.('<div class="ofp-loading"><i></i><span>Загружаю данные клиента</span></div>');data=await loadDetail(id);if(data.error||!data.client)return W.alert?.(data.error?.message||'Клиент не найден');state.id=id;state.data=data}
     if(!nutritionCore()?.calculate)return W.toast?.('Калькулятор ещё загружается. Попробуй снова через секунду.');
-    W.modal?.(nutritionForm(data));setTimeout(()=>W.offlineNutritionRefreshV322(false),0)
+    nutritionGoal='cut';W.modal?.(nutritionForm(data));setTimeout(()=>W.offlineNutritionRefreshV322(false),0)
   };
   W.offlineNutritionCalculateV322=async function(id){
-    const button=D.getElementById('ofnSave');try{
+    id=id||state.id;
+    const button=D.getElementById('np612Save');try{
       const core=nutritionCore();if(!core?.calculate)throw new Error('Калькулятор ещё не загрузился');
       const result=core.calculate(nutritionReadInputs()),record={version:REV,inputs:result.inputs,result,updatedAt:iso()},c=W.cloud;
       if(!c?.client||!c?.user)throw new Error('Войди в аккаунт тренера');if(button)button.disabled=true;
@@ -178,7 +178,7 @@
         state.data.client.nutrition_plan=saved.data?.nutrition_plan||record;
         try{await syncExistingShare(state.data)}catch(error){console.warn('UNVRSL nutrition share sync',error)}
       }
-      const out=D.getElementById('ofnResult');if(out)out.innerHTML=nutritionResultHtml(result);const stale=D.getElementById('ofnStale');if(stale)stale.hidden=true;W.toast?.('КБЖУ клиента сохранено')
+      const out=D.getElementById('np311Result');if(out)out.innerHTML=nutritionResultHtml(result);const note=D.getElementById('np600SaveHint');if(note)note.textContent='Расчёт сохранён в карточку клиента.';W.toast?.('КБЖУ клиента сохранено')
     }catch(error){W.toast?.(error?.message||'Проверь данные')}finally{if(button)button.disabled=false}
   };
 

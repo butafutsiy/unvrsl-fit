@@ -179,9 +179,9 @@
     return automatic.factor;
   }
 
-  function resultHtml(result){
+  function resultHtml(result,options={}){
     if(!result)return '<div class="np311-empty">Заполни данные для расчёта.</div>';
-    const goal=result.goals[activeGoal]||result.goals.cut;
+    const goal=result.goals[options.goal||activeGoal]||result.goals.cut;
     const midpoint=(goal.calories[0]+goal.calories[1])/2;
     const p=Math.round((goal.protein[0]+goal.protein[1])/2);
     const f=Math.round((goal.fat[0]+goal.fat[1])/2);
@@ -189,7 +189,7 @@
     const total=p*4+f*9+c*4;
     const pct=v=>Math.max(0,100*v/Math.max(1,total));
     const selectedProtocol=state()?.mealNutritionV1?.protocol;
-    const goalTabs=Object.values(result.goals).map(g=>`<button type="button" class="np600-tab" aria-pressed="${g.key===activeGoal}" onclick="selectNutritionGoalV600('${g.key}')">${esc(g.title)}</button>`).join('');
+    const goalTabs=Object.values(result.goals).map(g=>`<button type="button" class="np600-tab" aria-pressed="${g.key===(options.goal||activeGoal)}" onclick="${options.offline?'offlineNutritionGoalV612':'selectNutritionGoalV600'}('${g.key}')">${esc(g.title)}</button>`).join('');
     const macro=(name,v,grams,cls)=>`<div class="np600-macro ${cls}"><small>${name}</small><b>${fmt(v[0])}–${fmt(v[1])}</b><span>г/сутки</span><small>${fmt(grams[0])}–${fmt(grams[1])} г/кг</small></div>`;
     return `
       <div class="np311-base np600-base">
@@ -217,11 +217,11 @@
       </div>
       ${result.inputs.age<18?'<div class="np311-note">До 18 лет расчёт ориентировочный. Жёсткий дефицит и спортивную сушку без медицинского сопровождения не назначаем.</div>':''}
       ${result.inputs.sex==='female'&&goal.key==='cut'?'<div class="np311-note">Для длительной сушки у девушек чаще выбирай жиры 0,7–0,9 г/кг; нижняя граница 0,6 допустима, но не обязательна.</div>':''}
-      <div class="np600-actions">
+      ${options.offline?'':`<div class="np600-actions">
         <button type="button" class="btn full" onclick="copyNutritionResultV600()">Скопировать расчёт</button>
         <button type="button" class="btn primary full" onclick="saveAndApplyNutritionGoalV600()">Сохранить и применить «${esc(goal.title)}»</button>
         <small>${selectedProtocol?'Сейчас в дневнике: '+esc(result.goals[selectedProtocol]?.title||'Свои КБЖУ'):'Протокол дневника ещё не выбран'}</small>
-      </div>
+      </div>`}
       <details class="np311-guide"><summary>Как проверять расчёт</summary><ol>
         <li>7–10 дней записывай привычное питание в FatSecret или YAZIO; взвешивай продукты, по возможности сырыми.</li>
         <li>Учитывай масла, соусы, напитки, перекусы. Не путай сухие и готовые продукты.</li>
@@ -231,7 +231,7 @@
     `;
   }
 
-  function formHtml(inputs,result){
+  function formHtml(inputs,result,options={}){
     const selected=(a,b)=>String(a)===String(b)?' selected':'';
     const auto=recommendedActivityFactor(inputs);
     const range=(label,id,slider,value,min,max,step,units)=>`
@@ -239,11 +239,11 @@
         <div class="np600-slider-head"><label for="${id}">${label}</label><div><input id="${id}" type="number" min="${min}" max="${max}" step="${step}" inputmode="numeric" value="${esc(value)}" aria-label="${label}"><small>${units}</small></div></div>
         <input id="${slider}" type="range" min="${min}" max="${max}" step="${step}" value="${esc(value)}" aria-label="${label}, ползунок">
       </div>`;
-    return `<div class="sheet-grabber"></div>
-      <div class="row between np600-heading"><div><h2>Калькулятор КБЖУ</h2><div class="muted">UNVRSL FIT · интерактивный расчёт</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div>
+    return `<div class="np612-form" ${options.offline?'data-offline-nutrition="1"':''}><div class="sheet-grabber"></div>
+      <div class="row between np600-heading"><div><h2>Калькулятор КБЖУ</h2><div class="muted">${esc(options.name||'UNVRSL FIT · интерактивный расчёт')}</div></div><button class="btn tiny" onclick="closeModal()">✕</button></div>
       <div class="np600-section-title">Параметры</div>
       <div class="np311-fields">
-        <div class="field"><label>Пол</label><select id="np311Sex"><option value="male"${selected(inputs.sex,'male')}>Мужской</option><option value="female"${selected(inputs.sex,'female')}>Женский</option></select></div>
+        <div class="field"><label>Пол</label><select id="np311Sex"><option value=""${selected(inputs.sex,'')}>Указать</option><option value="male"${selected(inputs.sex,'male')}>Мужской</option><option value="female"${selected(inputs.sex,'female')}>Женский</option></select></div>
         <div class="field"><label>Лишний вес</label><select id="np311Overweight"><option value="no"${selected(inputs.overweight,false)}>Нет</option><option value="yes"${selected(inputs.overweight,true)}>Да</option></select></div>
         <div class="field"><label>Возраст, лет</label><input id="np311Age" type="number" min="14" max="100" value="${esc(inputs.age)}"></div>
         <div class="field"><label>Рост, см</label><input id="np311Height" type="number" min="120" max="230" value="${esc(inputs.height)}"></div>
@@ -261,8 +261,8 @@
         <div class="field np311-wide"><label>Коэффициент активности</label><select id="np311Factor"><option value=""${selected(inputs.activityFactor,'')}>Авто – ×${String(auto.factor).replace('.',',')}</option>${[1.2,1.375,1.55,1.725,1.9].map(v=>`<option value="${v}"${selected(inputs.activityFactor,v)}>×${String(v).replace('.',',')} – вручную</option>`).join('')}</select><div class="np311-hint" id="np311FactorHint"></div></div>
       </div>
       <div id="np600SaveHint" class="np600-subnote">Меняй данные – результат обновляется сразу.</div>
-      <button class="btn primary full np600-save" onclick="calculateNutritionPlannerV311()">Сохранить расчёт</button>
-      <div id="np311Result" data-np311-calculated="${result?'1':'0'}">${resultHtml(result)}</div>
+      <button id="np612Save" class="btn primary full np600-save" onclick="${options.offline?'offlineNutritionCalculateV322()':'calculateNutritionPlannerV311()'}">${options.offline?'Сохранить расчёт клиенту':'Сохранить расчёт'}</button>
+      <div id="np311Result" data-np311-calculated="${result?'1':'0'}">${resultHtml(result,options)}</div></div>
     `;
   }
 
@@ -360,6 +360,23 @@
       .np600-actions>small{color:var(--muted);font-size:11px;text-align:center}
       #np600CardioDuration[hidden]{display:none}
       @media(max-width:390px){.np600-macro b{font-size:12px}.np600-calorie strong{font-size:25px}.np600-example-head{font-size:11px}}
+
+      html body #sheet .np612-form .np311-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px;margin-top:10px}
+      html body #sheet .np612-form .field{margin:0;min-width:0}
+      html body #sheet .np612-form .field label{font-size:12px;line-height:1.3;min-height:30px;margin:0 0 5px}
+      html body #sheet .np612-form .field input,html body #sheet .np612-form .field select{height:48px;min-height:48px;padding:10px 12px;font-size:16px;border-radius:13px;max-width:100%;min-width:0}
+      html body #sheet .np612-form .np600-heading{gap:8px;align-items:flex-start}
+      html body #sheet .np612-form .np600-heading h2{font-size:22px;line-height:1.2}
+      html body #sheet .np612-form .np600-heading .muted{font-size:12px;line-height:1.4}
+      html body #sheet .np612-form .np600-heading button{width:40px;height:40px;min-height:40px;padding:0;flex-shrink:0}
+      html body #sheet .np612-form .np600-section-title{margin:18px 0 8px;font-size:11px}
+      html body #sheet .np612-form .np600-slider-field{padding:12px;margin:8px 0;border:1px solid var(--line);border-radius:16px}
+      html body #sheet .np612-form .np600-slider-head{margin-bottom:5px;gap:8px}
+      html body #sheet .np612-form .np600-slider-head label{font-size:13px;line-height:1.3;flex:1}
+      html body #sheet .np612-form .np600-slider-head input{width:82px;min-width:62px;max-width:82px;height:40px;min-height:40px;font-size:16px;padding:7px 8px;background:var(--panel);color:var(--text);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+      html body #sheet .np612-form input[type=range]{height:28px;min-height:28px;padding:0;border:0;box-shadow:none;background:transparent;accent-color:var(--accent);touch-action:pan-x}
+      html body #sheet .np612-form .np311-wide{grid-column:1/-1}
+      html body #sheet .np612-form [hidden]{display:none!important}
     `;D.head.appendChild(style);
   }
 
@@ -381,10 +398,10 @@
       if(!root?.contains(target)||!target?.id||!/^np(311|600)/.test(target.id)||target.id==='np311Result')return;
       const other=linked[target.id]||reverse[target.id];
       if(other){const peer=D.getElementById(other);if(peer)peer.value=target.value}
-      refreshActivityPreview();
+      if(root.querySelector('[data-offline-nutrition]'))W.offlineNutritionRefreshV322?.(true);else refreshActivityPreview();
     }
     D.addEventListener('input',onFieldChange);
-    D.addEventListener('change',onFieldChange);W.unvrslNutritionPlannerV311={calculate,recommendedActivityFactor,bmrFor,goalResult,refreshActivityPreview,version:VERSION};
+    D.addEventListener('change',onFieldChange);W.unvrslNutritionPlannerV311={calculate,recommendedActivityFactor,bmrFor,goalResult,refreshActivityPreview,formHtml,resultHtml,readInputs,ensureStyle,version:VERSION};
     const start=()=>{ensureStyle();renderCard()};
     if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
     let queued=false;const plan=D.getElementById('plan');if(plan)new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;renderCard()})}).observe(plan,{childList:true,subtree:true});
